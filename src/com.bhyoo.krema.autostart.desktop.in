@@ -1,7 +1,9 @@
 [Desktop Entry]
 Type=Application
 Name=Krema
+Name[ru]=Krema
 Comment=Start Krema dock automatically at login
+Comment[ru]=Автоматически запускать док Krema при входе в систему
 Exec=@KDE_INSTALL_FULL_BINDIR@/krema
 Icon=com.bhyoo.krema
 Terminal=false

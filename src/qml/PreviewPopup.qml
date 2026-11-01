@@ -26,7 +26,7 @@ Item {
 
     function announcePreviewOpen(appName, count) {
         Accessible.announce(
-            i18n("Preview for %1, %2 windows", appName, count),
+            i18n("Preview for %1, %2", appName, i18np("1 window", "%1 windows", count)),
             Accessible.Polite)
     }
 

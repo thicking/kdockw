@@ -33,7 +33,7 @@ public:
 
     /// The application metadata, defined once; usable before a QApplication
     /// exists.
-    static KAboutData makeAboutData();
+    static KAboutData makeAboutData(bool localized = true);
 
     /// Saves @p settings to disk whenever one of its user-facing entries
     /// changes. PinnedLaunchers is saved by its own handler in run().

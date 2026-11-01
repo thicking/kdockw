@@ -9,13 +9,16 @@
 #include <QCommandLineOption>
 #include <QCommandLineParser>
 #include <QCoreApplication>
+#include <QDir>
 #include <QStringList>
 
 int main(int argc, char *argv[])
 {
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("krema"));
 
-    KAboutData aboutData = krema::Application::makeAboutData();
+    // QApplication cannot be created before headless --help/--version checks.
+    // Keep this parser metadata untranslated until the real application exists.
+    KAboutData aboutData = krema::Application::makeAboutData(false);
     // QCommandLineParser builds --version's output and its error prefix from
     // these; set them directly because no QApplication exists yet
     // (Application::run() installs the KAboutData itself).
@@ -53,6 +56,15 @@ int main(int argc, char *argv[])
     }
 
     krema::Application app(argc, argv);
+    // Now KI18n has a Q*Application instance and can load catalogs reliably.
+    // KI18n installs catalogs under the system locale directory. Also expose
+    // the build-tree catalog so `build/release/bin/krema` can run directly.
+    const QDir appDir(QCoreApplication::applicationDirPath());
+    const QString buildLocaleDir = appDir.filePath(QStringLiteral("../src/locale"));
+    if (QDir(buildLocaleDir).exists()) {
+        KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("krema"), buildLocaleDir);
+    }
+    aboutData = krema::Application::makeAboutData();
     // Pass 2: QApplication has removed its own options; anything left that
     // the parser does not know is an error.
     parser.setSingleDashWordOptionMode(QCommandLineParser::ParseAsCompactedShortOptions);

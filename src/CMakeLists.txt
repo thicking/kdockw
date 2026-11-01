@@ -121,6 +121,8 @@ target_include_directories(krema_lib PUBLIC
 add_executable(krema main.cpp)
 target_link_libraries(krema PRIVATE krema_lib)
 
+ki18n_install(po)
+
 install(TARGETS krema ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
 # Generate .desktop file with resolved install paths for KWin Wayland protocol access

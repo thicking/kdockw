@@ -30,11 +30,11 @@ Item {
         if (model.IsActive) parts.push(i18n("Active"))
         if (model.IsMinimized) parts.push(i18n("Minimized"))
         let count = model.ChildCount || 0
-        if (count > 1) parts.push(i18n("%1 windows", count))
+        if (count > 1) parts.push(i18np("1 window", "%1 windows", count))
         if (launching) parts.push(i18n("Starting"))
         if (_isDemandingAttention) parts.push(i18n("Attention requested"))
         if (_badgeCount > 0)
-            parts.push(i18n("%1 notifications", _badgeCount))
+            parts.push(i18np("1 notification", "%1 notifications", _badgeCount))
         return parts.join(", ")
     }
 

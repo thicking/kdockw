@@ -54,10 +54,14 @@ Application::~Application()
     TaskIconProvider::clearRawIcons();
 }
 
-KAboutData Application::makeAboutData()
+KAboutData Application::makeAboutData(bool localized)
 {
-    KAboutData aboutData(QStringLiteral("krema"), i18n("Krema"), QStringLiteral(KREMA_VERSION_STRING), i18n("A dock for KDE Plasma 6"), KAboutLicense::GPL_V3);
-    aboutData.addAuthor(i18n("Byeonghoon Yoo"), {}, QStringLiteral("bhyoo@bhyoo.com"));
+    const QString displayName = localized ? i18n("Krema") : QStringLiteral("Krema");
+    const QString description = localized ? i18n("A dock for KDE Plasma 6")
+                                          : QStringLiteral("A dock for KDE Plasma 6");
+    KAboutData aboutData(QStringLiteral("krema"), displayName, QStringLiteral(KREMA_VERSION_STRING), description, KAboutLicense::GPL_V3);
+    const QString author = localized ? i18n("Byeonghoon Yoo") : QStringLiteral("Byeonghoon Yoo");
+    aboutData.addAuthor(author, {}, QStringLiteral("bhyoo@bhyoo.com"));
     aboutData.setOrganizationDomain(QByteArrayLiteral("bhyoo.com"));
     aboutData.setHomepage(QStringLiteral("https://krema.bhyoo.com/"));
     aboutData.setBugAddress(QByteArrayLiteral("https://github.com/isac322/krema/issues"));
