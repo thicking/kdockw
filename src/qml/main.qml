@@ -414,6 +414,14 @@ Item {
     }
 
 
+    // Plasma's task manager includes this plain URL MIME alongside its
+    // task-specific payload. Preserve applications: URLs as supplied; KDE's
+    // TaskManager resolves them when adding the launcher.
+    function launcherUrlFromTaskMime(formats, urlData) {
+        return formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
+                ? urlData.trim() : ""
+    }
+
     // Compute the target index where the dragged item would be inserted.
     // Compares mouse X with each icon's center X (including the source so
     // that dropping near the original position keeps the item in place).
@@ -1426,7 +1434,10 @@ Item {
             property int dropTargetIndex: -1
 
             onEntered: function(drag) {
-                drag.accepted = true
+                const hasTaskLauncherUrl = drag.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
+                        && root.launcherUrlFromTaskMime(drag.formats,
+                            drag.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl")) !== ""
+                drag.accepted = drag.hasUrls || hasTaskLauncherUrl
             }
 
             onPositionChanged: function(drag) {
@@ -1438,6 +1449,15 @@ Item {
                 if (drop.hasUrls) {
                     for (let i = 0; i < drop.urls.length; i++) {
                         urls.push(drop.urls[i])
+                    }
+                }
+
+                if (drop.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0) {
+                    const taskLauncherUrl = root.launcherUrlFromTaskMime(
+                        drop.formats,
+                        drop.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl"))
+                    if (taskLauncherUrl.length > 0) {
+                        urls.unshift(taskLauncherUrl)
                     }
                 }
 
@@ -1544,6 +1564,9 @@ Item {
             // Announce launch to screen reader (must call on root Item, not Connections)
             root.announceLaunch(item.displayName)
 
+            // Start a bounded visual signal for this request. The launch state
+            // remains tracked separately until KDE reports a window or timeout.
+            item.startLaunchBounce()
             item.manualLaunching = true
         }
     }

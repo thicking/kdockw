@@ -18,6 +18,15 @@ TasksModel supports drag-and-drop for reordering tasks and launchers. DnD data i
 Common MIME types:
 - `text/uri-list` — URL-based launcher tasks
 - `application/x-kde-launcher-desktop` — .desktop file launchers
+- `text/x-orgkdeplasmataskmanager_taskurl` — plain launcher URL supplied by Plasma task-manager drags
+- `application/x-orgkdeplasmataskmanager_taskbuttonitem` — Plasma task payload; it is not itself a launcher URL
+
+The Plasma task-manager drag source adds its launcher URL as a separate
+`text/x-orgkdeplasmataskmanager_taskurl` format alongside the task payload.
+The dock uses Qt Quick `DragEvent.formats` and `getDataAsString()` to read that
+URL; it does not decode the opaque task-button payload. `.desktop` files and
+application-menu entries continue to use `text/uri-list` where the source
+provides it.
 
 ---
 

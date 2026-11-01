@@ -1564,6 +1564,18 @@ Item {
             compare(dock.computeDropIndex(-1000), 0)
             compare(dock.computeDropIndex(100000), 3)
         }
+
+        function test_launcherUrlFromPlasmaTaskMime() {
+            addTasks(["A"])
+            let dock = makeDock(1)
+            compare(dock.launcherUrlFromTaskMime(
+                        ["application/x-orgkdeplasmataskmanager_taskbuttonitem",
+                         "text/x-orgkdeplasmataskmanager_taskurl"],
+                        "applications:org.kde.kate.desktop\n"),
+                    "applications:org.kde.kate.desktop")
+            compare(dock.launcherUrlFromTaskMime(
+                        ["application/x-orgkdeplasmataskmanager_taskbuttonitem"], ""), "")
+        }
         function test_separatedDragIndicatorUsesRunningRestSlots_data() {
             return dockEdges()
         }
