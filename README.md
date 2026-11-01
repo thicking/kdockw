@@ -5,6 +5,8 @@
   </picture>
 </h1>
 
+<p align="center"><a href="README.ru.md">🇷🇺 Читать на русском</a></p>
+
 <p align="center"><strong>The zooming dock for KDE Plasma 6, native to Wayland.</strong></p>
 
 <p align="center">
