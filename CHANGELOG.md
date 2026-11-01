@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Added a Russian translation for the dock, settings, menus, accessibility labels, and notifications, selected from the system language.
 - Added TUXEDO OS build and NVIDIA PRIME on Wayland troubleshooting guides.
+- Added PipeWire capture diagnostics and one experimental CPU-buffer retry when streaming produces no first frame; the retry is not a confirmed general fix for DMA-BUF import failures.
 
 ### Fixed
 
-- Retried window previews with CPU-readable PipeWire buffers when DMA-BUF streaming produced no first frame.
 - Stopped launch icons from bouncing after five cycles, while keeping launch tracking active until the app opened a window or the launch timed out.
 - Accepted application URLs dragged from the Plasma task manager, including its task-specific launcher URL MIME type.
 

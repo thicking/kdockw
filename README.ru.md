@@ -5,6 +5,10 @@
   </picture>
 </h1>
 
+<p align="center"><strong>Krema — Community Fork</strong></p>
+
+<p align="center"><a href="README.ru.md">🇷🇺 Русский</a> · <a href="README.md">🇬🇧 English</a></p>
+
 <p align="center"><strong>Масштабирующаяся док-панель для KDE Plasma 6, созданная для Wayland.</strong></p>
 
 <p align="center">
@@ -18,23 +22,30 @@
 </p>
 
 <p align="center">
-  <a href="https://krema.bhyoo.com/">Сайт</a> ·
+  <a href="https://krema.bhyoo.com/">Сайт upstream</a> ·
   <a href="#установка">Установка</a> ·
   <a href="ROADMAP.md">План разработки</a> ·
   <a href="CHANGELOG.md">История изменений</a> ·
   <a href="README.md">English</a>
 </p>
 
-> **Примечание:** Krema активно разрабатывается. Основные возможности работают, но некоторые функции ещё находятся в разработке. Подробности — в [плане разработки](ROADMAP.md).
+> **Форк сообщества:** этот публичный репозиторий — модифицированная версия проекта [isac322/krema](https://github.com/isac322/krema), первоначально созданного Byeonghoon Yoo. Он сохраняет исходный проект и его лицензию, добавляя русский каталог KI18n, отдельные исправления, диагностику и инструкции. Форк основан на upstream v0.12.0 и развивается отдельно от upstream `master`.
 
-### Запланировано / ещё не выпущено
+## Улучшения форка / Fork Enhancements
 
-Следующие параметры относятся к текущей разработке и пока не входят в нумерованный выпуск:
+| Область | Что добавлено в форке |
+|---|---|
+| Русская локализация | 252 переведённых сообщения KI18n: интерфейс, параметры, контекстные меню, подсказки, доступность и уведомления. |
+| Анимация запуска | Подпрыгивание значка запускается максимум на пять полных циклов и завершается после текущего цикла, если появилось новое окно. Это отдельная анимация, не связанная с настраиваемыми анимациями привлечения внимания. |
+| Перетаскивание из панели задач Plasma | URL запуска читается из MIME-типа `text/x-orgkdeplasmataskmanager_taskurl`; поддержка обычных URL и файлов `.desktop` сохранена. |
+| Диагностика TaskManager | Отладочные сообщения описывают добавление и удаление задач и изменение их ролей, не записывая заголовки окон. Логирование помогает диагностике, но не меняет фильтры TaskManager. |
+| Диагностика PipeWire | Записывается состояние потока; если поток работает, но первый кадр не пришёл, выполняется одна повторная попытка с CPU-доступными буферами. Это экспериментальный fallback, а не подтверждённое универсальное исправление DMA-BUF. |
+| Руководство NVIDIA PRIME | Описано поведение гибридной графики и настройка пользовательского сервиса для одной конфигурации TUXEDO OS / Wayland. |
+| Инструкция для TUXEDO OS | Описаны зависимости, release-сборка, установка в `/usr/local`, каталоги переводов, идентификатор desktop-файла и пользовательский сервис. |
 
-- **Резервировать место на экране** — по умолчанию параметр включён и действует в режиме **Всегда виден**. Развёрнутые окна не перекрывают док; режимы автоскрытия и скрытия при перекрытии окнами сохраняют прежнее поведение. Настройку можно менять во время работы, она сохраняется для следующего запуска.
-- **Разделять закреплённые и запущенные приложения** — по умолчанию выключено. Если включить, закреплённые приложения остаются в первой группе, а незакреплённые запущенные приложения располагаются после разделителя. Перетаскивание через границу не меняет принадлежность к группе и не закрепляет приложение. Если параметр выключен, порядок значков можно менять свободно.
+Подробности реализации, проверки, ограничения и ссылки на коммиты собраны в [FORK_CHANGES.md](FORK_CHANGES.md).
 
-Эти пункты описывают ещё не выпущенные изменения и не являются обещанием для последнего опубликованного релиза.
+Krema — док-панель для KDE Plasma 6, проект активно развивается. Некоторые возможности upstream ещё находятся в разработке; см. [план upstream](https://github.com/isac322/krema/blob/master/ROADMAP.md).
 
 Krema — лёгкая док-панель для KDE Plasma 6, духовный преемник [Latte Dock](https://github.com/KDE/latte-dock). Проект написан на C++23 с использованием Qt 6 и KDE Frameworks. Он предлагает плавное параболическое увеличение значков, предпросмотр окон через PipeWire и интеграцию с рабочим столом Plasma.
 
@@ -132,109 +143,84 @@ Krema — лёгкая док-панель для KDE Plasma 6, духовный
 
 ## Установка
 
-Для сборки из исходников в TUXEDO OS см. [инструкцию по сборке и установке](docs/building/tuxedo-os.md). Диагностика гибридной графики и Wayland описана в руководстве [NVIDIA PRIME и Wayland](docs/troubleshooting/nvidia-prime-wayland.md).
+### Установка этого форка (рекомендуется)
 
-| Дистрибутив | Версии | Архитектуры |
-|---|---|---|
-| Arch Linux / Manjaro | Rolling | x86_64, aarch64 |
-| Fedora | 42, 43, 44, Rawhide | x86_64, aarch64 |
-| openSUSE Tumbleweed | Rolling | x86_64, aarch64 |
-| openSUSE Slowroll | Rolling | x86_64 |
-| openSUSE Leap | 16.0 | x86_64, aarch64 |
-| Ubuntu | 25.04, 25.10, 26.04 | x86_64, aarch64 |
-| Debian | 13 (Trixie) | x86_64, aarch64 |
-
-### Arch Linux / Manjaro (AUR)
+У этого форка пока нет GitHub Releases и объявленных бинарных пакетов. Чтобы
+получить перечисленные выше изменения, соберите ветку `main`:
 
 ```bash
-yay -S krema
-# или
-paru -S krema
+git clone --branch main --single-branch https://github.com/thicking/krema.git
+cd krema
+cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset release -j 4
+sudo cmake --install build/release
 ```
 
-### Fedora (COPR)
+В [инструкции по сборке для TUXEDO OS](docs/building/tuxedo-os.md) приведены
+пакеты, установка каталогов переводов, desktop-файл и интеграция с KWin, а
+также настройка пользовательского systemd-сервиса. Для сборки нужны CMake
+3.22+, Qt 6.8+, KDE Frameworks 6, KDE Plasma 6, Wayland 1.22+ и GCC 13+ либо
+Clang 17+.
+
+Чтобы обновить уже клонированный форк:
 
 ```bash
-sudo dnf copr enable isac322/krema
-sudo dnf install krema
+git pull --ff-only origin main
+cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset release -j 4
+sudo cmake --install build/release
 ```
 
-### openSUSE (OBS)
+Настроенная сборка CMake предоставляет цель `uninstall`:
 
 ```bash
-# Tumbleweed
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Tumbleweed/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
-
-# Slowroll
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Slowroll/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
-
-# Leap 16.0
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Leap_16.0/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
+sudo cmake --build build/release --target uninstall
 ```
 
-### Ubuntu (PPA)
+Если в другой конфигурации сборки такой цели нет, удаляйте только пути из её
+`install_manifest.txt`. Не удаляйте весь каталог `/usr/local`.
 
-```bash
-sudo add-apt-repository ppa:isac322/krema
-sudo apt update
-sudo apt install krema
-```
+> **Ubuntu 24.04 Noble:** в оригинальном PPA Krema сейчас отсутствует файл
+> `Release`/`InRelease` для Noble (HTTP 404, проверено 2026-11-01); URL
+> репозитория OBS для Ubuntu 24.04 также возвращает 404. Стандартные пакеты Qt
+> и KDE в Noble не удовлетворяют требованиям этой версии исходников (Qt 6.8+
+> и KDE Frameworks 6). В TUXEDO OS 24.04 доступен более новый стек Qt/KDE; для
+> сборки там подготовлена инструкция выше.
 
-Для Ubuntu 25.04/26.04 также доступен [репозиторий OBS](https://download.opensuse.org/repositories/home:/isac322/).
+### Пакеты оригинального проекта upstream
 
-### Debian 13 (OBS)
+Репозитории в таблице поддерживает [isac322/krema](https://github.com/isac322/krema).
+Они устанавливают оригинальную Krema **без коммитов этого форка**. Используйте
+их, только если вам нужна пакетная версия upstream. Указанные версии взяты из
+README upstream на момент аудита; актуальный список может измениться.
 
-```bash
-echo 'deb http://download.opensuse.org/repositories/home:/isac322/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/krema.list
-curl -fsSL https://download.opensuse.org/repositories/home:isac322/Debian_13/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_isac322.gpg > /dev/null
-sudo apt update
-sudo apt install krema
-```
+| Дистрибутив | Канал upstream | Версии в upstream README | Страница пакета |
+|---|---|---|---|
+| Arch Linux / Manjaro | AUR | Rolling | [AUR](https://aur.archlinux.org/packages/krema) |
+| Fedora | COPR | 42, 43, 44, Rawhide | [COPR](https://copr.fedorainfracloud.org/coprs/isac322/krema/) |
+| openSUSE | OBS | Tumbleweed, Slowroll, Leap 16.0 | [OBS](https://build.opensuse.org/package/show/home:isac322/krema) |
+| Ubuntu | Launchpad PPA / OBS | 25.04, 25.10, 26.04, 26.10 (OBS) | [PPA](https://launchpad.net/~isac322/+archive/ubuntu/krema) · [OBS](https://download.opensuse.org/repositories/home:/isac322/) |
+| Debian | OBS | 13 (Trixie) | [Репозиторий OBS](https://download.opensuse.org/repositories/home:/isac322/Debian_13/) |
 
-### Сборка из исходников
+Текущие команды установки и доступность пакетов см. в [инструкции upstream](https://github.com/isac322/krema#installation).
+Пакет upstream не заменяет сборку этого форка.
 
-#### Зависимости (Arch Linux / Manjaro)
+## Известные ограничения
 
-```bash
-sudo pacman -S --needed \
-    cmake extra-cmake-modules ninja ccache just gcc \
-    qt6-base qt6-declarative qt6-wayland qt6-shadertools \
-    kwindowsystem kconfig kcoreaddons ki18n \
-    kglobalaccel kcolorscheme kiconthemes kcrash kxmlgui kservice kio kjobwidgets \
-    kirigami layer-shell-qt wayland kpipewire plasma-workspace \
-    catch2
-```
-
-Сборке нужны закрытые заголовки Qt GUI (`Qt6::GuiPrivate`). В Arch Linux они входят в `qt6-base`. В других дистрибутивах установите соответствующий пакет: `qt6-base-private-dev` (Debian/Ubuntu), `qt6-qtbase-private-devel` (Fedora) или `qt6-gui-private-devel` (openSUSE).
-
-#### Минимальные версии
-
-| Зависимость | Минимальная версия |
-|---|---|
-| KDE Plasma | 6.0.0 |
-| Qt 6 | 6.8.0 |
-| KDE Frameworks 6 | 6.0.0 |
-| CMake | 3.22 |
-| Компилятор C++ | GCC 13+ / Clang 17+ |
-
-#### Сборка и запуск
-
-```bash
-just configure    # cmake --preset dev
-just build        # cmake --build --preset dev
-just test         # ctest --preset dev
-just run          # запуск Krema
-just dev-desktop  # добавить ярлык и значок для build/dev/bin/krema в ~/.local/share
-just package      # Arch: собрать и установить пакет из текущего дерева исходников
-```
-
-`just test` запускает GUI integration-тесты на отдельном виртуальном композиторе `kwin_wayland --virtual`, если установлены `kwin_wayland` и `dbus-run-session`. Настройки вашего рабочего сеанса не меняются.
+- Русский каталог собирается и содержит 252 переведённых сообщения. Автовыбор
+  языка не перепроверялся в работающем сеансе Plasma во время аудита документации.
+- Повторный захват с CPU-доступными буферами при отсутствии первого кадра —
+  экспериментальная возможность. QML-тест проверяет путь повтора, но это не
+  подтверждённое универсальное исправление чёрных миниатюр или импорта DMA-BUF
+  между GPU.
+- Разбор MIME-типа URL задачи Plasma и жизненный цикл анимации запуска покрыты
+  QML-тестами. Перетаскивание из реальной панели Plasma и работа дока в сеансе
+  Wayland не проверялись во время аудита документации и зависят от окружения.
+- Логирование TaskManager добавляет данные о строках модели и ролях, но не
+  меняет фильтрацию задач в KDE и не гарантирует, что произвольный desktop-
+  launcher предоставляет Krema нужные интерфейсы KWin.
+- Форк основан на upstream v0.12.0. В upstream `master` уже появились более
+  поздние изменения; синхронизация форка с ними не выполняется автоматически.
 
 ## План разработки
 

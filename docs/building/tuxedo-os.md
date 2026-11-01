@@ -71,7 +71,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/krema --desktopfile com.bhyoo.krema
+ExecStart=/usr/local/bin/krema
 Restart=on-failure
 RestartSec=3
 UnsetEnvironment=DRI_PRIME __GLX_VENDOR_LIBRARY_NAME __NV_PRIME_RENDER_OFFLOAD __VK_LAYER_NV_optimus QSG_RHI_BACKEND
@@ -87,13 +87,44 @@ systemctl --user daemon-reload
 systemctl --user enable --now krema.service
 ```
 
+`Application::makeAboutData()` sets the desktop ID to `com.bhyoo.krema` by
+default, so this service does not need a wrapper or the optional
+`--desktopfile` override. Krema accepts that KDE command-line option, but it
+is not needed for the standard installed desktop entry.
+
 To prevent duplicate instances, choose one login starter: either the installed
-XDG autostart entry or the systemd user service. When using the service,
-disable the separate XDG autostart entry for this user, while keeping
-`com.bhyoo.krema.desktop` installed and available to KWin. A separate menu
-shortcut may run `systemctl --user start krema.service`, but it should use its
-own desktop filename and `Icon=com.bhyoo.krema` rather than taking over the
-application's desktop ID.
+XDG autostart entry or the systemd user service. When using the service, first
+save any existing user override, then mask the system autostart entry for this
+user with the same desktop-file name:
+
+```sh
+mkdir -p ~/.config/autostart
+cat > ~/.config/autostart/com.bhyoo.krema.autostart.desktop <<'EOF'
+[Desktop Entry]
+Hidden=true
+EOF
+```
+
+Keep `/usr/local/share/applications/com.bhyoo.krema.desktop` installed and
+unchanged, including its `X-KDE-Wayland-Interfaces` line. If desired, add a
+separate launcher at `~/.local/share/applications/krema-service.desktop`:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Krema (service)
+Comment=Start Krema through the user service
+Exec=systemctl --user start krema.service
+Icon=com.bhyoo.krema
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+```
+
+Do not change the original Krema desktop file's `Exec` to point to a wrapper.
+On the reproduced setup, a wrapper in that file coincided with missing
+unpinned tasks, launch feedback, and previews. Preserve the normal desktop ID
+so KWin can associate the application with its declared Wayland interfaces.
 
 ## Updating and removing
 
@@ -108,8 +139,8 @@ To remove a source installation, use the same configured build tree:
 sudo cmake --build build/release --target uninstall
 ```
 
-If the generated build does not provide an `uninstall` target, remove only the
-files installed by that build, using its `install_manifest.txt` as the exact
-file list. Do not use a broad `rm -rf /usr/local` command. Disable and remove
-only a user-created Krema service or launcher, and restore the user's prior
-autostart choice.
+The release configuration in this repository exposes this target. If another
+build configuration does not provide it, remove only the files listed in that
+build's `install_manifest.txt`. Do not use a broad `rm -rf /usr/local` command.
+Disable and remove only a user-created Krema service or launcher, and restore
+the user's prior autostart choice.

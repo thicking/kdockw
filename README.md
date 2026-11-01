@@ -5,7 +5,9 @@
   </picture>
 </h1>
 
-<p align="center"><a href="README.ru.md">🇷🇺 Читать на русском</a></p>
+<p align="center"><strong>Krema — Community Fork</strong></p>
+
+<p align="center"><a href="README.ru.md">🇷🇺 Русский</a> · <a href="README.md">🇬🇧 English</a></p>
 
 <p align="center"><strong>The zooming dock for KDE Plasma 6, native to Wayland.</strong></p>
 
@@ -20,22 +22,29 @@
 </p>
 
 <p align="center">
-  <a href="https://krema.bhyoo.com/">Website</a> ·
+  <a href="https://krema.bhyoo.com/">Upstream website</a> ·
   <a href="#installation">Install</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
-> **Note:** Krema is under active development. Core features are functional, but some features are still in progress. See the [Roadmap](ROADMAP.md) for details.
+> **Community fork:** This public repository is a modified version of [isac322/krema](https://github.com/isac322/krema), originally created by Byeonghoon Yoo. It keeps the upstream project and license, and adds a Russian KI18n catalog, targeted fixes, diagnostics, and setup documentation. This fork is based on upstream v0.12.0 and is maintained separately from upstream `master`.
 
-### Planned / Unreleased
+## Fork Enhancements
 
-The following settings are part of the current unreleased development work and are not included in a numbered release:
+| Area | What this fork adds |
+|---|---|
+| Russian localization | 252 translated KI18n messages for the UI, settings, context menus, tooltips, accessibility text, and notifications. |
+| Launch feedback | Launch-icon bounce stops after at most five complete cycles and finishes after the current cycle when a new window appears. This is separate from configurable attention animations. |
+| Plasma task-manager drag and drop | Reads the launch URL from `text/x-orgkdeplasmataskmanager_taskurl`; existing URL and desktop-file drops remain supported. |
+| TaskManager diagnostics | Debug logs describe task insertion, removal, and role changes without logging window titles. They aid diagnosis and do not change TaskManager filtering. |
+| PipeWire preview diagnostics | Logs stream state and retries once with CPU-readable buffers if streaming produces no first frame. This fallback is experimental and is not a confirmed general DMA-BUF fix. |
+| NVIDIA PRIME guidance | Documents the observed hybrid-GPU behavior and a per-user service setup for one TUXEDO OS / Wayland configuration. |
+| TUXEDO OS guide | Documents dependencies, release build, `/usr/local` installation, translation catalogs, desktop identity, and user-service setup. |
 
-- **Reserve screen space** — The Behavior switch is enabled by default and applies to **Always visible** mode. When enabled, maximized windows avoid the dock; Auto hide and Dodge windows keep their existing platform behavior. The switch is saved for the next start and can be changed while the dock is running.
-- **Separate pinned and running apps** — The Behavior switch is disabled by default. When enabled, pinned apps, including pinned apps that are running, stay in the first section; unpinned running apps follow after the divider. Dragging across that boundary stays within the source section and does not pin or unpin an app. With the switch off, dock items keep the existing free-reorder behavior.
+See [FORK_CHANGES.md](FORK_CHANGES.md) for implementation details, verification status, limitations, and the corresponding commits.
 
-These entries describe unreleased behavior; they are not claims about the latest published release.
+Krema is an actively developed KDE Plasma 6 dock. Some upstream features are still in progress; see the [upstream roadmap](https://github.com/isac322/krema/blob/master/ROADMAP.md).
 
 A lightweight, high-performance dock for KDE Plasma 6 — spiritual successor to [Latte Dock](https://github.com/KDE/latte-dock).
 
@@ -129,132 +138,85 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-For source builds on TUXEDO OS, see the [TUXEDO OS build and installation
-guide](docs/building/tuxedo-os.md). For hybrid-GPU and Wayland troubleshooting,
-see [NVIDIA PRIME on Wayland](docs/troubleshooting/nvidia-prime-wayland.md).
+### Install this fork (recommended)
 
-[![AUR](https://img.shields.io/aur/version/krema?logo=archlinux&label=AUR)](https://aur.archlinux.org/packages/krema)
-[![COPR](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3Disac322%26projectname%3Dkrema%26packagename%3Dkrema%26with_latest_succeeded_build%3Dtrue&query=%24.packages%5B0%5D.builds.latest_succeeded.source_package.version&logo=fedora&label=COPR&color=51A2DA)](https://copr.fedorainfracloud.org/coprs/isac322/krema/)
-[![OBS](https://build.opensuse.org/projects/home:isac322/packages/krema/badge.svg?type=default)](https://build.opensuse.org/package/show/home:isac322/krema)
-[![PPA](https://img.shields.io/badge/PPA-ppa%3Aisac322%2Fkrema-E95420?logo=ubuntu)](https://launchpad.net/~isac322/+archive/ubuntu/krema)
-
-| Distribution | Versions | Architectures |
-|---|---|---|
-| Arch Linux / Manjaro | Rolling | x86_64, aarch64 |
-| Fedora | 42, 43, 44, Rawhide | x86_64, aarch64 |
-| openSUSE Tumbleweed | Rolling | x86_64, aarch64 |
-| openSUSE Slowroll | Rolling | x86_64 |
-| openSUSE Leap | 16.0 | x86_64, aarch64 |
-| Ubuntu | 25.04, 25.10, 26.04 | x86_64, aarch64 |
-| Debian | 13 (Trixie) | x86_64, aarch64 |
-
-<details>
-<summary><strong>Arch Linux / Manjaro (AUR)</strong></summary>
+This fork currently has no GitHub Releases or advertised fork-specific binary
+packages. Build its `main` branch to get the changes documented above:
 
 ```bash
-yay -S krema
-# or
-paru -S krema
+git clone --branch main --single-branch https://github.com/thicking/krema.git
+cd krema
+cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset release -j 4
+sudo cmake --install build/release
 ```
-</details>
 
-<details>
-<summary><strong>Fedora (COPR)</strong></summary>
+See the [TUXEDO OS build guide](docs/building/tuxedo-os.md) for the package
+list, translation installation, desktop-file/KWin integration, and optional
+systemd user service. The source build requires CMake 3.22+, Qt 6.8+, KDE
+Frameworks 6, KDE Plasma 6, Wayland 1.22+, and GCC 13+ or Clang 17+.
+
+To update an existing source checkout of this fork:
 
 ```bash
-sudo dnf copr enable isac322/krema
-sudo dnf install krema
+git pull --ff-only origin main
+cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build --preset release -j 4
+sudo cmake --install build/release
 ```
-</details>
 
-<details>
-<summary><strong>openSUSE (OBS)</strong></summary>
+The configured CMake build provides an `uninstall` target:
 
 ```bash
-# Tumbleweed
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Tumbleweed/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
-
-# Slowroll
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Slowroll/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
-
-# Leap 16.0
-sudo zypper addrepo https://download.opensuse.org/repositories/home:isac322/openSUSE_Leap_16.0/home:isac322.repo
-sudo zypper refresh
-sudo zypper install krema
-```
-</details>
-
-<details>
-<summary><strong>Ubuntu (PPA)</strong></summary>
-
-```bash
-sudo add-apt-repository ppa:isac322/krema
-sudo apt update
-sudo apt install krema
+sudo cmake --build build/release --target uninstall
 ```
 
-Alternatively, use the [OBS repository](https://download.opensuse.org/repositories/home:/isac322/) for Ubuntu 25.04/26.04.
-</details>
+If a different build does not provide that target, remove only the paths listed
+in that build's `install_manifest.txt`; do not delete `/usr/local` broadly.
 
-<details>
-<summary><strong>Debian 13 (OBS)</strong></summary>
+> **Ubuntu 24.04 Noble:** the original Krema PPA currently has no Noble
+> `Release`/`InRelease` file (HTTP 404, checked 2026-11-01), and its OBS Ubuntu
+> 24.04 repository URL also returns 404. Noble's stock Qt/KDE packages do not
+> meet this source tree's Qt 6.8+/KDE Frameworks 6 requirements. TUXEDO OS 24.04
+> provides a newer Qt/KDE stack and is documented as a source-build target in
+> the guide above.
 
-```bash
-echo 'deb http://download.opensuse.org/repositories/home:/isac322/Debian_13/ /' | sudo tee /etc/apt/sources.list.d/krema.list
-curl -fsSL https://download.opensuse.org/repositories/home:isac322/Debian_13/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_isac322.gpg > /dev/null
-sudo apt update
-sudo apt install krema
-```
-</details>
+### Packages for the original upstream project
 
-<details>
-<summary><strong>Building from Source</strong></summary>
+The package repositories below are maintained by [isac322/krema](https://github.com/isac322/krema).
+They install upstream Krema, **not this fork's commits**. Use them only if you
+want the upstream package build. The listed versions reflect the upstream
+README at the time this fork was audited; consult the live upstream README for
+changes.
 
-### Dependencies (Arch Linux / Manjaro)
+| Distribution | Upstream channel | Versions listed upstream | Package page |
+|---|---|---|---|
+| Arch Linux / Manjaro | AUR | Rolling | [AUR](https://aur.archlinux.org/packages/krema) |
+| Fedora | COPR | 42, 43, 44, Rawhide | [COPR](https://copr.fedorainfracloud.org/coprs/isac322/krema/) |
+| openSUSE | OBS | Tumbleweed, Slowroll, Leap 16.0 | [OBS](https://build.opensuse.org/package/show/home:isac322/krema) |
+| Ubuntu | Launchpad PPA / OBS | 25.04, 25.10, 26.04, 26.10 (OBS) | [PPA](https://launchpad.net/~isac322/+archive/ubuntu/krema) · [OBS](https://download.opensuse.org/repositories/home:/isac322/) |
+| Debian | OBS | 13 (Trixie) | [OBS repository](https://download.opensuse.org/repositories/home:/isac322/Debian_13/) |
 
-```bash
-sudo pacman -S --needed \
-    cmake extra-cmake-modules ninja ccache just gcc \
-    qt6-base qt6-declarative qt6-wayland qt6-shadertools \
-    kwindowsystem kconfig kcoreaddons ki18n \
-    kglobalaccel kcolorscheme kiconthemes kcrash kxmlgui kservice kio kjobwidgets \
-    kirigami layer-shell-qt wayland kpipewire plasma-workspace \
-    catch2
-```
+See the [upstream installation instructions](https://github.com/isac322/krema#installation)
+for the current package commands and availability. No upstream package is a
+substitute for building this fork.
 
-The build also uses Qt GUI private headers (`Qt6::GuiPrivate`). Arch's
-`qt6-base` includes them. On distributions that package them separately,
-install `qt6-base-private-dev` (Debian/Ubuntu), `qt6-qtbase-private-devel`
-(Fedora), or `qt6-gui-private-devel` (openSUSE).
+## Known Limitations
 
-### Minimum Versions
-
-| Dependency | Minimum Version |
-|---|---|
-| KDE Plasma | 6.0.0 |
-| Qt 6 | 6.8.0 |
-| KDE Frameworks 6 | 6.0.0 |
-| CMake | 3.22 |
-| C++ Compiler | GCC 13+ / Clang 17+ |
-
-### Build & Run
-
-```bash
-just configure    # cmake --preset dev
-just build        # cmake --build --preset dev
-just test         # ctest --preset dev
-just run          # run krema
-just dev-desktop  # add a launcher and app icon for build/dev/bin/krema to ~/.local/share
-just package      # Arch: build and install a package from this checkout
-```
-
-`just test` also runs the GUI integration tests on a private, headless `kwin_wayland --virtual` compositor when `kwin_wayland` and `dbus-run-session` are installed; your session and settings are not touched.
-
-</details>
+- The Russian catalog compiles and contains 252 translated messages. Automatic
+  language selection was not revalidated in a live Plasma session during this
+  documentation audit.
+- The no-first-frame CPU-buffer retry is experimental. It is covered by a QML
+  test for the retry path, but it has not been established as a general fix for
+  black previews or cross-GPU DMA-BUF import.
+- The Plasma task URL MIME parser and launch-bounce lifecycle have QML coverage;
+  a real external Plasma-to-Krema drag and live dock behavior still depend on
+  the target Wayland session and were not part of the documentation audit.
+- TaskManager logging adds evidence about model rows and roles; it does not
+  change KDE's task filtering or guarantee that every desktop launcher exposes
+  the KWin interfaces Krema needs.
+- This fork is based on upstream v0.12.0. Upstream `master` has since advanced;
+  the fork is not automatically synchronized with those later changes.
 
 ## Roadmap
 

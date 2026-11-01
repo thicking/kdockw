@@ -14,10 +14,21 @@ systems.
 The observed symptoms were black live window thumbnails in Krema, missing
 unpinned running applications when Krema was started through a nonstandard
 desktop launcher, and launch feedback that continued while KWin startup or
-window information was unavailable. The desktop-launcher symptom was avoided
-by keeping Krema's normal desktop ID and KWin interface declaration when
-starting its user service. That is a configuration-specific observation, not a
-claim that PRIME variables always cause TaskManager omissions.
+window information was unavailable. During the black-preview reproduction,
+the logs included `GL_INVALID_OPERATION (0x502): <image> and
+<target> are incompatible`. On this machine, starting Krema after clearing
+`DRI_PRIME`, `__GLX_VENDOR_LIBRARY_NAME`, `__NV_PRIME_RENDER_OFFLOAD`,
+`__VK_LAYER_NV_optimus`, and `QSG_RHI_BACKEND` restored the preview. Because
+the variables were cleared together, this did not isolate which one caused the
+observed rendering error.
+
+An experiment that changed the original Krema desktop entry to launch through
+a `krema-wrapper` coincided with missing unpinned tasks, launch animation, and
+window previews. The working arrangement keeps the original desktop ID and
+KWin interface declaration, runs the binary directly from a user service, and
+uses a separate `krema-service.desktop` shortcut that starts that service.
+These are observations from the stated configuration, not evidence that PRIME
+variables or desktop wrappers cause the same symptoms on every system.
 
 KPipeWire reported stream state and readiness separately. On this machine the
 preview could enter streaming without receiving a usable first frame. Krema's
@@ -50,10 +61,11 @@ On the reproduced setup, the working user service removed inherited PRIME and
 Qt backend overrides for Krema. The normal installed desktop entry remained
 `com.bhyoo.krema.desktop`, including its project-provided
 `X-KDE-Wayland-Interfaces` declaration for the KWin interfaces Krema uses.
-The service is a separate way to start the same application; do not rename or
-replace the normal desktop ID.
+The service runs the Krema binary directly; a separate menu shortcut starts
+the service. Do not rename or replace the normal desktop ID.
 
-Example `~/.config/systemd/user/krema.service`:
+Create `~/.config/systemd/user/krema.service` (back up an existing file
+first):
 
 ```ini
 [Unit]
@@ -63,7 +75,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/krema --desktopfile com.bhyoo.krema
+ExecStart=/usr/local/bin/krema
 Restart=on-failure
 RestartSec=3
 UnsetEnvironment=DRI_PRIME __GLX_VENDOR_LIBRARY_NAME __NV_PRIME_RENDER_OFFLOAD __VK_LAYER_NV_optimus QSG_RHI_BACKEND
@@ -72,15 +84,43 @@ UnsetEnvironment=DRI_PRIME __GLX_VENDOR_LIBRARY_NAME __NV_PRIME_RENDER_OFFLOAD _
 WantedBy=graphical-session.target
 ```
 
-The `--desktopfile` argument keeps Krema's application identity aligned with
-the installed desktop entry. Keep the project's normal desktop file and its
-`X-KDE-Wayland-Interfaces` value intact. If a separate menu launcher is
-desired, give that launcher its own filename (for example,
-`krema-service.desktop`) and have it run `systemctl --user start krema.service`;
-keep `Icon=com.bhyoo.krema` so it uses the existing icon. Avoid enabling both
-this service and the XDG autostart entry as independent starters. When using
-the service, disable the duplicate user-level autostart entry; do not remove
-the installed application desktop file.
+`Application::makeAboutData()` sets the desktop ID to `com.bhyoo.krema` by
+default. The `--desktopfile` option is supported by KDE's `KAboutData` command
+line setup, but is not needed for this service. Keep the project's normal
+desktop file and its `X-KDE-Wayland-Interfaces` value intact.
+
+Before changing any original desktop entry's `Exec`, restore it to the direct
+Krema binary (`/usr/local/bin/krema` for this installation). Do not put a
+wrapper in that desktop file. Create the separate service launcher as
+`~/.local/share/applications/krema-service.desktop`:
+
+```sh
+mkdir -p ~/.local/share/applications
+```
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Krema (service)
+Comment=Start Krema through the user service
+Exec=systemctl --user start krema.service
+Icon=com.bhyoo.krema
+Terminal=false
+Categories=Utility;
+StartupNotify=false
+```
+
+Use only one login starter. The Krema autostart entry installed by this CMake
+project is named `com.bhyoo.krema.autostart.desktop`; to use the service,
+override that entry for this user with
+`~/.config/autostart/com.bhyoo.krema.autostart.desktop`:
+
+```ini
+[Desktop Entry]
+Hidden=true
+```
+
+Save any existing user override before replacing it.
 
 Before adapting an existing unit, save it. For example:
 
@@ -97,13 +137,16 @@ systemctl --user daemon-reload
 systemctl --user enable --now krema.service
 ```
 
-To restore the saved unit, copy it back, reload systemd, and restart Krema. If
-there was no unit before this change, disable the service and remove only the
-user-created unit and launcher:
+To restore the saved unit, copy it back, reload systemd, and restart Krema.
+Restore any previous user autostart override. If there was no unit or override
+before this change, disable the service and remove only the user-created unit,
+mask, and shortcut:
 
 ```sh
 systemctl --user disable --now krema.service
 rm ~/.config/systemd/user/krema.service
+rm ~/.config/autostart/com.bhyoo.krema.autostart.desktop
+rm ~/.local/share/applications/krema-service.desktop
 systemctl --user daemon-reload
 ```
 
