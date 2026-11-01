@@ -145,6 +145,18 @@ Item {
             compare(thumbs(popup)[3].title, "Konsole 4")
         }
 
+        function test_captureCanFallBackFromDmaBuf() {
+            let popup = makePopup()
+            show(0, "Kate")
+            let t = waitThumbs(popup, 1)[0]
+            verify(t.captureItem)
+            compare(t.captureItem.allowDmaBuf, true)
+
+            t.retryWithoutDmaBuf()
+            tryVerify(() => t.captureItem && !t.captureItem.allowDmaBuf)
+            compare(t.forceCpuCapture, true)
+        }
+
         function test_switchingAppRebuildsThumbnails() {
             let popup = makePopup()
             show(1, "Konsole")

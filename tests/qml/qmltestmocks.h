@@ -132,6 +132,8 @@ class MockPipeWireSourceItem : public QQuickItem
     Q_PROPERTY(bool allowDmaBuf MEMBER m_allowDmaBuf NOTIFY allowDmaBufChanged)
     Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
     Q_PROPERTY(int state READ state NOTIFY stateChanged)
+    Q_PROPERTY(QSize streamSize READ streamSize NOTIFY streamSizeChanged)
+    Q_PROPERTY(bool usingDmaBuf READ usingDmaBuf NOTIFY usingDmaBufChanged)
 public:
     using QQuickItem::QQuickItem;
     bool ready() const
@@ -142,11 +144,25 @@ public:
     {
         return 0;
     }
+    QSize streamSize() const
+    {
+        return {};
+    }
+    bool usingDmaBuf() const
+    {
+        return m_allowDmaBuf;
+    }
+    Q_INVOKABLE QString error() const
+    {
+        return {};
+    }
 Q_SIGNALS:
     void nodeIdChanged();
     void allowDmaBufChanged();
     void readyChanged();
     void stateChanged();
+    void streamSizeChanged();
+    void usingDmaBufChanged();
 
 private:
     quint32 m_nodeId = 0;

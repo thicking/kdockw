@@ -25,6 +25,8 @@ Item {
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
+    property bool forceCpuCapture: false
+    readonly property var captureItem: captureLoader.item
 
     Accessible.role: Accessible.Button
     Accessible.name: {
@@ -63,6 +65,31 @@ Item {
         }
     }
 
+    function retryWithoutDmaBuf() {
+        if (forceCpuCapture)
+            return
+
+        console.warn("[krema.preview] no frame received while streaming; retrying without DMA-BUF, nodeId:",
+            screencastRequest.nodeId)
+        forceCpuCapture = true
+        captureLoader.active = false
+        Qt.callLater(function() { captureLoader.active = true })
+    }
+
+    function logCaptureState(reason) {
+        const capture = captureLoader.item
+        if (!capture)
+            return
+        const error = capture.state === 0 ? capture.error() : ""
+        console.log("[krema.preview] capture", reason,
+            "nodeId:", capture.nodeId,
+            "state:", capture.state,
+            "ready:", capture.ready,
+            "streamSize:", capture.streamSize,
+            "dmaBuf:", capture.usingDmaBuf,
+            "error:", error)
+    }
+
     // Keyboard focus ring for preview thumbnail
     Rectangle {
         id: previewFocusRing
@@ -98,18 +125,42 @@ Item {
         border.width: root.isActive ? 2 : 0
 
         // GPU-accelerated PipeWire thumbnail
-        PipeWire.PipeWireSourceItem {
-            id: pipeWireItem
+        Loader {
+            id: captureLoader
             anchors.fill: parent
             anchors.margins: parent.border.width > 0 ? 2 : 0
-            nodeId: screencastRequest.nodeId
-            allowDmaBuf: true
-            visible: !root.isMinimized
-            Accessible.ignored: true
+            sourceComponent: captureComponent
 
-            onStateChanged: function() {
-                console.log("[krema.preview] PipeWire state:", pipeWireItem.state,
-                    "ready:", pipeWireItem.ready, "nodeId:", pipeWireItem.nodeId)
+            Component {
+                id: captureComponent
+                PipeWire.PipeWireSourceItem {
+                    nodeId: screencastRequest.nodeId
+                    allowDmaBuf: !root.forceCpuCapture
+                    visible: !root.isMinimized
+                    Accessible.ignored: true
+                }
+            }
+
+            Connections {
+                target: captureLoader.item
+                function onStateChanged() { root.logCaptureState("state-changed") }
+                function onReadyChanged() { root.logCaptureState("ready-changed") }
+                function onStreamSizeChanged() { root.logCaptureState("stream-size-changed") }
+                function onUsingDmaBufChanged() { root.logCaptureState("dma-buf-changed") }
+            }
+
+            // KWin can briefly publish DMA-BUF buffers before PipeWire has
+            // resolved their memory type. KPipeWire drops those frames; retry
+            // once with CPU-readable buffers if Streaming produces no frame.
+            Timer {
+                interval: 1500
+                repeat: false
+                running: !root.forceCpuCapture
+                    && captureLoader.item !== null
+                    && captureLoader.item.visible
+                    && captureLoader.item.state === 4 // PipeWireSourceItem::Streaming
+                    && !captureLoader.item.ready
+                onTriggered: root.retryWithoutDmaBuf()
             }
         }
 
@@ -125,7 +176,7 @@ Item {
                 return DockModel.iconName(root.parentIndex) || "application-x-executable"
             }
             readonly property bool isRawIcon: iconName.startsWith("raw:")
-            visible: !pipeWireItem.ready || root.isMinimized
+            visible: !captureLoader.item || !captureLoader.item.ready || root.isMinimized
 
             Kirigami.Icon {
                 anchors.fill: parent
