@@ -127,6 +127,10 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
+For source builds on TUXEDO OS, see the [TUXEDO OS build and installation
+guide](docs/building/tuxedo-os.md). For hybrid-GPU and Wayland troubleshooting,
+see [NVIDIA PRIME on Wayland](docs/troubleshooting/nvidia-prime-wayland.md).
+
 [![AUR](https://img.shields.io/aur/version/krema?logo=archlinux&label=AUR)](https://aur.archlinux.org/packages/krema)
 [![COPR](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcopr.fedorainfracloud.org%2Fapi_3%2Fpackage%3Fownername%3Disac322%26projectname%3Dkrema%26packagename%3Dkrema%26with_latest_succeeded_build%3Dtrue&query=%24.packages%5B0%5D.builds.latest_succeeded.source_package.version&logo=fedora&label=COPR&color=51A2DA)](https://copr.fedorainfracloud.org/coprs/isac322/krema/)
 [![OBS](https://build.opensuse.org/projects/home:isac322/packages/krema/badge.svg?type=default)](https://build.opensuse.org/package/show/home:isac322/krema)
