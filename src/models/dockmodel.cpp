@@ -179,12 +179,35 @@ DockModel::DockModel(QObject *parent)
     });
     scheduleTaskPartition();
 
-    // Debug logging for model row changes
+    // Debug logging for model membership and lifecycle changes. This keeps
+    // diagnostics available when a task is absent without logging window
+    // titles or other user content.
     connect(m_tasksModel.get(), &QAbstractItemModel::rowsInserted, this, [this]() {
-        qCDebug(lcModel) << "Model rows after insert:" << m_tasksModel->rowCount();
+        qCDebug(lcModel) << "Task rows after insert:" << m_tasksModel->rowCount();
+        for (int row = 0; row < m_tasksModel->rowCount(); ++row) {
+            const QModelIndex index = m_tasksModel->index(row, 0);
+            qCDebug(lcModel) << "Task row" << row
+                << "AppId" << index.data(TaskManager::AbstractTasksModel::AppId).toString()
+                << "window" << index.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
+                << "startup" << index.data(TaskManager::AbstractTasksModel::IsStartup).toBool()
+                << "launcher" << index.data(TaskManager::AbstractTasksModel::IsLauncher).toBool()
+                << "pinned" << isPinnedTask(*m_tasksModel, index);
+        }
     });
     connect(m_tasksModel.get(), &QAbstractItemModel::rowsRemoved, this, [this]() {
-        qCDebug(lcModel) << "Model rows after remove:" << m_tasksModel->rowCount();
+        qCDebug(lcModel) << "Task rows after remove:" << m_tasksModel->rowCount();
+    });
+    connect(m_tasksModel.get(), &QAbstractItemModel::dataChanged, this,
+        [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &) {
+            for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+                const QModelIndex index = m_tasksModel->index(row, 0);
+                qCDebug(lcModel) << "Task row changed" << row
+                    << "AppId" << index.data(TaskManager::AbstractTasksModel::AppId).toString()
+                    << "window" << index.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
+                    << "startup" << index.data(TaskManager::AbstractTasksModel::IsStartup).toBool()
+                    << "launcher" << index.data(TaskManager::AbstractTasksModel::IsLauncher).toBool()
+                    << "pinned" << isPinnedTask(*m_tasksModel, index);
+            }
     });
 }
 

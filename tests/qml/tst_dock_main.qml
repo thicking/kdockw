@@ -195,6 +195,23 @@ Item {
             compare(items(dock)[0].displayName, "Konsole")
         }
 
+        function test_unpinnedRunningWindowAddsAndRemovesDelegate() {
+            let dock = makeDock(0)
+            DockModel.tasksModel.addTask({
+                display: "Unpinned test app",
+                AppId: "org.example.unpinned",
+                IsWindow: true,
+                IsLauncher: false,
+                ChildCount: 1,
+            })
+            tryVerify(() => items(dock).length === 1)
+            compare(items(dock)[0].displayName, "Unpinned test app")
+            compare(DockModel.isPinned(0), false)
+
+            DockModel.tasksModel.removeTask(0)
+            tryVerify(() => items(dock).length === 0)
+        }
+
         function test_iconSizeAndSpacingDriveLayout_data() {
             return [
                 { tag: "defaults", size: 48, spacing: 4 },
