@@ -1358,12 +1358,74 @@ Item {
             verify(!its[0].launching)
             compare(its[1].accessibleDescription, "Starting")
             // No startup task arrives (TasksModel filters them for apps with a
-            // window): the feedback outlives the 500 ms handoff bridge...
-            wait(800)
+            // window): launch state outlives the 500 ms handoff bridge, while
+            // the animation stops after its five-cycle cap.
+            tryCompare(its[1], "_launchBounceCount", 5, 8000)
             verify(its[1].launching)
-            // ...and ends when the new window joins the group.
+            compare(its[1]._launchBounceSession, false)
+            wait(700)
+            compare(its[1]._launchBounceCount, 5)
+            // Launch state ends when the new window joins the group.
             DockModel.tasksModel.setTaskData(1, "ChildCount", 2)
             tryCompare(its[1], "launching", false)
+        }
+
+        function test_launchBounceFinishesCurrentCycleWhenWindowAppears() {
+            addTasks(["A"])
+            let dock = makeDock(1)
+            let item = items(dock)[0]
+            DockActions.taskLaunching(0)
+            tryCompare(item, "_launchBounceCount", 1, 3000)
+
+            DockModel.tasksModel.setTaskData(0, "ChildCount", 2)
+            tryCompare(item, "launching", false)
+            verify(item._isWindow, "the launched window must remain represented as a running task")
+            tryCompare(item, "_launchBounceCount", 2, 3000)
+            wait(700)
+            compare(item._launchBounceCount, 2)
+            compare(item._launchBounceSession, false)
+        }
+
+        function test_repeatedLaunchRestartsBoundedBounce() {
+            addTasks(["A"])
+            let item = items(makeDock(1))[0]
+            DockActions.taskLaunching(0)
+            tryCompare(item, "_launchBounceCount", 1, 3000)
+
+            DockActions.taskLaunching(0)
+            compare(item._launchBounceCount, 0)
+            tryCompare(item, "_launchBounceCount", 5, 8000)
+            compare(item._launchBounceSession, false)
+            verify(item.launching)
+        }
+
+        function test_simultaneousLaunchesHaveIndependentBounceLimits() {
+            addTasks(["A", "B"])
+            let its = items(makeDock(2))
+            DockActions.taskLaunching(0)
+            DockActions.taskLaunching(1)
+
+            tryCompare(its[0], "_launchBounceCount", 5, 8000)
+            tryCompare(its[1], "_launchBounceCount", 5, 8000)
+            compare(its[0]._launchBounceSession, false)
+            compare(its[1]._launchBounceSession, false)
+            verify(its[0].launching)
+            verify(its[1].launching)
+        }
+
+        function test_startupNotificationDoesNotRestartCappedBounce() {
+            addTasks(["A"])
+            let item = items(makeDock(1))[0]
+            DockModel.tasksModel.setTaskData(0, "IsStartup", true)
+            tryCompare(item, "_launchBounceCount", 5, 8000)
+            verify(item.launching)
+            compare(item._launchBounceSession, false)
+
+            // A late startup-state transition must not start another set of
+            // bounces after the visual limit has already been reached.
+            wait(700)
+            compare(item._launchBounceCount, 5)
+            verify(item.launching)
         }
 
         function test_launchSignalOnActiveAppEndsWithoutNewWindow() {

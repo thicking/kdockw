@@ -210,20 +210,10 @@ Item {
 
     // --- KDE state-driven launch tracking ---
     //
-    // Launch animation lifecycle:
-    //   1. manualLaunching: click → IsStartup handoff bridge (500ms)
-    //   2. _isStartup: KDE startup notification drives bounce (until window or timeout)
-    //   3. _waitingForWindow: keeps bounce alive until the new window maps, after
-    //      KDE's 5s startup timeout for slow apps, or when no startup task ever
-    //      arrives. The latter is the norm for a new instance of a running app:
-    //      TasksModel filters out startup tasks of apps that already have a
-    //      window, and KWin creates no activation feedback for the active app.
-    //
-    // Bounce stops when any of:
-    //   - ChildCount increases (new window created)
-    //   - IsActive changes (single-instance app raised its existing window)
-    //   - noOpDetectionTimer fires (already-active app, no new window in 5s → no-op)
-    //   - maxLaunchTimer fires (30s absolute safety net)
+    // Launch state tracks KDE's startup notification and waits for a new
+    // window when TasksModel doesn't expose a startup task. The visual bounce
+    // has its own bounded lifecycle below, so delayed KDE completion cannot
+    // keep replaying it.
 
     readonly property bool _isWindow: model.IsWindow ?? false
     readonly property bool _canPublishDelegateGeometry: model.IsWindow || model.IsGroupParent || false
@@ -286,6 +276,36 @@ Item {
     property bool _waitingForWindow: false
     property int _childCountAtLaunch: 0
 
+    // Launch state can outlive the visual feedback (KWin may keep IsStartup
+    // set while waiting for startup notification / activation completion).
+    // Keep the bounce bounded independently from that state.
+    readonly property int _maxLaunchBounces: 5
+    property int _launchBounceCount: 0
+    property bool _launchBounceSession: false
+    property bool _launchFeedbackHandled: false
+
+    function startLaunchBounce() {
+        _launchFeedbackHandled = true
+        _launchBounceCount = 0
+        _launchBounceSession = true
+        _finishingBounce = false
+        bounceAnim.stop()
+        bounceTranslate.x = 0
+        bounceTranslate.y = 0
+        bounceAnim.start()
+    }
+
+    function finishLaunchBounce() {
+        _launchFeedbackHandled = true
+        _launchBounceSession = false
+        if (bounceAnim.running) {
+            _finishingBounce = true
+        } else {
+            bounceTranslate.x = 0
+            bounceTranslate.y = 0
+        }
+    }
+
     // --- State change handlers ---
 
     on_IsWindowChanged: scheduleDelegateGeometryPublication()
@@ -294,6 +314,7 @@ Item {
         if (_isStartup) {
             // KDE acknowledged the launch → release manualLaunching bridge
             if (manualLaunching) manualLaunching = false
+            if (!_launchFeedbackHandled) startLaunchBounce()
         } else {
             // IsStartup went false (window matched, cancelled, or KDE timeout).
             // If no new window appeared and not already active → slow app,
@@ -308,6 +329,7 @@ Item {
     }
 
     on_IsActiveChanged: {
+        if (_isActive && _launchBounceSession) finishLaunchBounce()
         if (_isActive && manualLaunching) manualLaunching = false
         if (_isActive && _waitingForWindow) {
             _waitingForWindow = false
@@ -322,6 +344,7 @@ Item {
 
     on_ChildCountChanged: {
         if (_childCount > _prevChildCount) {
+            if (_launchBounceSession) finishLaunchBounce()
             if (manualLaunching) manualLaunching = false
             _noOpOverride = false
             _waitingForWindow = false
@@ -334,7 +357,7 @@ Item {
 
     // --- Timers ---
 
-    // 500ms: no startup task took over the launch. Keep the feedback until the
+    // 500ms: no startup task took over the launch. Keep the launch state until
     // new window maps (_waitingForWindow, bounded by maxLaunchTimer). This is
     // the regular path for a new instance of a running app, which never gets
     // a startup task (see the lifecycle notes above). _waitingForWindow is set
@@ -352,12 +375,13 @@ Item {
         }
     }
 
-    // 5s: detects no-op for already-active apps (e.g. a single-instance app
+    // 5s: ends launch tracking for already-active apps (e.g. a single-instance app
     // that ignores the new-instance request). Neither a startup task nor an
-    // activation change can signal the outcome, so stop the feedback if no new
+    // activation change can signal the outcome, so stop waiting if no new
     // window appeared within KDE's default launch feedback timeout
     // (klaunchrc [TaskbarButtonSettings] Timeout=5). Shorter would cut the
-    // feedback of a slow app that does open a new window.
+    // state of a slow app that does open a new window. The visual bounce ends
+    // independently after at most five cycles.
     Timer {
         id: noOpDetectionTimer
         interval: 5000
@@ -756,11 +780,17 @@ Item {
         onFinished: {
             if (dockItem._finishingBounce) {
                 dockItem._finishingBounce = false
+                dockItem._launchBounceCount += 1
+                dockItem._launchBounceSession = false
                 bounceTranslate.x = 0
                 bounceTranslate.y = 0
-            } else if (dockItem.launching) {
+            } else if (dockItem._launchBounceSession
+                       && dockItem._launchBounceCount + 1 < dockItem._maxLaunchBounces) {
+                dockItem._launchBounceCount += 1
                 bounceAnim.start()
             } else {
+                dockItem._launchBounceCount = dockItem._maxLaunchBounces
+                dockItem._launchBounceSession = false
                 bounceTranslate.x = 0
                 bounceTranslate.y = 0
             }
@@ -769,11 +799,10 @@ Item {
 
     onLaunchingChanged: {
         if (launching) {
-            _finishingBounce = false
-            bounceAnim.start()
-        } else if (bounceAnim.running) {
-            // Let the current cycle finish at faster speed
-            _finishingBounce = true
+            if (!_launchFeedbackHandled) startLaunchBounce()
+        } else {
+            finishLaunchBounce()
+            _launchFeedbackHandled = false
         }
     }
 
