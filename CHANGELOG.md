@@ -12,9 +12,9 @@ carried forward from the Krema-based development period.
 ### Fixed
 
 - Fixed the language selector popup so all three options are visible, and
-  saved the selected language only after a user selection. Language choices now
-  persist across page navigation and launches, and changes are applied across
-  the open settings sidebar and page.
+  restored the General page's access to the shared settings singleton. Language
+  choices now save after user selection, persist across page navigation and
+  launches, and apply across the open settings sidebar and page.
 
 ### Changed
 

@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
+find_package(Qt6 REQUIRED COMPONENTS Test)
+
 add_executable(kdockw_unit_tests
     main.cpp
     smoke_test.cpp
@@ -23,6 +25,7 @@ target_compile_definitions(kdockw_unit_tests PRIVATE
 
 target_link_libraries(kdockw_unit_tests PRIVATE
     Catch2::Catch2
+    Qt6::Test
     Qt6::Widgets
     kdockw_lib
 )

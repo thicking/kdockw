@@ -160,10 +160,8 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::ReserveScreenSpaceChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SeparateLaunchersChanged, context, saveSettings);
     connect(settings, &KDockWSettings::LanguageChanged, context, [settings, saveSettings]() {
-        qCInfo(lcApp) << "LanguageChanged received; saving language preference" << settings->language();
         Application::applyLanguagePreference(settings->language());
         saveSettings();
-        qCInfo(lcApp) << "Language preference saved through KConfigXT";
     });
 }
 

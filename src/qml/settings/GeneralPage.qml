@@ -4,6 +4,7 @@
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.delegates as Delegates
 import org.kde.kirigamiaddons.formcard as FormCard
+import com.thicking.kdockw 1.0
 
 SettingsPage {
     id: rootPage
@@ -55,7 +56,6 @@ SettingsPage {
                     return
                 }
                 const language = rootPage.languageIds[index]
-                console.info("kdockw.settings.languageSelector: user activated", language)
                 DockSettings.language = language
             }
         }

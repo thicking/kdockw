@@ -446,3 +446,26 @@ stored in long-lived objects are refreshed explicitly.
 **Key lesson:** A working selected-value label does not prove that popup rows
 exist. Exercise FormCard delegates inside their real SettingsDialog and
 preserve KI18n's queued retranslation path.
+
+## 23. Import QML singleton modules in every loaded page (2026-11, language setting)
+
+**Symptom:** Selecting a language changed the ComboBox display, but no
+`LanguageChanged` signal reached C++ and `kdockwrc` retained its old value. The
+Wayland journal reported `ReferenceError: DockSettings is not defined` from
+`GeneralPage.qml`.
+
+**Cause:** `Application::run()` registers `DockSettings` as a singleton in the
+`com.thicking.kdockw` QML module. Each settings page is loaded as its own QML
+component by `SettingsDialog`; imports in the dialog or neighboring pages are
+not inherited. `GeneralPage.qml` used the singleton without importing its
+module. The previous test installed `DockSettings` as a root context property,
+which masked the missing module import.
+
+**Fix:** Import `com.thicking.kdockw 1.0` in `GeneralPage.qml`. Test pages
+through `SettingsDialog` with the same `qmlRegisterSingletonType` mechanism as
+the application, and use pointer input on the opened ComboBox popup. Check QML
+warnings, `LanguageChanged`, and the temporary KConfig file.
+
+**Key lesson:** Module imports belong to the QML component that uses a module
+singleton. A root context property in a test can hide a missing import and
+produce a false pass.

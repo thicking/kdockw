@@ -13,12 +13,15 @@
 #include <QFile>
 #include <QQmlComponent>
 #include <QQmlContext>
+#include <QQmlError>
 #include <QQmlEngine>
 #include <QLocale>
 #include <QProcess>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTemporaryDir>
+#include <QtTest/QTest>
+#include <QtQml>
 
 #include <algorithm>
 #include <memory>
@@ -26,6 +29,43 @@
 
 namespace
 {
+
+KDockWSettings *registeredSettings = nullptr;
+
+void registerDockSettingsSingleton(KDockWSettings *settings)
+{
+    registeredSettings = settings;
+    static const int registration = qmlRegisterSingletonType<KDockWSettings>(
+        "com.thicking.kdockw",
+        1,
+        0,
+        "DockSettings",
+        [](QQmlEngine *, QJSEngine *) -> QObject * {
+            if (!registeredSettings) {
+                return nullptr;
+            }
+            QQmlEngine::setObjectOwnership(registeredSettings, QQmlEngine::CppOwnership);
+            return registeredSettings;
+        });
+    Q_UNUSED(registration);
+}
+
+class ScopedDockSettingsRegistration
+{
+public:
+    explicit ScopedDockSettingsRegistration(KDockWSettings *settings)
+    {
+        registerDockSettingsSingleton(settings);
+    }
+
+    ~ScopedDockSettingsRegistration()
+    {
+        registeredSettings = nullptr;
+    }
+
+    ScopedDockSettingsRegistration(const ScopedDockSettingsRegistration &) = delete;
+    ScopedDockSettingsRegistration &operator=(const ScopedDockSettingsRegistration &) = delete;
+};
 
 class ScopedConfigHome
 {
@@ -142,17 +182,26 @@ TEST_CASE("The General page saves the selected language on user activation", "[s
     settings.load();
     QObject saveContext;
     kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
+    const ScopedDockSettingsRegistration settingsRegistration(&settings);
 
     // Load the actual General page, including its FormCard combo delegate,
     // rather than simulating a settings setter or using a mock ComboBox.
     Q_INIT_RESOURCE(qml);
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
-    engine.rootContext()->setContextProperty(QStringLiteral("DockSettings"), &settings);
+    QStringList qmlWarnings;
+    QObject::connect(&engine, &QQmlEngine::warnings, &saveContext, [&qmlWarnings](const QList<QQmlError> &warnings) {
+        for (const QQmlError &warning : warnings) {
+            qmlWarnings.append(warning.toString());
+        }
+    });
     QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/settings/GeneralPage.qml")));
     REQUIRE(component.isReady());
     std::unique_ptr<QObject> page(component.create());
     REQUIRE(page);
+    CHECK(std::none_of(qmlWarnings.cbegin(), qmlWarnings.cend(), [](const QString &warning) {
+        return warning.contains(QStringLiteral("DockSettings is not defined"));
+    }));
 
     QQmlComponent labelsComponent(&engine);
     labelsComponent.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\") }"), QUrl());
@@ -248,6 +297,11 @@ TEST_CASE("The settings window language selector shows real options and retransl
     settings.load();
     QObject saveContext;
     kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
+    const ScopedDockSettingsRegistration settingsRegistration(&settings);
+    int languageChangedCount = 0;
+    QObject::connect(&settings, &KDockWSettings::LanguageChanged, &saveContext, [&languageChangedCount]() {
+        ++languageChangedCount;
+    });
     settings.setIconSize(64);
 
     const QLocale systemLocale = QLocale::system();
@@ -260,11 +314,19 @@ TEST_CASE("The settings window language selector shows real options and retransl
     Q_INIT_RESOURCE(qml);
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
-    engine.rootContext()->setContextProperty(QStringLiteral("DockSettings"), &settings);
+    QStringList qmlWarnings;
+    QObject::connect(&engine, &QQmlEngine::warnings, &saveContext, [&qmlWarnings](const QList<QQmlError> &warnings) {
+        for (const QQmlError &warning : warnings) {
+            qmlWarnings.append(warning.toString());
+        }
+    });
     QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/SettingsDialog.qml")));
     REQUIRE(component.isReady());
     QObject *dialogObject = component.createWithInitialProperties({{QStringLiteral("defaultModule"), QStringLiteral("general")}});
     REQUIRE(dialogObject);
+    CHECK(std::none_of(qmlWarnings.cbegin(), qmlWarnings.cend(), [](const QString &warning) {
+        return warning.contains(QStringLiteral("DockSettings is not defined"));
+    }));
     auto *window = qobject_cast<QQuickWindow *>(dialogObject);
     REQUIRE(window);
     window->show();
@@ -305,9 +367,16 @@ TEST_CASE("The settings window language selector shows real options and retransl
         }
     }
     REQUIRE(comboBox);
+    auto *comboBoxItem = qobject_cast<QQuickItem *>(comboBox);
+    REQUIRE(comboBoxItem);
     QObject *popup = comboBox->property("popup").value<QObject *>();
     REQUIRE(popup);
-    REQUIRE(QMetaObject::invokeMethod(selector, "clicked"));
+    const auto clickItem = [window](QQuickItem *item) {
+        const QPoint position = item->mapToScene(item->boundingRect().center()).toPoint();
+        QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, position);
+        QCoreApplication::processEvents();
+    };
+    clickItem(comboBoxItem);
     QCoreApplication::processEvents();
     CHECK(popup->property("visible").toBool());
     QObject *popupList = nullptr;
@@ -333,8 +402,8 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(optionLabels.contains(QStringLiteral("Русский")));
     CHECK(optionLabels.contains(QStringLiteral("English")));
 
-    // Invoke the actual rendered option delegate's clicked signal.
-    QObject *englishOption = nullptr;
+    // Click the actual rendered option in the open ComboBox popup.
+    QQuickItem *englishOption = nullptr;
     for (QQuickItem *item : std::as_const(optionItems)) {
         if (item->property("text").toString() == QLatin1String("English") && item->isVisible()) {
             englishOption = item;
@@ -342,10 +411,10 @@ TEST_CASE("The settings window language selector shows real options and retransl
         }
     }
     REQUIRE(englishOption);
-    REQUIRE(QMetaObject::invokeMethod(englishOption, "clicked"));
-    QCoreApplication::processEvents();
+    clickItem(englishOption);
 
     CHECK(settings.language() == QLatin1String("en"));
+    CHECK(languageChangedCount == 1);
     CHECK(readConfigFile(home.configFilePath()).contains("[General]"));
     CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
     CHECK(readConfigFile(home.configFilePath()).contains("IconSize=64"));
@@ -373,8 +442,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(restartedProcess.exitCode() == 0);
 
     auto activateOption = [&](int index) {
-        REQUIRE(QMetaObject::invokeMethod(selector, "clicked"));
-        QCoreApplication::processEvents();
+        clickItem(comboBoxItem);
         QObject *openPopup = comboBox->property("popup").value<QObject *>();
         REQUIRE(openPopup);
         REQUIRE(openPopup->property("visible").toBool());
@@ -389,12 +457,12 @@ TEST_CASE("The settings window language selector shows real options and retransl
         QQuickItem *item = nullptr;
         REQUIRE(QMetaObject::invokeMethod(openList, "itemAtIndex", Q_RETURN_ARG(QQuickItem *, item), Q_ARG(int, index)));
         REQUIRE(item);
-        REQUIRE(QMetaObject::invokeMethod(item, "clicked"));
-        QCoreApplication::processEvents();
+        clickItem(item);
     };
 
     activateOption(1);
     CHECK(settings.language() == QLatin1String("ru"));
+    CHECK(languageChangedCount == 2);
     CHECK(readConfigFile(home.configFilePath()).contains("Language=ru"));
     CHECK(selector->property("displayText").toString() == QStringLiteral("Русский"));
     CHECK(page->property("title").toString() == QStringLiteral("Общие"));
@@ -410,9 +478,16 @@ TEST_CASE("The settings window language selector shows real options and retransl
     REQUIRE(generalModule != modules.cend());
     CHECK(generalModule->toMap().value(QStringLiteral("text")).toString() == QStringLiteral("Общие"));
     CHECK(i18nc("@action global shortcut", "Toggle Dock") == QStringLiteral("Показать или скрыть док"));
+    QProcess russianRestartedProcess;
+    russianRestartedProcess.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("ru")});
+    REQUIRE(russianRestartedProcess.waitForStarted());
+    REQUIRE(russianRestartedProcess.waitForFinished());
+    CHECK(russianRestartedProcess.exitStatus() == QProcess::NormalExit);
+    CHECK(russianRestartedProcess.exitCode() == 0);
 
     activateOption(0);
     CHECK(settings.language() == QLatin1String("system"));
+    CHECK(languageChangedCount == 3);
     const QByteArray systemConfig = readConfigFile(home.configFilePath());
     CHECK((systemConfig.contains("Language=system") || !systemConfig.contains("Language=")));
     KDockWSettings systemReloaded;
@@ -422,6 +497,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(page->property("title").toString() == QLatin1String("General"));
     activateOption(2);
     CHECK(settings.language() == QLatin1String("en"));
+    CHECK(languageChangedCount == 4);
     CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
 
