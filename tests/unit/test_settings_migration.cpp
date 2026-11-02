@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
-// Krema 0.10 stored a single ZoomAnimationDuration (applied with OutCubic in
+// KDockW 0.10 stored a single ZoomAnimationDuration (applied with OutCubic in
 // both directions). Application::migrateLegacySettings() must carry a
 // customised value over to the Custom zoom animation preset with the same
 // feel, and leave untouched configurations on the Natural default.
 
 #include "app/application.h"
-#include "krema.h"
+#include "kdockw.h"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
@@ -52,9 +52,9 @@ public:
     ScopedConfigHome(const ScopedConfigHome &) = delete;
     ScopedConfigHome &operator=(const ScopedConfigHome &) = delete;
 
-    QString kremarcPath() const
+    QString kdockwrcPath() const
     {
-        return QDir(m_dir.path()).filePath(QStringLiteral("kremarc"));
+        return QDir(m_dir.path()).filePath(QStringLiteral("kdockwrc"));
     }
 
 private:
@@ -63,17 +63,17 @@ private:
     bool m_hadPrevious;
 };
 
-// Writes kremarc as an older Krema release would have left it.
-void writeKremarc(const ScopedConfigHome &home, const QByteArray &generalEntries)
+// Writes kdockwrc as an older KDockW release would have left it.
+void writeKDockWrc(const ScopedConfigHome &home, const QByteArray &generalEntries)
 {
-    QFile file(home.kremarcPath());
+    QFile file(home.kdockwrcPath());
     REQUIRE(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
     file.write("[General]\n");
     file.write(generalEntries);
     file.close();
 }
 
-// The [General] group as stored on disk, independent of KremaSettings.
+// The [General] group as stored on disk, independent of KDockWSettings.
 KConfigGroup storedGroup(KConfig &config)
 {
     return config.group(kGroup);
@@ -92,12 +92,12 @@ TEST_CASE("Legacy zoom animation duration migrates to the Custom preset", "[sett
     INFO("legacy ZoomAnimationDuration=" << legacy);
 
     const ScopedConfigHome home;
-    writeKremarc(home, "ZoomAnimationDuration=" + QByteArray::number(legacy) + "\nIconSize=56\n");
+    writeKDockWrc(home, "ZoomAnimationDuration=" + QByteArray::number(legacy) + "\nIconSize=56\n");
 
     {
-        KremaSettings settings;
+        KDockWSettings settings;
         settings.load();
-        krema::Application::migrateLegacySettings(&settings);
+        kdockw::Application::migrateLegacySettings(&settings);
 
         CHECK(settings.zoomAnimationPreset() == kCustomPreset);
         CHECK(settings.zoomInDuration() == expected);
@@ -107,8 +107,8 @@ TEST_CASE("Legacy zoom animation duration migrates to the Custom preset", "[sett
         CHECK(settings.iconSize() == 56);
     }
 
-    // The migration is saved: a restarted Krema sees the Custom preset...
-    KremaSettings restarted;
+    // The migration is saved: a restarted KDockW sees the Custom preset...
+    KDockWSettings restarted;
     restarted.load();
     CHECK(restarted.zoomAnimationPreset() == kCustomPreset);
     CHECK(restarted.zoomInDuration() == expected);
@@ -117,8 +117,8 @@ TEST_CASE("Legacy zoom animation duration migrates to the Custom preset", "[sett
     CHECK(restarted.zoomOutEasing() == kEaseOut);
     CHECK(restarted.iconSize() == 56);
 
-    // ...and the legacy key is gone from kremarc, so it never migrates twice.
-    KConfig stored(home.kremarcPath(), KConfig::SimpleConfig);
+    // ...and the legacy key is gone from kdockwrc, so it never migrates twice.
+    KConfig stored(home.kdockwrcPath(), KConfig::SimpleConfig);
     CHECK_FALSE(storedGroup(stored).hasKey(kLegacyKey));
     CHECK(storedGroup(stored).readEntry(kPresetKey, -1) == kCustomPreset);
 }
@@ -126,18 +126,18 @@ TEST_CASE("Legacy zoom animation duration migrates to the Custom preset", "[sett
 TEST_CASE("A stored zoom animation preset wins over the legacy duration", "[settings][migration]")
 {
     const ScopedConfigHome home;
-    writeKremarc(home, "ZoomAnimationDuration=400\nZoomAnimationPreset=1\n");
+    writeKDockWrc(home, "ZoomAnimationDuration=400\nZoomAnimationPreset=1\n");
 
     {
-        KremaSettings settings;
+        KDockWSettings settings;
         settings.load();
-        krema::Application::migrateLegacySettings(&settings);
+        kdockw::Application::migrateLegacySettings(&settings);
         CHECK(settings.zoomAnimationPreset() == kQuickPreset);
         CHECK(settings.zoomInDuration() == settings.defaultZoomInDurationValue());
         CHECK(settings.zoomOutDuration() == settings.defaultZoomOutDurationValue());
     }
 
-    KConfig stored(home.kremarcPath(), KConfig::SimpleConfig);
+    KConfig stored(home.kdockwrcPath(), KConfig::SimpleConfig);
     CHECK_FALSE(storedGroup(stored).hasKey(kLegacyKey));
     CHECK(storedGroup(stored).readEntry(kPresetKey, -1) == kQuickPreset);
     CHECK_FALSE(storedGroup(stored).hasKey(QStringLiteral("ZoomInDuration")));
@@ -147,12 +147,12 @@ TEST_CASE("A stored zoom animation preset wins over the legacy duration", "[sett
 TEST_CASE("Without a legacy key the Natural preset stays the default", "[settings][migration]")
 {
     const ScopedConfigHome home;
-    writeKremarc(home, "IconSize=56\n");
+    writeKDockWrc(home, "IconSize=56\n");
 
     {
-        KremaSettings settings;
+        KDockWSettings settings;
         settings.load();
-        krema::Application::migrateLegacySettings(&settings);
+        kdockw::Application::migrateLegacySettings(&settings);
 
         CHECK(settings.zoomAnimationPreset() == kNaturalPreset);
         CHECK(settings.zoomInDuration() == 180);
@@ -163,7 +163,7 @@ TEST_CASE("Without a legacy key the Natural preset stays the default", "[setting
 
     // Nothing is written for the zoom animation: the defaults keep applying,
     // so a future change of the default reaches this user too.
-    KConfig stored(home.kremarcPath(), KConfig::SimpleConfig);
+    KConfig stored(home.kdockwrcPath(), KConfig::SimpleConfig);
     const KConfigGroup group = storedGroup(stored);
     CHECK_FALSE(group.hasKey(kPresetKey));
     CHECK_FALSE(group.hasKey(QStringLiteral("ZoomInDuration")));

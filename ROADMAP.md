@@ -1,4 +1,4 @@
-# Krema Development Roadmap
+# KDockW Development Roadmap
 
 > A lightweight dock for KDE Plasma 6. Spiritual successor to Latte Dock.
 >

@@ -2,10 +2,10 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
 # CI images: publishes the prebuilt images the test workflows pull, all in
-# the one package ghcr.io/isac322/krema-ci (refs from
+# the one package ghcr.io/thicking/kdockw-ci (refs from
 # tests/distro/image-ref.sh; tests/distro/README.md explains their content):
 #
-#   runtime-<target>-<hash>  distro-e2e.yml test harness (no krema in it)
+#   runtime-<target>-<hash>  distro-e2e.yml test harness (no kdockw in it)
 #   builder-<target>-<hash>  build-package.sh packaging toolchain + build deps
 #   ctest-fedora-43-<hash>   e2e.yml "Build & tests" (tests/appium/Dockerfile)
 #   vgem-<kernel>-<hash>     FROM scratch, /vgem.ko built on the runner kernel
@@ -19,15 +19,15 @@
 #   * missing in ghcr.io (a push to master changed an image input: new hash);
 #   * every daily schedule run, for every distro target and the ctest image.
 #     Stable distros pin their base digest but still ship Qt/KF/Plasma
-#     updates, and the package installed at test time resolves krema's
-#     dependencies from the live repositories: with krema linking Qt private
+#     updates, and the package installed at test time resolves kdockw's
+#     dependencies from the live repositories: with kdockw linking Qt private
 #     API, a runtime/builder pair older than those repositories risks a Qt
 #     version skew. The rolling targets additionally run a full upgrade at
 #     job time, which a daily image keeps small;
 #   * workflow_dispatch with `force`.
 # runtime and builder of one target share one hash and are always rebuilt
 # and pushed together, so a package is never built against an older Qt
-# (krema uses Qt private API) than the runtime it is installed into.
+# (kdockw uses Qt private API) than the runtime it is installed into.
 #
 # ccache seeding: each target job then runs the real package build once
 # (tests/distro/build-package.sh, reusing the builder it just built or
@@ -93,7 +93,7 @@ concurrency:
 jobs:
   resolve:
     name: Resolve images
-    if: github.repository == 'isac322/krema'
+    if: github.repository == 'thicking/krema'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -185,14 +185,14 @@ jobs:
           echo "$TARGET: ${reason:-up to date, not rebuilt}"
 
       # docker-container driver: the default docker driver cannot push zstd
-      # layers (build-ci-image.sh, KREMA_CI_PUSH).
+      # layers (build-ci-image.sh, KDOCKW_CI_PUSH).
       - uses: docker/setup-buildx-action@v4
         if: steps.decide.outputs.build == 'true'
 
       - name: Build and push runtime + builder
         if: steps.decide.outputs.build == 'true'
         env:
-          KREMA_CI_PUSH: "1"
+          KDOCKW_CI_PUSH: "1"
         run: |
           t0=$SECONDS
           tests/distro/build-ci-image.sh runtime "$TARGET" >/dev/null
@@ -212,7 +212,7 @@ jobs:
 
       - name: Seed ccache (package build)
         env:
-          KREMA_CCACHE_DIR: ${{ runner.temp }}/ccache
+          KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
         run: |
           t0=$SECONDS
           tests/distro/build-package.sh "$TARGET" "$RUNNER_TEMP/packages"
@@ -250,7 +250,7 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           FORCE: ${{ inputs.force && 'true' || 'false' }}
-          KREMA_CI_PUSH: "1"
+          KDOCKW_CI_PUSH: "1"
         run: |
           ref="$(tests/distro/image-ref.sh ctest)"
           if [[ $FORCE == true ]]; then reason="forced"
@@ -315,7 +315,7 @@ jobs:
     # After the publish jobs, whatever their result: a failed rebuild keeps
     # the previous version tagged, and current refs are protected below.
     if: >-
-      always() && github.repository == 'isac322/krema'
+      always() && github.repository == 'thicking/krema'
       && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
@@ -331,7 +331,7 @@ jobs:
       - name: Delete untagged and superseded versions
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSIONS: /users/isac322/packages/container/krema-ci/versions
+          VERSIONS: /users/isac322/packages/container/kdockw-ci/versions
         run: |
           # Tags of the refs this tree computes: never deleted.
           keep="$(

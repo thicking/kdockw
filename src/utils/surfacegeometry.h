@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace krema
+namespace kdockw
 {
 
 /// Extra height above the panel needed for zoomed icons.
@@ -34,4 +34,4 @@ inline int panelBarHeight(int iconSize, int padding, int floatingPadding)
     return iconSize + padding * 2 + floatingPadding;
 }
 
-} // namespace krema
+} // namespace kdockw

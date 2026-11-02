@@ -3,7 +3,7 @@ a persistent --stdin mode, and flushed zero-duration mouse moves
 
 1. Upstream adds every mouse move to the previous *target* and stores the raw
    move value, so the 2nd+ move of one action chain lands in the wrong place.
-   Krema E2E needs multi-step hover paths and press-move-release drags inside
+   KDockW E2E needs multi-step hover paths and press-move-release drags inside
    one chain, so apply W3C semantics: "viewport" = absolute, "pointer" =
    relative to the previous position.
 2. W3C "Meta" (U+E03D) is the Windows/Command key. Upstream maps it to the
@@ -11,7 +11,7 @@ a persistent --stdin mode, and flushed zero-duration mouse moves
    shift level, so "Meta+F5" is sent as Shift+<META>+F5 and never matches a
    Meta+F5 KGlobalAccel shortcut. Map it to Super_L (<LWIN>, KEY_LEFTMETA),
    which is what KDE calls Meta. W3C defines no Menu (context menu) key, so
-   the unassigned U+E05E sends XKB Menu (<MENU>, KEY_COMPOSE): Krema opens a
+   the unassigned U+E05E sends XKB Menu (<MENU>, KEY_COMPOSE): KDockW opens a
    keyboard-selected item's context menu with it.
 3. A pause action with "interruptible": true ends early on request: the
    request ends the interruptible pause in progress, or the next one (other

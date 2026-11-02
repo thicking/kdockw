@@ -10,7 +10,7 @@
 
 class QTemporaryFile;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -26,7 +26,7 @@ namespace krema
 class KWinPointerMotionWatcher : public QObject
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "com.bhyoo.krema.PointerMotionWatcher")
+    Q_CLASSINFO("D-Bus Interface", "com.thicking.kdockw.PointerMotionWatcher")
 
 public:
     explicit KWinPointerMotionWatcher(QObject *parent = nullptr);
@@ -54,4 +54,4 @@ private:
     quint64 m_generation = 0;
 };
 
-} // namespace krema
+} // namespace kdockw

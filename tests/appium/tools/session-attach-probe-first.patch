@@ -4,7 +4,7 @@ A new session for an already running process ("app": "<pid>") looks for
 that pid on the a11y registry in a loop that sleeps one second *before*
 every probe. Every session creation therefore takes at least one second and
 is quantised to whole seconds, even when the application registered on the
-bus long before. The E2E suite creates one session per krema start (82 per
+bus long before. The E2E suite creates one session per kdockw start (82 per
 run): about 87 s of a ~320 s run was this sleep.
 
 Probe first and sleep 0.1 s between probes. The deadline (twice the

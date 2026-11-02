@@ -41,13 +41,13 @@ namespace
 using TaskManager::AbstractTasksModel;
 
 constexpr int kTimeoutMs = 15000;
-const QString kWindowA = QStringLiteral("krema-group-A");
-const QString kWindowB = QStringLiteral("krema-group-B");
-const QString kOtherWindow = QStringLiteral("krema-other");
+const QString kWindowA = QStringLiteral("kdockw-group-A");
+const QString kWindowB = QStringLiteral("kdockw-group-B");
+const QString kOtherWindow = QStringLiteral("kdockw-other");
 
-krema::DockModel &model()
+kdockw::DockModel &model()
 {
-    static auto *instance = new krema::DockModel;
+    static auto *instance = new kdockw::DockModel;
     return *instance;
 }
 
@@ -158,7 +158,7 @@ QModelIndex windowIndex(const QString &title)
 
 int childMain(int argc, char *argv[])
 {
-    QApplication::setDesktopFileName(QStringLiteral("krema-grouptest"));
+    QApplication::setDesktopFileName(QStringLiteral("kdockw-grouptest"));
     QApplication app(argc, argv);
     QWidget a;
     QWidget b;
@@ -179,7 +179,7 @@ int childMain(int argc, char *argv[])
 // A single window of a different app, used to take focus away from the group.
 int otherMain(int argc, char *argv[])
 {
-    QApplication::setDesktopFileName(QStringLiteral("krema-othertest"));
+    QApplication::setDesktopFileName(QStringLiteral("kdockw-othertest"));
     QApplication app(argc, argv);
     QWidget other;
     other.setWindowTitle(kOtherWindow);
@@ -205,7 +205,7 @@ QString childExecutable(const QString &mode)
         return self;
     }
     static const QString copy = [&self] {
-        const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/krema-other-app");
+        const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/kdockw-other-app");
         QFile::remove(path);
         QFile::copy(self, path);
         return path;
@@ -258,8 +258,8 @@ TEST_CASE("Left-click on a grouped app cycles through its windows", "[grouped-ac
         },
         kTimeoutMs);
 
-    krema::DockActions actions(&model());
-    QSignalSpy launching(&actions, &krema::DockActions::taskLaunching);
+    kdockw::DockActions actions(&model());
+    QSignalSpy launching(&actions, &kdockw::DockActions::taskLaunching);
 
     // Each click must move focus to the other window of the group: A→B→A.
     QStringList sequence{activeGroupWindow()};
@@ -287,12 +287,12 @@ TEST_CASE("Wheel over a non-running pinned launcher does not launch it", "[group
 {
     const QString dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     REQUIRE(QDir().mkpath(dataHome + QStringLiteral("/applications")));
-    const QString marker = dataHome + QStringLiteral("/krema-launch-marker");
+    const QString marker = dataHome + QStringLiteral("/kdockw-launch-marker");
     QFile::remove(marker);
 
-    QFile desktop(dataHome + QStringLiteral("/applications/krema-wheeltest.desktop"));
+    QFile desktop(dataHome + QStringLiteral("/applications/kdockw-wheeltest.desktop"));
     REQUIRE(desktop.open(QIODevice::WriteOnly));
-    desktop.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=Krema Wheel Test\nExec=sh "
+    desktop.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=KDockW Wheel Test\nExec=sh "
                                  "-c \"echo x >> %1\"\nIcon=application-x-executable\n")
                       .arg(marker)
                       .toUtf8());
@@ -325,7 +325,7 @@ TEST_CASE("Wheel over a non-running pinned launcher does not launch it", "[group
     REQUIRE(idx.data(AbstractTasksModel::IsLauncher).toBool());
     REQUIRE_FALSE(idx.data(AbstractTasksModel::IsWindow).toBool());
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateWindowForExternalDrag(launcherRow(url));
     for (int tick = 0; tick < 3; ++tick) {
         actions.cycleWindows(launcherRow(url), tick % 2 == 0);
@@ -365,8 +365,8 @@ TEST_CASE("External drag hover activates a single existing task", "[grouped-acti
         },
         kTimeoutMs));
 
-    krema::DockActions actions(&model());
-    QSignalSpy launching(&actions, &krema::DockActions::taskLaunching);
+    kdockw::DockActions actions(&model());
+    QSignalSpy launching(&actions, &kdockw::DockActions::taskLaunching);
     const int targetRow = otherWindowIndex().row();
     REQUIRE(targetRow >= 0);
     actions.activateWindowForExternalDrag(targetRow);
@@ -382,9 +382,9 @@ TEST_CASE("A launcher pinned by file URL counts as pinned and toggles off", "[gr
 {
     const QString dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     REQUIRE(QDir().mkpath(dataHome + QStringLiteral("/applications")));
-    QFile desktop(dataHome + QStringLiteral("/applications/krema-pintest.desktop"));
+    QFile desktop(dataHome + QStringLiteral("/applications/kdockw-pintest.desktop"));
     REQUIRE(desktop.open(QIODevice::WriteOnly));
-    desktop.write("[Desktop Entry]\nType=Application\nName=Krema Pin Test\nExec=true\nIcon=application-x-executable\n");
+    desktop.write("[Desktop Entry]\nType=Application\nName=KDockW Pin Test\nExec=true\nIcon=application-x-executable\n");
     desktop.close();
     QProcess::execute(QStringLiteral("kbuildsycoca6"), {});
 
@@ -407,7 +407,7 @@ TEST_CASE("A launcher pinned by file URL counts as pinned and toggles off", "[gr
     INFO("row url " << tasks->index(launcherRow(url), 0).data(AbstractTasksModel::LauncherUrlWithoutIcon).toUrl().toString().toStdString());
     CHECK(model().isPinned(launcherRow(url)));
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.togglePinned(launcherRow(url));
     CHECK(tasks->launcherPosition(url) == -1);
     CHECK(QTest::qWaitFor(
@@ -432,7 +432,7 @@ TEST_CASE("Entering an inactive group returns to its most recently used window",
     REQUIRE(grouped);
 
     auto *tasks = model().tasksModel();
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
 
     // KWin focuses the group's windows as they map; let that settle so it
     // cannot override the activation below.
@@ -526,7 +526,7 @@ TEST_CASE("Single-window minimize clicks honor actual focus and minimized state"
     REQUIRE_FALSE(otherWindowIndex().data(AbstractTasksModel::IsGroupParent).toBool());
 
     auto *tasks = model().tasksModel();
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     SECTION("active single minimizes")
     {
         actions.activateOrMinimize(otherWindowIndex().row());
@@ -601,7 +601,7 @@ TEST_CASE("Default activation keeps an active single window focused and unminimi
         },
         kTimeoutMs));
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activate(otherWindowIndex().row());
     // Observe a subsequent compositor state change instead of checking before
     // an erroneous asynchronous minimize request could have reached KWin.
@@ -657,7 +657,7 @@ TEST_CASE("Active grouped-window clicks minimize only the current child", "[grou
     REQUIRE(windowIndex(kWindowA).data(AbstractTasksModel::IsWindow).toBool());
     REQUIRE(windowIndex(kWindowA).data(AbstractTasksModel::IsMinimizable).toBool());
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateOrMinimize(groupRow());
     REQUIRE(QTest::qWaitFor(
         [] {
@@ -748,7 +748,7 @@ TEST_CASE(
     REQUIRE(activeGroupWindow().isEmpty());
     REQUIRE(otherWindowIndex().data(AbstractTasksModel::IsActive).toBool());
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateOrMinimize(groupRow());
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -785,7 +785,7 @@ TEST_CASE(
             return activeGroupWindow() == kWindowA;
         },
         kTimeoutMs));
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateOrMinimize(groupRow());
     REQUIRE(QTest::qWaitFor(
         [] {
@@ -868,7 +868,7 @@ TEST_CASE(
         QObject::disconnect(observed);
     });
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateOrMinimize(invalidIndex);
     // A subsequent valid request gives the compositor a positive observed
     // boundary; the two protected windows must remain unchanged throughout.
@@ -899,7 +899,7 @@ TEST_CASE("Minimize-click targeting tracks single-group-single window membership
         kTimeoutMs));
     REQUIRE_FALSE(windowIndex(kWindowA).data(AbstractTasksModel::IsGroupParent).toBool());
 
-    krema::DockActions actions(&model());
+    kdockw::DockActions actions(&model());
     actions.activateOrMinimize(windowIndex(kWindowA).row());
     REQUIRE(QTest::qWaitFor(
         [] {

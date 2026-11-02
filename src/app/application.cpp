@@ -3,7 +3,7 @@
 
 #include "application.h"
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockactions.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
@@ -32,16 +32,16 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(lcApp, "krema.app")
+Q_LOGGING_CATEGORY(lcApp, "kdockw.app")
 
 // Static library resources must be explicitly initialized.
-// Must be called from global namespace, not inside krema namespace.
+// Must be called from global namespace, not inside kdockw namespace.
 static void initResources()
 {
     Q_INIT_RESOURCE(qml);
 }
 
-namespace krema
+namespace kdockw
 {
 
 Application::Application(int &argc, char **argv)
@@ -56,85 +56,87 @@ Application::~Application()
 
 KAboutData Application::makeAboutData(bool localized)
 {
-    const QString displayName = localized ? i18n("Krema") : QStringLiteral("Krema");
+    const QString displayName = localized ? i18n("KDockW") : QStringLiteral("KDockW");
     const QString description = localized ? i18n("A dock for KDE Plasma 6")
                                           : QStringLiteral("A dock for KDE Plasma 6");
-    KAboutData aboutData(QStringLiteral("krema"), displayName, QStringLiteral(KREMA_VERSION_STRING), description, KAboutLicense::GPL_V3);
+    KAboutData aboutData(QStringLiteral("kdockw"), displayName, QStringLiteral(KDOCKW_VERSION_STRING), description, KAboutLicense::GPL_V3);
     const QString author = localized ? i18n("Byeonghoon Yoo") : QStringLiteral("Byeonghoon Yoo");
     aboutData.addAuthor(author, {}, QStringLiteral("bhyoo@bhyoo.com"));
-    aboutData.setOrganizationDomain(QByteArrayLiteral("bhyoo.com"));
-    aboutData.setHomepage(QStringLiteral("https://krema.bhyoo.com/"));
-    aboutData.setBugAddress(QByteArrayLiteral("https://github.com/isac322/krema/issues"));
-    aboutData.setDesktopFileName(QStringLiteral("com.bhyoo.krema"));
+    aboutData.setOrganizationDomain(QByteArrayLiteral("thicking.com"));
+    aboutData.setHomepage(QStringLiteral("https://github.com/thicking/krema"));
+    aboutData.setBugAddress(QByteArrayLiteral("https://github.com/thicking/krema/issues"));
+    aboutData.setDesktopFileName(QStringLiteral("com.thicking.kdockw"));
     return aboutData;
 }
 
-void Application::connectSettingsAutoSave(KremaSettings *settings, QObject *context)
+void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *context)
 {
     auto saveSettings = [settings]() {
         settings->save();
     };
-    connect(settings, &KremaSettings::IconSizeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconSpacingChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconOpacityActiveChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconOpacityInactiveChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconOpacityMinimizedChanged, context, saveSettings);
-    connect(settings, &KremaSettings::MaxZoomFactorChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomStyleChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomAnimationPresetChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomInDurationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomOutDurationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomInEasingChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ZoomOutEasingChanged, context, saveSettings);
-    connect(settings, &KremaSettings::CornerRadiusChanged, context, saveSettings);
-    connect(settings, &KremaSettings::FloatingChanged, context, saveSettings);
-    connect(settings, &KremaSettings::FloatingMarginChanged, context, saveSettings);
-    connect(settings, &KremaSettings::BackgroundOpacityChanged, context, saveSettings);
-    connect(settings, &KremaSettings::BackgroundStyleChanged, context, saveSettings);
-    connect(settings, &KremaSettings::TintColorChanged, context, saveSettings);
-    connect(settings, &KremaSettings::VisibilityModeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::EdgeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShowDelayChanged, context, saveSettings);
-    connect(settings, &KremaSettings::HideDelayChanged, context, saveSettings);
-    connect(settings, &KremaSettings::PreviewEnabledChanged, context, saveSettings);
-    connect(settings, &KremaSettings::SingleWindowClickActionChanged, context, saveSettings);
-    connect(settings, &KremaSettings::PreviewThumbnailSizeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::PreviewHoverDelayChanged, context, saveSettings);
-    connect(settings, &KremaSettings::PreviewHideDelayChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowEnabledChanged, context, saveSettings);
-    connect(settings, &KremaSettings::GroupedWindowClickActionChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowLightXChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowLightYChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowLightZChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowLightRadiusChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowColorChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowIntensityChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ShadowElevationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconNormalizationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::AttentionAnimationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::VirtualDesktopModeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::OtherDesktopOpacityChanged, context, saveSettings);
-    connect(settings, &KremaSettings::MonitorModeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::SelectedOutputsChanged, context, saveSettings);
-    connect(settings, &KremaSettings::FollowActiveTriggerChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ScreenTransitionChanged, context, saveSettings);
-    connect(settings, &KremaSettings::IconScaleChanged, context, saveSettings);
-    connect(settings, &KremaSettings::AttentionAnimationDurationChanged, context, saveSettings);
-    connect(settings, &KremaSettings::BadgeDisplayModeChanged, context, saveSettings);
-    connect(settings, &KremaSettings::UseSystemColorChanged, context, saveSettings);
-    connect(settings, &KremaSettings::UseAccentColorChanged, context, saveSettings);
-    connect(settings, &KremaSettings::DodgeActiveOnlyChanged, context, saveSettings);
-    connect(settings, &KremaSettings::ReserveScreenSpaceChanged, context, saveSettings);
-    connect(settings, &KremaSettings::SeparateLaunchersChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconSizeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconSpacingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconOpacityActiveChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconOpacityInactiveChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconOpacityMinimizedChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::MaxZoomFactorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomStyleChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomAnimationPresetChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomInDurationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomOutDurationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomInEasingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ZoomOutEasingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::CornerRadiusChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::FloatingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::FloatingMarginChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BackgroundOpacityChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BackgroundStyleChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::TintColorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::VisibilityModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::EdgeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShowDelayChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::HideDelayChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SingleWindowClickActionChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewThumbnailSizeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewHoverDelayChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ActivateWindowOnExternalDragChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ExternalDragActivationDelayChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewHideDelayChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::GroupedWindowClickActionChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowLightXChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowLightYChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowLightZChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowLightRadiusChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowColorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowIntensityChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ShadowElevationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconNormalizationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::AttentionAnimationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::VirtualDesktopModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::OtherDesktopOpacityChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::MonitorModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SelectedOutputsChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::FollowActiveTriggerChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ScreenTransitionChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconScaleChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::AttentionAnimationDurationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BadgeDisplayModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::UseSystemColorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::UseAccentColorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::DodgeActiveOnlyChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ReserveScreenSpaceChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SeparateLaunchersChanged, context, saveSettings);
 }
 
-void Application::migrateLegacySettings(KremaSettings *settings)
+void Application::migrateLegacySettings(KDockWSettings *settings)
 {
-    // Krema 0.10 stored a single ZoomAnimationDuration (only when changed from
+    // KDockW 0.10 stored a single ZoomAnimationDuration (only when changed from
     // its 100 ms default) applied with an ease-out curve to both directions.
     // Map it to the Custom preset with the same duration and easing, so the
     // upgraded dock keeps exactly the old feel, and drop the obsolete key.
-    // "General" is the krema.kcfg group holding the zoom entries.
+    // "General" is the kdockw.kcfg group holding the zoom entries.
     KConfigGroup group = settings->config()->group(QStringLiteral("General"));
     const QString legacyKey = QStringLiteral("ZoomAnimationDuration");
     if (!group.hasKey(legacyKey)) {
@@ -169,7 +171,7 @@ int Application::run(const KAboutData &aboutData)
     // Set up KDE application metadata (required for KGlobalAccel, D-Bus, etc.);
     // also sets the desktop file name.
     KAboutData::setApplicationData(aboutData);
-    setWindowIcon(QIcon::fromTheme(QStringLiteral("com.bhyoo.krema")));
+    setWindowIcon(QIcon::fromTheme(QStringLiteral("com.thicking.kdockw")));
 
     // Enforce single instance via D-Bus (exits if another instance is already running)
     KDBusService service(KDBusService::Unique);
@@ -185,8 +187,8 @@ int Application::run(const KAboutData &aboutData)
     // happen before the first QWindow is created.
     qputenv("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell");
 
-    // Load settings from KConfig (~/.config/kremarc)
-    m_settings = std::make_unique<KremaSettings>();
+    // Load settings from KConfig (~/.config/kdockwrc)
+    m_settings = std::make_unique<KDockWSettings>();
     m_settings->load();
     migrateLegacySettings(m_settings.get());
 
@@ -203,22 +205,22 @@ int Application::run(const KAboutData &aboutData)
     // Use qmlRegisterSingletonType (not qmlRegisterSingletonInstance) so multiple
     // QML engines (dock + settings window) can access the same C++ objects.
     auto *model = m_dockModel.get();
-    qmlRegisterSingletonType<DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+    qmlRegisterSingletonType<DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
         QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
         return model;
     });
     auto *settings = m_settings.get();
-    qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+    qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
         QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
         return settings;
     });
     auto *tracker = m_notificationTracker.get();
-    qmlRegisterSingletonType<NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+    qmlRegisterSingletonType<NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
         QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
         return tracker;
     });
     auto *launcherEntries = m_launcherEntryTracker.get();
-    qmlRegisterSingletonType<LauncherEntryTracker>("com.bhyoo.krema", 1, 0, "LauncherEntryTracker", [launcherEntries](QQmlEngine *, QJSEngine *) -> QObject * {
+    qmlRegisterSingletonType<LauncherEntryTracker>("com.thicking.kdockw", 1, 0, "LauncherEntryTracker", [launcherEntries](QQmlEngine *, QJSEngine *) -> QObject * {
         QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
         return launcherEntries;
     });
@@ -251,17 +253,17 @@ int Application::run(const KAboutData &aboutData)
     connectSettingsAutoSave(s, this);
 
     // Virtual desktop mode change
-    connect(s, &KremaSettings::VirtualDesktopModeChanged, this, [this]() {
+    connect(s, &KDockWSettings::VirtualDesktopModeChanged, this, [this]() {
         m_dockModel->setVirtualDesktopMode(m_settings->virtualDesktopMode());
     });
 
     // Keep task partitioning in sync with the live settings page.
-    connect(s, &KremaSettings::SeparateLaunchersChanged, this, [this]() {
+    connect(s, &KDockWSettings::SeparateLaunchersChanged, this, [this]() {
         m_dockModel->setSeparateLaunchers(m_settings->separateLaunchers());
     });
 
     // Monitor mode change
-    connect(s, &KremaSettings::MonitorModeChanged, this, [this]() {
+    connect(s, &KDockWSettings::MonitorModeChanged, this, [this]() {
         m_dockManager->setMonitorMode(static_cast<MultiDockManager::MonitorMode>(m_settings->monitorMode()));
     });
 
@@ -277,7 +279,7 @@ int Application::run(const KAboutData &aboutData)
 
 void Application::registerGlobalShortcuts()
 {
-    m_actionCollection = new KActionCollection(this, QStringLiteral("krema"));
+    m_actionCollection = new KActionCollection(this, QStringLiteral("kdockw"));
     auto *kga = KGlobalAccel::self();
 
     // Toggle dock visibility: Meta+`
@@ -303,7 +305,7 @@ void Application::registerGlobalShortcuts()
     kga->setDefaultShortcut(focusDockAction, focusDockShortcut);
     kga->setShortcut(focusDockAction, focusDockShortcut);
     // Autoloading keeps the stored shortcut. Move users still on the old default
-    // (which never reaches krema on stock KWin) to the new one.
+    // (which never reaches kdockw on stock KWin) to the new one.
     if (kga->shortcut(focusDockAction) == QList<QKeySequence>{QKeySequence(Qt::META | Qt::Key_F5)}) {
         kga->setShortcut(focusDockAction, focusDockShortcut, KGlobalAccel::NoAutoloading);
     }
@@ -344,4 +346,4 @@ void Application::registerGlobalShortcuts()
     qCDebug(lcApp) << "Global shortcuts registered";
 }
 
-} // namespace krema
+} // namespace kdockw

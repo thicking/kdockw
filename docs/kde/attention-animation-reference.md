@@ -1,6 +1,6 @@
 # Attention-Demanding Animations Reference
 
-Krema M7 기능 구현을 위한 레퍼런스 문서.
+KDockW M7 기능 구현을 위한 레퍼런스 문서.
 3가지 하위 기능: Icon Wiggle, Badge Count, Highlight Glow.
 
 ---
@@ -20,7 +20,7 @@ IsDemandingAttention, /**< Task is demanding attention. */
 
 ### 1.2 LauncherEntryTracker (Badge/Progress/Urgent)
 
-Krema는 C++ `LauncherEntryTracker` (`src/models/launcherentrytracker.h`)를 사용한다. Unity
+KDockW는 C++ `LauncherEntryTracker` (`src/models/launcherentrytracker.h`)를 사용한다. Unity
 Launcher API (`com.canonical.Unity.LauncherEntry` D-Bus)를 직접 수신하는 자체 구현으로,
 앱이 보낸 `count`/`countVisible`/`progress`/`progressVisible`/`urgent` 상태를 launcher URL을
 키로 노출한다.
@@ -55,7 +55,7 @@ Plasma는 두 소스를 OR로 결합: 윈도우 매니저(IsDemandingAttention) 
 | **Wiggle (좌우 흔들기)** | 일부 커스텀 독 | 아이콘이 좌우로 빠르게 흔들림 | Bounce보다 덜 침습적 | 독 방향(수직/수평)에 따라 부자연스러울 수 있음 |
 | **Pulse (크기 맥동)** | Dash-to-Dock | 아이콘이 커졌다 작아졌다 반복 | 부드럽고 우아함 | 주변 아이콘 레이아웃에 영향 줄 수 있음 |
 | **Color Glow (발광)** | Plank (urgent glow) | 아이콘 뒤에 빛나는 후광 | 레이아웃 영향 없음, 우아함 | 어두운 테마에서만 효과적 |
-| **SVG State Change** | KDE Plasma Task Manager | 프레임 배경을 "attention" SVG로 변경 | 테마 일관성 완벽 | Krema는 패널이 아니라 독이라 SVG 테마 미사용 |
+| **SVG State Change** | KDE Plasma Task Manager | 프레임 배경을 "attention" SVG로 변경 | 테마 일관성 완벽 | KDockW는 패널이 아니라 독이라 SVG 테마 미사용 |
 | **Indicator Dot Animation** | Latte Dock indicators | 인디케이터 점이 색 변경/깜빡임 | 미니멀, 기존 UI 활용 | 눈에 잘 안 띌 수 있음 |
 | **Opacity Blink (깜빡임)** | 커스텀 구현 | 아이콘 투명도가 반복 변화 | 구현 매우 간단 | 시각적으로 불쾌할 수 있음 |
 
@@ -83,7 +83,7 @@ Plasma는 두 소스를 OR로 결합: 윈도우 매니저(IsDemandingAttention) 
 
 **Latte Dock 구현**: `inAttention` 속성에 따라 반복 바운스. macOS보다 부드러운 easing 사용.
 
-**Krema 현재 상태**: 이미 launch bounce가 구현되어 있음 (DockItem.qml:338-381).
+**KDockW 현재 상태**: 이미 launch bounce가 구현되어 있음 (DockItem.qml:338-381).
 attention bounce를 추가할 때 launch bounce와 **다른 시각적 특성**을 줘야 구분 가능.
 
 **QML 구현 패턴**:
@@ -97,7 +97,7 @@ SequentialAnimation {
 }
 ```
 
-**주의**: Krema의 launch bounce와 충돌 방지 필요. 동시에 두 애니메이션이 활성화되면 안 됨.
+**주의**: KDockW의 launch bounce와 충돌 방지 필요. 동시에 두 애니메이션이 활성화되면 안 됨.
 
 #### B. Wiggle (좌우 흔들기)
 
@@ -157,7 +157,7 @@ SequentialAnimation on attentionScale {
 }
 ```
 
-**주의**: Krema의 parabolic zoom과 상호작용 고려 필요. `currentScale`에 곱하는 방식이면 zoom + pulse가 동시 적용됨.
+**주의**: KDockW의 parabolic zoom과 상호작용 고려 필요. `currentScale`에 곱하는 방식이면 zoom + pulse가 동시 적용됨.
 
 #### D. Color Glow (발광 후광)
 
@@ -208,7 +208,7 @@ Rectangle {
 }
 ```
 
-### 2.3 Krema 권장 조합
+### 2.3 KDockW 권장 조합
 
 Launch bounce가 이미 있으므로, attention은 **시각적으로 명확히 구분**되어야 함.
 
@@ -331,7 +331,7 @@ ShaderEffect {
 | **C++ 래핑** | DockModel에서 SmartLauncher 래핑하여 role 추가 | 안정적 API, 캐싱 가능 | 구현 복잡도 높음 |
 | **D-Bus 직접 구현** | `com.canonical.Unity.LauncherEntry` 모니터링 | 완전한 제어 | 많은 보일러플레이트 |
 
-> **2026-09 업데이트:** 첫 번째 방식은 Plasma 6.6에서 깨졌다 (모듈이 task manager applet 플러그인으로 들어가 외부 프로세스에서 import 불가). Krema는 세 번째 방식(`LauncherEntryTracker`, C++)으로 구현했다. `notification-badges.md`와 `lessons-learned.md` §13 참조.
+> **2026-09 업데이트:** 첫 번째 방식은 Plasma 6.6에서 깨졌다 (모듈이 task manager applet 플러그인으로 들어가 외부 프로세스에서 import 불가). KDockW는 세 번째 방식(`LauncherEntryTracker`, C++)으로 구현했다. `notification-badges.md`와 `lessons-learned.md` §13 참조.
 
 ### 4.2 Plasma Task Manager의 SmartLauncherItem 사용 패턴
 
@@ -386,7 +386,7 @@ Rectangle {
 - [Notification Badge 디자인 영감 (Dribbble)](https://dribbble.com/tags/notification-badge) — 다양한 배지 디자인 시각적 예시
 - [KDE Discuss — Task Manager 배지 지원 논의](https://discuss.kde.org/t/support-notification-badge-numbers-on-icons-in-icons-only-task-manager/33593) — KDE에서의 배지 표시 현황 + 스크린샷
 
-### 4.5 Krema 구현 옵션 비교
+### 4.5 KDockW 구현 옵션 비교
 
 | 방식 | 복잡도 | 시각적 품질 | 의존성 |
 |------|--------|------------|--------|
@@ -446,7 +446,7 @@ Plasma 6.6부터 외부 import 불가라 폐기.
 | `/usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/ui/Badge.qml` | 배지 숫자 UI |
 | `/usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/ui/TaskProgressOverlay.qml` | 진행률 바 |
 
-### Krema 현재 코드
+### KDockW 현재 코드
 | 파일 | 내용 |
 |------|------|
 | `src/qml/DockItem.qml` | launch bounce (재사용 가능), 인디케이터 점 |

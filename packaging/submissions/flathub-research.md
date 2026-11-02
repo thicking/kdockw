@@ -6,7 +6,7 @@ Flathub remains blocked for this release packet. This file records official guid
 
 The prepared release source is:
 
-- URL: `https://github.com/isac322/krema/archive/v0.10.0.tar.gz`
+- URL: `https://github.com/thicking/krema/archive/v0.10.0.tar.gz`
 - Version: `0.10.0`
 - Tag: `v0.10.0`
 - Commit: `a964a908ecb8904c079a8148403bebaaa427a821`
@@ -24,7 +24,7 @@ Read the current Flathub requirements before writing any packaging files:
 
 Those pages are the authority for current naming, licensing, account, review, namespace, metadata, and submission requirements. A human maintainer must author the manifest and any pull request text under the current Flathub policy. This packet deliberately stops before that work.
 
-The project homepage to review is `https://krema.bhyoo.com/`. Confirm its HTTPS reachability and the final app ID manually when the human-authored manifest is prepared. No DNS, website, or account change is part of this packet.
+The project homepage to review is `https://github.com/thicking/krema/`. Confirm its HTTPS reachability and the final app ID manually when the human-authored manifest is prepared. No DNS, website, or account change is part of this packet.
 
 ## Source and dependency guidance
 
@@ -40,7 +40,7 @@ Use the fixed source URL and SHA256 above when the manifest's source section is 
 
 ## Official command forms for later validation
 
-The commands below are the standard command forms documented by Flatpak and Flathub. Set `MANIFEST`, `APP_ID`, `COMMAND`, `BUILD_DIR`, `REPO`, `BUNDLE`, and `BRANCH` to values from the human-authored manifest and the current official instructions. The variables here are command inputs, not a proposed Krema manifest.
+The commands below are the standard command forms documented by Flatpak and Flathub. Set `MANIFEST`, `APP_ID`, `COMMAND`, `BUILD_DIR`, `REPO`, `BUNDLE`, and `BRANCH` to values from the human-authored manifest and the current official instructions. The variables here are command inputs, not a proposed KDockW manifest.
 
 Install the builder from Flathub, if it is not already available:
 

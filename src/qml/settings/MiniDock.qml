@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import ".."
 
 // Lifelike miniature of the dock: real theme icons on the panel background,

@@ -18,9 +18,9 @@
 #include <cmath>
 #include <limits>
 
-Q_LOGGING_CATEGORY(lcLauncherEntry, "krema.launcherentry")
+Q_LOGGING_CATEGORY(lcLauncherEntry, "kdockw.launcherentry")
 
-namespace krema
+namespace kdockw
 {
 
 static QString stripDesktopSuffix(const QString &id)
@@ -95,7 +95,7 @@ void LauncherEntryTracker::loadSettings()
 bool LauncherEntryTracker::countAllowed(const QString &storageId) const
 {
     // Unlike Plasma's task manager, Do Not Disturb does not hide counts:
-    // Krema keeps every badge in DND and only suppresses the attention
+    // KDockW keeps every badge in DND and only suppresses the attention
     // animation (DockItem.qml).
     return m_settings->badgesInTaskManager() && !m_badgeBlacklist.contains(stripDesktopSuffix(storageId), Qt::CaseInsensitive);
 }
@@ -246,4 +246,4 @@ void LauncherEntryTracker::onServiceUnregistered(const QString &service)
     }
 }
 
-} // namespace krema
+} // namespace kdockw

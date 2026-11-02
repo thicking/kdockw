@@ -20,7 +20,7 @@ class VirtualDesktopInfo;
 
 class QWindow;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -201,4 +201,4 @@ private:
     QTimer m_evaluateTimer;
 };
 
-} // namespace krema
+} // namespace kdockw

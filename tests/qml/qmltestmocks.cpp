@@ -8,7 +8,7 @@
 #include <QMetaEnum>
 #include <QQmlEngine>
 
-namespace KremaQmlTest
+namespace KDockWQmlTest
 {
 
 MockTasksModel::MockTasksModel(QObject *parent)
@@ -190,7 +190,7 @@ QVariantMap ZoomLayoutEngine::zoomLayout(int count,
                                          qreal maxEdge) const
 {
     // The production conversion, as DockView::zoomLayout uses it.
-    return krema::zoomLayoutVariant(count,
+    return kdockw::zoomLayoutVariant(count,
                                     restStart,
                                     iconSize,
                                     spacing,
@@ -213,10 +213,10 @@ void registerMockTypes()
     qmlRegisterUncreatableType<MockAbstractTasksModel>("org.kde.taskmanager", 0, 1, "AbstractTasksModel", QStringLiteral("Role enum holder"));
     qmlRegisterType<MockScreencastingRequest>("org.kde.taskmanager", 0, 1, "ScreencastingRequest");
     qmlRegisterType<MockPipeWireSourceItem>("org.kde.pipewire", 0, 1, "PipeWireSourceItem");
-    qmlRegisterType<MockTasksModel>("krema.test", 1, 0, "MockTasksModel");
-    qmlRegisterSingletonType<ZoomLayoutEngine>("krema.test", 1, 0, "ZoomLayoutEngine", [](QQmlEngine *, QJSEngine *) -> QObject * {
+    qmlRegisterType<MockTasksModel>("kdockw.test", 1, 0, "MockTasksModel");
+    qmlRegisterSingletonType<ZoomLayoutEngine>("kdockw.test", 1, 0, "ZoomLayoutEngine", [](QQmlEngine *, QJSEngine *) -> QObject * {
         return new ZoomLayoutEngine;
     });
 }
 
-} // namespace KremaQmlTest
+} // namespace KDockWQmlTest

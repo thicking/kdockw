@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import ".."
 
 SettingsPage {
@@ -63,7 +63,7 @@ SettingsPage {
         },
         {
             text: i18n("Quick"),
-            description: i18n("Fast ease-out, the previous Krema default") + "\n" + zoomTimingSummary(1)
+            description: i18n("Fast ease-out, the previous KDockW default") + "\n" + zoomTimingSummary(1)
         },
         {
             text: i18n("Relaxed"),

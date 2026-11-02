@@ -14,7 +14,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(lcModel)
 
-namespace krema
+namespace kdockw
 {
 
 namespace
@@ -372,4 +372,4 @@ void DockActions::openUrlsWithTask(int index, const QList<QUrl> &urls)
     tasksModel->requestOpenUrls(idx, urls);
 }
 
-} // namespace krema
+} // namespace kdockw

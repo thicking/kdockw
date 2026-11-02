@@ -1,4 +1,4 @@
-Source: krema
+Source: kdockw
 Section: kde
 Priority: optional
 Maintainer: Byeonghoon Yoo <bhyoo@bhyoo.com>
@@ -34,9 +34,9 @@ Build-Depends: debhelper-compat (= 13),
                libkpipewire-dev,
                libwayland-dev (>= 1.22)
 Standards-Version: 4.7.0
-Homepage: https://krema.bhyoo.com/
+Homepage: https://github.com/thicking/krema/
 
-Package: krema
+Package: kdockw
 Architecture: any
 Depends: ${shlibs:Depends},
          ${misc:Depends},
@@ -50,7 +50,7 @@ Depends: ${shlibs:Depends},
          plasma-workspace,
          liblayershellqtinterface6
 Description: A lightweight dock for KDE Plasma 6
- Krema is a lightweight dock for KDE Plasma 6, designed as a spiritual
+ KDockW is a lightweight dock for KDE Plasma 6, designed as a spiritual
  successor to Latte Dock. It features parabolic zoom animations, window
  previews via PipeWire, and deep integration with KDE Plasma desktop
  features including notification badges, window previews, and

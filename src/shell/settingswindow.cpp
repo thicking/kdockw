@@ -3,7 +3,7 @@
 
 #include "settingswindow.h"
 
-#include "krema.h"
+#include "kdockw.h"
 #include "multidockmanager.h"
 #include "outputordermonitor.h"
 #include "style/backgroundstyle.h"
@@ -28,7 +28,7 @@
 
 #include <utility>
 
-Q_LOGGING_CATEGORY(lcSettingsWindow, "krema.settings.window")
+Q_LOGGING_CATEGORY(lcSettingsWindow, "kdockw.settings.window")
 
 namespace
 {
@@ -148,17 +148,17 @@ QString plasmaWallpaperEntry()
 
 } // namespace
 
-namespace krema
+namespace kdockw
 {
 
-SettingsWindow::SettingsWindow(KremaSettings *settings, QObject *parent)
+SettingsWindow::SettingsWindow(KDockWSettings *settings, QObject *parent)
     : QObject(parent)
     , m_settings(settings)
 {
     auto *outputOrder = OutputOrderMonitor::instance();
     connect(outputOrder, &OutputOrderMonitor::primaryOutputChanged, this, &SettingsWindow::updateAvailableScreens);
-    connect(m_settings, &KremaSettings::SelectedOutputsChanged, this, &SettingsWindow::updateAvailableScreens);
-    connect(m_settings, &KremaSettings::MonitorModeChanged, this, &SettingsWindow::updateAvailableScreens);
+    connect(m_settings, &KDockWSettings::SelectedOutputsChanged, this, &SettingsWindow::updateAvailableScreens);
+    connect(m_settings, &KDockWSettings::MonitorModeChanged, this, &SettingsWindow::updateAvailableScreens);
 
     if (qGuiApp) {
         connect(qGuiApp, &QGuiApplication::screenAdded, this, [this](QScreen *screen) {
@@ -317,7 +317,7 @@ void SettingsWindow::updateAvailableScreens()
 
 bool SettingsWindow::isStyleAvailable(int styleType) const
 {
-    return krema::isStyleAvailable(static_cast<BackgroundStyleType>(styleType));
+    return kdockw::isStyleAvailable(static_cast<BackgroundStyleType>(styleType));
 }
 
 QVariantMap SettingsWindow::zoomLayout(int count,
@@ -458,4 +458,4 @@ void SettingsWindow::onWindowHidden(QQuickWindow *win)
     }
 }
 
-} // namespace krema
+} // namespace kdockw

@@ -4,7 +4,7 @@ description: "Apply when writing rendering, animation, window-preview/PipeWire, 
 
 # Performance
 
-Krema is a dock: visual smoothness and responsiveness are non-negotiable.
+KDockW is a dock: visual smoothness and responsiveness are non-negotiable.
 
 - Use GPU-accelerated APIs (PipeWire: `allowDmaBuf: true`; Qt Quick: hardware QRhi backend).
 - Avoid CPU→GPU texture copies; prefer GPU-native paths.

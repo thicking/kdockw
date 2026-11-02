@@ -18,7 +18,7 @@ import release_aur  # noqa: E402
 from release_common import ReleaseContext, ReleaseError  # noqa: E402
 
 SHA = "a" * 64
-URL = "https://github.com/isac322/krema/releases/download/v1.2.3/krema-1.2.3.tar.gz"
+URL = "https://github.com/thicking/krema/releases/download/v1.2.3/kdockw-1.2.3.tar.gz"
 TEMPLATE = (ROOT / "packaging/arch/PKGBUILD").read_text(encoding="utf-8")
 
 
@@ -27,12 +27,12 @@ def make_context(
 ) -> ReleaseContext:
     tmp = Path(tempfile.gettempdir())
     return ReleaseContext(
-        repository="isac322/krema",
+        repository="thicking/krema",
         tag=f"v{version}",
         version=version,
         commit="0" * 40,
         source_dir=tmp,
-        archive=tmp / f"krema-{version}.tar.gz",
+        archive=tmp / f"kdockw-{version}.tar.gz",
         sha256=sha256,
         source_url=source_url,
         work_dir=tmp,
@@ -44,10 +44,10 @@ def make_context(
 def srcinfo(
     version: str, rel: str = "1", source: str | None = None, sha: str = SHA
 ) -> str:
-    source = source or f"krema-{version}.tar.gz::{URL}"
+    source = source or f"kdockw-{version}.tar.gz::{URL}"
     return (
-        f"pkgbase = krema\n\tpkgver = {version}\n\tpkgrel = {rel}\n"
-        f"\tdepends = qt6-base>=6.8\n\tsource = {source}\n\tsha256sums = {sha}\n\npkgname = krema\n"
+        f"pkgbase = kdockw\n\tpkgver = {version}\n\tpkgrel = {rel}\n"
+        f"\tdepends = qt6-base>=6.8\n\tsource = {source}\n\tsha256sums = {sha}\n\npkgname = kdockw\n"
     )
 
 
@@ -136,7 +136,7 @@ class ClassifyRemoteTest(unittest.TestCase):
 
     def test_equal_version_with_other_source_is_not_rewritten(self) -> None:
         other = (
-            "krema-1.2.3.tar.gz::https://github.com/isac322/krema/archive/v1.2.3.tar.gz"
+            "kdockw-1.2.3.tar.gz::https://github.com/thicking/krema/archive/v1.2.3.tar.gz"
         )
         state, detail, extra = release_aur.classify_remote(srcinfo("1.2.3", source=other, sha="b" * 64),
                                                            make_context("1.2.3"))  # fmt: skip

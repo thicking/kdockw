@@ -7,7 +7,7 @@
 import QtQuick
 import QtTest
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -28,7 +28,7 @@ Item {
         when: windowShown
 
         function init() {
-            KremaMocks.resetAll()
+            KDockWMocks.resetAll()
             // Keep hover timers short so condition waits finish quickly.
             DockSettings.previewHoverDelay = 50
         }
@@ -617,10 +617,10 @@ Item {
         // --- Tooltip / preview trigger ---
 
         function test_launcherHoverShowsTooltipNotPreview() {
-            DockModel.tasksModel.addTask({ display: "Krema Launcher Fixture", IsWindow: false, IsLauncher: true })
+            DockModel.tasksModel.addTask({ display: "KDockW Launcher Fixture", IsWindow: false, IsLauncher: true })
             let dock = makeDock(1)
             hoverItem(items(dock)[0])
-            tryVerify(() => T.findFirst(dock, o => o.text === "Krema Launcher Fixture" && o.visible) !== null,
+            tryVerify(() => T.findFirst(dock, o => o.text === "KDockW Launcher Fixture" && o.visible) !== null,
                       2000, "tooltip with the app name never appeared")
             verify(!PreviewController.visible)
         }

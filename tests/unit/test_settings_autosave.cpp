@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
-// Every krema.kcfg entry the settings UI can change must reach kremarc on
+// Every kdockw.kcfg entry the settings UI can change must reach kdockwrc on
 // its own: KConfigSkeleton does not save on destruction, so an entry whose
 // change signal is not wired to save() silently reverts on the next start
 // unless some other, wired setting happens to change in the same session.
 
 #include "app/application.h"
-#include "krema.h"
+#include "kdockw.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -23,7 +23,7 @@ namespace
 // connectSettingsAutoSave().
 const QString kSeparatelySaved = QStringLiteral("PinnedLaunchers");
 
-QMetaProperty propertyFor(const KremaSettings &settings, const QString &itemName)
+QMetaProperty propertyFor(const KDockWSettings &settings, const QString &itemName)
 {
     QString name = itemName;
     name[0] = name[0].toLower();
@@ -94,12 +94,12 @@ private:
 
 TEST_CASE("Changing any single setting persists it across a restart", "[settings]")
 {
-    // Item names come from the schema, so entries added to krema.kcfg later
+    // Item names come from the schema, so entries added to kdockw.kcfg later
     // are covered too.
     QStringList itemNames;
     {
         const ScopedConfigHome home;
-        KremaSettings settings;
+        KDockWSettings settings;
         const auto items = settings.items();
         for (const auto *item : items) {
             if (item->name() != kSeparatelySaved) {
@@ -114,11 +114,11 @@ TEST_CASE("Changing any single setting persists it across a restart", "[settings
         const ScopedConfigHome home;
         QVariant written;
         {
-            // Session 1: the settings UI changes only this entry, then Krema quits.
-            auto settings = std::make_unique<KremaSettings>();
+            // Session 1: the settings UI changes only this entry, then KDockW quits.
+            auto settings = std::make_unique<KDockWSettings>();
             settings->load();
             QObject context;
-            krema::Application::connectSettingsAutoSave(settings.get(), &context);
+            kdockw::Application::connectSettingsAutoSave(settings.get(), &context);
 
             const auto *item = settings->findItem(name);
             REQUIRE(item);
@@ -131,8 +131,8 @@ TEST_CASE("Changing any single setting persists it across a restart", "[settings
             REQUIRE(property.read(settings.get()) == written);
         }
 
-        // Session 2: Krema starts again and loads kremarc.
-        KremaSettings restarted;
+        // Session 2: KDockW starts again and loads kdockwrc.
+        KDockWSettings restarted;
         restarted.load();
         if (propertyFor(restarted, name).read(&restarted) != written) {
             notPersisted.append(name);

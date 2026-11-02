@@ -24,7 +24,7 @@ python3 scripts/release_stores.py prepare --context "$CTX" --output "$PACKET"
 python3 scripts/release_stores.py status --context "$CTX" --store kde-store --store alternativeto
 ```
 
-- `already_published`: nothing to do for that store. For KDE Store this means the public OCS record shows this version with the verified archive's MD5, or a receipt recorded after that public read (the OCS record can lag behind). For AlternativeTo it means a public read shows this release's packet description and item ID on the listing and Krema on the Latte Dock page, or a receipt recorded after such a read. A listing that merely exists is not enough.
+- `already_published`: nothing to do for that store. For KDE Store this means the public OCS record shows this version with the verified archive's MD5, or a receipt recorded after that public read (the OCS record can lag behind). For AlternativeTo it means a public read shows this release's packet description and item ID on the listing and KDockW on the Latte Dock page, or a receipt recorded after such a read. A listing that merely exists is not enough.
 - `pending`: another session holds the lock, or a submission is recorded as waiting for moderation or propagation. Do not upload again. Report it as pending. Recheck `status` within this request only with a finite wait, or when the user asks again; nothing rechecks it in the background. Then follow "Recovering a pending submission" in section 1.
 - `browser_required`: continue with that store's section. For AlternativeTo this is also the result when the site refuses a scripted read (HTTP 403); a refused read is never evidence of publication.
 - `blocked`: the public read failed. Check the page in the browser before doing anything, and report `blocked` if the read keeps failing.
@@ -61,7 +61,7 @@ python3 scripts/release_stores.py record --context "$CTX" --store kde-store --st
 | `--state abort` | the lock | releases the lock |
 | `--state abort --reference E` | no lock; a pending receipt | withdraws the pending receipt with evidence `E` |
 
-The published reference is always the canonical public listing (`https://store.kde.org/p/2376676` or `https://alternativeto.net/software/krema/`). Record any other evidence, such as a moderation notice, as a pending reference.
+The published reference is always the canonical public listing (`https://store.kde.org/p/2376676` or `https://alternativeto.net/software/kdockw/`). Record any other evidence, such as a moderation notice, as a pending reference.
 
 ### Recovering a pending submission
 
@@ -82,7 +82,7 @@ A pending receipt blocks `start`, so no second upload happens while moderation i
 
 ## 3. KDE Store record 2376676
 
-1. Open `https://store.kde.org/p/2376676` and confirm the page title is Krema and the owner is `isac322`. Use the owner's edit control from the snapshot; do not guess edit URLs.
+1. Open `https://store.kde.org/p/2376676` and confirm the page title is KDockW and the owner is `isac322`. Use the owner's edit control from the snapshot; do not guess edit URLs.
 2. Compare the form with the packet:
    - **Version**: set it to the task's `version`.
    - **Description**: compare it with `kit/kde-store/description.txt`. Replace it only if it differs. Keep the plain-text line breaks.
@@ -108,8 +108,8 @@ A pending receipt blocks `start`, so no second upload happens while moderation i
 
 Most releases need no AlternativeTo change. Take the lock with `--store alternativeto --state start` first.
 
-1. Open `https://alternativeto.net/software/krema/` in Camofox. Confirm that it is the existing Krema listing: `camofox_evaluate` with `document.documentElement.innerHTML.includes('9ea8dc3b-7a8b-4570-837f-9d9f2ef98af1')` must return `true`. Confirm the session is signed in through the snapshot. If it is not signed in, stop and report `blocked`.
-2. Open `https://alternativeto.net/software/latte-dock/` and confirm Krema is listed among the alternatives. If it is, never use "Add alternative" or "Suggest alternative" for Krema again. If it is missing, report this to the user instead of re-adding it; a missing relationship can be pending moderation or removed by a moderator.
+1. Open `https://alternativeto.net/software/kdockw/` in Camofox. Confirm that it is the existing KDockW listing: `camofox_evaluate` with `document.documentElement.innerHTML.includes('9ea8dc3b-7a8b-4570-837f-9d9f2ef98af1')` must return `true`. Confirm the session is signed in through the snapshot. If it is not signed in, stop and report `blocked`.
+2. Open `https://alternativeto.net/software/latte-dock/` and confirm KDockW is listed among the alternatives. If it is, never use "Add alternative" or "Suggest alternative" for KDockW again. If it is missing, report this to the user instead of re-adding it; a missing relationship can be pending moderation or removed by a moderator.
 3. Compare the listing with the packet: name and short summary in `kit/alternativeto/upload-order.txt`, the description in `kit/alternativeto/description.txt`, the fields in `kit/alternativeto/fields.json`, and the media in `kit/alternativeto/media/`. If everything already matches, run `--state published`. It succeeds only when a scripted public read shows the packet description. If AlternativeTo refuses that read (HTTP 403), the command refuses too: record `pending` with what you saw in the browser (for example `"browser check <UTC time>: listing matches packet; scripted read refused"`), which also releases the lock. Status then reports the store as `pending`, never as published, until a later `--state published` succeeds.
 4. Otherwise use the listing's edit or suggest-changes control and update only the fields that differ. The description must not contain URLs or email addresses. Put the website and repository links in their dedicated link controls. Leave paid priority review unselected. Upload media only if missing or different, with the injection procedure in section 5.
 5. Take a screenshot, then submit. AlternativeTo edits normally go to moderation: record `pending` with the confirmation shown on the page. Later, when the change is visible on the public listing, run `--state published` without another upload. The receipt then stores the public-read observation, and status keeps reporting `already_published` even if later reads are refused, as long as the packet description is unchanged.
@@ -120,15 +120,15 @@ Camofox has no file-chooser tool, so files are injected into the form's file inp
 
 1. On the host, encode the file and split it:
    ```bash
-   base64 < "$PACKET/kit/kde-store/downloads/<source_filename>" | tr -d '\n' | fold -w 262144 > /tmp/krema-upload.b64
-   wc -l /tmp/krema-upload.b64
+   base64 < "$PACKET/kit/kde-store/downloads/<source_filename>" | tr -d '\n' | fold -w 262144 > /tmp/kdockw-upload.b64
+   wc -l /tmp/kdockw-upload.b64
    ```
-2. `camofox_evaluate` with `window.__kremaChunks = []; 0`.
-3. For each line of `/tmp/krema-upload.b64`, in order, `camofox_evaluate` with `window.__kremaChunks.push("<line>")`. The returned count must increase by one each time.
+2. `camofox_evaluate` with `window.__kdockwChunks = []; 0`.
+3. For each line of `/tmp/kdockw-upload.b64`, in order, `camofox_evaluate` with `window.__kdockwChunks.push("<line>")`. The returned count must increase by one each time.
 4. Build the file, check its hash, and attach it to the input that the snapshot identified (replace the selector, name, and MIME type):
    ```js
    (async () => {
-     const bin = atob(window.__kremaChunks.join(""));
+     const bin = atob(window.__kdockwChunks.join(""));
      const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
      const hex = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
        .map(b => b.toString(16).padStart(2, "0")).join("");
@@ -137,12 +137,12 @@ Camofox has no file-chooser tool, so files are injected into the form's file inp
      transfer.items.add(new File([bytes], "<file name>", { type: "<application/gzip or image/png>" }));
      input.files = transfer.files;
      input.dispatchEvent(new Event("change", { bubbles: true }));
-     delete window.__kremaChunks;
+     delete window.__kdockwChunks;
      return hex;
    })()
    ```
 5. The returned hex must equal the expected SHA-256: `source_sha256` for the source archive, or the file's line in `kit/SHA256SUMS` for media. If it differs, reload the page without saving and start the upload again.
-6. Delete `/tmp/krema-upload.b64`.
+6. Delete `/tmp/kdockw-upload.b64`.
 
 ## 6. Finish
 

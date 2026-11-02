@@ -21,9 +21,9 @@
 
 #include <utility>
 
-Q_LOGGING_CATEGORY(lcModel, "krema.model")
+Q_LOGGING_CATEGORY(lcModel, "kdockw.model")
 
-namespace krema
+namespace kdockw
 {
 
 namespace
@@ -121,11 +121,11 @@ DockModel::DockModel(QObject *parent)
     // Screen geometry — Plasma Task Manager always sets this. Use the Plasma
     // primary (kde_output_order_v1), not the Qt primary which is just the
     // first wl_output and never tracks KWin's priority changes.
-    if (auto *screen = krema::OutputOrderMonitor::instance()->primaryScreen()) {
+    if (auto *screen = kdockw::OutputOrderMonitor::instance()->primaryScreen()) {
         m_tasksModel->setScreenGeometry(screen->geometry());
     }
-    connect(krema::OutputOrderMonitor::instance(), &krema::OutputOrderMonitor::primaryOutputChanged, this, [this] {
-        if (auto *screen = krema::OutputOrderMonitor::instance()->primaryScreen()) {
+    connect(kdockw::OutputOrderMonitor::instance(), &kdockw::OutputOrderMonitor::primaryOutputChanged, this, [this] {
+        if (auto *screen = kdockw::OutputOrderMonitor::instance()->primaryScreen()) {
             m_tasksModel->setScreenGeometry(screen->geometry());
         }
     });
@@ -615,4 +615,4 @@ bool DockModel::isOnCurrentDesktop(int index) const
     return desktops.contains(currentDesktop);
 }
 
-} // namespace krema
+} // namespace kdockw

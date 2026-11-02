@@ -1,6 +1,6 @@
 # Local Flatpak package
 
-This directory contains an **AI-authored local Flatpak manifest**, not a Flathub submission. It packages the unchanged Krema v0.9.0 application code with separately identified packaging metadata companions. A separate verification worker successfully built the final metadata-corrected package, composed AppStream metadata, exported the app-ID icon, desktop entry and metainfo, published the result to the local verification repository, and installed the `aarch64` stable application at commit `3dbe354f7b70e58032fd74333fd3d8a65b223fcb13379b9bf9a9135346827472`. The installed final AppStream metadata passed pedantic validation, including both background-style corrections and all three screenshots. All three serial official lint commands still failed as detailed below. The completed runtime smoke has passing dock/zoom and window activation/restore results, a failed native host launcher, and environment-blocked preview frames. No full-functionality, tested distributable bundle, `x86_64`, or Flathub-eligibility claim is made.
+This directory contains an **AI-authored local Flatpak manifest**, not a Flathub submission. It packages the unchanged KDockW v0.9.0 application code with separately identified packaging metadata companions. A separate verification worker successfully built the final metadata-corrected package, composed AppStream metadata, exported the app-ID icon, desktop entry and metainfo, published the result to the local verification repository, and installed the `aarch64` stable application at commit `3dbe354f7b70e58032fd74333fd3d8a65b223fcb13379b9bf9a9135346827472`. The installed final AppStream metadata passed pedantic validation, including both background-style corrections and all three screenshots. All three serial official lint commands still failed as detailed below. The completed runtime smoke has passing dock/zoom and window activation/restore results, a failed native host launcher, and environment-blocked preview frames. No full-functionality, tested distributable bundle, `x86_64`, or Flathub-eligibility claim is made.
 
 Flathub's [generative AI policy](https://docs.flathub.org/docs/for-app-authors/requirements#generative-ai-policy) currently excludes AI-generated or AI-assisted manifest content and prohibits automated agent submission PRs. Disclosure does not make this manifest eligible. The broader requirements allow discretionary exceptions, but no exception has been obtained. Local building and distribution outside Flathub are separate from Flathub acceptance.
 
@@ -16,18 +16,18 @@ A separate verification worker queried the installed `aarch64` KDE SDK 6.10 insi
 
 All manifest archive hashes were computed from bytes downloaded from the listed public URLs, including every bundled KDE dependency. Modules are ordered as follows:
 
-1. `libplasma` supplies `Plasma::Plasma` for the workspace libraries. Its upstream default X11 build support is retained: the first application build attempt exposed an upstream 6.7.5 compile failure with `WITHOUT_X11=ON`, because `BlurEffectWatcher` always inherits `QAbstractNativeEventFilter` but only implements its pure virtual method when X11 is enabled. Compiling that dependency's X11 support does not grant an X11 socket or change Krema's Wayland-only platform.
+1. `libplasma` supplies `Plasma::Plasma` for the workspace libraries. Its upstream default X11 build support is retained: the first application build attempt exposed an upstream 6.7.5 compile failure with `WITHOUT_X11=ON`, because `BlurEffectWatcher` always inherits `QAbstractNativeEventFilter` but only implements its pure virtual method when X11 is enabled. Compiling that dependency's X11 support does not grant an X11 socket or change KDockW's Wayland-only platform.
 2. `libkscreen` supplies `KF6::Screen` for the notification manager.
 3. `layer-shell-qt` supplies the layer-shell integration plugin and C++ interface.
 4. `kpipewire` supplies its required CMake package and QML PipeWire renderer.
 5. `plasma-workspace-libraries` builds upstream `libkworkspace`, `libtaskmanager`, and `libnotificationmanager`, in that order.
-6. `krema` builds the unchanged v0.9.0 application code with an AppStream metadata patch that adds screenshots and corrects the current background-style description and its inaccurate 0.4.0 release note, plus separately pinned icon metadata; its required build dependencies remain intact.
+6. `kdockw` builds the unchanged v0.9.0 application code with an AppStream metadata patch that adds screenshots and corrects the current background-style description and its inaccurate 0.4.0 release note, plus separately pinned icon metadata; its required build dependencies remain intact.
 
-`plasma-workspace-libraries/CMakeLists.txt` is packaging-only build glue. It includes the original upstream library CMake files and retains their generated bindings, headers, package exports, QML plugins, and notification configuration. It does not build an entire Plasma session inside the application. A checksummed `kscreenlocker` source archive supplies the original ScreenSaver D-Bus XML used by `libkworkspace`; the screen locker itself is not built. X11-only workspace models are excluded because Krema only supports Wayland. Upstream's optional libflatpak notification-resource support remains optional, as upstream defines it; none of Krema's required dependencies is disabled.
+`plasma-workspace-libraries/CMakeLists.txt` is packaging-only build glue. It includes the original upstream library CMake files and retains their generated bindings, headers, package exports, QML plugins, and notification configuration. It does not build an entire Plasma session inside the application. A checksummed `kscreenlocker` source archive supplies the original ScreenSaver D-Bus XML used by `libkworkspace`; the screen locker itself is not built. X11-only workspace models are excluded because KDockW only supports Wayland. Upstream's optional libflatpak notification-resource support remains optional, as upstream defines it; none of KDockW's required dependencies is disabled.
 
-Build cleanup removes development headers, package metadata, archives, and documentation only after all modules have built. Runtime libraries, QML modules, layer-shell plugins, icons, translations, desktop metadata, and notification resources remain installed. The release's AppStream ID and desktop filename already use `com.bhyoo.krema`, but its desktop icon name is `krema` and the archive contains no image assets or icon install rule. The install prefix is `/app`, and the command is `krema`.
+Build cleanup removes development headers, package metadata, archives, and documentation only after all modules have built. Runtime libraries, QML modules, layer-shell plugins, icons, translations, desktop metadata, and notification resources remain installed. The release's AppStream ID and desktop filename already use `com.thicking.kdockw`, but its desktop icon name is `kdockw` and the archive contains no image assets or icon install rule. The install prefix is `/app`, and the command is `kdockw`.
 
-The manifest supplies the project's official SVG as **post-release packaging metadata**, downloaded from immutable commit `84184ca07e226a96ef468d33d4a3afc16a1cc533` at [branding/logo/krema-icon.svg](https://raw.githubusercontent.com/isac322/krema/84184ca07e226a96ef468d33d4a3afc16a1cc533/branding/logo/krema-icon.svg). The downloaded 782 bytes hash to `65f419d4d6ee5534a66ec141bf3810bf91ca3296db1ee5603164035735966782`. It is not part of v0.9.0. Packaging installs it into hicolor's scalable application-icon directory under the release's icon name; Flatpak Builder's top-level `rename-icon: krema` changes the installed icon and desktop reference to the app ID during cleanup. This icon companion changes packaging metadata, not application runtime code; it does not disable composition, change the app ID, or invent a substitute icon.
+The manifest supplies the project's official SVG as **post-release packaging metadata**, downloaded from immutable commit `84184ca07e226a96ef468d33d4a3afc16a1cc533` at [branding/logo/kdockw-icon.svg](https://raw.githubusercontent.com/isac322/kdockw/84184ca07e226a96ef468d33d4a3afc16a1cc533/branding/logo/kdockw-icon.svg). The downloaded 782 bytes hash to `65f419d4d6ee5534a66ec141bf3810bf91ca3296db1ee5603164035735966782`. It is not part of v0.9.0. Packaging installs it into hicolor's scalable application-icon directory under the release's icon name; Flatpak Builder's top-level `rename-icon: kdockw` changes the installed icon and desktop reference to the app ID during cleanup. This icon companion changes packaging metadata, not application runtime code; it does not disable composition, change the app ID, or invent a substitute icon.
 
 ## AppStream metadata companion
 
@@ -43,9 +43,9 @@ The prepared listing screenshots are post-release media from immutable public co
 
 AppStream captions use the approved listing descriptions; the long settings caption is shortened to stay below the recommended 100 characters. The schema provides captions, not an image `alt` attribute. The prepared packet's full alternative text remains:
 
-- **Dock zoom:** Krema's parabolic zoom enlarges the launcher under the pointer and moves neighboring dock icons aside on KDE Plasma.
-- **Dock overview:** Krema dock at the bottom of a KDE Plasma desktop with pinned launchers, running application indicators, Dolphin, and Konsole.
-- **Settings:** Krema's Kirigami Appearance settings show controls for icon size and spacing, zoom factor and style, icon normalization and scale, and attention animation.
+- **Dock zoom:** KDockW's parabolic zoom enlarges the launcher under the pointer and moves neighboring dock icons aside on KDE Plasma.
+- **Dock overview:** KDockW dock at the bottom of a KDE Plasma desktop with pinned launchers, running application indicators, Dolphin, and Konsole.
+- **Settings:** KDockW's Kirigami Appearance settings show controls for icon size and spacing, zoom factor and style, icon normalization and scale, and attention animation.
 
 Builder's documented `--mirror-screenshots-url=URL` option downloads media, rewrites catalogue URLs to a mirror base, and exports a screenshot OSTree ref in Builder 1.4.5 and later. It is not enabled here: no verified public hosting base for those generated mirror paths has been provided. The metadata uses the actual immutable source URLs instead. Do not insert an invented public mirror or a verification-only localhost endpoint into distributable metadata.
 
@@ -53,7 +53,7 @@ Builder's documented `--mirror-screenshots-url=URL` option downloads media, rewr
 
 On the final metadata-corrected package, all three serial official lint commands—manifest, build-directory, and repository—exited 1. There are no missing-screenshot, syntax, or identity errors: all three screenshots are retained, and installed metainfo passed `appstreamcli validate --pedantic`. Build-directory and repository lint still report `appstream-external-screenshot-url`, and the repository's screenshot media is not mirrored. The package nevertheless built, composed, exported, and installed successfully; strict composition and pedantic metadata validation are distinct from hosted-store lint acceptance. The factual background-description corrections do not waive or hide any policy findings.
 
-Nine existing policy/domain findings remain for the Wayland-only permission set, read-only host OS/application/icon/Flatpak-export access, KWin D-Bus access, Unity bus ownership, and the app-ID root-domain URL. No exceptions have been granted and no lint exemptions were added. The permissions correspond to existing dock integrations and are retained, not removed just to satisfy a hosted-store check. The root `bhyoo.com` URL failed DNS while `krema.bhyoo.com` was reachable; this package does not change DNS or migrate the app ID. Runtime 6.11 availability is a warning, not evidence that the verified 6.10 branch must be replaced.
+Nine existing policy/domain findings remain for the Wayland-only permission set, read-only host OS/application/icon/Flatpak-export access, KWin D-Bus access, Unity bus ownership, and the app-ID root-domain URL. No exceptions have been granted and no lint exemptions were added. The permissions correspond to existing dock integrations and are retained, not removed just to satisfy a hosted-store check. The root `bhyoo.com` URL failed DNS while `kdockw.bhyoo.com` was reachable; this package does not change DNS or migrate the app ID. Runtime 6.11 availability is a warning, not evidence that the verified 6.10 branch must be replaced.
 
 ## Local build and bundle commands
 
@@ -61,10 +61,10 @@ Run these on Linux with Flatpak, Flatpak Builder, a configured `flathub` remote,
 
 ```sh
 checkout="$PWD"
-work="$(mktemp -d /tmp/krema-flatpak.XXXXXX)"
+work="$(mktemp -d /tmp/kdockw-flatpak.XXXXXX)"
 flatpak-builder --user --install-deps-from=flathub \
   --state-dir="$work/state" --repo="$work/repo" \
-  "$work/build" "$checkout/packaging/flatpak/com.bhyoo.krema.yml"
+  "$work/build" "$checkout/packaging/flatpak/com.thicking.kdockw.yml"
 ```
 
 If the official Builder Flatpak is used instead of a native `flatpak-builder`, replace the program in that command with `flatpak run --command=flatpak-builder org.flatpak.Builder`. Check that the Builder can access the checkout and scratch paths. Do not add `--force-clean` to an existing unrelated directory.
@@ -73,9 +73,9 @@ After a successful build, create a candidate bundle and install it for the runti
 
 ```sh
 flatpak build-bundle --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo \
-  "$work/repo" "$work/krema-0.9.0.flatpak" com.bhyoo.krema stable
-flatpak install --user "$work/krema-0.9.0.flatpak"
-flatpak run com.bhyoo.krema
+  "$work/repo" "$work/kdockw-0.9.0.flatpak" com.thicking.kdockw stable
+flatpak install --user "$work/kdockw-0.9.0.flatpak"
+flatpak run com.thicking.kdockw
 ```
 
 These commands describe the verification path; they are not evidence that a bundle has been produced. The bundle architecture is the builder's native architecture unless an explicit supported `--arch` is selected. Runtime access to Flathub is not publication of the application to Flathub.
@@ -97,7 +97,7 @@ The manifest does not grant X11, network access, the whole session bus, the syst
 | `--talk-name=org.freedesktop.ScreenSaver` | `DockView` receives screen-lock changes. |
 | `--talk-name=org.freedesktop.Notifications` | `NotificationTracker` registers its notification watcher. |
 | `--talk-name=org.kde.StatusNotifierWatcher` | `NotificationTracker` queries and follows registered status-notifier items. This does not grant arbitrary item service names. |
-| `--own-name=com.canonical.Unity` | `LauncherEntryTracker` exports its existing Unity launcher endpoint. The app's own `com.bhyoo.krema` prefix is already allowed by Flatpak. |
+| `--own-name=com.canonical.Unity` | `LauncherEntryTracker` exports its existing Unity launcher endpoint. The app's own `com.thicking.kdockw` prefix is already allowed by Flatpak. |
 | `QT_QPA_PLATFORM=wayland` | Keeps this Wayland-only application on its supported Qt platform. |
 | `XDG_DATA_DIRS=...` | Retains application/runtime resources and adds read-only host/system Flatpak data locations for desktop entry and icon lookup. |
 
@@ -124,7 +124,7 @@ Released KWin 6.5.5, 6.6.5, and 6.7.5 were inspected: their `KWinDisplay::fetchR
 
 A successful compiler run is not enough. The smoke outcomes above do not establish every integration; verify remaining supported paths on an appropriate Plasma Wayland session before publishing a functional local bundle:
 
-- The exported desktop entry remains `com.bhyoo.krema.desktop` with its `X-KDE-Wayland-Interfaces` declaration, and KWin authorizes window management, activation feedback, and screencasting for the installed Flatpak identity.
+- The exported desktop entry remains `com.thicking.kdockw.desktop` with its `X-KDE-Wayland-Interfaces` declaration, and KWin authorizes window management, activation feedback, and screencasting for the installed Flatpak identity.
 - The dock enumerates real host windows. Activation and restore passed; other exposed window actions require their own evidence. Minimization through the dock is not a v0.9.0 feature and is not claimed.
 - A pinned native host application and a pinned Flatpak application launch successfully. Read-only desktop-file access does not by itself make their `Exec` commands runnable across the sandbox. The inspected KDE KIO 6.29.0 application/command launcher and process-runner sources contain no Flatpak host-spawn integration; granting `org.freedesktop.Flatpak` without a caller would not fix that path, so it is not granted here.
 - Live thumbnails receive PipeWire frames; there is no promise of a portal fallback.

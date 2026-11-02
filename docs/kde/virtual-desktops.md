@@ -230,4 +230,4 @@ opacity: isOnCurrentDesktop ? 1.0 : 0.4
 - X11: a window is on one desktop OR all desktops (no multi-desktop membership)
 - Desktop switching signals may arrive before `dataChanged` for affected windows — use both
 - `VirtualDesktopInfo` uses a static private (`static Private *d`) — all instances share the same backend connection; creating multiple instances is safe and cheap
-- Krema already tracks `currentDesktopChanged` in `DockModel` (connected to `m_tasksModel->setVirtualDesktop()`) — M8 only needs to add `setFilterByVirtualDesktop(true)` to enable filtering
+- KDockW already tracks `currentDesktopChanged` in `DockModel` (connected to `m_tasksModel->setVirtualDesktop()`) — M8 only needs to add `setFilterByVirtualDesktop(true)` to enable filtering

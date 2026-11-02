@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launchpad PPA channel adapter for the Krema release tooling.
+"""Launchpad PPA channel adapter for the KDockW release tooling.
 
 Target series are discovered dynamically: every Ubuntu series whose primary
 archive ships qt6-base at or above the Qt baseline in the tagged
@@ -50,9 +50,9 @@ from release_common import (
 )
 
 CHANNEL = "ppa"
-SOURCE_NAME = "krema"
+SOURCE_NAME = "kdockw"
 PPA_OWNER = "isac322"
-PPA_NAME = "krema"
+PPA_NAME = "kdockw"
 DISTRIBUTION = "ubuntu"
 PPA_REVISION = "ppa1"
 
@@ -471,7 +471,7 @@ def load_tagged_packaging(context: ReleaseContext) -> TaggedPackaging:
         )
     control = files["control"].read_text(encoding="utf-8")
     if parse_control(control).get("Source") != SOURCE_NAME:
-        raise ReleaseError("tagged debian.control Source is not krema")
+        raise ReleaseError("tagged debian.control Source is not kdockw")
     targets = context.source_dir / "tests" / "distro" / "targets.tsv"
     if not targets.is_file():
         raise ReleaseError("tagged source lacks tests/distro/targets.tsv")
@@ -962,7 +962,7 @@ def _test_signing(context: ReleaseContext, fingerprint: str) -> None:
     probe_dir.mkdir(parents=True, exist_ok=True)
     probe = probe_dir / "probe.txt"
     probe.write_text(
-        f"krema {context.tag} {context.commit} PPA signing probe\n", encoding="utf-8"
+        f"kdockw {context.tag} {context.commit} PPA signing probe\n", encoding="utf-8"
     )
     clearsign(probe, fingerprint)
     verify_signature(probe, fingerprint)
@@ -990,7 +990,7 @@ set -euo pipefail
 cd "$BUILD"
 rm -rf "src"
 mkdir "src"
-tar -xzf "krema_${KREMA_VERSION}.orig.tar.gz" -C src --strip-components=1
+tar -xzf "kdockw_${KDOCKW_VERSION}.orig.tar.gz" -C src --strip-components=1
 cp -R debian src/debian
 chmod 0755 src/debian/rules
 cd src
@@ -1062,7 +1062,7 @@ def _build(
         env = dict(
             os.environ,
             BUILD=str(build),
-            KREMA_VERSION=context.version,
+            KDOCKW_VERSION=context.version,
             SOURCE_DATE_EPOCH=epoch,
         )
         command(
@@ -1092,7 +1092,7 @@ def _build(
             "-e",
             "BUILD=/build",
             "-e",
-            f"KREMA_VERSION={context.version}",
+            f"KDOCKW_VERSION={context.version}",
             "-e",
             f"SOURCE_DATE_EPOCH={epoch}",
             "-e",
@@ -1236,7 +1236,7 @@ def _check_orig_against_ppa(context: ReleaseContext) -> None:
         if url is None:
             continue
         request = urllib.request.Request(
-            url, headers={"User-Agent": "krema-release-ppa"}
+            url, headers={"User-Agent": "kdockw-release-ppa"}
         )
         digest = hashlib.sha256()
         size = 0

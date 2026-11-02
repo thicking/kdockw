@@ -1,13 +1,13 @@
-# Krema Agent Guidelines
+# KDockW Agent Guidelines
 
 Rules that apply to every agent working on this repository, regardless of harness. Situational rules (Wayland surfaces, QML UI, KDE APIs, performance, docs/SEO, E2E scenarios) live in `.agents/rules/`; read the matching rule before working in its area.
 
 ## Project Scope
 
-- Krema is a dock for KDE Plasma 6 on Wayland only. Do not design for other desktop environments.
+- KDockW is a dock for KDE Plasma 6 on Wayland only. Do not design for other desktop environments.
 - When both a Qt API and a KDE API exist, use the KDE API. Follow the KDE HIG; prefer Kirigami / Kirigami Addons over plain QQC2.
 - Never guess KDE APIs. Verify them against `docs/kde/` and the installed headers before implementing (see `.agents/rules/kde-api-verification.md`).
-- Krema is a dock: visual smoothness and responsiveness are non-negotiable (see `.agents/rules/performance.md`).
+- KDockW is a dock: visual smoothness and responsiveness are non-negotiable (see `.agents/rules/performance.md`).
 
 ## Code Rules
 
@@ -15,11 +15,11 @@ Rules that apply to every agent working on this repository, regardless of harnes
 - Code is formatted with clang-format (enforced by the pre-commit hook).
 - Commit messages are English and follow Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, …).
 - Documentation, manifests, and PR communication are in English.
-- When adding or removing a dependency (`find_package()` / `target_link_libraries()` in CMake), update `packaging/arch/PKGBUILD` (`depends` / `makedepends`) and the OBS packaging (`packaging/obs/krema.spec`, `packaging/obs/debian.control`) in the same change.
+- When adding or removing a dependency (`find_package()` / `target_link_libraries()` in CMake), update `packaging/arch/PKGBUILD` (`depends` / `makedepends`) and the OBS packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.control`) in the same change.
 
 ## Pull Request Completion
 
-- A PR is ready for review or merge only when every CI check on its head is green, the change has been QA'd in a running Krema session, and review feedback is resolved.
+- A PR is ready for review or merge only when every CI check on its head is green, the change has been QA'd in a running KDockW session, and review feedback is resolved.
 - QA means exercising the changed behavior in a real KWin Wayland session (for example, maximize a window to check space reservation) and observing the result. Use `kwin-mcp` when the check needs automation. Passing unit tests or reading the code is not QA; never report a feature as working without having observed it.
 - Fix E2E and CI failures the PR causes or exposes in that same PR. Do not merge with known E2E breakage or defer it to a follow-up.
 - Reproduce and iterate on E2E failures locally with `tests/appium/run-e2e.sh` (Docker) until they pass; do not use repeated CI pushes as the debug loop.
@@ -65,7 +65,7 @@ Rules that apply to every agent working on this repository, regardless of harnes
   2. the product needs a newer dependency (Qt, KDE Frameworks, LayerShellQt, etc.) that the release cannot provide and this blocks product work.
 - Platform-forced removal is per channel: when a build service stops offering a release (COPR deletes EOL Fedora chroots, Launchpad rejects uploads to Obsolete Ubuntu series, OBS removes a distro project), that channel simply stops serving the release. Other channels that still offer it keep building it — record the platform action, do not remove the release elsewhere.
 - Add new distro releases promptly to every channel that offers them (OBS `packaging/obs/project.meta.xml`, COPR chroots, Launchpad PPA series, README Installation table).
-- The scheduled workflow `.github/workflows/distro-release-watch.yml` opens one tracking issue per channel, labeled `distro-release`, once that channel offers a distro release (including pre-releases) that Krema does not build there yet; those issues drive the additions. Releases a channel does not offer yet are only logged, never filed.
+- The scheduled workflow `.github/workflows/distro-release-watch.yml` opens one tracking issue per channel, labeled `distro-release`, once that channel offers a distro release (including pre-releases) that KDockW does not build there yet; those issues drive the additions. Releases a channel does not offer yet are only logged, never filed.
 
 ### Agent Rules
 

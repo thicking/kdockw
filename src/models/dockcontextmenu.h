@@ -5,7 +5,7 @@
 
 #include <QObject>
 
-namespace krema
+namespace kdockw
 {
 
 class DockModel;
@@ -49,4 +49,4 @@ private:
     void setOpen(bool open);
 };
 
-} // namespace krema
+} // namespace kdockw

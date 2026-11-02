@@ -6,7 +6,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 // Hero picture of a settings page: a rounded miniature of the user's desktop
 // (the real Plasma wallpaper, else a theme gradient) at the real screen

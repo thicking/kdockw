@@ -18,7 +18,7 @@ namespace NotificationManager
 class Settings;
 }
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -26,7 +26,7 @@ namespace krema
  * send as com.canonical.Unity.LauncherEntry.Update signals on the session bus.
  *
  * Follows the behavior of Plasma's task manager SmartLauncher backend, which
- * Krema used through the private org.kde.plasma.private.taskmanager QML module
+ * KDockW used through the private org.kde.plasma.private.taskmanager QML module
  * until Plasma 6.6 compiled that module into the task manager applet plugin.
  *
  * QML reads the state through Q_INVOKABLE methods keyed by a dock item's
@@ -94,4 +94,4 @@ private:
     int m_revision = 0;
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <cmath>
 
-namespace krema
+namespace kdockw
 {
 
 QMutex TaskIconProvider::s_rawIconsMutex;
@@ -360,4 +360,4 @@ QPixmap TaskIconProvider::shrinkPixmap(const QIcon &icon, int targetSize, qreal 
     return result;
 }
 
-} // namespace krema
+} // namespace kdockw

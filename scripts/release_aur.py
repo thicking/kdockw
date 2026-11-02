@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""AUR channel adapter for the krema release tooling.
+"""AUR channel adapter for the kdockw release tooling.
 
 prepare() pins the tagged packaging/arch/PKGBUILD to the release context
 (version, immutable source URL, SHA-256, pkgrel=1) in an output directory and
@@ -38,15 +38,15 @@ from pathlib import Path
 from release_common import ReleaseContext, ReleaseError, command, load_context, result
 
 CHANNEL = "aur"
-PKGNAME = "krema"
+PKGNAME = "kdockw"
 AUR_HTTPS_URL = f"https://aur.archlinux.org/{PKGNAME}.git"
 AUR_SSH_URL = f"aur@aur.archlinux.org:{PKGNAME}.git"
 AUR_BRANCH = "master"
 PKGBUILD_PATH = Path("packaging/arch/PKGBUILD")
 
 # makepkg is absent on macOS; Arch only publishes amd64 images.
-ARCH_IMAGE = os.environ.get("KREMA_AUR_IMAGE", "docker.io/archlinux:base-devel")
-ARCH_PLATFORM = os.environ.get("KREMA_AUR_PLATFORM", "linux/amd64")
+ARCH_IMAGE = os.environ.get("KDOCKW_AUR_IMAGE", "docker.io/archlinux:base-devel")
+ARCH_PLATFORM = os.environ.get("KDOCKW_AUR_PLATFORM", "linux/amd64")
 
 GIT_TIMEOUT = 120
 SRCINFO_TIMEOUT = 900  # covers a first-time image pull

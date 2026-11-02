@@ -19,63 +19,63 @@ TEST_CASE("Parabolic zoom factor", "[zoom]")
 {
     SECTION("Distance 0 gives maximum zoom")
     {
-        double f = krema::parabolicZoomFactor(0.0, 48.0, 1.6);
+        double f = kdockw::parabolicZoomFactor(0.0, 48.0, 1.6);
         REQUIRE_THAT(f, WithinAbs(1.6, 0.001));
     }
 
     SECTION("Large distance gives zoom near 1.0")
     {
-        double f = krema::parabolicZoomFactor(500.0, 48.0, 1.6);
+        double f = kdockw::parabolicZoomFactor(500.0, 48.0, 1.6);
         REQUIRE_THAT(f, WithinAbs(1.0, 0.01));
     }
 
     SECTION("maxZoomFactor 1.0 always returns 1.0")
     {
-        double f = krema::parabolicZoomFactor(0.0, 48.0, 1.0);
+        double f = kdockw::parabolicZoomFactor(0.0, 48.0, 1.0);
         REQUIRE_THAT(f, WithinAbs(1.0, 0.001));
     }
 
     SECTION("maxZoomFactor below 1.0 returns 1.0")
     {
-        double f = krema::parabolicZoomFactor(0.0, 48.0, 0.5);
+        double f = kdockw::parabolicZoomFactor(0.0, 48.0, 0.5);
         REQUIRE_THAT(f, WithinAbs(1.0, 0.001));
     }
 
     SECTION("Zoom decreases with distance")
     {
-        double f10 = krema::parabolicZoomFactor(10.0, 48.0, 1.6);
-        double f30 = krema::parabolicZoomFactor(30.0, 48.0, 1.6);
-        double f60 = krema::parabolicZoomFactor(60.0, 48.0, 1.6);
+        double f10 = kdockw::parabolicZoomFactor(10.0, 48.0, 1.6);
+        double f30 = kdockw::parabolicZoomFactor(30.0, 48.0, 1.6);
+        double f60 = kdockw::parabolicZoomFactor(60.0, 48.0, 1.6);
         REQUIRE(f10 > f30);
         REQUIRE(f30 > f60);
     }
 
     SECTION("Symmetry: positive and negative distance give same result")
     {
-        double fPos = krema::parabolicZoomFactor(25.0, 48.0, 1.6);
-        double fNeg = krema::parabolicZoomFactor(-25.0, 48.0, 1.6);
+        double fPos = kdockw::parabolicZoomFactor(25.0, 48.0, 1.6);
+        double fNeg = kdockw::parabolicZoomFactor(-25.0, 48.0, 1.6);
         REQUIRE_THAT(fPos, WithinAbs(fNeg, 0.0001));
     }
 
     SECTION("Different icon sizes scale the curve")
     {
         // Larger icon → wider Gaussian → less falloff at same distance
-        double fSmall = krema::parabolicZoomFactor(30.0, 32.0, 1.6);
-        double fLarge = krema::parabolicZoomFactor(30.0, 64.0, 1.6);
+        double fSmall = kdockw::parabolicZoomFactor(30.0, 32.0, 1.6);
+        double fLarge = kdockw::parabolicZoomFactor(30.0, 64.0, 1.6);
         REQUIRE(fLarge > fSmall);
     }
 
     SECTION("Curve at one sigma matches the dock's exp(-(d/sigma)^2) Gaussian")
     {
         // sigma = 48 * 1.2 = 57.6 → factor at d = sigma is 1 + 0.6 / e
-        double f = krema::parabolicZoomFactor(57.6, 48.0, 1.6);
+        double f = kdockw::parabolicZoomFactor(57.6, 48.0, 1.6);
         REQUIRE_THAT(f, WithinAbs(1.0 + 0.6 * std::exp(-1.0), 1e-9));
     }
 
     SECTION("Wider sigma factor spreads the zoom to farther icons")
     {
-        double fTight = krema::parabolicZoomFactor(52.0, 48.0, 1.6, 0.8);
-        double fWide = krema::parabolicZoomFactor(52.0, 48.0, 1.6, 1.8);
+        double fTight = kdockw::parabolicZoomFactor(52.0, 48.0, 1.6, 0.8);
+        double fWide = kdockw::parabolicZoomFactor(52.0, 48.0, 1.6, 1.8);
         REQUIRE(fWide > fTight);
     }
 }
@@ -97,12 +97,12 @@ constexpr double kBgEnd = kRestEnd + kBackgroundMargin;
 constexpr double kRowCentre = (kBgStart + kBgEnd) / 2.0; // background is symmetric about the row
 constexpr double kInf = std::numeric_limits<double>::infinity();
 constexpr double kZoomLevels[] = {1.4, 1.6, 2.0};
-constexpr krema::ZoomStyle kStyles[] = {krema::ZoomStyle::Parabolic, krema::ZoomStyle::InPlace};
+constexpr kdockw::ZoomStyle kStyles[] = {kdockw::ZoomStyle::Parabolic, kdockw::ZoomStyle::InPlace};
 
-krema::DockZoomLayout
-zoomAt(double cursor, double maxZoom, krema::ZoomStyle style = krema::ZoomStyle::Parabolic, bool active = true, double minEdge = -kInf, double maxEdge = kInf)
+kdockw::DockZoomLayout
+zoomAt(double cursor, double maxZoom, kdockw::ZoomStyle style = kdockw::ZoomStyle::Parabolic, bool active = true, double minEdge = -kInf, double maxEdge = kInf)
 {
-    return krema::computeDockZoom(kCount, kRestStart, kIconSize, kSpacing, -1, 0.0, kBgStart, kBgEnd, maxZoom, style, active, cursor, minEdge, maxEdge);
+    return kdockw::computeDockZoom(kCount, kRestStart, kIconSize, kSpacing, -1, 0.0, kBgStart, kBgEnd, maxZoom, style, active, cursor, minEdge, maxEdge);
 }
 
 double restCentre(int i)
@@ -110,27 +110,27 @@ double restCentre(int i)
     return kRestStart + i * kPitch + kIconSize / 2.0;
 }
 
-double zoomedCentre(const krema::DockZoomLayout &layout, int i)
+double zoomedCentre(const kdockw::DockZoomLayout &layout, int i)
 {
     return restCentre(i) + layout.offsets[static_cast<std::size_t>(i)];
 }
 
-double zoomedWidth(const krema::DockZoomLayout &layout, int i)
+double zoomedWidth(const kdockw::DockZoomLayout &layout, int i)
 {
     return kIconSize * layout.scales[static_cast<std::size_t>(i)];
 }
 
-double zoomedLeading(const krema::DockZoomLayout &layout, int i)
+double zoomedLeading(const kdockw::DockZoomLayout &layout, int i)
 {
     return zoomedCentre(layout, i) - zoomedWidth(layout, i) / 2.0;
 }
 
-double zoomedTrailing(const krema::DockZoomLayout &layout, int i)
+double zoomedTrailing(const kdockw::DockZoomLayout &layout, int i)
 {
     return zoomedCentre(layout, i) + zoomedWidth(layout, i) / 2.0;
 }
 
-double totalGrowth(const krema::DockZoomLayout &layout)
+double totalGrowth(const kdockw::DockZoomLayout &layout)
 {
     double growth = 0.0;
     for (double scale : layout.scales) {
@@ -188,7 +188,7 @@ int reversals(const std::vector<double> &values, double tolerance)
     return count;
 }
 
-void requireRestLayout(const krema::DockZoomLayout &layout)
+void requireRestLayout(const kdockw::DockZoomLayout &layout)
 {
     REQUIRE(layout.scales.size() == static_cast<std::size_t>(kCount));
     REQUIRE(layout.offsets.size() == static_cast<std::size_t>(kCount));
@@ -206,7 +206,7 @@ TEST_CASE("Dock zoom rest state", "[zoom][layout]")
 {
     SECTION("Inactive layout is the rest layout for every style")
     {
-        for (krema::ZoomStyle style : kStyles) {
+        for (kdockw::ZoomStyle style : kStyles) {
             for (double cursor : {-200.0, kBgStart, restCentre(3), restCentre(3) + 13.0, kBgEnd + 500.0}) {
                 requireRestLayout(zoomAt(cursor, 1.6, style, /*active=*/false));
             }
@@ -215,7 +215,7 @@ TEST_CASE("Dock zoom rest state", "[zoom][layout]")
 
     SECTION("maxZoomFactor at or below 1 keeps every item at rest")
     {
-        for (krema::ZoomStyle style : kStyles) {
+        for (kdockw::ZoomStyle style : kStyles) {
             for (double maxZoom : {1.0, 0.5}) {
                 requireRestLayout(zoomAt(restCentre(3), maxZoom, style));
             }
@@ -225,7 +225,7 @@ TEST_CASE("Dock zoom rest state", "[zoom][layout]")
     SECTION("Empty row yields no items")
     {
         for (int count : {0, -3}) {
-            const auto layout = krema::computeDockZoom(count,
+            const auto layout = kdockw::computeDockZoom(count,
                                                        kRestStart,
                                                        kIconSize,
                                                        kSpacing,
@@ -234,7 +234,7 @@ TEST_CASE("Dock zoom rest state", "[zoom][layout]")
                                                        kBgStart,
                                                        kBgEnd,
                                                        1.6,
-                                                       krema::ZoomStyle::Parabolic,
+                                                       kdockw::ZoomStyle::Parabolic,
                                                        true,
                                                        restCentre(0),
                                                        -kInf,
@@ -258,8 +258,8 @@ TEST_CASE("Separated parabolic zoom keeps its fixed boundary gap and bounded mot
     const auto centre = [](int i) {
         return kRestStart + i * kPitch + kIconSize / 2.0 + (i >= boundary ? extra : 0.0);
     };
-    const auto calculate = [](double cursor, double minEdge, double maxEdge, bool active, krema::ZoomStyle style) {
-        return krema::
+    const auto calculate = [](double cursor, double minEdge, double maxEdge, bool active, kdockw::ZoomStyle style) {
+        return kdockw::
             computeDockZoom(count, kRestStart, kIconSize, kSpacing, boundary, extra, kBgStart, backgroundEnd, 1.6, style, active, cursor, minEdge, maxEdge);
     };
 
@@ -274,19 +274,19 @@ TEST_CASE("Separated parabolic zoom keeps its fixed boundary gap and bounded mot
                 REQUIRE(rest.offsets[static_cast<std::size_t>(i)] == 0.0);
             }
         }
-        const auto inPlace = calculate(centre(boundary), kBgStart, backgroundEnd, true, krema::ZoomStyle::InPlace);
+        const auto inPlace = calculate(centre(boundary), kBgStart, backgroundEnd, true, kdockw::ZoomStyle::InPlace);
         for (int i = 0; i < count; ++i) {
             REQUIRE(inPlace.offsets[static_cast<std::size_t>(i)] == 0.0);
             REQUIRE_THAT(inPlace.scales[static_cast<std::size_t>(i)],
-                         WithinAbs(krema::parabolicZoomFactor(centre(i) - centre(boundary), kIconSize, 1.6), 1e-12));
+                         WithinAbs(kdockw::parabolicZoomFactor(centre(i) - centre(boundary), kIconSize, 1.6), 1e-12));
         }
     }
 
     SECTION("Full positional room leaves normal gaps and a twice-spaced stroke slot")
     {
         for (double cursor : {centre(boundary - 1), rowCentre, centre(boundary)}) {
-            const auto layout = calculate(cursor, -kInf, kInf, true, krema::ZoomStyle::Parabolic);
-            const auto mirrored = calculate(2.0 * rowCentre - cursor, -kInf, kInf, true, krema::ZoomStyle::Parabolic);
+            const auto layout = calculate(cursor, -kInf, kInf, true, kdockw::ZoomStyle::Parabolic);
+            const auto mirrored = calculate(2.0 * rowCentre - cursor, -kInf, kInf, true, kdockw::ZoomStyle::Parabolic);
             REQUIRE_THAT(layout.leadingGrowth, WithinAbs(mirrored.trailingGrowth, 1e-9));
             for (int i = 1; i < count; ++i) {
                 const auto previous = static_cast<std::size_t>(i - 1);
@@ -303,10 +303,10 @@ TEST_CASE("Separated parabolic zoom keeps its fixed boundary gap and bounded mot
         constexpr double roomL = 10.0;
         constexpr double roomR = 15.0;
         const auto cursors = positions(centre(boundary - 2), centre(boundary + 1));
-        auto previous = calculate(cursors.front(), kBgStart - roomL, backgroundEnd + roomR, true, krema::ZoomStyle::Parabolic);
+        auto previous = calculate(cursors.front(), kBgStart - roomL, backgroundEnd + roomR, true, kdockw::ZoomStyle::Parabolic);
         for (double cursor : cursors) {
-            const auto free = calculate(cursor, -kInf, kInf, true, krema::ZoomStyle::Parabolic);
-            const auto layout = calculate(cursor, kBgStart - roomL, backgroundEnd + roomR, true, krema::ZoomStyle::Parabolic);
+            const auto free = calculate(cursor, -kInf, kInf, true, kdockw::ZoomStyle::Parabolic);
+            const auto layout = calculate(cursor, kBgStart - roomL, backgroundEnd + roomR, true, kdockw::ZoomStyle::Parabolic);
             REQUIRE(layout.scales == free.scales);
             REQUIRE(layout.leadingGrowth <= roomL + 1e-9);
             REQUIRE(layout.trailingGrowth <= roomR + 1e-9);
@@ -337,7 +337,7 @@ TEST_CASE("Absent separator zones retain the ordinary zoom layout", "[zoom][layo
         for (int boundary : {-1, kCount}) {
             for (double cursor : {restCentre(0), kRowCentre, restCentre(kCount - 1)}) {
                 const auto ordinary = zoomAt(cursor, 1.6, style);
-                const auto absent = krema::
+                const auto absent = kdockw::
                     computeDockZoom(kCount, kRestStart, kIconSize, kSpacing, boundary, kSpacing + 1.0, kBgStart, kBgEnd, 1.6, style, true, cursor, -kInf, kInf);
                 REQUIRE(absent.scales == ordinary.scales);
                 REQUIRE(absent.offsets == ordinary.offsets);
@@ -354,7 +354,7 @@ TEST_CASE("Parabolic zoom scales along the Gaussian curve", "[zoom][layout]")
         for (double cursor : sweepPositions()) {
             const auto layout = zoomAt(cursor, maxZoom);
             for (int i = 0; i < kCount; ++i) {
-                const double expected = krema::parabolicZoomFactor(restCentre(i) - cursor, kIconSize, maxZoom);
+                const double expected = kdockw::parabolicZoomFactor(restCentre(i) - cursor, kIconSize, maxZoom);
                 REQUIRE_THAT(layout.scales[static_cast<std::size_t>(i)], WithinAbs(expected, 1e-12));
             }
         }
@@ -457,7 +457,7 @@ TEST_CASE("Parabolic zoom mirrors about the row centre", "[zoom][layout]")
 
 TEST_CASE("Dock zoom layout changes continuously as the cursor sweeps", "[zoom][layout]")
 {
-    for (krema::ZoomStyle style : kStyles) {
+    for (kdockw::ZoomStyle style : kStyles) {
         for (double maxZoom : kZoomLevels) {
             const auto cursors = sweepPositions();
             auto previous = zoomAt(cursors.front(), maxZoom, style);
@@ -482,7 +482,7 @@ TEST_CASE("Parabolic zoom growth is capped by the surface bounds", "[zoom][layou
     {
         for (double cursor : sweepPositions()) {
             const auto free = zoomAt(cursor, 1.6);
-            const auto bounded = zoomAt(cursor, 1.6, krema::ZoomStyle::Parabolic, true, kBgStart - 1000.0, kBgEnd + 1000.0);
+            const auto bounded = zoomAt(cursor, 1.6, kdockw::ZoomStyle::Parabolic, true, kBgStart - 1000.0, kBgEnd + 1000.0);
             REQUIRE(bounded.scales == free.scales);
             REQUIRE(bounded.offsets == free.offsets);
             REQUIRE(bounded.leadingGrowth == free.leadingGrowth);
@@ -497,7 +497,7 @@ TEST_CASE("Parabolic zoom growth is capped by the surface bounds", "[zoom][layou
         for (double maxZoom : kZoomLevels) {
             for (double cursor : sweepPositions()) {
                 const auto free = zoomAt(cursor, maxZoom);
-                const auto layout = zoomAt(cursor, maxZoom, krema::ZoomStyle::Parabolic, true, kBgStart - roomL, kBgEnd + roomR);
+                const auto layout = zoomAt(cursor, maxZoom, kdockw::ZoomStyle::Parabolic, true, kBgStart - roomL, kBgEnd + roomR);
                 REQUIRE(layout.leadingGrowth <= roomL + 1e-9);
                 REQUIRE(layout.trailingGrowth <= roomR + 1e-9);
                 REQUIRE(layout.scales == free.scales);
@@ -510,15 +510,15 @@ TEST_CASE("Parabolic zoom growth is capped by the surface bounds", "[zoom][layou
 
     SECTION("One blocked side sends all growth to the other")
     {
-        const auto layout = zoomAt(kRowCentre, 1.6, krema::ZoomStyle::Parabolic, true, kBgStart, kInf);
+        const auto layout = zoomAt(kRowCentre, 1.6, kdockw::ZoomStyle::Parabolic, true, kBgStart, kInf);
         REQUIRE(layout.leadingGrowth == 0.0);
         REQUIRE_THAT(layout.trailingGrowth, WithinAbs(totalGrowth(layout), 1e-9));
     }
 
     SECTION("No room at all zooms in place")
     {
-        const auto layout = zoomAt(kRowCentre, 1.6, krema::ZoomStyle::Parabolic, true, kBgStart, kBgEnd);
-        const auto inPlace = zoomAt(kRowCentre, 1.6, krema::ZoomStyle::InPlace);
+        const auto layout = zoomAt(kRowCentre, 1.6, kdockw::ZoomStyle::Parabolic, true, kBgStart, kBgEnd);
+        const auto inPlace = zoomAt(kRowCentre, 1.6, kdockw::ZoomStyle::InPlace);
         REQUIRE(layout.scales == inPlace.scales);
         for (double offset : layout.offsets) {
             REQUIRE_THAT(offset, WithinAbs(0.0, 1e-9));
@@ -532,10 +532,10 @@ TEST_CASE("In-place dock zoom scales without moving anything", "[zoom][layout]")
 {
     for (double maxZoom : kZoomLevels) {
         for (double cursor : sweepPositions()) {
-            const auto layout = zoomAt(cursor, maxZoom, krema::ZoomStyle::InPlace);
-            const auto bounded = zoomAt(cursor, maxZoom, krema::ZoomStyle::InPlace, true, kBgStart, kBgEnd);
+            const auto layout = zoomAt(cursor, maxZoom, kdockw::ZoomStyle::InPlace);
+            const auto bounded = zoomAt(cursor, maxZoom, kdockw::ZoomStyle::InPlace, true, kBgStart, kBgEnd);
             for (int i = 0; i < kCount; ++i) {
-                const double expected = krema::parabolicZoomFactor(restCentre(i) - cursor, kIconSize, maxZoom);
+                const double expected = kdockw::parabolicZoomFactor(restCentre(i) - cursor, kIconSize, maxZoom);
                 REQUIRE_THAT(layout.scales[static_cast<std::size_t>(i)], WithinAbs(expected, 1e-12));
                 REQUIRE(layout.offsets[static_cast<std::size_t>(i)] == 0.0);
             }

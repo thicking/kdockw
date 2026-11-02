@@ -39,13 +39,13 @@ namespace
 using TaskManager::AbstractTasksModel;
 
 constexpr int kTimeoutMs = 15000;
-const QStringList kAppIds{QStringLiteral("krema-inplace-a"), QStringLiteral("krema-inplace-b"), QStringLiteral("krema-inplace-c")};
+const QStringList kAppIds{QStringLiteral("kdockw-inplace-a"), QStringLiteral("kdockw-inplace-b"), QStringLiteral("kdockw-inplace-c")};
 
-krema::DockModel &model()
+kdockw::DockModel &model()
 {
     // Keep the model alive until process exit. KWin's model owns Wayland-side
     // objects whose teardown order is not useful to this integration test.
-    static auto *instance = new krema::DockModel;
+    static auto *instance = new kdockw::DockModel;
     return *instance;
 }
 
@@ -212,7 +212,7 @@ TEST_CASE("An explicit reorder wins over a pending launcher-slot repair", "[laun
     // An unpinned task to reorder: moving it keeps the launcher list as is,
     // so the move does not reset the model behind the pending pass.
     Children children;
-    REQUIRE(children.start(QStringLiteral("krema-inplace-unpinned")));
+    REQUIRE(children.start(QStringLiteral("kdockw-inplace-unpinned")));
     REQUIRE(reaches({QStringLiteral("L0"), QStringLiteral("L1"), QStringLiteral("L2"), QStringLiteral("W-1")}));
 
     auto *tasks = model().tasksModel();

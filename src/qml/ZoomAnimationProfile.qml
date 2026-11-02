@@ -3,11 +3,11 @@
 
 import QtQuick
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 /**
  * Resolves the hover-zoom animation timing from the ZoomAnimationPreset,
- * ZoomIn/OutDuration and ZoomIn/OutEasing settings (krema.kcfg).
+ * ZoomIn/OutDuration and ZoomIn/OutEasing settings (kdockw.kcfg).
  *
  * Presets: 0 = Natural (default), 1 = Quick, 2 = Relaxed, 3 = Instant,
  * 4 = Custom (the ZoomIn/Out* settings). Out-of-range presets fall back to

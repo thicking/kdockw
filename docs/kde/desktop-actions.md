@@ -4,7 +4,7 @@ Verified against the KF 6.30 headers in the Fedora 43 CI image
 (`kf6-kservice-devel`, `kf6-kio-devel`, `kf6-kjobwidgets-devel`) and the
 Plasma task manager (`plasma-desktop/applets/taskmanager/backend.cpp`,
 `Backend::jumpListActions`; `plasma-workspace/libtaskmanager/tasktools.cpp`,
-`runApp`). Krema uses it in `src/models/desktopactions.{h,cpp}` for the dock
+`runApp`). KDockW uses it in `src/models/desktopactions.{h,cpp}` for the dock
 item context menu.
 
 ## KService (`/usr/include/KF6/KService/kservice.h`)

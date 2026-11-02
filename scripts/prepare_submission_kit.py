@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build an offline store upload kit for a verified Krema release.
+"""Build an offline store upload kit for a verified KDockW release.
 
 The command reads a verified release context produced by ``scripts/release.py
 prepare``, renders the three channel schemas for that release, and writes a
@@ -63,7 +63,7 @@ PLACEHOLDER_RE = re.compile(
 )
 TOKEN_RE = re.compile(r"\{\{([a-z_][a-z0-9_]*)\}\}")
 CMAKE_VERSION_RE = re.compile(
-    r"project\s*\(\s*krema\b[^)]*?\bVERSION\s+([0-9]+\.[0-9]+\.[0-9]+)",
+    r"project\s*\(\s*kdockw\b[^)]*?\bVERSION\s+([0-9]+\.[0-9]+\.[0-9]+)",
     re.IGNORECASE | re.DOTALL,
 )
 MAX_DOWNLOAD_BYTES = 128 * 1024 * 1024
@@ -217,7 +217,7 @@ def lfs_pointer(path: Path, location: str) -> tuple[str, int] | None:
 def fetch_lfs_object(url: str, oid: str, size: int) -> bytes:
     """Download exactly ``size`` bytes from ``url`` and require the SHA-256 ``oid``."""
     request = urllib.request.Request(
-        url, headers={"User-Agent": "Krema-submission-kit/1.0"}
+        url, headers={"User-Agent": "KDockW-submission-kit/1.0"}
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -510,7 +510,7 @@ def read_context_archive(context: ReleaseContext) -> bytes:
 
 def download_verified(url: str, expected_sha256: str) -> bytes:
     request = urllib.request.Request(
-        url, headers={"User-Agent": "Krema-submission-kit/1.0"}
+        url, headers={"User-Agent": "KDockW-submission-kit/1.0"}
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -589,7 +589,7 @@ def validate_source_archive(payload: bytes, version: str, commit: str) -> None:
         fail(f"source archive license or CMakeLists.txt is not readable: {exc}")
     match = CMAKE_VERSION_RE.search(cmake)
     if not match:
-        fail("source archive CMakeLists.txt has no project(krema VERSION x.y.z)")
+        fail("source archive CMakeLists.txt has no project(kdockw VERSION x.y.z)")
     if match.group(1) != version:
         fail(
             f"source archive CMakeLists.txt declares version {match.group(1)}; context is {version}"

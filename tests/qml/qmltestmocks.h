@@ -3,7 +3,7 @@
 
 #pragma once
 
-// Test doubles for the C++-backed QML modules Krema's QML imports.
+// Test doubles for the C++-backed QML modules KDockW's QML imports.
 //
 // Only types that cannot be expressed in plain QML live here:
 //  - org.kde.taskmanager AbstractTasksModel (QML needs its role *enum*),
@@ -11,18 +11,18 @@
 //    (Repeater model + index()/data()/makeModelIndex()),
 //  - org.kde.pipewire PipeWireSourceItem (a QQuickItem),
 //  - ZoomLayoutEngine: DockView.zoomLayout() on the production
-//    krema::computeDockZoom, so the DockView mock lays out zoom exactly as
+//    kdockw::computeDockZoom, so the DockView mock lays out zoom exactly as
 //    the app does.
-// The com.bhyoo.krema singletons are plain QML files under mocks/.
+// The com.thicking.kdockw singletons are plain QML files under mocks/.
 
 #include <QQuickItem>
 #include <QStandardItemModel>
 #include <QVariantMap>
 
-namespace KremaQmlTest
+namespace KDockWQmlTest
 {
 
-// Mirrors the role names of TaskManager::AbstractTasksModel that Krema's QML
+// Mirrors the role names of TaskManager::AbstractTasksModel that KDockW's QML
 // reads, plus a few mock-only roles (IconName, IsOnCurrentDesktop) that back
 // the per-index DockModel lookups. Values are internal to the test double.
 class MockAbstractTasksModel : public QObject
@@ -80,7 +80,7 @@ public:
     // Role lookup by name, used by the QML DockModel mock.
     Q_INVOKABLE QVariant get(int row, const QString &roleName) const;
 
-    // TaskManager::TasksModel API used by Krema's QML.
+    // TaskManager::TasksModel API used by KDockW's QML.
     Q_INVOKABLE QModelIndex makeModelIndex(int row, int childRow = -1) const;
     Q_INVOKABLE void requestActivate(const QModelIndex &index);
     Q_INVOKABLE void requestClose(const QModelIndex &index);
@@ -194,4 +194,4 @@ public:
 
 void registerMockTypes();
 
-} // namespace KremaQmlTest
+} // namespace KDockWQmlTest

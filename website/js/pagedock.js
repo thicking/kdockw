@@ -1,4 +1,4 @@
-// Pagedock: the page's table of contents as a working mini Krema dock.
+// Pagedock: the page's table of contents as a working mini KDockW dock.
 // Real app-icon tiles on one translucent panel: parabolic zoom growing up out
 // of the panel floor, running/active indicators from reading progress, launch
 // bounce + genie restore, dodge with bottom-edge reveal, roving keyboard

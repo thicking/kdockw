@@ -12,7 +12,7 @@
 #include <QtGui/qguiapplication_platform.h>
 #include <qpa/qplatformnativeinterface.h>
 
-namespace krema
+namespace kdockw
 {
 
 namespace
@@ -252,4 +252,4 @@ void PointerFocusTracker::handleLeave(void *data, wl_pointer *, uint32_t, wl_sur
     static_cast<PointerFocusTracker *>(data)->setFocusedSurface(nullptr);
 }
 
-} // namespace krema
+} // namespace kdockw

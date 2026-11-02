@@ -1,6 +1,6 @@
 # Icon Size Normalization Reference
 
-Krema M7 기능 구현을 위한 레퍼런스 문서.
+KDockW M7 기능 구현을 위한 레퍼런스 문서.
 아이콘 내부 투명 패딩을 감지하여 시각적 크기를 균일하게 맞추는 기능.
 
 ---
@@ -36,7 +36,7 @@ Linux 아이콘 테마에서 앱 아이콘의 **시각적 크기가 일정하지
 - Symbolic 아이콘: `-symbolic` 접미사, 단색, 패딩이 상대적으로 일정
 - 풀컬러 앱 아이콘: 패딩 양이 아이콘마다 크게 다름
 
-### 1.3 Krema 현재 구현
+### 1.3 KDockW 현재 구현
 
 ```cpp
 // src/models/taskiconprovider.h:28-44
@@ -335,7 +335,7 @@ private:
 - 투명 패딩 정규화 없음 — 아이콘 디자인 가이드라인으로 해결
 
 **결론**: 주요 dock/taskbar 중 **투명 패딩 자동 정규화를 구현한 곳은 없음**.
-Krema가 이를 구현하면 **차별화 포인트**가 됨.
+KDockW가 이를 구현하면 **차별화 포인트**가 됨.
 
 ---
 
@@ -359,12 +359,12 @@ KConfigXT 설정:
 
 ## 8. 참조 소스 경로
 
-### Krema 현재 코드
+### KDockW 현재 코드
 | 파일 | 내용 |
 |------|------|
 | `src/models/taskiconprovider.h` | 아이콘 로딩 (정규화 로직 추가 위치) |
 | `src/qml/DockItem.qml:263-282` | Image 크기/소스 바인딩 |
-| `src/config/krema.kcfg` | KConfigXT 설정 스키마 |
+| `src/config/kdockw.kcfg` | KConfigXT 설정 스키마 |
 
 ### Qt API
 | API | 용도 |

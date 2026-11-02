@@ -9,9 +9,9 @@
 
 #include <algorithm>
 
-Q_LOGGING_CATEGORY(lcWayland, "krema.platform.wayland")
+Q_LOGGING_CATEGORY(lcWayland, "kdockw.platform.wayland")
 
-namespace krema
+namespace kdockw
 {
 
 WaylandDockPlatform::WaylandDockPlatform() = default;
@@ -39,7 +39,7 @@ void WaylandDockPlatform::setupWindow(QWindow *window)
 
 void WaylandDockPlatform::setScreen(QScreen *screen)
 {
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
     // LayerShellQt < 6.6 has no Window::setScreen. With ScreenFromQWindow its
     // get_layer_surface() binds the wl_output of QWindow::screen() when the
     // surface is created on show(), so the Qt screen is the pin.
@@ -149,7 +149,7 @@ void WaylandDockPlatform::applyExclusiveZone()
 
 void WaylandDockPlatform::setSize(const QSize &size)
 {
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_DESIRED_SIZE
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE
     // LayerShellQt < 6.4 derives the layer-surface set_size from the QWindow
     // geometry (zeroing anchor-constrained axes itself), so size the window.
     // A 0 here means "stretch" for the layer surface, not a 0 px window: keep
@@ -222,4 +222,4 @@ void WaylandDockPlatform::applyAnchors()
     setMargin(m_margin);
 }
 
-} // namespace krema
+} // namespace kdockw

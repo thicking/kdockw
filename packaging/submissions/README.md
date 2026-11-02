@@ -1,8 +1,8 @@
 # Submission preparation kit
 
-These files are the store and catalog data for Krema's existing listings. KDE Store already has [Krema's listing](https://store.kde.org/p/2376676), and each release prepares a version update for it. AlternativeTo already has [Krema's listing](https://alternativeto.net/software/krema/) and its Latte Dock alternative relationship; its packet supports maintaining those entries, not creating them. The [Launchpad project](https://launchpad.net/krema), its branding, and the PPA are already published and need verification only. The generator prepares local files; it does not authenticate, publish updates, create projects, or change package channels. Together with the release scripts, these schemas and the local packaging under `packaging/` are repository tooling and metadata; changes to them do not touch application runtime code or CI workflows.
+These files are the store and catalog data for KDockW's existing listings. KDE Store already has [KDockW's listing](https://store.kde.org/p/2376676), and each release prepares a version update for it. AlternativeTo already has [KDockW's listing](https://alternativeto.net/software/kdockw/) and its Latte Dock alternative relationship; its packet supports maintaining those entries, not creating them. The [Launchpad project](https://launchpad.net/kdockw), its branding, and the PPA are already published and need verification only. The generator prepares local files; it does not authenticate, publish updates, create projects, or change package channels. Together with the release scripts, these schemas and the local packaging under `packaging/` are repository tooling and metadata; changes to them do not touch application runtime code or CI workflows.
 
-The JSON schemas use `{{version}}`, `{{tag}}`, `{{commit}}`, `{{repository}}`, `{{source_url}}`, `{{source_sha256}}` and `{{source_filename}}` tokens, which the kit fills in from a verified release context, so a normal release needs no schema edit. The source file is always the GitHub release asset `https://github.com/isac322/krema/releases/download/vX.Y.Z/krema-X.Y.Z.tar.gz`. The context archive is generated deterministically for a new tag; for a tag whose GitHub release already exists, it is instead the source bytes GitHub already serves for that tag, so an already published version keeps identical checksums instead of recompressing to different bytes. Each schema's `observed_release` (recorded as `schema_baseline` in `kit.json`) is the release the listings were last verified against, `0.10.0` at commit `a964a908ecb8904c079a8148403bebaaa427a821`. Those receipts are historical evidence and are not rewritten for later releases. Static branding stays as published, so packets for later releases do not ask for it to be uploaded again.
+The JSON schemas use `{{version}}`, `{{tag}}`, `{{commit}}`, `{{repository}}`, `{{source_url}}`, `{{source_sha256}}` and `{{source_filename}}` tokens, which the kit fills in from a verified release context, so a normal release needs no schema edit. The source file is always the GitHub release asset `https://github.com/thicking/krema/releases/download/vX.Y.Z/kdockw-X.Y.Z.tar.gz`. The context archive is generated deterministically for a new tag; for a tag whose GitHub release already exists, it is instead the source bytes GitHub already serves for that tag, so an already published version keeps identical checksums instead of recompressing to different bytes. Each schema's `observed_release` (recorded as `schema_baseline` in `kit.json`) is the release the listings were last verified against, `0.10.0` at commit `a964a908ecb8904c079a8148403bebaaa427a821`. Those receipts are historical evidence and are not rewritten for later releases. Static branding stays as published, so packets for later releases do not ask for it to be uploaded again.
 
 The kit reads the schemas, descriptions and media from the tagged source tree when it contains all three schemas. Otherwise it falls back to the copies installed with the release tooling, marks `kit.json` with `templates.source: "installed-fallback"` and `human_review_required: true`, and a person must confirm the feature claims before anything is pasted. Extracted `git archive` output and fresh checkouts carry Git LFS pointers instead of image bytes. On either route, a media file that exists only as a pointer is resolved into `submission-kit-lfs/` under the context's work directory: the object is fetched over HTTPS from the tagged commit's `media.githubusercontent.com` URL and must match the pointer's SHA-256 and declared size before its bytes reach the packet's `media/`. The source tree and the context archive are never modified, and a missing, malformed or mismatching object fails the kit instead of shipping a pointer.
 
@@ -11,17 +11,17 @@ The kit reads the schemas, descriptions and media from the tagged source tree wh
 Create a release context first (see `.agents/skills/release/SKILL.md`), then run either command from the repository root. The output directory must be new or empty and outside the repository:
 
 ```sh
-python3 scripts/release.py prepare --tag vX.Y.Z --output /tmp/krema-X.Y.Z
+python3 scripts/release.py prepare --tag vX.Y.Z --output /tmp/kdockw-X.Y.Z
 
 # Kit only:
 python3 scripts/prepare_submission_kit.py \
-  --context /tmp/krema-X.Y.Z/context.json \
-  --output /tmp/krema-X.Y.Z-submission-kit
+  --context /tmp/kdockw-X.Y.Z/context.json \
+  --output /tmp/kdockw-X.Y.Z-submission-kit
 
 # Kit plus stores.json and BROWSER-TASKS.md (the kit lands in <output>/kit):
 python3 scripts/release_stores.py prepare \
-  --context /tmp/krema-X.Y.Z/context.json \
-  --output /tmp/krema-X.Y.Z-stores
+  --context /tmp/kdockw-X.Y.Z/context.json \
+  --output /tmp/kdockw-X.Y.Z-stores
 ```
 
 Both read `kde-store.json`, `alternativeto.json` and `launchpad.json` from the tagged source tree (or the installed fallback described above). The kit is written as the output directory, an adjacent ZIP, and `SHA256SUMS`. The source file comes from the context's archive; the command checks it against the context's SHA-256, checks the archive layout without extracting it and requires its CMake version to match the context version. It refuses incomplete or unsafe inputs, checks PNG signatures and dimensions after resolving Git LFS pointers, and refuses a non-empty output directory or an existing ZIP. The only downloads are the Git LFS objects for referenced media that exist as pointers, fetched without credentials and verified as described above.
@@ -49,14 +49,14 @@ Use the channels in this order, verifying existing destinations before creating 
 2. Update the listed version to the packet's release version (the current live version is shown by `release_stores.py status`) and review the prepared metadata, including category `713`, `Various Plasma 6 Improvements`, against the available authenticated controls. The public OCS record is `https://api.kde-look.org/ocs/v1/content/data/2376676`; verify the mirrored frontends after publishing.
 3. Update the description with `kde-store/description.txt`.
 4. Keep the existing gallery. Replace an image from `kde-store/media/` only when the screenshots themselves changed, using the captions and alt text in `kde-store/upload-order.txt`. Avoid duplicate gallery images.
-5. Update the source download with `kde-store/downloads/krema-X.Y.Z.tar.gz` from the packet. Preserve the exact label and SHA-256 from `kde-store/upload-order.txt`, and state that it is source requiring a build. Do not present it as a native installer or a Plasmoid package.
+5. Update the source download with `kde-store/downloads/kdockw-X.Y.Z.tar.gz` from the packet. Preserve the exact label and SHA-256 from `kde-store/upload-order.txt`, and state that it is source requiring a build. Do not present it as a native installer or a Plasmoid package.
 6. Review the rendered update and authenticated form, then verify `https://www.opendesktop.org/p/2376676/`, `https://www.pling.com/p/2376676/`, and `https://www.linux-apps.org/p/2376676/`. Final submission or publication requires the maintainer's authorization.
 
 The packet does not claim that the authenticated KDE Store form was tested. The channel URLs in the description are public references for the listing and do not represent a submission performed by this tool.
 
 ### 2. AlternativeTo
 
-1. Open the existing Krema listing at `https://alternativeto.net/software/krema/`; do not create a duplicate.
+1. Open the existing KDockW listing at `https://alternativeto.net/software/kdockw/`; do not create a duplicate.
 2. Verify its existing relationship on the Latte Dock alternatives page linked in `alternativeto/upload-order.txt`; do not add that relationship again.
 3. Review and update metadata where needed using `alternativeto/upload-order.txt`, keeping website and repository links in dedicated URL controls.
 4. Use `alternativeto/description.txt` for the description. This copy contains no URL or email address.
@@ -69,10 +69,10 @@ The finalized `name`, `short_summary`, `relation.rationale`, and `optional_fee.c
 
 ### 3. Launchpad
 
-1. Open the existing project at `https://launchpad.net/krema`, the entry URL in `launchpad/upload-order.txt`. Verify the name `Krema`, owner `isac322`, information type `Public`, and license `GNU GPL v3` against the canonical API resource at `https://api.launchpad.net/1.0/krema`.
+1. Open the existing project at `https://launchpad.net/kdockw`, the entry URL in `launchpad/upload-order.txt`. Verify the name `KDockW`, owner `isac322`, information type `Public`, and license `GNU GPL v3` against the canonical API resource at `https://api.launchpad.net/1.0/kdockw`.
 2. Keep that existing project as the destination. Skip `https://launchpad.net/projects/+new`; do not create a duplicate or use `Complete Registration`. Activating that control or pressing Enter in a registration text input publishes a project.
 3. Verify the published branding URLs and SHA-256 values in `launchpad/submission.json` against the corresponding files in `launchpad/media/`: the 14px project icon, 64px project logo, and 192px project brand image. These assets are already published; this handoff calls for verification, not another upload.
-4. Keep the existing `~isac322` personal profile, `ppa:isac322/krema` archive, PPA ownership, and PPA install URL unchanged. Project branding is separate from the personal profile and PPA; do not upload a personal profile image as project branding.
+4. Keep the existing `~isac322` personal profile, `ppa:thicking/krema` archive, PPA ownership, and PPA install URL unchanged. Project branding is separate from the personal profile and PPA; do not upload a personal profile image as project branding.
 5. Treat `registration_field_mapping` in `launchpad/submission.json` as historical pre-registration provenance, not current editable controls or instructions to register again. The `published_project`, `branding_upload`, and media records describe the existing published destination.
 
 The generator does not create or modify this project. It copies the recorded publication evidence and branding into an offline verification packet.

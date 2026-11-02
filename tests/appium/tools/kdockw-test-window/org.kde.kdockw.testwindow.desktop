@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KDockW Test Window
+Comment=Deterministic window fixture for KDockW E2E tests
+Exec=kdockw-test-window --app-id org.kde.kdockw.testwindow
+Icon=utilities-terminal
+Categories=Utility;
+StartupWMClass=org.kde.kdockw.testwindow

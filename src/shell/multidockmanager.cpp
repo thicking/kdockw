@@ -10,7 +10,7 @@
 #include "dockview.h"
 #include "dockvisibilitycontroller.h"
 #include "edgetrigger.h"
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockactions.h"
 #include "models/dockmodel.h"
 #include "platform/dockplatform.h"
@@ -28,12 +28,12 @@
 #include <algorithm>
 #include <utility>
 
-Q_LOGGING_CATEGORY(lcMultiDock, "krema.shell.multidock")
+Q_LOGGING_CATEGORY(lcMultiDock, "kdockw.shell.multidock")
 
-namespace krema
+namespace kdockw
 {
 
-MultiDockManager::MultiDockManager(KremaSettings *settings, DockModel *model, NotificationTracker *tracker, QObject *parent)
+MultiDockManager::MultiDockManager(KDockWSettings *settings, DockModel *model, NotificationTracker *tracker, QObject *parent)
     : QObject(parent)
     , m_settings(settings)
     , m_model(model)
@@ -58,7 +58,7 @@ MultiDockManager::MultiDockManager(KremaSettings *settings, DockModel *model, No
     // The Plasma primary is published via kde_output_order_v1, not Qt's
     // primaryScreenChanged (which never fires on QtWayland).
     connect(OutputOrderMonitor::instance(), &OutputOrderMonitor::primaryOutputChanged, this, &MultiDockManager::onPrimaryScreenChanged);
-    connect(m_settings, &KremaSettings::SelectedOutputsChanged, this, [this] {
+    connect(m_settings, &KDockWSettings::SelectedOutputsChanged, this, [this] {
         if (m_initialized && m_mode == SelectedScreens) {
             reconcileSelectedScreens();
         }
@@ -258,7 +258,7 @@ DockShell *MultiDockManager::createShellForScreen(QScreen *screen)
 
     qCInfo(lcMultiDock) << "Creating dock shell for screen:" << screen->name() << "geometry:" << screen->geometry();
 
-    // Create per-screen settings overlay (falls back to global KremaSettings)
+    // Create per-screen settings overlay (falls back to global KDockWSettings)
     auto *screenSettings = new ScreenSettings(screen->name(), m_settings, this);
 
     auto platform = DockPlatformFactory::create();
@@ -535,4 +535,4 @@ void MultiDockManager::processTopologyUpdate()
     }
 }
 
-} // namespace krema
+} // namespace kdockw

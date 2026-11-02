@@ -11,7 +11,7 @@
 #include <QQuickImageProvider>
 #include <QRect>
 
-namespace krema
+namespace kdockw
 {
 
 /// Cached normalization analysis for an icon.
@@ -91,4 +91,4 @@ private:
     static constexpr qreal kEdgeToEdgeFill = 0.88;
 };
 
-} // namespace krema
+} // namespace kdockw

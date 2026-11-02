@@ -1,10 +1,10 @@
-# Krema Accessibility Audit
+# KDockW Accessibility Audit
 
 Initial audit: 2026-02-24. Implementation completed same day.
 
 ## Summary (Post-Implementation)
 
-Krema now has comprehensive accessibility support across all dock UI components.
+KDockW now has comprehensive accessibility support across all dock UI components.
 
 ## Audit Results
 

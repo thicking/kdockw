@@ -2,7 +2,7 @@ name: Pages
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "website/**"
       - "branding/**"
@@ -26,8 +26,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          # website/ and branding/ binaries are Git LFS objects; the site ships them.
-          lfs: true
+          lfs: false
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
@@ -37,36 +36,15 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf _site
-          cp -R website _site
+          mkdir -p _site/css
+          cp website/index.html website/404.html website/favicon.ico website/favicon.svg \
+            website/favicon-32.png website/apple-touch-icon.png website/maskable-512.png \
+            website/icon-192.png website/icon-512.png website/site.webmanifest \
+            website/robots.txt website/sitemap.xml website/og-image.png _site/
+          cp website/css/site.css _site/css/site.css
 
-          if [[ ! -f branding/social/og-image.png ]]; then
-            echo "::error file=website/index.html::branding/social/og-image.png is missing but referenced by og:image"
-            exit 1
-          fi
-          cp branding/social/og-image.png _site/og-image.png
-
-          # Ship only the screenshots that exist; strip the markup for missing ones
-          # so the page never renders a broken image.
-          mkdir -p _site/screenshots
-          kept=0
-          for shot in dock-overview settings; do
-            src="branding/screenshots/${shot}.png"
-            if [[ -f "$src" ]]; then
-              cp "$src" "_site/screenshots/${shot}.png"
-              kept=$((kept + 1))
-            else
-              echo "::warning::${src} not found; omitting it from the page"
-              SHOT="$shot" perl -0pi -e 's/^[ \t]*<!-- shot:\Q$ENV{SHOT}\E:begin -->.*?<!-- shot:\Q$ENV{SHOT}\E:end -->\n//ms' _site/index.html
-            fi
-          done
-          if [[ "$kept" -eq 0 ]]; then
-            perl -0pi -e 's/^[ \t]*<!-- screenshots:begin -->.*?<!-- screenshots:end -->\n//ms' _site/index.html
-            rmdir _site/screenshots
-          fi
-
-          # A missing LFS object would ship as a ~130-byte pointer file.
-          if pointers="$(grep -rlx 'version https://git-lfs.github.com/spec/v1' _site)"; then
-            echo "::error::Git LFS pointers instead of assets:"$'\n'"$pointers"
+          if [[ ! -f _site/og-image.png ]]; then
+            echo "::error file=website/index.html::website/og-image.png is missing but referenced by og:image"
             exit 1
           fi
 

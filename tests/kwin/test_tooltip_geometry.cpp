@@ -14,7 +14,7 @@
 //
 // Must run under run-with-kwin.sh.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -50,13 +50,13 @@ namespace
 {
 
 constexpr int kTimeoutMs = 15000;
-const QString kLauncherName = QStringLiteral("Krema Tooltip Geometry Test Launcher");
+const QString kLauncherName = QStringLiteral("KDockW Tooltip Geometry Test Launcher");
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 // Mirrors the QML singletons Application::run() registers.
@@ -64,30 +64,30 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -105,7 +105,7 @@ void pinLauncher()
 {
     const QString dataHome = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     REQUIRE(QDir().mkpath(dataHome + QStringLiteral("/applications")));
-    QFile desktop(dataHome + QStringLiteral("/applications/krema-tooltiptest.desktop"));
+    QFile desktop(dataHome + QStringLiteral("/applications/kdockw-tooltiptest.desktop"));
     REQUIRE(desktop.open(QIODevice::WriteOnly));
     desktop.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=%1\nExec=true\nIcon=application-x-executable\n").arg(kLauncherName).toUtf8());
     desktop.close();
@@ -117,7 +117,7 @@ void pinLauncher()
 
 TEST_CASE("Launcher tooltip lies inside the dock surface on every edge", "[tooltip]")
 {
-    using Edge = krema::DockPlatform::Edge;
+    using Edge = kdockw::DockPlatform::Edge;
     pinLauncher();
     const auto restore = qScopeGuard([] {
         app().settings->setEdge(static_cast<int>(Edge::Bottom));
@@ -127,7 +127,7 @@ TEST_CASE("Launcher tooltip lies inside the dock surface on every edge", "[toolt
     INFO("edge " << static_cast<int>(edge));
     app().settings->setEdge(static_cast<int>(edge));
 
-    krema::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
+    kdockw::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
     manager.initialize();
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -139,7 +139,7 @@ TEST_CASE("Launcher tooltip lies inside the dock surface on every edge", "[toolt
     // the tooltip timer; a launcher-only task then shows the text tooltip.
     // The manager may still replace the shell while it adopts the output
     // order, so every poll looks the dock up again and re-hovers a new one.
-    krema::DockView *view = nullptr;
+    kdockw::DockView *view = nullptr;
     QQuickItem *tooltip = nullptr;
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

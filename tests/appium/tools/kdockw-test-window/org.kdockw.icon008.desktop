@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=org.kdockw.icon008
+Exec=kdockw-test-window --app-id org.kdockw.icon008
+Icon=/usr/share/kdockw-test-window/icon-raw-quadrants.svg
+StartupWMClass=org.kdockw.icon008

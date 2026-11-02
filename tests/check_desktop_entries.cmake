@@ -5,7 +5,7 @@
 # a desktop file that declares DBusActivatable=true is only launchable through
 # KIO/Kickoff/KRunner when a matching D-Bus activation service file
 # (dbus-1/services/<desktop-id>.service with Name= + Exec=) is installed.
-# Krema ships no service files, so no shipped desktop entry may set the key.
+# KDockW ships no service files, so no shipped desktop entry may set the key.
 #
 # Runs in pure script mode over the source templates and the configured build
 # products, so it works on a bare `cmake --build && ctest` without an install
@@ -29,7 +29,7 @@ foreach(entry IN LISTS desktop_templates desktop_built)
     file(READ "${entry}" content)
     # Anchor at line start: a commented "#DBusActivatable=true" is not active.
     if(content MATCHES "(^|\n)DBusActivatable[ \t]*=[ \t]*true[ \t]*\n")
-        # NAME_WE strips at the FIRST dot (com.bhyoo.krema -> "com"); the
+        # NAME_WE strips at the FIRST dot (com.thicking.kdockw -> "com"); the
         # desktop id is the filename minus its .desktop[.in] suffix.
         get_filename_component(file_name "${entry}" NAME)
         string(REGEX REPLACE "\\.desktop(\\.in)?$" "" desktop_id "${file_name}")

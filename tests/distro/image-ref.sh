@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
-# Print the content-addressed reference of a Krema CI image.
+# Print the content-addressed reference of a KDockW CI image.
 #
-#   tests/distro/image-ref.sh runtime <target>   distro E2E runtime (no krema)
+#   tests/distro/image-ref.sh runtime <target>   distro E2E runtime (no kdockw)
 #   tests/distro/image-ref.sh builder <target>   distro package builder
 #   tests/distro/image-ref.sh ctest              tests/appium/Dockerfile ctest-image
 #   tests/distro/image-ref.sh vgem               FROM scratch image with /vgem.ko
@@ -21,7 +21,7 @@
 #
 #   runtime, builder  tests/distro/image/{Dockerfile,packages.sh,<family>.sh},
 #                     every file under tests/appium/tools/ (the swas patches
-#                     and krema-test-window the Dockerfile copies; the whole
+#                     and kdockw-test-window the Dockerfile copies; the whole
 #                     directory, so a new patch cannot be missed), and the target's
 #                     id, family and base image reference (with its pinned
 #                     digest). Both kinds of a target share one hash, so they
@@ -41,9 +41,9 @@
 # publisher's job (.github/workflows/ci-images.yml rebuilds and re-pushes).
 #
 # Environment:
-#   KREMA_CI_REGISTRY   image repository (default ghcr.io/isac322/krema-ci)
-#   KREMA_VGEM_KERNEL   kernel release for the vgem kind (default: uname -r)
-#   KREMA_ARCH_IMAGE    arch base image (default docker.io/archlinux:latest)
+#   KDOCKW_CI_REGISTRY   image repository (default ghcr.io/thicking/kdockw-ci)
+#   KDOCKW_VGEM_KERNEL   kernel release for the vgem kind (default: uname -r)
+#   KDOCKW_ARCH_IMAGE    arch base image (default docker.io/archlinux:latest)
 #
 # Sourced (by build-ci-image.sh, build-package.sh, run-distro-e2e.sh), it
 # only defines the distro_* and ci_image_ref functions. It reads
@@ -58,7 +58,7 @@ distro_target() {
     local id="$1" row
     if [[ "$id" == arch ]]; then
         DISTRO_FAMILY=arch
-        DISTRO_BASE_IMAGE="${KREMA_ARCH_IMAGE:-docker.io/archlinux:latest}"
+        DISTRO_BASE_IMAGE="${KDOCKW_ARCH_IMAGE:-docker.io/archlinux:latest}"
         return 0
     fi
     row="$(awk -F'\t' -v id="$id" '
@@ -118,7 +118,7 @@ _ir_hash() {
 # ci_image_ref <kind> [<target>]: prints the reference; returns 64 on bad
 # arguments.
 ci_image_ref() {
-    local kind="${1:-}" target="${2:-}" registry="${KREMA_CI_REGISTRY:-ghcr.io/isac322/krema-ci}"
+    local kind="${1:-}" target="${2:-}" registry="${KDOCKW_CI_REGISTRY:-ghcr.io/thicking/kdockw-ci}"
     local hash
     case "$kind" in
         runtime | builder)
@@ -150,7 +150,7 @@ ci_image_ref() {
             ;;
         vgem)
             [[ -z "$target" ]] || { echo "image-ref: vgem takes no target" >&2; return 64; }
-            local krel="${KREMA_VGEM_KERNEL:-$(uname -r)}"
+            local krel="${KDOCKW_VGEM_KERNEL:-$(uname -r)}"
             hash="$(_ir_hash -- tests/appium/setup-vgem.sh)" || return 1
             printf '%s:vgem-%s-%s\n' "$registry" "${krel//[^A-Za-z0-9_.-]/_}" "$hash"
             ;;

@@ -7,22 +7,22 @@
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS QuickTest)
 
-add_executable(krema_qml_tests
+add_executable(kdockw_qml_tests
     main.cpp
     qmltestmocks.cpp
     qmltestmocks.h
 )
 
-target_compile_definitions(krema_qml_tests PRIVATE
-    KREMA_QML_MOCKS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/mocks"
+target_compile_definitions(kdockw_qml_tests PRIVATE
+    KDOCKW_QML_MOCKS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/mocks"
 )
 
 # utils/zoomcalculator.h (header-only) backs the DockView.zoomLayout() mock.
-target_include_directories(krema_qml_tests PRIVATE
+target_include_directories(kdockw_qml_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src
 )
 
-target_link_libraries(krema_qml_tests PRIVATE
+target_link_libraries(kdockw_qml_tests PRIVATE
     Qt6::Gui
     Qt6::Qml
     Qt6::Quick
@@ -30,7 +30,7 @@ target_link_libraries(krema_qml_tests PRIVATE
     KF6::I18nQml
 )
 
-set(KREMA_QML_TEST_FILES
+set(KDOCKW_QML_TEST_FILES
     tst_dockitem_zoom
     tst_dockitem_geometry
     tst_dockitem_indicators
@@ -38,9 +38,9 @@ set(KREMA_QML_TEST_FILES
     tst_preview_popup
 )
 
-foreach(test_name IN LISTS KREMA_QML_TEST_FILES)
+foreach(test_name IN LISTS KDOCKW_QML_TEST_FILES)
     add_test(NAME qml_${test_name}
-        COMMAND krema_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/${test_name}.qml
+        COMMAND kdockw_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/${test_name}.qml
     )
     set_tests_properties(qml_${test_name} PROPERTIES
         LABELS "qml"

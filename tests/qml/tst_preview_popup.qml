@@ -6,8 +6,8 @@
 // PipeWire/ScreencastingRequest are inert mocks (no live frames).
 import QtQuick
 import QtTest
-import com.bhyoo.krema 1.0
-import "../../src/qml" as Krema
+import com.thicking.kdockw 1.0
+import "../../src/qml" as KDockW
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -29,11 +29,11 @@ Item {
 
         Component {
             id: popupComponent
-            Krema.PreviewPopup {}
+            KDockW.PreviewPopup {}
         }
 
         function init() {
-            KremaMocks.resetAll()
+            KDockWMocks.resetAll()
             // Row 0: single-window app. Row 1: grouped app with three windows.
             DockModel.tasksModel.addTask({ display: "Kate", IsWindow: true, IsActive: true, WinIdList: ["kate-1"] })
             DockModel.tasksModel.addTask({ display: "Konsole", IsWindow: true, WinIdList: ["k-1", "k-2", "k-3"] })

@@ -5,11 +5,11 @@ primary_target: "src/qml/SettingsDialog.qml"
 related_targets: ["src/qml/settings"]
 ---
 
-Mode: Operate. Surface: Krema settings window (SettingsDialog.qml + settings/*.qml).
+Mode: Operate. Surface: KDockW settings window (SettingsDialog.qml + settings/*.qml).
 
 ## Direction contract
 
-THESIS: Krema's settings read like a page of macOS System Settings drawn with Plasma's own theme: a quiet sidebar, a big page title, and on top of every page a "stage" where a lifelike miniature of the user's desktop and dock reacts live to every control below it.
+THESIS: KDockW's settings read like a page of macOS System Settings drawn with Plasma's own theme: a quiet sidebar, a big page title, and on top of every page a "stage" where a lifelike miniature of the user's desktop and dock reacts live to every control below it.
 
 OWN-WORLD: Plasma theme colors only (Window ground, View-colored rounded groups, accent for selection). Grouped inset boxes (FormCard) with hairline row separators; labels left, controls right. Visual pickers are thumbnail tiles (rounded mini-desktop pictures) with the label under the tile and a 3 px accent ring when selected; no bordered card boxes. Real app icons from the icon theme, never gray squares or flat blue blocks.
 

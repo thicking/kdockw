@@ -16,7 +16,7 @@
 
 ## Affected Files
 - src/qml/main.qml
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 - src/models/dockactions.h
 - src/models/dockactions.cpp
 - src/qml/PreviewPopup.qml
@@ -60,7 +60,7 @@ rather than replaces, the existing pixel/layout waits.
 1. Show dock (README "Showing a hidden dock for mouse tests")
 2. Move the pointer to the running app's dock item
 3. Wait 1000ms (preview trigger delay + animation)
-4. Check the krema AT-SPI tree — look for PopupMenu with name "Preview for <AppName>"
+4. Check the kdockw AT-SPI tree — look for PopupMenu with name "Preview for <AppName>"
 5. Screenshot — verify preview popup visible with live PipeWire thumbnails
 
 **Expected:**

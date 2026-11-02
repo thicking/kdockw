@@ -13,7 +13,7 @@
 //
 // Must run under run-with-kwin.sh.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -56,14 +56,14 @@ namespace
 using TaskManager::AbstractTasksModel;
 
 constexpr int kTimeoutMs = 15000;
-const QString kHoveredTitle = QStringLiteral("krema-preview-hovered");
-const QString kOtherTitle = QStringLiteral("krema-preview-other");
+const QString kHoveredTitle = QStringLiteral("kdockw-preview-hovered");
+const QString kOtherTitle = QStringLiteral("kdockw-preview-other");
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 // Mirrors the QML singletons Application::run() registers.
@@ -71,30 +71,30 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -129,7 +129,7 @@ QString childExecutable(const QString &mode)
         return self;
     }
     static const QString copy = [&self] {
-        const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/krema-preview-other-app");
+        const QString path = QStandardPaths::writableLocation(QStandardPaths::RuntimeLocation) + QStringLiteral("/kdockw-preview-other-app");
         QFile::remove(path);
         QFile::copy(self, path);
         return path;
@@ -190,14 +190,14 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
     // Match Application::run(): wait for the compositor's final output order
     // before creating the shell, so a later primary-output update cannot
     // destroy the QML root while this scenario is driving task insertion.
-    auto *outputOrder = krema::OutputOrderMonitor::instance();
+    auto *outputOrder = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [outputOrder] {
             return outputOrder->orderReady();
         },
         kTimeoutMs));
 
-    krema::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
+    kdockw::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
     manager.initialize();
 
     QProcess hoveredApp;
@@ -214,7 +214,7 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
     // manager may still replace the shell while it adopts the output order,
     // so every poll looks the dock up again and re-hovers a new one; the
     // shell must also stay the same for a moment before the test goes on.
-    krema::DockShell *shell = nullptr;
+    kdockw::DockShell *shell = nullptr;
     QQuickItem *root = nullptr;
     int stablePolls = 0;
     REQUIRE(QTest::qWaitFor(
@@ -238,9 +238,9 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
             return ++stablePolls > 20;
         },
         kTimeoutMs));
-    krema::PreviewController *preview = shell->previewController();
+    kdockw::PreviewController *preview = shell->previewController();
     REQUIRE_FALSE(preview->isVisible());
-    QSignalSpy shown(preview, &krema::PreviewController::visibleChanged);
+    QSignalSpy shown(preview, &kdockw::PreviewController::visibleChanged);
 
     // Another app opens a window: TasksModel inserts a row.
     QProcess otherApp;
@@ -271,10 +271,10 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
 int main(int argc, char *argv[])
 {
     if (argc > 1 && qstrcmp(argv[1], "--child") == 0) {
-        return windowMain(argc, argv, QStringLiteral("krema-previewtest"), kHoveredTitle);
+        return windowMain(argc, argv, QStringLiteral("kdockw-previewtest"), kHoveredTitle);
     }
     if (argc > 1 && qstrcmp(argv[1], "--other") == 0) {
-        return windowMain(argc, argv, QStringLiteral("krema-previewother"), kOtherTitle);
+        return windowMain(argc, argv, QStringLiteral("kdockw-previewother"), kOtherTitle);
     }
 
     // Opt into the layer-shell platform plugin. Equivalent to the deprecated
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

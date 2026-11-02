@@ -15,7 +15,7 @@ description: "Apply when building settings or other Kirigami UI, choosing colors
 - Spacing and sizes come from `Kirigami.Units` (`gridUnit`, `smallSpacing`, `largeSpacing`).
 
 ## Configuration
-- Persist settings with KConfigXT (`.kcfg` schema, generated `KremaSettings` class).
+- Persist settings with KConfigXT (`.kcfg` schema, generated `KDockWSettings` class).
 - `KConfigSkeleton` with `Singleton=false` does not call `load()` in its constructor; call `load()` manually.
 - `qmlRegisterSingletonInstance` is reachable from one QML engine only (a second engine gets `null`). With multiple engines (dock + settings window) use `qmlRegisterSingletonType` with a factory callback and `CppOwnership`.
 

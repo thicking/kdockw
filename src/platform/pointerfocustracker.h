@@ -14,7 +14,7 @@ struct wl_registry;
 struct wl_seat;
 struct wl_surface;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -29,7 +29,7 @@ namespace krema
  *
  * This tracker binds its own wl_seat from its own registry and keeps its own
  * wl_pointer for as long as that seat has the pointer capability: created
- * when the capability appears (also after Krema started without a pointer
+ * when the capability appears (also after KDockW started without a pointer
  * device) and released when it goes away. The proxies live on the display's
  * default queue, so callbacks run on the GUI thread through Qt's event loop.
  * It records only the compositor's real enter/leave events and emits
@@ -83,4 +83,4 @@ private:
     bool m_lastInside = false;
 };
 
-} // namespace krema
+} // namespace kdockw

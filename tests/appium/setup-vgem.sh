@@ -6,7 +6,7 @@
 # ships no vgem (e.g. GitHub ubuntu-latest runners' Azure kernels). A vgem
 # device provides a DRM render node, which makes
 # `kwin_wayland --virtual` composite with OpenGL (llvmpipe) instead of
-# QPainter, and enables `--output-count` for KREMA_E2E_OUTPUT_COUNT>1.
+# QPainter, and enables `--output-count` for KDOCKW_E2E_OUTPUT_COUNT>1.
 #
 #   sudo tests/appium/setup-vgem.sh
 #

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
-// Visual-tree helpers. Krema's QML uses ids (not objectName) for internal
+// Visual-tree helpers. KDockW's QML uses ids (not objectName) for internal
 // items, so tests locate them structurally by the properties they expose.
 .pragma library
 .import QtQuick as QQ

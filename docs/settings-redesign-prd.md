@@ -46,7 +46,7 @@ Sidebar (with "Search settings" field on top):
   7. Monitors & Desktops
   8. Window Preview
   About
-  9. About Krema
+  9. About KDockW
  10. About KDE
 ```
 

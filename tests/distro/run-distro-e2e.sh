@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
-# Tier 3: run the Tier 2 AT-SPI E2E suite (tests/appium) against Krema
+# Tier 3: run the Tier 2 AT-SPI E2E suite (tests/appium) against KDockW
 # installed from its distro package, on that distro's own KWin/Qt/KF.
 #
 #   tests/distro/run-distro-e2e.sh <target>                    # full suite
@@ -18,29 +18,29 @@
 # 2. Meanwhile builds the package with tests/distro/build-package.sh into
 #    tests/distro/.cache/packages/<target>/ unless one is already there.
 # 3. Installs the package into that container through the distro package
-#    manager (packages.sh krema: its Requires/Depends must pull in krema's
-#    runtime) and commits it as krema-e2e-distro:<target>.
-# 4. Runs tests/appium/run-e2e.sh with that image and KREMA_E2E_BINARY, so
+#    manager (packages.sh kdockw: its Requires/Depends must pull in kdockw's
+#    runtime) and commits it as kdockw-e2e-distro:<target>.
+# 4. Runs tests/appium/run-e2e.sh with that image and KDOCKW_E2E_BINARY, so
 #    the session setup is exactly Tier 2's.
 #
 # Every phase prints `[distro] <phase>: <seconds>s`.
 #
 # Environment:
-#   KREMA_DISTRO_REBUILD_PACKAGE=1   rebuild the package even if cached
-#   KREMA_DISTRO_SKIP_IMAGE_BUILD=1  reuse an existing krema-e2e-distro:<target>
+#   KDOCKW_DISTRO_REBUILD_PACKAGE=1   rebuild the package even if cached
+#   KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1  reuse an existing kdockw-e2e-distro:<target>
 #                                    (steps 1 and 3 are skipped)
-#   KREMA_CCACHE_DIR, CCACHE_MAXSIZE, KREMA_CI_REGISTRY, KREMA_ARCH_IMAGE
+#   KDOCKW_CCACHE_DIR, CCACHE_MAXSIZE, KDOCKW_CI_REGISTRY, KDOCKW_ARCH_IMAGE
 #                         see build-package.sh and image-ref.sh
-#   KREMA_E2E_ARTIFACTS   default tests/appium/artifacts-distro-<target>
-#   KREMA_E2E_PLATFORM    default linux/amd64 for arch and opensuse-slowroll
+#   KDOCKW_E2E_ARTIFACTS   default tests/appium/artifacts-distro-<target>
+#   KDOCKW_E2E_PLATFORM    default linux/amd64 for arch and opensuse-slowroll
 #                         (their repositories are amd64-only), else native
-#   KREMA_E2E_SHARDS=N    run the suite as N shards concurrently (default 1,
+#   KDOCKW_E2E_SHARDS=N    run the suite as N shards concurrently (default 1,
 #                         one run-e2e.sh). Shard i (0-based) gets
-#                         KREMA_E2E_SHARD=i/N, selects every N-th collected
+#                         KDOCKW_E2E_SHARD=i/N, selects every N-th collected
 #                         test, and writes to <artifacts>/shard-<i>/ with a
 #                         [shard i] log prefix; any shard failing fails the
 #                         run. --shell cannot be sharded.
-#   Any other KREMA_E2E_* variable of tests/appium/run-e2e.sh.
+#   Any other KDOCKW_E2E_* variable of tests/appium/run-e2e.sh.
 
 set -euo pipefail
 
@@ -63,19 +63,19 @@ distro_target "$target" || {
     exit 64
 }
 
-if [[ -z "${KREMA_E2E_PLATFORM:-}" ]]; then
+if [[ -z "${KDOCKW_E2E_PLATFORM:-}" ]]; then
     platform="$(distro_platform "$target")"
-    [[ -z "$platform" ]] || export KREMA_E2E_PLATFORM="$platform"
+    [[ -z "$platform" ]] || export KDOCKW_E2E_PLATFORM="$platform"
 fi
 platform_args=()
-[[ -n "${KREMA_E2E_PLATFORM:-}" ]] && platform_args=(--platform "$KREMA_E2E_PLATFORM")
+[[ -n "${KDOCKW_E2E_PLATFORM:-}" ]] && platform_args=(--platform "$KDOCKW_E2E_PLATFORM")
 
 now() { date +%s; }
 run_start=$(now)
 
-packages=/usr/local/lib/krema-distro/packages.sh
-image="krema-e2e-distro:$target"
-skip_image="${KREMA_DISTRO_SKIP_IMAGE_BUILD:-0}"
+packages=/usr/local/lib/kdockw-distro/packages.sh
+image="kdockw-e2e-distro:$target"
+skip_image="${KDOCKW_DISTRO_SKIP_IMAGE_BUILD:-0}"
 
 # ---------------------------------------------------------------------------
 # Runtime container (background) overlapped with the package build
@@ -84,7 +84,7 @@ skip_image="${KREMA_DISTRO_SKIP_IMAGE_BUILD:-0}"
 # The runtime image pull (or local build) and a rolling target's upgrade do
 # not need the package: they run in the background while it builds, in the
 # container the package is later installed into.
-prep_ctr="krema-e2e-prep-$target-$$"
+prep_ctr="kdockw-e2e-prep-$target-$$"
 prep_pid=
 prep_log=
 shard_state=
@@ -92,10 +92,10 @@ shard_state=
 start_prep() {
     local ref
     ref="$(ci_image_ref runtime "$target")"
-    prep_log="$(mktemp -t krema-distro-prep.XXXXXX)"
+    prep_log="$(mktemp -t kdockw-distro-prep.XXXXXX)"
     (
         t0=$(now)
-        KREMA_DOCKER_PLATFORM="${KREMA_E2E_PLATFORM:-}" \
+        KDOCKW_DOCKER_PLATFORM="${KDOCKW_E2E_PLATFORM:-}" \
             "$here/build-ci-image.sh" --pull runtime "$target" >/dev/null
         echo "[distro] runtime-image: $(($(now) - t0))s"
         t0=$(now)
@@ -103,12 +103,12 @@ start_prep() {
         docker exec "$prep_ctr" sh "$packages" upgrade
         echo "[distro] runtime-upgrade: $(($(now) - t0))s"
         # While the package builds, prefetch the deps the packaging declares
-        # (metadata refresh + downloads, no install) so `packages.sh krema`
+        # (metadata refresh + downloads, no install) so `packages.sh kdockw`
         # finds them in the package-manager cache.
         t0=$(now)
-        docker exec "$prep_ctr" mkdir -p /tmp/krema-pkgdefs
-        docker cp "$repo/packaging/." "$prep_ctr:/tmp/krema-pkgdefs"
-        docker exec -e PKGDEFS=/tmp/krema-pkgdefs "$prep_ctr" sh "$packages" depfetch
+        docker exec "$prep_ctr" mkdir -p /tmp/kdockw-pkgdefs
+        docker cp "$repo/packaging/." "$prep_ctr:/tmp/kdockw-pkgdefs"
+        docker exec -e PKGDEFS=/tmp/kdockw-pkgdefs "$prep_ctr" sh "$packages" depfetch
         echo "[distro] dep-fetch: $(($(now) - t0))s"
     ) >"$prep_log" 2>&1 &
     prep_pid=$!
@@ -146,16 +146,16 @@ pkg_dir="$here/.cache/packages/$target"
 shopt -s nullglob
 pkgs=("$pkg_dir"/*.rpm "$pkg_dir"/*.deb "$pkg_dir"/*.pkg.tar.zst)
 shopt -u nullglob
-if [[ "${KREMA_DISTRO_REBUILD_PACKAGE:-0}" == 1 || ${#pkgs[@]} -eq 0 ]]; then
+if [[ "${KDOCKW_DISTRO_REBUILD_PACKAGE:-0}" == 1 || ${#pkgs[@]} -eq 0 ]]; then
     t0=$(now)
     rm -rf "$pkg_dir"
-    KREMA_DOCKER_PLATFORM="${KREMA_E2E_PLATFORM:-}" \
+    KDOCKW_DOCKER_PLATFORM="${KDOCKW_E2E_PLATFORM:-}" \
         "$here/build-package.sh" "$target" "$here/.cache/packages"
     echo "[distro] package: $(($(now) - t0))s"
 fi
 
 # ---------------------------------------------------------------------------
-# Package install into the runtime container -> krema-e2e-distro:<target>
+# Package install into the runtime container -> kdockw-e2e-distro:<target>
 # ---------------------------------------------------------------------------
 
 if [[ "$skip_image" != 1 ]]; then
@@ -164,10 +164,10 @@ if [[ "$skip_image" != 1 ]]; then
     echo "[distro] runtime-wait: $(($(now) - t0))s"
 
     t0=$(now)
-    install_log="$(mktemp -t krema-distro-install.XXXXXX)"
+    install_log="$(mktemp -t kdockw-distro-install.XXXXXX)"
     if ! {
         docker cp "$pkg_dir/." "$prep_ctr:/pkgs" &&
-            docker exec "$prep_ctr" sh -c "sh $packages krema && rm -rf /pkgs"
+            docker exec "$prep_ctr" sh -c "sh $packages kdockw && rm -rf /pkgs"
     } >"$install_log" 2>&1; then
         cat "$install_log" >&2
         rm -f "$install_log"
@@ -186,23 +186,23 @@ if [[ "$skip_image" != 1 ]]; then
     docker rm -f "$prep_ctr" >/dev/null
     echo "[distro] image-commit: $(($(now) - t0))s"
 elif ! docker image inspect "$image" >/dev/null 2>&1; then
-    echo "error: KREMA_DISTRO_SKIP_IMAGE_BUILD=1 but there is no image $image" >&2
+    echo "error: KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1 but there is no image $image" >&2
     exit 1
 fi
 
-export KREMA_E2E_IMAGE="$image"
-export KREMA_E2E_SKIP_BUILD=1
-export KREMA_E2E_BINARY=/usr/bin/krema
-export KREMA_E2E_DISTRO="$target"
-export KREMA_E2E_ARTIFACTS="${KREMA_E2E_ARTIFACTS:-$repo/tests/appium/artifacts-distro-$target}"
+export KDOCKW_E2E_IMAGE="$image"
+export KDOCKW_E2E_SKIP_BUILD=1
+export KDOCKW_E2E_BINARY=/usr/bin/kdockw
+export KDOCKW_E2E_DISTRO="$target"
+export KDOCKW_E2E_ARTIFACTS="${KDOCKW_E2E_ARTIFACTS:-$repo/tests/appium/artifacts-distro-$target}"
 
 # ---------------------------------------------------------------------------
-# Suite run: single container, or KREMA_E2E_SHARDS shards concurrently
+# Suite run: single container, or KDOCKW_E2E_SHARDS shards concurrently
 # ---------------------------------------------------------------------------
 
-shards="${KREMA_E2E_SHARDS:-1}"
+shards="${KDOCKW_E2E_SHARDS:-1}"
 [[ "$shards" =~ ^[0-9]+$ ]] && (( shards >= 1 )) || {
-    echo "error: KREMA_E2E_SHARDS must be a positive integer (got '$shards')" >&2
+    echo "error: KDOCKW_E2E_SHARDS must be a positive integer (got '$shards')" >&2
     exit 64
 }
 
@@ -222,21 +222,21 @@ fi
 # An interactive debug shell cannot be sharded.
 for arg in "$@"; do
     [[ "$arg" != --shell ]] || {
-        echo "error: --shell cannot be sharded (KREMA_E2E_SHARDS=$shards)" >&2
+        echo "error: --shell cannot be sharded (KDOCKW_E2E_SHARDS=$shards)" >&2
         exit 64
     }
 done
 
 # Each shard: one run-e2e.sh (one container, own kwin session) selecting
-# KREMA_E2E_SHARD=i/N, artifacts in <artifacts>/shard-<i>, its own build
-# volume when KREMA_E2E_VOLUME is set (the default is suffixed inside
+# KDOCKW_E2E_SHARD=i/N, artifacts in <artifacts>/shard-<i>, its own build
+# volume when KDOCKW_E2E_VOLUME is set (the default is suffixed inside
 # run-e2e.sh). Status goes to a file (the output pipeline would mask it);
 # stdout/stderr is prefixed so the shards' lines stay distinguishable.
-rm -rf "$KREMA_E2E_ARTIFACTS"
-mkdir -p "$KREMA_E2E_ARTIFACTS"
-shard_dir="$(mktemp -d -t krema-e2e-shards.XXXXXX)"
+rm -rf "$KDOCKW_E2E_ARTIFACTS"
+mkdir -p "$KDOCKW_E2E_ARTIFACTS"
+shard_dir="$(mktemp -d -t kdockw-e2e-shards.XXXXXX)"
 shard_state="$shard_dir"
-# Split the CPUs between the shards' llvmpipe renderers (kwin and krema);
+# Split the CPUs between the shards' llvmpipe renderers (kwin and kdockw);
 # by default each would start one thread per CPU and oversubscribe them.
 threads=$(($(getconf _NPROCESSORS_ONLN) / shards))
 ((threads >= 1)) || threads=1
@@ -244,10 +244,10 @@ export LP_NUM_THREADS="${LP_NUM_THREADS:-$threads}"
 
 for (( i = 0; i < shards; i++ )); do
     (
-        export KREMA_E2E_SHARD="$i/$shards"
-        export KREMA_E2E_ARTIFACTS="$KREMA_E2E_ARTIFACTS/shard-$i"
-        [[ -z "${KREMA_E2E_VOLUME:-}" ]] ||
-            export KREMA_E2E_VOLUME="${KREMA_E2E_VOLUME}-shard-$i"
+        export KDOCKW_E2E_SHARD="$i/$shards"
+        export KDOCKW_E2E_ARTIFACTS="$KDOCKW_E2E_ARTIFACTS/shard-$i"
+        [[ -z "${KDOCKW_E2E_VOLUME:-}" ]] ||
+            export KDOCKW_E2E_VOLUME="${KDOCKW_E2E_VOLUME}-shard-$i"
         "$repo/tests/appium/run-e2e.sh" "$@" 2>&1
         echo "$?" >"$shard_dir/rc.$i"
     ) | awk -v s="$i" '{ print "[shard " s "] " $0; fflush() }' &

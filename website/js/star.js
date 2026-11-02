@@ -6,14 +6,14 @@
 // Runs before pagedock.js so elements it creates with data-dodge are seen by the dock.
 (() => {
   "use strict";
-  const REPO = "isac322/krema";
+  const REPO = "thicking/krema";
   const SNOOZE_DAYS = 14;
 
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (s, r = document) => r.querySelector(s);
 
   // ---------- Storage ----------
-  const LS = "krema:star:";
+  const LS = "kdockw:star:";
   const get = (store, k) => { try { return store.getItem(LS + k); } catch { return null; } };
   const set = (store, k, v) => { try { store.setItem(LS + k, v); } catch { /* private mode */ } };
   const local = window.localStorage;
@@ -38,7 +38,7 @@
     if (!chip) return resolve(null);
     const read = () => {
       try {
-        const c = JSON.parse(localStorage.getItem("krema:stars") || "null");
+        const c = JSON.parse(localStorage.getItem("kdockw:stars") || "null");
         return c && Number.isInteger(c.n) ? c.n : null;
       } catch { return null; }
     };
@@ -120,8 +120,8 @@
   document.body.append(toast);
 
   const COPY = {
-    zoom: ["Enjoying the zoom?", "A star on GitHub helps other Plasma users find Krema."],
-    clips: ["Liked what you saw?", "A star on GitHub helps other Plasma users find Krema. It takes one click."],
+    zoom: ["Enjoying the zoom?", "A star on GitHub helps other Plasma users find KDockW."],
+    clips: ["Liked what you saw?", "A star on GitHub helps other Plasma users find KDockW. It takes one click."],
   };
 
   // Overlays appear without taking focus; if the user tabbed into one and
@@ -218,12 +218,12 @@
   // Newest stargazers. GitHub lists oldest first, so read the last page. The
   // list only changes when the count does, so it is cached in localStorage per
   // count and fetched at most once per new count. A failed request shares
-  // site.js's retry deadline (krema:stars.retryAt), so neither request runs
+  // site.js's retry deadline (kdockw:stars.retryAt), so neither request runs
   // again before it.
-  const STARS = "krema:stars";
+  const STARS = "kdockw:stars";
   const readStars = () => { try { return JSON.parse(localStorage.getItem(STARS) || "null"); } catch { return null; } };
   const recent = (n) => {
-    const KEY = "krema:star:recent";
+    const KEY = "kdockw:star:recent";
     let c = null;
     try { c = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { /* ignore */ }
     if (c && c.n === n && Array.isArray(c.list)) return Promise.resolve(c.list);
@@ -282,7 +282,7 @@
         heroChip.hidden = false;
       }
       const noun = (k) => (k === 1 ? "other" : "others");
-      line.innerHTML = `<strong>${n}</strong> ${n === 1 ? "person has" : "people have"} starred Krema. Add yours as a vote for a Latte&nbsp;Dock successor on Plasma&nbsp;6.`;
+      line.innerHTML = `<strong>${n}</strong> ${n === 1 ? "person has" : "people have"} starred KDockW. Add yours as a vote for a Latte&nbsp;Dock successor on Plasma&nbsp;6.`;
       recent(n).then((list) => {
         if (!list.length) return;
         faces.innerHTML = "";
@@ -304,7 +304,7 @@
         const newest = list[0];
         const when = newest.at ? ` The latest star came ${ago(newest.at)}.` : "";
         line.innerHTML =
-          `<strong>${newest.login}</strong>${n > 1 ? ` and ${n - 1} ${noun(n - 1)}` : ""} starred Krema.${when} Add yours as a vote for a Latte&nbsp;Dock successor on Plasma&nbsp;6.`;
+          `<strong>${newest.login}</strong>${n > 1 ? ` and ${n - 1} ${noun(n - 1)}` : ""} starred KDockW.${when} Add yours as a vote for a Latte&nbsp;Dock successor on Plasma&nbsp;6.`;
       });
     });
   }
@@ -331,7 +331,7 @@
     void banner.offsetWidth;
     banner.classList.remove("is-out");
     bannerOn = true;
-    say("You copied the install command. One more click: star Krema on GitHub. Or choose Not now.");
+    say("You copied the install command. One more click: star KDockW on GitHub. Or choose Not now.");
     return true;
   };
   if (banner) {

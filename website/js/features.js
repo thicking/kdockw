@@ -514,7 +514,7 @@
         if (pt) cur = pt;
       }
     } else if (pg === 'attention') {
-      // stop = 0 means no limit, like AttentionAnimationDuration in Krema.
+      // stop = 0 means no limit, like AttentionAnimationDuration in KDockW.
       const endless = S.stop === 0;
       const p = reduced || endless ? 0 : t % (S.stop + 2.5);
       const running = !S.dnd && S.att !== 'none' && (endless || p < S.stop);

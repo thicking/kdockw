@@ -10,7 +10,7 @@
 #include <QScreen>
 #include <QSurfaceFormat>
 
-namespace krema
+namespace kdockw
 {
 
 EdgeTrigger::EdgeTrigger(QScreen *screen, DockPlatform::Edge edge)
@@ -60,7 +60,7 @@ void EdgeTrigger::applySize()
     const bool vertical = m_platform && (m_platform->edge() == DockPlatform::Edge::Left || m_platform->edge() == DockPlatform::Edge::Right);
     // Layer-shell: 0 on the double-anchored axis lets the compositor stretch
     // the strip along the whole edge. The QWindow size is set last: on the
-    // KREMA_COMPAT_NO_LAYERSHELL_DESIRED_SIZE path setSize() resizes the
+    // KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE path setSize() resizes the
     // window itself, and a 0-wide window never gets a buffer.
     if (vertical) {
         if (m_platform) {
@@ -111,4 +111,4 @@ void EdgeTrigger::paintEvent(QPaintEvent *event)
     painter.fillRect(QRect(QPoint(), size()), Qt::transparent);
 }
 
-} // namespace krema
+} // namespace kdockw

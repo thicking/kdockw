@@ -4,7 +4,7 @@
 
 The real Kirigami/FormCard settings window is driven with real pointer and
 keyboard input (KWin fake-input) and located through AT-SPI. Every test
-checks both directions: the UI change is persisted to kremarc and it takes
+checks both directions: the UI change is persisted to kdockwrc and it takes
 effect on the running dock (AT-SPI item geometry/visibility, KWin surface
 geometry, rendered pixels).
 
@@ -32,9 +32,9 @@ AT-SPI facts this relies on (probed in this harness):
 * The tint color dialog is a separate toplevel ``frame[@name='Choose tint color']``.
 
 SET-008 and SET-012 need two outputs and run in their own session:
-``KREMA_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs``.
+``KDOCKW_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs``.
 SET-013 also has a two-output shared-dock case; SET-012's subset test uses
-``KREMA_E2E_OUTPUT_COUNT=3``.
+``KDOCKW_E2E_OUTPUT_COUNT=3``.
 """
 
 from __future__ import annotations
@@ -46,29 +46,29 @@ from typing import Callable
 import pyatspi
 import pytest
 
-from krema_e2e import config as kcfg
-from krema_e2e import env, kwin
-from krema_e2e import input as inp
-from krema_e2e import preview as pv
-from krema_e2e.krema import (
+from kdockw_e2e import config as kcfg
+from kdockw_e2e import env, kwin
+from kdockw_e2e import input as inp
+from kdockw_e2e import preview as pv
+from kdockw_e2e.kdockw import (
     PAGE_ROLE,
     PREVIEW_XPATH,
     SETTINGS_PAGES_XPATH,
     SETTINGS_SIDEBAR_XPATH,
     TOOLBAR_XPATH,
-    Krema,
+    KDockW,
     Rect,
     context_menu_entries,
     has_state,
     painted_rect,
 )
-from krema_e2e.shortcuts import invoke_shortcut
-from krema_e2e.waits import WaitTimeout, wait_stable, wait_until
-from krema_e2e.windows import TestWindow, TestWindows
+from kdockw_e2e.shortcuts import invoke_shortcut
+from kdockw_e2e.waits import WaitTimeout, wait_stable, wait_until
+from kdockw_e2e.windows import TestWindow, TestWindows
 
 SETTINGS = "//frame[@name='Settings']"
 SIDEBAR = SETTINGS_PAGES_XPATH
-SETTINGS_TITLE = "Settings — Krema"
+SETTINGS_TITLE = "Settings — KDockW"
 COLOR_DIALOG = "//frame[@name='Choose tint color']"
 PAGES = [
     "Icons",
@@ -79,7 +79,7 @@ PAGES = [
     "Behavior",
     "Monitors & Desktops",
     "Window Preview",
-    "About Krema",
+    "About KDockW",
     "About KDE",
 ]
 ICON_SIZE_SLIDER = f"{SETTINGS}//slider[@name='Icon size']"
@@ -89,21 +89,21 @@ ENTRIES = context_menu_entries(pinned=False, is_window=True)
 
 
 # --------------------------------------------------------------------- helpers
-def settings_windows(krema: Krema) -> list[kwin.Window]:
-    return [w for w in krema.windows() if w.normal_window and not w.skip_taskbar and w.title.startswith("Settings")]
+def settings_windows(kdockw: KDockW) -> list[kwin.Window]:
+    return [w for w in kdockw.windows() if w.normal_window and not w.skip_taskbar and w.title.startswith("Settings")]
 
 
-#: Thickness of krema's edge strips (kEdgeTriggerThickness): the Follow Active
+#: Thickness of kdockw's edge strips (kEdgeTriggerThickness): the Follow Active
 #: Mouse trigger maps one on each inactive output. They are not docks.
 EDGE_TRIGGER_PX = 4
 
 
-def dock_surfaces(krema: Krema) -> list[kwin.Window]:
-    """Mapped dock surfaces of this krema (layer-shell, full output width,
+def dock_surfaces(kdockw: KDockW) -> list[kwin.Window]:
+    """Mapped dock surfaces of this kdockw (layer-shell, full output width,
     anchored to the bottom edge, taller than an edge strip), sorted left to right."""
     out = [
         w
-        for w in krema.windows()
+        for w in kdockw.windows()
         if w.skip_taskbar
         and not w.desktops
         and w.client_width == W
@@ -112,20 +112,20 @@ def dock_surfaces(krema: Krema) -> list[kwin.Window]:
     ]
     return sorted(out, key=lambda w: w.client_x)
 
-def _item_has_description(krema: Krema, name: str, part: str) -> bool:
-    item = krema.item_accessible(name)
+def _item_has_description(kdockw: KDockW, name: str, part: str) -> bool:
+    item = kdockw.item_accessible(name)
     if item is None:
         return False
     item.clear_cache()
     return part in (item.description or "")
 
 
-def preview_surfaces(krema: Krema) -> list[kwin.Window]:
+def preview_surfaces(kdockw: KDockW) -> list[kwin.Window]:
     """Pre-shown bottom-edge preview layer surfaces above the dock band."""
     return sorted(
         [
             w
-            for w in krema.windows()
+            for w in kdockw.windows()
             if w.skip_taskbar
             and not w.desktops
             and w.client_width == W
@@ -136,8 +136,8 @@ def preview_surfaces(krema: Krema) -> list[kwin.Window]:
     )
 
 
-def click_el(krema: Krema, el, surface: str = "settings", button: str = "left") -> None:
-    inp.click(*krema.screen_rect(el, surface).center, button=button)
+def click_el(kdockw: KDockW, el, surface: str = "settings", button: str = "left") -> None:
+    inp.click(*kdockw.screen_rect(el, surface).center, button=button)
 
 
 def holds(predicate: Callable[[], bool], duration: float, message: str) -> None:
@@ -148,12 +148,12 @@ def holds(predicate: Callable[[], bool], duration: float, message: str) -> None:
         time.sleep(0.05)
 
 
-def current_page(krema: Krema) -> str | None:
+def current_page(kdockw: KDockW) -> str | None:
     """Name of the checked sidebar entry, i.e. the shown page."""
-    return next((e.get_attribute("name") for e in krema.find_all(SIDEBAR) if has_state(e, "checked")), None)
+    return next((e.get_attribute("name") for e in kdockw.find_all(SIDEBAR) if has_state(e, "checked")), None)
 
 
-def page_viewport(krema: Krema) -> Rect:
+def page_viewport(kdockw: KDockW) -> Rect:
     """Rect of the current settings page's scrolling viewport: its ScrollView
     (the showing element whose children include the scroll bars) in the page
     area right of the sidebar.
@@ -165,19 +165,19 @@ def page_viewport(krema: Krema) -> Rect:
     window has no title toolbar above it)."""
 
     def scroll_view():
-        sidebar = krema.find(SETTINGS_SIDEBAR_XPATH)
+        sidebar = kdockw.find(SETTINGS_SIDEBAR_XPATH)
         if sidebar is None:
             return None
         s = Rect.of(sidebar)
         views = []
-        for el in krema.find_all(SETTINGS + "//*[scroll_bar]"):
+        for el in kdockw.find_all(SETTINGS + "//*[scroll_bar]"):
             r = Rect.of(el)
             if has_state(el, "showing") and r.width and r.height and r.x >= s.x + s.width:
                 views.append(r)
         if views:
             return max(views, key=lambda r: r.width * r.height)
-        name = current_page(krema)
-        page = krema.find(f"{SETTINGS}//{PAGE_ROLE}[@name='{name}']") if name else None
+        name = current_page(kdockw)
+        page = kdockw.find(f"{SETTINGS}//{PAGE_ROLE}[@name='{name}']") if name else None
         if page is not None and has_state(page, "showing") and Rect.of(page).width:
             return Rect.of(page)
         return None
@@ -185,7 +185,7 @@ def page_viewport(krema: Krema) -> Rect:
     return wait_until(scroll_view, message="settings page scroll view")
 
 
-def page_wheel_point(krema: Krema, view: Rect | None = None) -> tuple[int, int]:
+def page_wheel_point(kdockw: KDockW, view: Rect | None = None) -> tuple[int, int]:
     """A screen point over the settings page's empty right margin.
 
     Wheel events there always scroll the page. Over the page body a wheel
@@ -196,20 +196,20 @@ def page_wheel_point(krema: Krema, view: Rect | None = None) -> tuple[int, int]:
     page height; the scroll bar's accessible has no Component so its rect
     cannot be measured.
     """
-    view = view or page_viewport(krema)
-    return krema.to_screen(Rect(view.x + view.width - 40, view.y + view.height // 2, 1, 1), "settings")[:2]
+    view = view or page_viewport(kdockw)
+    return kdockw.to_screen(Rect(view.x + view.width - 40, view.y + view.height // 2, 1, 1), "settings")[:2]
 
 
-def scroll_into_view(krema: Krema, xpath: str):
+def scroll_into_view(kdockw: KDockW, xpath: str):
     """Wheel-scroll the settings page until ``xpath`` is fully visible and at rest."""
-    view = page_viewport(krema)
+    view = page_viewport(kdockw)
 
     def in_view(el, r: Rect) -> bool:
         return has_state(el, "showing") and bool(r.width) and r.y >= view.y and r.y + r.height <= view.y + view.height
 
     wheel_at = None
     for _ in range(60):
-        el = krema.wait_for(xpath)
+        el = kdockw.wait_for(xpath)
         # Decide on the settled position only: each wheel step animates and
         # a new step during the animation adds to its end value, so acting
         # on a mid-animation rect overshoots and can oscillate around the
@@ -222,30 +222,30 @@ def scroll_into_view(krema: Krema, xpath: str):
         # half a page, so a step can not jump over the visible window.
         gap = (r.y + r.height - view.y - view.height) if below else (view.y - r.y)
         notches = 1 if r.width and gap < view.height // 2 else 4
-        wheel_at = wheel_at or page_wheel_point(krema, view)
+        wheel_at = wheel_at or page_wheel_point(kdockw, view)
         inp.scroll(*wheel_at, dy=15 * notches if below else -15 * notches)
     raise AssertionError(f"could not scroll {xpath} into view (last rect {r})")
 
 
-def open_page(krema: Krema, name: str) -> None:
+def open_page(kdockw: KDockW, name: str) -> None:
     """Show page ``name`` with a real click on its sidebar entry."""
-    item = krema.wait_for(f"{SIDEBAR}[@name='{name}']")
+    item = kdockw.wait_for(f"{SIDEBAR}[@name='{name}']")
     if not has_state(item, "checked"):
-        click_el(krema, item)
-    wait_until(lambda: current_page(krema) == name, message=f"page {name} selected")
+        click_el(kdockw, item)
+    wait_until(lambda: current_page(kdockw) == name, message=f"page {name} selected")
 
 
-def current_choice(krema: Krema, row: str) -> str:
-    return krema.wait_for(f"{SETTINGS}//list_item[@name='{row}']/label").get_attribute("name")
+def current_choice(kdockw: KDockW, row: str) -> str:
+    return kdockw.wait_for(f"{SETTINGS}//list_item[@name='{row}']/label").get_attribute("name")
 
 
-def choose(krema: Krema, row: str, option: str) -> None:
+def choose(kdockw: KDockW, row: str, option: str) -> None:
     """Pick ``option`` in the FormComboBoxDelegate ``row`` with real clicks."""
-    click_el(krema, scroll_into_view(krema, f"{SETTINGS}//list_item[@name='{row}']"))
-    opt = krema.wait_for(f"{SETTINGS}/dialog//*[self::list_item or self::menu_item][@name='{option}']")
+    click_el(kdockw, scroll_into_view(kdockw, f"{SETTINGS}//list_item[@name='{row}']"))
+    opt = kdockw.wait_for(f"{SETTINGS}/dialog//*[self::list_item or self::menu_item][@name='{option}']")
     wait_until(lambda: has_state(opt, "showing") and Rect.of(opt).width > 0, message=f"option {option} shown")
-    click_el(krema, opt)
-    wait_until(lambda: current_choice(krema, row) == option, message=f"{row} to show {option}")
+    click_el(kdockw, opt)
+    wait_until(lambda: current_choice(kdockw, row) == option, message=f"{row} to show {option}")
 
 
 def card_xpath(group: str, option: str | None = None) -> str:
@@ -254,28 +254,28 @@ def card_xpath(group: str, option: str | None = None) -> str:
     return xpath + (f"[@name='{option}']" if option is not None else "")
 
 
-def card_names(krema: Krema, group: str) -> list[str]:
-    return [e.get_attribute("name") for e in krema.find_all(card_xpath(group))]
+def card_names(kdockw: KDockW, group: str) -> list[str]:
+    return [e.get_attribute("name") for e in kdockw.find_all(card_xpath(group))]
 
 
-def current_card(krema: Krema, group: str) -> str | None:
+def current_card(kdockw: KDockW, group: str) -> str | None:
     """The checked option of picker ``group``; None unless exactly one is checked."""
-    checked = [e.get_attribute("name") for e in krema.find_all(card_xpath(group)) if has_state(e, "checked")]
+    checked = [e.get_attribute("name") for e in kdockw.find_all(card_xpath(group)) if has_state(e, "checked")]
     return checked[0] if len(checked) == 1 else None
 
 
-def pick(krema: Krema, group: str, option: str) -> None:
+def pick(kdockw: KDockW, group: str, option: str) -> None:
     """Select ``option`` of the visual picker ``group`` (ChoiceCards, Screen
     edge zones) with a real click and wait until it is the only checked one."""
-    click_el(krema, scroll_into_view(krema, card_xpath(group, option)))
-    wait_until(lambda: current_card(krema, group) == option, message=f"{group} to select {option}")
+    click_el(kdockw, scroll_into_view(kdockw, card_xpath(group, option)))
+    wait_until(lambda: current_card(kdockw, group) == option, message=f"{group} to select {option}")
 
 
 def slider_value(el) -> float:
     return float(el.get_attribute("value"))
 
 
-def focus_slider(krema: Krema, xpath: str, lo: float, hi: float):
+def focus_slider(kdockw: KDockW, xpath: str, lo: float, hi: float):
     """Give the slider at ``xpath`` (range ``lo``..``hi``) keyboard focus with
     a real click on its handle, keeping its value; returns the slider.
 
@@ -284,65 +284,65 @@ def focus_slider(krema: Krema, xpath: str, lo: float, hi: float):
     as wide as the slider is tall). Should it land a step off, arrow keys put
     the value back. Arrow keys on the focused slider then step it the way a
     user does and emit moved(), which writes the setting."""
-    el = scroll_into_view(krema, xpath)
+    el = scroll_into_view(kdockw, xpath)
     before = slider_value(el)
-    r = krema.screen_rect(el, "settings")
+    r = kdockw.screen_rect(el, "settings")
     handle = min(r.height, 24)
     frac = (before - lo) / (hi - lo) if hi > lo else 0.0
     inp.click(round(r.x + handle / 2 + frac * (r.width - handle)), r.center[1])
-    wait_until(lambda: has_state(krema.wait_for(xpath), "focused"), message=f"{xpath} focused")
+    wait_until(lambda: has_state(kdockw.wait_for(xpath), "focused"), message=f"{xpath} focused")
     tolerance = (hi - lo) * 1e-4
     for _ in range(50):
-        value = wait_stable(lambda: slider_value(krema.wait_for(xpath)), duration=0.2)
+        value = wait_stable(lambda: slider_value(kdockw.wait_for(xpath)), duration=0.2)
         if abs(value - before) <= tolerance:
-            return krema.wait_for(xpath)
+            return kdockw.wait_for(xpath)
         inp.key("right" if value < before else "left")
     raise AssertionError(f"{xpath}: could not restore {before} after focusing (now {value})")
 
 
-def close_settings(krema: Krema) -> None:
+def close_settings(kdockw: KDockW) -> None:
     """Close the settings window with a real Alt+F4 (KWin's Window Close)."""
-    (win,) = settings_windows(krema)
+    (win,) = settings_windows(kdockw)
     kwin.activate(win.internal_id)
     wait_until(lambda: (kwin.active_window() or win).internal_id == win.internal_id and kwin.active_window() is not None)
     inp.key("alt", "f4")
-    wait_until(lambda: not settings_windows(krema), message="settings window to close")
+    wait_until(lambda: not settings_windows(kdockw), message="settings window to close")
 
 
-def reveal_dock(krema: Krema, name: str) -> None:
+def reveal_dock(kdockw: KDockW, name: str) -> None:
     """Show an auto-hidden dock with a real bottom-edge hover (x far from items)."""
     inp.move(60, H - 1)
-    wait_until(lambda: has_state(krema.item(name), "showing"), timeout=5, message="dock to show on edge hover")
+    wait_until(lambda: has_state(kdockw.item(name), "showing"), timeout=5, message="dock to show on edge hover")
     # Wait for the slide-in to finish so item coordinates are final.
     wait_until(
-        lambda: (r := Rect.of(krema.item(name))).y >= 0 and r.y + r.height <= krema.surface_rect("dock").height,
+        lambda: (r := Rect.of(kdockw.item(name))).y >= 0 and r.y + r.height <= kdockw.surface_rect("dock").height,
         timeout=5,
         message="dock item inside its surface",
     )
-    wait_stable(lambda: Rect.of(krema.item(name)))
+    wait_stable(lambda: Rect.of(kdockw.item(name)))
 
 
 def pointer_to_center() -> None:
     inp.move(W // 2, H // 3)
 
 
-def item_width(krema: Krema, name: str) -> int:
-    return Rect.of(krema.item(name)).width
+def item_width(kdockw: KDockW, name: str) -> int:
+    return Rect.of(kdockw.item(name)).width
 
 
-def zoomed_width(krema: Krema, name: str, rest: Rect) -> int:
+def zoomed_width(kdockw: KDockW, name: str, rest: Rect) -> int:
     """Drawn width of item ``name`` whose unzoomed rect is ``rest``."""
-    return painted_rect(Rect.of(krema.item(name)), rest).width
+    return painted_rect(Rect.of(kdockw.item(name)), rest).width
 
 
-def hover_ready(k: Krema, name: str = "Alpha") -> None:
+def hover_ready(k: KDockW, name: str = "Alpha") -> None:
     """Glide onto dock item ``name`` and wait until the panel registers the
     hover (the item zooms beyond its icon size). The dock resolves clicks
     through ``root.hoveredIndex`` (main.qml onClicked), so a click that
     arrives before the hover was processed is ignored; a real user always
     hovers first."""
     icon = int(k.read_config().get("General", {}).get("IconSize", 48))
-    # wait_for_item: while krema builds a Settings window (Settings... then
+    # wait_for_item: while kdockw builds a Settings window (Settings... then
     # straight to another menu, SET-009) an AT-SPI query of the dock can
     # briefly return no items at all.
     item = k.screen_rect(k.wait_for_item(name))
@@ -361,12 +361,12 @@ def hover_ready(k: Krema, name: str = "Alpha") -> None:
     wait_until(lambda: zoomed_width(k, name, rest) > icon, timeout=5, message=f"dock item {name} hovered (zoomed)")
 
 
-def open_menu(k: Krema, name: str = "Alpha") -> kwin.Window:
+def open_menu(k: KDockW, name: str = "Alpha") -> kwin.Window:
     hover_ready(k, name)
     return k.open_context_menu(name)
 
 
-def open_settings(k: Krema, name: str = "Alpha") -> kwin.Window:
+def open_settings(k: KDockW, name: str = "Alpha") -> kwin.Window:
     """Open Settings from ``name``'s context menu, then leave the dock like a
     user heading for the dialog.
 
@@ -379,29 +379,29 @@ def open_settings(k: Krema, name: str = "Alpha") -> kwin.Window:
     return win
 
 
-def config_value(krema: Krema, key: str) -> str | None:
-    return krema.read_config().get("General", {}).get(key)
+def config_value(kdockw: KDockW, key: str) -> str | None:
+    return kdockw.read_config().get("General", {}).get(key)
 
 
-def atspi_actions(krema: Krema, role: str, name: str) -> list[str]:
-    """AT-SPI action names of krema's first ``role`` named ``name`` (the
+def atspi_actions(kdockw: KDockW, role: str, name: str) -> list[str]:
+    """AT-SPI action names of kdockw's first ``role`` named ``name`` (the
     WebDriver only exposes Press/Toggle/SetFocus through click())."""
     desktop = pyatspi.Registry.getDesktop(0)
-    app = next(a for a in desktop if a is not None and a.get_process_id() == krema.pid)
+    app = next(a for a in desktop if a is not None and a.get_process_id() == kdockw.pid)
     node = pyatspi.findDescendant(app, lambda n: n.getRoleName() == role and n.name == name)
-    assert node is not None, f"{role} {name!r} not in krema's AT-SPI tree"
+    assert node is not None, f"{role} {name!r} not in kdockw's AT-SPI tree"
     action = node.queryAction()
     return [action.getName(i) for i in range(action.nActions)]
 
 
-def panel_band(krema: Krema, tag: str) -> list[tuple[int, int, int]]:
+def panel_band(kdockw: KDockW, tag: str) -> list[tuple[int, int, int]]:
     """Screenshot pixels of the dock panel's flat background left of the
     leftmost item (between the panel's rounded left edge, found on the item's
     centre row, and the icon). Only the black desktop is behind it. The left
-    side is used because an open Settings window adds krema's own item on the
+    side is used because an open Settings window adds kdockw's own item on the
     right."""
-    img = krema.screenshot(tag, krema.surface_rect("dock"))
-    ir = min((krema.screen_rect(e) for e in krema.items()), key=lambda r: r.x)
+    img = kdockw.screenshot(tag, kdockw.surface_rect("dock"))
+    ir = min((kdockw.screen_rect(e) for e in kdockw.items()), key=lambda r: r.x)
     cy = ir.y + ir.height // 2
     x = ir.x - 1
     while x > 0 and sum(img.getpixel((x, cy))) > 30:
@@ -421,74 +421,74 @@ def requires_capture() -> None:
 
 
 # ------------------------------------------------------------------- SET-001
-@pytest.mark.kremarc({"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE})
-def test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE})
+def test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown(kdockw: KDockW, apps: TestWindows) -> None:
     alpha = apps.open("Alpha")
-    reveal_dock(krema, "Alpha")
-    assert settings_windows(krema) == []
-    app_windows_before = [w for w in kwin.app_windows() if w.pid == krema.pid]
+    reveal_dock(kdockw, "Alpha")
+    assert settings_windows(kdockw) == []
+    app_windows_before = [w for w in kwin.app_windows() if w.pid == kdockw.pid]
 
-    win = open_settings(krema)
+    win = open_settings(kdockw)
 
-    # A separate toplevel window: exactly one more krema app window.
-    app_windows_after = [w for w in kwin.app_windows() if w.pid == krema.pid]
+    # A separate toplevel window: exactly one more kdockw app window.
+    app_windows_after = [w for w in kwin.app_windows() if w.pid == kdockw.pid]
     assert len(app_windows_after) == len(app_windows_before) + 1
     assert win.title == SETTINGS_TITLE and win.normal_window
     # Sidebar pages in order, Icons shown by default.
-    wait_until(lambda: [e.get_attribute("name") for e in krema.find_all(SIDEBAR)] == PAGES, message="sidebar pages")
-    assert current_page(krema) == "Icons"
-    assert krema.find(f"{SETTINGS}//{PAGE_ROLE}[@name='Icons']") is not None
+    wait_until(lambda: [e.get_attribute("name") for e in kdockw.find_all(SIDEBAR)] == PAGES, message="sidebar pages")
+    assert current_page(kdockw) == "Icons"
+    assert kdockw.find(f"{SETTINGS}//{PAGE_ROLE}[@name='Icons']") is not None
     # FormCard widgets exposed with labels.
-    size = krema.find(ICON_SIZE_SLIDER)
+    size = kdockw.find(ICON_SIZE_SLIDER)
     assert size is not None and slider_value(size) == 48.0
     # Zoom style picker: Parabolic by default.
-    assert card_names(krema, ZOOM_STYLE) == [PARABOLIC, IN_PLACE]
-    assert current_card(krema, ZOOM_STYLE) == PARABOLIC
+    assert card_names(kdockw, ZOOM_STYLE) == [PARABOLIC, IN_PLACE]
+    assert current_card(kdockw, ZOOM_STYLE) == PARABOLIC
     # Zoom animation card: Preset tab selected with the default Natural preset.
-    assert zoom_tab_selected(krema.wait_for(PRESET_TAB)) and not zoom_tab_selected(krema.wait_for(CUSTOM_TAB))
-    assert has_state(krema.wait_for(preset_radio("Natural")), "checked")
-    assert krema.find(f"{SETTINGS}//slider[@name='Zoom factor']") is not None
-    assert krema.find(f"{SETTINGS}//check_box[@name='Icon size normalization']") is not None
+    assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)) and not zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB))
+    assert has_state(kdockw.wait_for(preset_radio("Natural")), "checked")
+    assert kdockw.find(f"{SETTINGS}//slider[@name='Zoom factor']") is not None
+    assert kdockw.find(f"{SETTINGS}//check_box[@name='Icon size normalization']") is not None
     for role, name in (("slider", "Zoom factor"), ("slider", "Icon size")):
-        actions = atspi_actions(krema, role, name)
+        actions = atspi_actions(kdockw, role, name)
         assert {"Increase", "Decrease"} <= set(actions), f"{role} {name!r} actions: {actions}"
-    krema.screenshot("settings-dialog")
+    kdockw.screenshot("settings-dialog")
 
     # The dock stays shown while the dialog is open (auto-hide would hide it).
     pointer_to_center()
-    holds(lambda: has_state(krema.item("Alpha"), "showing"), 1.5, "auto-hide dock hid while Settings is open")
+    holds(lambda: has_state(kdockw.item("Alpha"), "showing"), 1.5, "auto-hide dock hid while Settings is open")
 
     # Settings... again raises the same window instead of opening a second one.
     kwin.activate(alpha.internal_id)
     wait_until(lambda: kwin.active_window() is not None and kwin.active_window().internal_id == alpha.internal_id)
-    open_menu(krema)
-    krema.choose_context_menu_entry("Settings...", ENTRIES)
+    open_menu(kdockw)
+    kdockw.choose_context_menu_entry("Settings...", ENTRIES)
     wait_until(
         lambda: kwin.active_window() is not None and kwin.active_window().internal_id == win.internal_id,
         message="existing Settings window to be raised and activated",
     )
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id]
-    assert has_state(krema.item("Alpha"), "showing")
-    assert current_page(krema) == "Icons", "re-raising Settings must keep the shown page"
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id]
+    assert has_state(kdockw.item("Alpha"), "showing")
+    assert current_page(kdockw) == "Icons", "re-raising Settings must keep the shown page"
 
     # Another page through the sidebar: the attention animation and badge
     # pickers are radio-button cards with their defaults selected.
-    open_page(krema, "Animations & Badges")
-    assert card_names(krema, "Attention animation") == ["None", "Bounce", "Wiggle", "Pulse", "Glow", "Dot color", "Blink"]
-    assert current_card(krema, "Attention animation") == "Wiggle"
-    assert card_names(krema, "Badge display") == ["Number", "Dot", "Off"]
-    assert current_card(krema, "Badge display") == "Number"
-    assert krema.find(f"{SETTINGS}//slider[@name='Zoom factor']") is None, "the Icons page must be replaced"
+    open_page(kdockw, "Animations & Badges")
+    assert card_names(kdockw, "Attention animation") == ["None", "Bounce", "Wiggle", "Pulse", "Glow", "Dot color", "Blink"]
+    assert current_card(kdockw, "Attention animation") == "Wiggle"
+    assert card_names(kdockw, "Badge display") == ["Number", "Dot", "Off"]
+    assert current_card(kdockw, "Badge display") == "Number"
+    assert kdockw.find(f"{SETTINGS}//slider[@name='Zoom factor']") is None, "the Icons page must be replaced"
 
 
 # ------------------------------------------------------------------- SET-002
-@pytest.mark.kremarc({"PinnedLaunchers": [], "MaxZoomFactor": 1.6})
-def test_set002_icon_size_slider_resizes_dock_live_and_keeps_zoom_proportion(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "MaxZoomFactor": 1.6})
+def test_set002_icon_size_slider_resizes_dock_live_and_keeps_zoom_proportion(kdockw: KDockW, apps: TestWindows) -> None:
     max_zoom = 1.6
     apps.open("Alpha")
-    # apps.open waits for KWin only; the dock item follows through krema's task model.
-    krema.wait_for_item("Alpha")
-    pid = krema.pid
+    # apps.open waits for KWin only; the dock item follows through kdockw's task model.
+    kdockw.wait_for_item("Alpha")
+    pid = kdockw.pid
 
     def peak_width(rest: Rect) -> int:
         """Peak item width with the pointer on the item's centre (``rest``:
@@ -501,31 +501,31 @@ def test_set002_icon_size_slider_resizes_dock_live_and_keeps_zoom_proportion(kre
         re-centred until the rect stops moving."""
 
         def centre() -> tuple[int, int]:
-            return krema.to_screen(painted_rect(Rect.of(krema.item("Alpha")), rest)).center
+            return kdockw.to_screen(painted_rect(Rect.of(kdockw.item("Alpha")), rest)).center
 
-        krema.hover_item("Alpha")  # enter with a glide, not a teleport
+        kdockw.hover_item("Alpha")  # enter with a glide, not a teleport
         for _ in range(8):
             inp.move(*centre())
             if wait_stable(centre, duration=0.3) == inp.pointer_position():
                 break
-        return wait_stable(lambda: zoomed_width(krema, "Alpha", rest), duration=0.3)
+        return wait_stable(lambda: zoomed_width(kdockw, "Alpha", rest), duration=0.3)
 
-    rest = wait_stable(lambda: Rect.of(krema.item("Alpha")), duration=0.3)
+    rest = wait_stable(lambda: Rect.of(kdockw.item("Alpha")), duration=0.3)
     assert rest.width == 48
     zoomed_before = peak_width(rest)
-    krema.move_away()
-    wait_until(lambda: zoomed_width(krema, "Alpha", rest) == 48, message=lambda: f"zoom reset (width {zoomed_width(krema, 'Alpha', rest)})")
+    kdockw.move_away()
+    wait_until(lambda: zoomed_width(kdockw, "Alpha", rest) == 48, message=lambda: f"zoom reset (width {zoomed_width(kdockw, 'Alpha', rest)})")
 
-    open_settings(krema)
-    slider = focus_slider(krema, ICON_SIZE_SLIDER, 24, 96)
+    open_settings(kdockw)
+    slider = focus_slider(kdockw, ICON_SIZE_SLIDER, 24, 96)
     for expected in (52, 56, 60, 64):  # stepSize 4: every key press resizes the dock
         inp.key("right")
         wait_until(lambda: slider_value(slider) == expected, message=f"slider at {expected}")
-        wait_until(lambda: item_width(krema, "Alpha") == expected, timeout=5, message=f"dock item {expected}px wide")
+        wait_until(lambda: item_width(kdockw, "Alpha") == expected, timeout=5, message=f"dock item {expected}px wide")
 
-    assert config_value(krema, "IconSize") == "64"
-    assert krema.pid == pid and krema.is_running(), "icon size change must not restart krema"
-    zoomed_after = peak_width(wait_stable(lambda: Rect.of(krema.item("Alpha")), duration=0.3))
+    assert config_value(kdockw, "IconSize") == "64"
+    assert kdockw.pid == pid and kdockw.is_running(), "icon size change must not restart kdockw"
+    zoomed_after = peak_width(wait_stable(lambda: Rect.of(kdockw.item("Alpha")), duration=0.3))
     # The item width is an integer, so the ratio is off by at most ~0.5/base;
     # a residual pointer offset of <=1 px lowers it by <0.03. 0.05 is safe.
     for base, zoomed in ((48, zoomed_before), (64, zoomed_after)):
@@ -534,53 +534,53 @@ def test_set002_icon_size_slider_resizes_dock_live_and_keeps_zoom_proportion(kre
 
 
 # ------------------------------------------------------------------- SET-003
-def test_set003_auto_hide_applies_immediately_and_persists(krema: Krema, apps: TestWindows) -> None:
+def test_set003_auto_hide_applies_immediately_and_persists(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    pid = krema.pid
-    open_settings(krema)
-    open_page(krema, "Behavior")
-    assert current_card(krema, "Visibility mode") == "Always visible"
+    pid = kdockw.pid
+    open_settings(kdockw)
+    open_page(kdockw, "Behavior")
+    assert current_card(kdockw, "Visibility mode") == "Always visible"
 
-    pick(krema, "Visibility mode", "Auto hide")
-    wait_until(lambda: config_value(krema, "VisibilityMode") == str(kcfg.AUTO_HIDE), message="kremarc VisibilityMode=1")
+    pick(kdockw, "Visibility mode", "Auto hide")
+    wait_until(lambda: config_value(kdockw, "VisibilityMode") == str(kcfg.AUTO_HIDE), message="kdockwrc VisibilityMode=1")
     # The auto-hide-only delay rows appear at once: the mode is live in the UI.
-    assert krema.find(f"{SETTINGS}//slider[@name='Hide delay (ms)']") is not None
+    assert kdockw.find(f"{SETTINGS}//slider[@name='Hide delay (ms)']") is not None
 
     # By design the open Settings dialog holds the dock shown (SET-008).
     pointer_to_center()
-    holds(lambda: has_state(krema.item("Alpha"), "showing"), 1.0, "dock hid while Settings is open")
-    close_settings(krema)
+    holds(lambda: has_state(kdockw.item("Alpha"), "showing"), 1.0, "dock hid while Settings is open")
+    close_settings(kdockw)
 
     # Without a restart the dock now hides when the pointer is away ...
     pointer_to_center()
-    wait_until(lambda: not has_state(krema.item("Alpha"), "showing"), timeout=5, message="dock to auto-hide")
-    assert Rect.of(krema.item("Alpha")).y >= krema.surface_rect("dock").height, "hidden item must be pushed off the surface"
+    wait_until(lambda: not has_state(kdockw.item("Alpha"), "showing"), timeout=5, message="dock to auto-hide")
+    assert Rect.of(kdockw.item("Alpha")).y >= kdockw.surface_rect("dock").height, "hidden item must be pushed off the surface"
     # ... and shows again on the screen edge.
-    reveal_dock(krema, "Alpha")
-    assert krema.pid == pid
-    assert config_value(krema, "VisibilityMode") == str(kcfg.AUTO_HIDE)
+    reveal_dock(kdockw, "Alpha")
+    assert kdockw.pid == pid
+    assert config_value(kdockw, "VisibilityMode") == str(kcfg.AUTO_HIDE)
 
 
 # ------------------------------------------------------------------- SET-004
-def test_set004_acrylic_background_applies_live(krema: Krema, apps: TestWindows) -> None:
+def test_set004_acrylic_background_applies_live(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
-    krema.move_away()
-    before = panel_band(krema, "style-panel-inherit")
+    kdockw.move_away()
+    before = panel_band(kdockw, "style-panel-inherit")
     assert len(set(before)) <= 3, f"Panel Inherit background should be flat: {sorted(set(before))[:10]}"
     assert min(sum(p) for p in before) > 300, "panel background should be opaque-looking over the black desktop"
 
-    open_settings(krema)
-    open_page(krema, "Panel Style")
-    assert card_names(krema, "Style") == ["Panel Inherit", "Transparent", "Tinted", "Acrylic"]
-    assert current_card(krema, "Style") == "Panel Inherit"
-    pick(krema, "Style", "Acrylic")
-    wait_until(lambda: config_value(krema, "BackgroundStyle") == "3", message="kremarc BackgroundStyle=3")
+    open_settings(kdockw)
+    open_page(kdockw, "Panel Style")
+    assert card_names(kdockw, "Style") == ["Panel Inherit", "Transparent", "Tinted", "Acrylic"]
+    assert current_card(kdockw, "Style") == "Panel Inherit"
+    pick(kdockw, "Style", "Acrylic")
+    wait_until(lambda: config_value(kdockw, "BackgroundStyle") == "3", message="kdockwrc BackgroundStyle=3")
     inp.move(W - 20, H // 3)
 
     # Acrylic = KWin blur + translucent tint + per-pixel noise grain (acrylic_overlay.frag).
     def grainy():
-        px = panel_band(krema, "style-acrylic")
+        px = panel_band(kdockw, "style-acrylic")
         return px if len(set(px)) >= 8 else None
 
     after = wait_until(
@@ -590,70 +590,70 @@ def test_set004_acrylic_background_applies_live(krema: Krema, apps: TestWindows)
     )
     m0, m1 = mean(before), mean(after)
     assert max(abs(a - b) for a, b in zip(m0, m1)) < 16, f"acrylic tint should keep the panel colour: {m0} -> {m1}"
-    assert settings_windows(krema), "style change must not close Settings"
+    assert settings_windows(kdockw), "style change must not close Settings"
 
 
 # ------------------------------------------------------------------- SET-005
-def test_set005_changed_settings_persist_across_restart(krema: Krema, apps: TestWindows) -> None:
+def test_set005_changed_settings_persist_across_restart(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
-    open_settings(krema)
-    slider = focus_slider(krema, ICON_SIZE_SLIDER, 24, 96)
+    open_settings(kdockw)
+    slider = focus_slider(kdockw, ICON_SIZE_SLIDER, 24, 96)
     for _ in range(4):
         inp.key("right")
     wait_until(lambda: slider_value(slider) == 64.0, message="icon size slider at 64")
-    relaxed = scroll_into_view(krema, preset_radio("Relaxed"))
-    click_el(krema, relaxed)
-    wait_until(lambda: has_state(krema.wait_for(preset_radio("Relaxed")), "checked"), message="Relaxed preset selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "2", message="zoom animation preset saved")
-    open_page(krema, "Panel Style")
-    pick(krema, "Style", "Acrylic")
-    open_page(krema, "Behavior")
-    pick(krema, "Visibility mode", "Auto hide")
-    saved = {k: config_value(krema, k) for k in ("IconSize", "ZoomAnimationPreset", "BackgroundStyle", "VisibilityMode")}
+    relaxed = scroll_into_view(kdockw, preset_radio("Relaxed"))
+    click_el(kdockw, relaxed)
+    wait_until(lambda: has_state(kdockw.wait_for(preset_radio("Relaxed")), "checked"), message="Relaxed preset selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "2", message="zoom animation preset saved")
+    open_page(kdockw, "Panel Style")
+    pick(kdockw, "Style", "Acrylic")
+    open_page(kdockw, "Behavior")
+    pick(kdockw, "Visibility mode", "Auto hide")
+    saved = {k: config_value(kdockw, k) for k in ("IconSize", "ZoomAnimationPreset", "BackgroundStyle", "VisibilityMode")}
     assert saved == {"IconSize": "64", "ZoomAnimationPreset": "2", "BackgroundStyle": "3", "VisibilityMode": "1"}
-    close_settings(krema)
+    close_settings(kdockw)
 
-    old_pid = krema.pid
-    krema.restart()
-    assert krema.pid != old_pid
-    assert {k: config_value(krema, k) for k in saved} == saved
+    old_pid = kdockw.pid
+    kdockw.restart()
+    assert kdockw.pid != old_pid
+    assert {k: config_value(kdockw, k) for k in saved} == saved
 
     # Dock appearance matches: auto-hidden, 64 px icons, acrylic panel.
     pointer_to_center()
-    wait_until(lambda: not has_state(krema.wait_for_item("Alpha"), "showing"), timeout=5, message="restored auto-hide")
-    reveal_dock(krema, "Alpha")
-    assert wait_stable(lambda: item_width(krema, "Alpha")) == 64
-    band = panel_band(krema, "restored-acrylic")
+    wait_until(lambda: not has_state(kdockw.wait_for_item("Alpha"), "showing"), timeout=5, message="restored auto-hide")
+    reveal_dock(kdockw, "Alpha")
+    assert wait_stable(lambda: item_width(kdockw, "Alpha")) == 64
+    band = panel_band(kdockw, "restored-acrylic")
     assert len(set(band)) >= 8, "restored panel should show the acrylic grain"
 
-    open_settings(krema)
-    assert current_page(krema) == "Icons"
-    assert slider_value(krema.wait_for(ICON_SIZE_SLIDER)) == 64.0
-    assert has_state(scroll_into_view(krema, preset_radio("Relaxed")), "checked")
-    assert not has_state(krema.wait_for(preset_radio("Natural")), "checked")
-    assert zoom_tab_selected(krema.wait_for(PRESET_TAB))
-    open_page(krema, "Panel Style")
-    wait_until(lambda: current_card(krema, "Style") == "Acrylic", message="Style shows Acrylic")
-    open_page(krema, "Behavior")
-    assert current_card(krema, "Visibility mode") == "Auto hide"
+    open_settings(kdockw)
+    assert current_page(kdockw) == "Icons"
+    assert slider_value(kdockw.wait_for(ICON_SIZE_SLIDER)) == 64.0
+    assert has_state(scroll_into_view(kdockw, preset_radio("Relaxed")), "checked")
+    assert not has_state(kdockw.wait_for(preset_radio("Natural")), "checked")
+    assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB))
+    open_page(kdockw, "Panel Style")
+    wait_until(lambda: current_card(kdockw, "Style") == "Acrylic", message="Style shows Acrylic")
+    open_page(kdockw, "Behavior")
+    assert current_card(kdockw, "Visibility mode") == "Auto hide"
 
 
 # ------------------------------------------------------------------- SET-006
-def test_set006_screen_edge_top_moves_dock_to_top(krema: Krema, apps: TestWindows) -> None:
+def test_set006_screen_edge_top_moves_dock_to_top(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
-    dock = krema.surface_rect("dock")
+    dock = kdockw.surface_rect("dock")
     assert (dock.y + dock.height, dock.width) == (H, W)
-    open_settings(krema)
-    open_page(krema, "Layout & Position")
-    assert card_names(krema, "Screen edge") == ["Top", "Bottom", "Left", "Right"]
-    assert current_card(krema, "Screen edge") == "Bottom"
+    open_settings(kdockw)
+    open_page(kdockw, "Layout & Position")
+    assert card_names(kdockw, "Screen edge") == ["Top", "Bottom", "Left", "Right"]
+    assert current_card(kdockw, "Screen edge") == "Bottom"
 
-    pick(krema, "Screen edge", "Top")
-    wait_until(lambda: config_value(krema, "Edge") == str(kcfg.EDGE_TOP), message="kremarc Edge=0")
+    pick(kdockw, "Screen edge", "Top")
+    wait_until(lambda: config_value(kdockw, "Edge") == str(kcfg.EDGE_TOP), message="kdockwrc Edge=0")
     def top_dock():
-        r = krema.surface_rect("dock")
+        r = kdockw.surface_rect("dock")
         return r if r is not None and r.y == 0 else None
 
     top = wait_until(
@@ -662,40 +662,40 @@ def test_set006_screen_edge_top_moves_dock_to_top(krema: Krema, apps: TestWindow
         message="dock surface anchored to the top edge",
     )
     assert (top.x, top.width) == (0, W)
-    assert not [w for w in krema.windows() if w.skip_taskbar and w.client_y + w.client_height == H], "a dock surface is left at the bottom"
+    assert not [w for w in kdockw.windows() if w.skip_taskbar and w.client_y + w.client_height == H], "a dock surface is left at the bottom"
 
-    item = krema.item("Alpha")
+    item = kdockw.item("Alpha")
     assert has_state(item, "showing")
-    ir = wait_stable(lambda: krema.screen_rect(krema.item("Alpha")))
+    ir = wait_stable(lambda: kdockw.screen_rect(kdockw.item("Alpha")))
     assert 0 <= ir.y and ir.y + ir.height <= top.height and ir.width == 48
-    img = krema.screenshot("dock-top", ir)
+    img = kdockw.screenshot("dock-top", ir)
     colors = img.crop((ir.x, ir.y, ir.x + ir.width, ir.y + ir.height)).getcolors(4096)
     assert colors is None or len(colors) > 16, f"icon at the top edge looks blank: {colors}"
 
 
 # ------------------------------------------------------------------- SET-007
-@pytest.mark.kremarc({"PinnedLaunchers": [], "BackgroundStyle": 2})
-def test_set007_custom_tint_color_is_applied_and_saved(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "BackgroundStyle": 2})
+def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
-    krema.move_away()
-    r0, g0, b0 = mean(panel_band(krema, "tint-system"))
+    kdockw.move_away()
+    r0, g0, b0 = mean(panel_band(kdockw, "tint-system"))
     assert max(r0, g0, b0) - min(r0, g0, b0) < 20, f"system-colour tint should be neutral: {(r0, g0, b0)}"
 
-    open_settings(krema)
-    open_page(krema, "Panel Style")
-    assert current_card(krema, "Style") == "Tinted"
-    use_system = scroll_into_view(krema, f"{SETTINGS}//check_box[@name='Use system color']")
+    open_settings(kdockw)
+    open_page(kdockw, "Panel Style")
+    assert current_card(kdockw, "Style") == "Tinted"
+    use_system = scroll_into_view(kdockw, f"{SETTINGS}//check_box[@name='Use system color']")
     assert has_state(use_system, "checked")
-    click_el(krema, use_system)
+    click_el(kdockw, use_system)
     wait_until(lambda: not has_state(use_system, "checked"), message="Use system color off")
 
-    tint = scroll_into_view(krema, f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
-    click_el(krema, tint)
+    tint = scroll_into_view(kdockw, f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
+    click_el(kdockw, tint)
     dialog = wait_until(
-        lambda: next((w for w in krema.windows() if w.title.startswith("Choose tint color")), None), message="colour dialog window"
+        lambda: next((w for w in kdockw.windows() if w.title.startswith("Choose tint color")), None), message="colour dialog window"
     )
-    hex_field = krema.wait_for(f"{COLOR_DIALOG}//combo_box[@name='Hex']/following-sibling::text")
+    hex_field = kdockw.wait_for(f"{COLOR_DIALOG}//combo_box[@name='Hex']/following-sibling::text")
 
     def dialog_click(el) -> None:
         r = Rect.of(el)
@@ -705,15 +705,15 @@ def test_set007_custom_tint_color_is_applied_and_saved(krema: Krema, apps: TestW
     inp.key("ctrl", "a")
     inp.type_text("#c81e1e")
     inp.key("tab")
-    dialog_click(krema.wait_for(f"{COLOR_DIALOG}//button[@name='OK']"))
-    wait_until(lambda: not [w for w in krema.windows() if w.title.startswith("Choose tint color")], message="colour dialog closed")
+    dialog_click(kdockw.wait_for(f"{COLOR_DIALOG}//button[@name='OK']"))
+    wait_until(lambda: not [w for w in kdockw.windows() if w.title.startswith("Choose tint color")], message="colour dialog closed")
 
-    wait_until(lambda: (config_value(krema, "TintColor") or "").lower() == "#c81e1e", message="kremarc TintColor")
-    assert config_value(krema, "UseSystemColor") == "false"
-    assert krema.find(f"{SETTINGS}//button[@name='Tint color: #c81e1e']") is not None
+    wait_until(lambda: (config_value(kdockw, "TintColor") or "").lower() == "#c81e1e", message="kdockwrc TintColor")
+    assert config_value(kdockw, "UseSystemColor") == "false"
+    assert kdockw.find(f"{SETTINGS}//button[@name='Tint color: #c81e1e']") is not None
     inp.move(W - 20, H // 3)
     r1, g1, b1 = wait_until(
-        lambda: (m := mean(panel_band(krema, "tint-custom")))[0] > m[1] + 60 and m[0] > m[2] + 60 and m,
+        lambda: (m := mean(panel_band(kdockw, "tint-custom")))[0] > m[1] + 60 and m[0] > m[2] + 60 and m,
         timeout=5,
         message="dock panel tinted red",
     )
@@ -723,55 +723,55 @@ def test_set007_custom_tint_color_is_applied_and_saved(krema: Krema, apps: TestW
 
 # ------------------------------------------------------------------- SET-008
 @pytest.mark.outputs(2)
-@pytest.mark.kremarc({"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 0})
-def test_set008_monitor_mode_all_monitors_from_open_settings(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 0})
+def test_set008_monitor_mode_all_monitors_from_open_settings(kdockw: KDockW, apps: TestWindows) -> None:
     outputs = kwin.evaluate("report(workspace.screens.map(s => ({name: s.name, x: s.geometry.x, y: s.geometry.y})));")
     assert [(o["x"], o["y"]) for o in outputs] == [(0, 0), (W, 0)], f"expected two side-by-side outputs: {outputs}"
     apps.open("Alpha")
-    (primary,) = wait_until(lambda: dock_surfaces(krema) if len(dock_surfaces(krema)) == 1 else None)
+    (primary,) = wait_until(lambda: dock_surfaces(kdockw) if len(dock_surfaces(kdockw)) == 1 else None)
     assert primary.client_x == 0
-    reveal_dock(krema, "Alpha")
-    win = open_settings(krema)
-    open_page(krema, "Monitors & Desktops")
-    assert card_names(krema, "Monitor mode") == ["Primary monitor only", "All monitors", "Follow active screen", "Selected monitors"]
-    assert current_card(krema, "Monitor mode") == "Primary monitor only"
-    pid = krema.pid
+    reveal_dock(kdockw, "Alpha")
+    win = open_settings(kdockw)
+    open_page(kdockw, "Monitors & Desktops")
+    assert card_names(kdockw, "Monitor mode") == ["Primary monitor only", "All monitors", "Follow active screen", "Selected monitors"]
+    assert current_card(kdockw, "Monitor mode") == "Primary monitor only"
+    pid = kdockw.pid
 
-    pick(krema, "Monitor mode", "All monitors")
-    wait_until(lambda: config_value(krema, "MonitorMode") == "1", message="kremarc MonitorMode=1")
-    docks = wait_until(lambda: d if len(d := dock_surfaces(krema)) == 2 else None, timeout=5, message="one dock per output")
-    assert krema.pid == pid and krema.is_running()
+    pick(kdockw, "Monitor mode", "All monitors")
+    wait_until(lambda: config_value(kdockw, "MonitorMode") == "1", message="kdockwrc MonitorMode=1")
+    docks = wait_until(lambda: d if len(d := dock_surfaces(kdockw)) == 2 else None, timeout=5, message="one dock per output")
+    assert kdockw.pid == pid and kdockw.is_running()
     assert [d.client_x for d in docks] == [0, W] and docks[0].output != docks[1].output, docks
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id], "the same dialog stays open"
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id], "the same dialog stays open"
 
     # Both docks are shown while the dialog is open, though mode is auto-hide.
     alpha_xpath = TOOLBAR_XPATH + "/button[@name='Alpha']"
-    wait_until(lambda: len(krema.find_all(TOOLBAR_XPATH)) == 2, message="two dock tool bars")
+    wait_until(lambda: len(kdockw.find_all(TOOLBAR_XPATH)) == 2, message="two dock tool bars")
     wait_until(
-        lambda: len(e := krema.find_all(alpha_xpath)) == 2 and all(has_state(i, "showing") for i in e),
+        lambda: len(e := kdockw.find_all(alpha_xpath)) == 2 and all(has_state(i, "showing") for i in e),
         timeout=5,
         message="Alpha on both docks",
     )
     pointer_to_center()
 
     def both_shown() -> bool:
-        items = krema.find_all(alpha_xpath)
+        items = kdockw.find_all(alpha_xpath)
         return len(items) == 2 and all(has_state(i, "showing") for i in items)
 
     holds(both_shown, 1.0, "a dock hid while Settings is open")
-    krema.screenshot("two-docks-and-settings")
+    kdockw.screenshot("two-docks-and-settings")
 
     # Right-click the dock on the second output -> Settings... raises the same dialog.
     # Each dock window is positioned at its screen's top-left, and Qt adds that
     # position to the AT-SPI rects: the second dock's items come out shifted by W.
-    first, second = sorted((Rect.of(i) for i in krema.find_all(alpha_xpath)), key=lambda r: r.x)
+    first, second = sorted((Rect.of(i) for i in kdockw.find_all(alpha_xpath)), key=lambda r: r.x)
     assert second == Rect(first.x + W, first.y, first.width, first.height), f"docks lay out differently: {first} {second}"
     x, y = second.center[0], docks[1].client_y + second.center[1]
     assert x >= W
     kwin.activate(apps.open_windows[0].internal_id)
 
     def second_alpha() -> Rect:
-        return max((Rect.of(i) for i in krema.find_all(alpha_xpath)), key=lambda r: r.x)
+        return max((Rect.of(i) for i in kdockw.find_all(alpha_xpath)), key=lambda r: r.x)
 
     # Glide onto the item like a user (a teleport + click in one chain onto
     # the just-created surface was occasionally dropped) and wait until that
@@ -779,83 +779,83 @@ def test_set008_monitor_mode_all_monitors_from_open_settings(krema: Krema, apps:
     inp.move_path(inp.line((x, docks[1].client_y - 40), (x, y), 5), step_ms=40)
     wait_until(lambda: painted_rect(second_alpha(), second).width > second.width, timeout=5, message="second dock item hovered")
     r = wait_stable(second_alpha, duration=0.3)
-    before = {w.internal_id for w in krema.windows()}
+    before = {w.internal_id for w in kdockw.windows()}
     inp.click(r.center[0], docks[1].client_y + r.center[1], button="right")
     menu = wait_until(
-        lambda: next((w for w in krema.windows() if w.internal_id not in before and not w.normal_window), None),
+        lambda: next((w for w in kdockw.windows() if w.internal_id not in before and not w.normal_window), None),
         message="context menu on the second output",
     )
     assert menu.client_x >= W, f"menu opened on the wrong output: {menu}"
-    krema.choose_context_menu_entry("Settings...", ENTRIES)
+    kdockw.choose_context_menu_entry("Settings...", ENTRIES)
     wait_until(lambda: kwin.active_window() is not None and kwin.active_window().internal_id == win.internal_id, message="dialog raised")
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id]
-    assert current_page(krema) == "Monitors & Desktops", "raising the dialog must keep the shown page"
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id]
+    assert current_page(kdockw) == "Monitors & Desktops", "raising the dialog must keep the shown page"
 
     # Back to primary only, close the dialog: the dock auto-hides again.
-    pick(krema, "Monitor mode", "Primary monitor only")
-    wait_until(lambda: len(dock_surfaces(krema)) == 1 and dock_surfaces(krema)[0].client_x == 0, timeout=5, message="one dock left")
-    close_settings(krema)
+    pick(kdockw, "Monitor mode", "Primary monitor only")
+    wait_until(lambda: len(dock_surfaces(kdockw)) == 1 and dock_surfaces(kdockw)[0].client_x == 0, timeout=5, message="one dock left")
+    close_settings(kdockw)
     pointer_to_center()
-    wait_until(lambda: not has_state(krema.item("Alpha"), "showing"), timeout=5, message="dock to auto-hide after close")
+    wait_until(lambda: not has_state(kdockw.item("Alpha"), "showing"), timeout=5, message="dock to auto-hide after close")
 
     # Reopening Settings after switching back works: the closed window was
     # destroyed, the new one starts on the default page.
-    reveal_dock(krema, "Alpha")
-    reopened = open_settings(krema)
-    assert len(settings_windows(krema)) == 1 and reopened.title == SETTINGS_TITLE
-    wait_until(lambda: current_page(krema) == "Icons", message="reopened Settings shows Icons")
-    assert krema.pid == pid
+    reveal_dock(kdockw, "Alpha")
+    reopened = open_settings(kdockw)
+    assert len(settings_windows(kdockw)) == 1 and reopened.title == SETTINGS_TITLE
+    wait_until(lambda: current_page(kdockw) == "Icons", message="reopened Settings shows Icons")
+    assert kdockw.pid == pid
 
 
 FOLLOW_ACTIVE = {"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 2, "ScreenTransition": 2}
 ALPHA_ITEMS = TOOLBAR_XPATH + "/button[@name='Alpha']"
 
 
-def mapped_dock_xs(krema: Krema) -> list[int]:
-    return [d.client_x for d in dock_surfaces(krema)]
+def mapped_dock_xs(kdockw: KDockW) -> list[int]:
+    return [d.client_x for d in dock_surfaces(kdockw)]
 
 
-def shown_alpha(krema: Krema) -> Rect | None:
+def shown_alpha(kdockw: KDockW) -> Rect | None:
     """Rect of the one shown Alpha item (x >= W: the second output's dock)."""
-    items = [i for i in krema.find_all(ALPHA_ITEMS) if has_state(i, "showing")]
+    items = [i for i in kdockw.find_all(ALPHA_ITEMS) if has_state(i, "showing")]
     return Rect.of(items[0]) if len(items) == 1 else None
 
 
 @pytest.mark.outputs(2)
-@pytest.mark.kremarc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 0})
-def test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 0})
+def test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], message="dock on the primary output")
-    reveal_dock(krema, "Alpha")
-    open_settings(krema)
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], message="dock on the primary output")
+    reveal_dock(kdockw, "Alpha")
+    open_settings(kdockw)
 
     # The open dialog's interaction lock must not count as pointer activity on
     # the other screen's (hidden) dock: the pointer crosses the second output,
     # including its bottom edge, and the dock stays on the primary output.
     inp.move_path(inp.line((W // 2, H // 3), (W + W // 2, H // 3), 10))
     inp.move(W + W // 2, H - 1)
-    holds(lambda: mapped_dock_xs(krema) == [0], 1.5, "opening Settings moved the dock to another screen")
-    assert has_state(krema.item("Alpha"), "showing"), "dock hid while Settings is open"
-    assert len(settings_windows(krema)) == 1
+    holds(lambda: mapped_dock_xs(kdockw) == [0], 1.5, "opening Settings moved the dock to another screen")
+    assert has_state(kdockw.item("Alpha"), "showing"), "dock hid while Settings is open"
+    assert len(settings_windows(kdockw)) == 1
 
 
 @pytest.mark.outputs(2)
-@pytest.mark.kremarc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 0})
-def test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 0})
+def test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], message="dock on the primary output")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], message="dock on the primary output")
     inp.move_path(inp.line((W // 2, H // 3), (W + 60, H - 1), 10))
-    wait_until(lambda: mapped_dock_xs(krema) == [W], timeout=5, message="dock follows the pointer to the second output")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W], timeout=5, message="dock follows the pointer to the second output")
 
 
 @pytest.mark.outputs(2)
-@pytest.mark.kremarc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 1})
-def test_set008_follow_active_shortcuts_act_on_the_shown_dock(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({**FOLLOW_ACTIVE, "FollowActiveTrigger": 1})
+def test_set008_follow_active_shortcuts_act_on_the_shown_dock(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], message="dock on the primary output")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], message="dock on the primary output")
 
     # Focus trigger: activating a window on the second output moves the dock there.
-    # Move first and wait until KWin reports the window on output 2: krema's
+    # Move first and wait until KWin reports the window on output 2: kdockw's
     # follow-active watches IsActive dataChanged and reads ScreenGeometry then,
     # so the geometry must be settled before the activation edge.
     beta = apps.open("Beta", app_id=env.TEST_APP2_ID)
@@ -873,47 +873,47 @@ def test_set008_follow_active_shortcuts_act_on_the_shown_dock(krema: Krema, apps
         lambda: (aw := kwin.active_window()) is not None and aw.internal_id == beta.internal_id,
         message="Beta active",
     )
-    wait_until(lambda: mapped_dock_xs(krema) == [W], timeout=5, message="dock follows the active window")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W], timeout=5, message="dock follows the active window")
     inp.move(W + W // 2, H // 3)
-    wait_until(lambda: shown_alpha(krema) is None, timeout=5, message="auto-hide dock hidden")
+    wait_until(lambda: shown_alpha(kdockw) is None, timeout=5, message="auto-hide dock hidden")
 
     # Toggle Dock shows the dock on the second output, not the hidden primary one.
     invoke_shortcut("toggle-dock")
-    wait_until(lambda: (r := shown_alpha(krema)) is not None and r.x >= W, timeout=5, message="Toggle Dock shows the second output's dock")
-    assert mapped_dock_xs(krema) == [W]
+    wait_until(lambda: (r := shown_alpha(kdockw)) is not None and r.x >= W, timeout=5, message="Toggle Dock shows the second output's dock")
+    assert mapped_dock_xs(kdockw) == [W]
     invoke_shortcut("toggle-dock")
-    wait_until(lambda: shown_alpha(krema) is None, timeout=5, message="Toggle Dock hides it again")
+    wait_until(lambda: shown_alpha(kdockw) is None, timeout=5, message="Toggle Dock hides it again")
 
     # Focus Dock focuses a button of the shown dock.
     invoke_shortcut("focus-dock")
-    focused = wait_until(lambda: krema.find(TOOLBAR_XPATH + "/button[contains(@states, 'focused')]"), message="focused dock button")
+    focused = wait_until(lambda: kdockw.find(TOOLBAR_XPATH + "/button[contains(@states, 'focused')]"), message="focused dock button")
     assert Rect.of(focused).x >= W, f"Focus Dock focused the hidden primary dock: {Rect.of(focused)}"
-    wait_until(lambda: (r := shown_alpha(krema)) is not None and r.x >= W, timeout=5, message="focused dock shown")
+    wait_until(lambda: (r := shown_alpha(kdockw)) is not None and r.x >= W, timeout=5, message="focused dock shown")
     inp.key("escape")
-    wait_until(lambda: krema.focused_item() is None, message="Escape ends keyboard navigation")
-    assert mapped_dock_xs(krema) == [W]
+    wait_until(lambda: kdockw.focused_item() is None, message="Escape ends keyboard navigation")
+    assert mapped_dock_xs(kdockw) == [W]
 
 
 # ------------------------------------------------------------------- SET-009
-def _quit_via_menu(k: Krema) -> int:
+def _quit_via_menu(k: KDockW) -> int:
     open_menu(k)
     k.choose_context_menu_entry("Quit", ENTRIES)
     assert k.process is not None
     return k.process.wait(20)
 
 
-def _assert_clean_exit(k: Krema, code: int) -> None:
+def _assert_clean_exit(k: KDockW, code: int) -> None:
     log = Path(k.log_path).read_text(errors="replace")
-    assert code == 0, f"krema exit status {code}; log {k.log_path}"
+    assert code == 0, f"kdockw exit status {code}; log {k.log_path}"
     for marker in ("KCrash", "Segmentation fault", "Aborted", "ASSERT"):
         assert marker not in log, f"crash marker {marker!r} in {k.log_path}"
-    wait_until(lambda: not [w for w in kwin.windows() if w.pid == k.process.pid], message="all krema windows gone")
+    wait_until(lambda: not [w for w in kwin.windows() if w.pid == k.process.pid], message="all kdockw windows gone")
 
 
 def test_set009_quit_while_settings_is_open_exits_cleanly(tmp_path: Path, apps: TestWindows, request: pytest.FixtureRequest) -> None:
     apps.open("Alpha")
     name = "test_06_settings_set009"
-    first = Krema(tmp_path / "home", name=f"{name}-a")
+    first = KDockW(tmp_path / "home", name=f"{name}-a")
     try:
         # 1. Settings... then immediately Quit (settings window still being created).
         first.start()
@@ -924,7 +924,7 @@ def test_set009_quit_while_settings_is_open_exits_cleanly(tmp_path: Path, apps: 
     finally:
         first.stop()
 
-    second = Krema(tmp_path / "home", name=f"{name}-b")
+    second = KDockW(tmp_path / "home", name=f"{name}-b")
     try:
         # 2. Settings fully drawn, then Quit.
         second.start()
@@ -955,14 +955,14 @@ def zoom_tab_selected(tab) -> bool:
     return has_state(tab, "checked") or has_state(tab, "selected")
 
 
-def hovered_middle_layout(krema: Krema) -> tuple[int, int, list[Rect], list[Rect]]:
+def hovered_middle_layout(kdockw: KDockW) -> tuple[int, int, list[Rect], list[Rect]]:
     """Hover the middle dock item from rest; returns (index, base size, rest
     rects, drawn rects once the zoom settled)."""
-    krema.move_away()
-    rest = wait_stable(lambda: [Rect.of(e) for e in krema.items()])
+    kdockw.move_away()
+    rest = wait_stable(lambda: [Rect.of(e) for e in kdockw.items()])
     mid = len(rest) // 2
-    krema.hover_item(krema.item_names()[mid])
-    drawn = wait_stable(lambda: [painted_rect(Rect.of(e), r0) for e, r0 in zip(krema.items(), rest, strict=True)], duration=0.3)
+    kdockw.hover_item(kdockw.item_names()[mid])
+    drawn = wait_stable(lambda: [painted_rect(Rect.of(e), r0) for e, r0 in zip(kdockw.items(), rest, strict=True)], duration=0.3)
     return mid, rest[mid].width, rest, drawn
 
 
@@ -970,89 +970,89 @@ def centre_shifts(rest: list[Rect], drawn: list[Rect]) -> list[int]:
     return [d.center[0] - r.center[0] for r, d in zip(rest, drawn)]
 
 
-@pytest.mark.kremarc(
+@pytest.mark.kdockwrc(
     {
         "PinnedLaunchers": [kcfg.launcher(i) for i in (env.TEST_APP2_ID, "org.kde.kwrite", "org.kde.kfind", "qt6-designer")],
         "MaxZoomFactor": 1.6,
         "PreviewEnabled": False,
     }
 )
-def test_set010_zoom_style_cards_switch_zoom_live_and_persists(krema: Krema, apps: TestWindows) -> None:
+def test_set010_zoom_style_cards_switch_zoom_live_and_persists(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    krema.wait_for_item("Alpha")
-    open_settings(krema)
-    open_page(krema, "Icons")
+    kdockw.wait_for_item("Alpha")
+    open_settings(kdockw)
+    open_page(kdockw, "Icons")
     parabolic_xpath = card_xpath(ZOOM_STYLE, PARABOLIC)
     in_place_xpath = card_xpath(ZOOM_STYLE, IN_PLACE)
 
     # Two cards, Parabolic by default.
-    assert card_names(krema, ZOOM_STYLE) == [PARABOLIC, IN_PLACE]
-    assert current_card(krema, ZOOM_STYLE) == PARABOLIC
+    assert card_names(kdockw, ZOOM_STYLE) == [PARABOLIC, IN_PLACE]
+    assert current_card(kdockw, ZOOM_STYLE) == PARABOLIC
     # Clicking the selected card keeps it selected and the style unchanged.
-    click_el(krema, scroll_into_view(krema, parabolic_xpath))
+    click_el(kdockw, scroll_into_view(kdockw, parabolic_xpath))
     holds(
-        lambda: current_card(krema, ZOOM_STYLE) == PARABOLIC and config_value(krema, "ZoomStyle") in ("0", None),
+        lambda: current_card(kdockw, ZOOM_STYLE) == PARABOLIC and config_value(kdockw, "ZoomStyle") in ("0", None),
         0.5,
         "re-clicking the checked Parabolic card must keep it selected",
     )
     # Instant zoom keeps the hovered layouts below free of transitions.
     instant_xpath = preset_radio("Instant")
-    instant = scroll_into_view(krema, instant_xpath)
-    assert has_state(instant, "enabled") and has_state(krema.wait_for(PRESET_TAB), "enabled")
-    assert has_state(krema.wait_for(preset_radio("Natural")), "checked")
-    click_el(krema, instant)
-    wait_until(lambda: has_state(krema.wait_for(instant_xpath), "checked"), message="instant zoom selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "3", message="instant zoom saved")
+    instant = scroll_into_view(kdockw, instant_xpath)
+    assert has_state(instant, "enabled") and has_state(kdockw.wait_for(PRESET_TAB), "enabled")
+    assert has_state(kdockw.wait_for(preset_radio("Natural")), "checked")
+    click_el(kdockw, instant)
+    wait_until(lambda: has_state(kdockw.wait_for(instant_xpath), "checked"), message="instant zoom selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "3", message="instant zoom saved")
 
     # Parabolic: neighbours move aside.
-    mid, base, rest, drawn = hovered_middle_layout(krema)
+    mid, base, rest, drawn = hovered_middle_layout(kdockw)
     shifts = centre_shifts(rest, drawn)
     assert drawn[mid].width >= base * 1.5, f"middle item not zoomed: {drawn[mid]} (rest {rest[mid]})"
     assert shifts[mid - 1] < -2 and shifts[mid + 1] > 2, f"Parabolic: neighbours not pushed aside, centre shifts {shifts}"
 
     # In place applies live (no restart), persists, and scales icons where they are.
-    pid = krema.pid
-    pick(krema, ZOOM_STYLE, IN_PLACE)
-    wait_until(lambda: config_value(krema, "ZoomStyle") == "1", message="kremarc ZoomStyle=1")
-    mid, base, rest, drawn = hovered_middle_layout(krema)
+    pid = kdockw.pid
+    pick(kdockw, ZOOM_STYLE, IN_PLACE)
+    wait_until(lambda: config_value(kdockw, "ZoomStyle") == "1", message="kdockwrc ZoomStyle=1")
+    mid, base, rest, drawn = hovered_middle_layout(kdockw)
     shifts = centre_shifts(rest, drawn)
     assert drawn[mid].width >= base * 1.5, f"middle item not zoomed: {drawn[mid]} (rest {rest[mid]})"
     assert all(abs(s) <= 2 for s in shifts), f"In place: icons moved, centre shifts {shifts}"
     assert drawn[mid - 1].x + drawn[mid - 1].width > drawn[mid].x, f"In place: no overlap with the magnified icon: {drawn}"
-    assert krema.pid == pid and krema.is_running(), "zoom style change must not restart krema"
+    assert kdockw.pid == pid and kdockw.is_running(), "zoom style change must not restart kdockw"
 
     # Back to Parabolic: 0 persisted (or the key dropped as the default).
-    pick(krema, ZOOM_STYLE, PARABOLIC)
-    wait_until(lambda: config_value(krema, "ZoomStyle") in ("0", None), message="kremarc ZoomStyle=0")
-    mid, base, rest, drawn = hovered_middle_layout(krema)
+    pick(kdockw, ZOOM_STYLE, PARABOLIC)
+    wait_until(lambda: config_value(kdockw, "ZoomStyle") in ("0", None), message="kdockwrc ZoomStyle=0")
+    mid, base, rest, drawn = hovered_middle_layout(kdockw)
     shifts = centre_shifts(rest, drawn)
     assert shifts[mid - 1] < -2 and shifts[mid + 1] > 2, f"Parabolic again: neighbours not pushed aside, centre shifts {shifts}"
-    krema.move_away()
+    kdockw.move_away()
 
     # Zoom factor 1.0 (a press at the slider's left end) disables the zoom
     # style cards; raising it again (arrow keys on the focused slider)
     # re-enables them.
-    assert has_state(krema.wait_for(parabolic_xpath), "enabled") and has_state(krema.wait_for(in_place_xpath), "enabled")
-    slider = scroll_into_view(krema, f"{SETTINGS}//slider[@name='Zoom factor']")
-    r = krema.screen_rect(slider, "settings")
+    assert has_state(kdockw.wait_for(parabolic_xpath), "enabled") and has_state(kdockw.wait_for(in_place_xpath), "enabled")
+    slider = scroll_into_view(kdockw, f"{SETTINGS}//slider[@name='Zoom factor']")
+    r = kdockw.screen_rect(slider, "settings")
     inp.click(r.x + 1, r.center[1])
-    wait_until(lambda: float(config_value(krema, "MaxZoomFactor") or 0) == 1.0, message="kremarc MaxZoomFactor=1")
+    wait_until(lambda: float(config_value(kdockw, "MaxZoomFactor") or 0) == 1.0, message="kdockwrc MaxZoomFactor=1")
     wait_until(
-        lambda: not has_state(krema.wait_for(parabolic_xpath), "enabled") and not has_state(krema.wait_for(in_place_xpath), "enabled"),
+        lambda: not has_state(kdockw.wait_for(parabolic_xpath), "enabled") and not has_state(kdockw.wait_for(in_place_xpath), "enabled"),
         message="zoom style cards disabled at zoom 1.0",
     )
-    assert not has_state(krema.wait_for(instant_xpath), "enabled"), "zoom animation presets must be disabled when zoom is off"
-    assert not has_state(krema.wait_for(PRESET_TAB), "enabled"), "zoom animation tabs must be disabled when zoom is off"
+    assert not has_state(kdockw.wait_for(instant_xpath), "enabled"), "zoom animation presets must be disabled when zoom is off"
+    assert not has_state(kdockw.wait_for(PRESET_TAB), "enabled"), "zoom animation tabs must be disabled when zoom is off"
     for _ in range(6):
         inp.key("right")
     # 1.6 is the default, so KConfig may drop the key instead of writing it.
-    wait_until(lambda: abs(float(config_value(krema, "MaxZoomFactor") or 1.6) - 1.6) < 1e-6, message="kremarc MaxZoomFactor=1.6")
-    wait_until(lambda: has_state(krema.wait_for(parabolic_xpath), "enabled"), message="zoom style cards enabled again")
-    assert current_card(krema, ZOOM_STYLE) == PARABOLIC, "disabling zoom must preserve the zoom style"
-    wait_until(lambda: has_state(krema.wait_for(instant_xpath), "enabled"), message="zoom animation presets enabled again")
-    assert has_state(krema.wait_for(PRESET_TAB), "enabled"), "zoom animation tabs enabled again"
-    assert has_state(krema.wait_for(instant_xpath), "checked"), "disabling zoom must preserve the zoom animation preset"
-    assert config_value(krema, "ZoomAnimationPreset") == "3"
+    wait_until(lambda: abs(float(config_value(kdockw, "MaxZoomFactor") or 1.6) - 1.6) < 1e-6, message="kdockwrc MaxZoomFactor=1.6")
+    wait_until(lambda: has_state(kdockw.wait_for(parabolic_xpath), "enabled"), message="zoom style cards enabled again")
+    assert current_card(kdockw, ZOOM_STYLE) == PARABOLIC, "disabling zoom must preserve the zoom style"
+    wait_until(lambda: has_state(kdockw.wait_for(instant_xpath), "enabled"), message="zoom animation presets enabled again")
+    assert has_state(kdockw.wait_for(PRESET_TAB), "enabled"), "zoom animation tabs enabled again"
+    assert has_state(kdockw.wait_for(instant_xpath), "checked"), "disabling zoom must preserve the zoom animation preset"
+    assert config_value(kdockw, "ZoomAnimationPreset") == "3"
 
 
 # ------------------------------------------------------------------- SET-011
@@ -1060,63 +1060,63 @@ ZOOM_IN_DURATION = f"{SETTINGS}//list_item[label[@name='Zoom-in duration (ms)']]
 ZOOM_OUT_EASING = "Zoom-out easing"
 
 
-@pytest.mark.kremarc({"PinnedLaunchers": [], "PreviewEnabled": False})
-def test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "PreviewEnabled": False})
+def test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
-    open_settings(krema)
+    open_settings(kdockw)
     quick_xpath = preset_radio("Quick")
-    click_el(krema, scroll_into_view(krema, quick_xpath))
-    wait_until(lambda: has_state(krema.wait_for(quick_xpath), "checked"), message="Quick preset selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "1", message="kremarc ZoomAnimationPreset=1")
+    click_el(kdockw, scroll_into_view(kdockw, quick_xpath))
+    wait_until(lambda: has_state(kdockw.wait_for(quick_xpath), "checked"), message="Quick preset selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "1", message="kdockwrc ZoomAnimationPreset=1")
 
     # Custom tab: stores the Custom preset and shows the custom controls,
     # whose defaults equal Natural.
-    click_el(krema, scroll_into_view(krema, CUSTOM_TAB))
-    wait_until(lambda: zoom_tab_selected(krema.wait_for(CUSTOM_TAB)), message="Custom tab selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "4", message="kremarc ZoomAnimationPreset=4")
-    spin = scroll_into_view(krema, ZOOM_IN_DURATION)
+    click_el(kdockw, scroll_into_view(kdockw, CUSTOM_TAB))
+    wait_until(lambda: zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB)), message="Custom tab selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "4", message="kdockwrc ZoomAnimationPreset=4")
+    spin = scroll_into_view(kdockw, ZOOM_IN_DURATION)
     assert float(spin.get_attribute("value")) == 180.0
-    assert current_choice(krema, ZOOM_OUT_EASING) == "Ease in and out"
-    click_el(krema, spin)
+    assert current_choice(kdockw, ZOOM_OUT_EASING) == "Ease in and out"
+    click_el(kdockw, spin)
     for _ in range(2):
         inp.key("up")
     wait_until(lambda: float(spin.get_attribute("value")) == 200.0, message="zoom-in duration changed in 10 ms steps")
-    wait_until(lambda: config_value(krema, "ZoomInDuration") == "200", message="kremarc ZoomInDuration=200")
-    choose(krema, ZOOM_OUT_EASING, "Linear")
-    wait_until(lambda: config_value(krema, "ZoomOutEasing") == "0", message="kremarc ZoomOutEasing=0")
+    wait_until(lambda: config_value(kdockw, "ZoomInDuration") == "200", message="kdockwrc ZoomInDuration=200")
+    choose(kdockw, ZOOM_OUT_EASING, "Linear")
+    wait_until(lambda: config_value(kdockw, "ZoomOutEasing") == "0", message="kdockwrc ZoomOutEasing=0")
 
     # Smoke only: hover still magnifies without a restart after the custom
     # edits. Whether the custom timing really drives the dock is covered by
     # tests/qml/tst_dock_main.qml::test_customZoomTimingDrivesProductionDock.
-    pid = krema.pid
-    hover_ready(krema, "Alpha")
-    krema.move_away()
-    assert krema.pid == pid and krema.is_running(), "zoom animation change must not restart krema"
+    pid = kdockw.pid
+    hover_ready(kdockw, "Alpha")
+    kdockw.move_away()
+    assert kdockw.pid == pid and kdockw.is_running(), "zoom animation change must not restart kdockw"
 
     # Preset tab restores the preset chosen before Custom, and only that
     # radio is checked.
-    click_el(krema, scroll_into_view(krema, PRESET_TAB))
-    wait_until(lambda: zoom_tab_selected(krema.wait_for(PRESET_TAB)), message="Preset tab selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "1", message="Quick preset restored")
-    assert has_state(scroll_into_view(krema, quick_xpath), "checked")
+    click_el(kdockw, scroll_into_view(kdockw, PRESET_TAB))
+    wait_until(lambda: zoom_tab_selected(kdockw.wait_for(PRESET_TAB)), message="Preset tab selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "1", message="Quick preset restored")
+    assert has_state(scroll_into_view(kdockw, quick_xpath), "checked")
     for name in ("Natural", "Relaxed", "Instant"):
-        assert not has_state(krema.wait_for(preset_radio(name)), "checked"), f"{name} must stay unchecked"
+        assert not has_state(kdockw.wait_for(preset_radio(name)), "checked"), f"{name} must stay unchecked"
 
     # A second preset switch: exactly the selected radio is checked.
     relaxed_xpath = preset_radio("Relaxed")
-    click_el(krema, scroll_into_view(krema, relaxed_xpath))
-    wait_until(lambda: has_state(krema.wait_for(relaxed_xpath), "checked"), message="Relaxed preset selected")
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "2", message="kremarc ZoomAnimationPreset=2")
+    click_el(kdockw, scroll_into_view(kdockw, relaxed_xpath))
+    wait_until(lambda: has_state(kdockw.wait_for(relaxed_xpath), "checked"), message="Relaxed preset selected")
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "2", message="kdockwrc ZoomAnimationPreset=2")
     for name in ("Natural", "Quick", "Instant"):
-        assert not has_state(krema.wait_for(preset_radio(name)), "checked"), f"{name} must stay unchecked"
-    click_el(krema, scroll_into_view(krema, quick_xpath))
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "1", message="Quick preset selected again")
-    assert has_state(krema.wait_for(quick_xpath), "checked")
-    assert not has_state(krema.wait_for(relaxed_xpath), "checked")
+        assert not has_state(kdockw.wait_for(preset_radio(name)), "checked"), f"{name} must stay unchecked"
+    click_el(kdockw, scroll_into_view(kdockw, quick_xpath))
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "1", message="Quick preset selected again")
+    assert has_state(kdockw.wait_for(quick_xpath), "checked")
+    assert not has_state(kdockw.wait_for(relaxed_xpath), "checked")
     # Clicking the already-checked radio keeps it checked and the preset unchanged.
-    click_el(krema, scroll_into_view(krema, quick_xpath))
+    click_el(kdockw, scroll_into_view(kdockw, quick_xpath))
     holds(
-        lambda: has_state(krema.wait_for(quick_xpath), "checked") and config_value(krema, "ZoomAnimationPreset") == "1",
+        lambda: has_state(kdockw.wait_for(quick_xpath), "checked") and config_value(kdockw, "ZoomAnimationPreset") == "1",
         1.0,
         "re-clicking the checked Quick radio must keep it checked and ZoomAnimationPreset=1",
     )
@@ -1124,58 +1124,58 @@ def test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist(krema: K
     # Regression: wheel over the Preset/Custom tab bar scrolls the page (the
     # org.kde.desktop style's TabBar wheel handler once hijacked the scroll);
     # it must not switch the tab or rewrite the preset.
-    tab = scroll_into_view(krema, PRESET_TAB)
-    wheel_x, wheel_y = krema.screen_rect(tab, "settings").center
-    tab_y0 = Rect.of(krema.wait_for(PRESET_TAB)).y
+    tab = scroll_into_view(kdockw, PRESET_TAB)
+    wheel_x, wheel_y = kdockw.screen_rect(tab, "settings").center
+    tab_y0 = Rect.of(kdockw.wait_for(PRESET_TAB)).y
     # Let Kirigami's WheelHandler leave its scrolling state (400 ms after the
     # last step): until then its filter item covers the page and takes the
     # wheel before the tab bar could.
     time.sleep(0.5)
     inp.scroll(wheel_x, wheel_y, dy=60)
     wait_until(
-        lambda: Rect.of(krema.wait_for(PRESET_TAB)).y < tab_y0 - 10,
+        lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y < tab_y0 - 10,
         message="wheel over the tab bar scrolls the page",
     )
-    assert config_value(krema, "ZoomAnimationPreset") == "1", "wheel over the tab bar must not switch to Custom"
-    assert zoom_tab_selected(krema.wait_for(PRESET_TAB)) and not zoom_tab_selected(krema.wait_for(CUSTOM_TAB))
-    assert has_state(krema.wait_for(quick_xpath), "checked")
+    assert config_value(kdockw, "ZoomAnimationPreset") == "1", "wheel over the tab bar must not switch to Custom"
+    assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)) and not zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB))
+    assert has_state(kdockw.wait_for(quick_xpath), "checked")
     # Scroll back up over the scroll bar: the old tab centre now lies over
     # whatever row scrolled under it, possibly a ComboBox that takes the wheel.
-    tab_y1 = wait_stable(lambda: Rect.of(krema.wait_for(PRESET_TAB)).y, duration=0.3)
-    inp.scroll(*page_wheel_point(krema), dy=-60)
+    tab_y1 = wait_stable(lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y, duration=0.3)
+    inp.scroll(*page_wheel_point(kdockw), dy=-60)
     wait_until(
-        lambda: Rect.of(krema.wait_for(PRESET_TAB)).y > tab_y1 + 10,
+        lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y > tab_y1 + 10,
         message="wheel up over the scroll bar scrolls the page back",
     )
-    assert config_value(krema, "ZoomAnimationPreset") == "1"
-    assert zoom_tab_selected(krema.wait_for(PRESET_TAB)) and not zoom_tab_selected(krema.wait_for(CUSTOM_TAB))
-    assert has_state(krema.wait_for(quick_xpath), "checked")
+    assert config_value(kdockw, "ZoomAnimationPreset") == "1"
+    assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)) and not zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB))
+    assert has_state(kdockw.wait_for(quick_xpath), "checked")
 
     # Custom tab keeps the custom values.
-    click_el(krema, scroll_into_view(krema, CUSTOM_TAB))
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") == "4", message="Custom preset selected again")
-    assert float(scroll_into_view(krema, ZOOM_IN_DURATION).get_attribute("value")) == 200.0
-    assert current_choice(krema, ZOOM_OUT_EASING) == "Linear"
-    close_settings(krema)
+    click_el(kdockw, scroll_into_view(kdockw, CUSTOM_TAB))
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") == "4", message="Custom preset selected again")
+    assert float(scroll_into_view(kdockw, ZOOM_IN_DURATION).get_attribute("value")) == 200.0
+    assert current_choice(kdockw, ZOOM_OUT_EASING) == "Linear"
+    close_settings(kdockw)
 
-    saved = {k: config_value(krema, k) for k in ("ZoomAnimationPreset", "ZoomInDuration", "ZoomOutEasing")}
+    saved = {k: config_value(kdockw, k) for k in ("ZoomAnimationPreset", "ZoomInDuration", "ZoomOutEasing")}
     assert saved == {"ZoomAnimationPreset": "4", "ZoomInDuration": "200", "ZoomOutEasing": "0"}
-    old_pid = krema.pid
-    krema.restart()
-    assert krema.pid != old_pid
-    assert {k: config_value(krema, k) for k in saved} == saved
+    old_pid = kdockw.pid
+    kdockw.restart()
+    assert kdockw.pid != old_pid
+    assert {k: config_value(kdockw, k) for k in saved} == saved
 
-    open_settings(krema)
-    wait_until(lambda: zoom_tab_selected(scroll_into_view(krema, CUSTOM_TAB)), message="Custom tab restored")
-    assert not zoom_tab_selected(krema.wait_for(PRESET_TAB))
-    assert float(scroll_into_view(krema, ZOOM_IN_DURATION).get_attribute("value")) == 200.0
-    assert current_choice(krema, ZOOM_OUT_EASING) == "Linear"
+    open_settings(kdockw)
+    wait_until(lambda: zoom_tab_selected(scroll_into_view(kdockw, CUSTOM_TAB)), message="Custom tab restored")
+    assert not zoom_tab_selected(kdockw.wait_for(PRESET_TAB))
+    assert float(scroll_into_view(kdockw, ZOOM_IN_DURATION).get_attribute("value")) == 200.0
+    assert current_choice(kdockw, ZOOM_OUT_EASING) == "Linear"
 
     # A new Settings session has no earlier preset: Preset falls back to Natural.
-    click_el(krema, scroll_into_view(krema, PRESET_TAB))
-    wait_until(lambda: config_value(krema, "ZoomAnimationPreset") in ("0", None), message="Natural preset restored")
-    assert has_state(scroll_into_view(krema, preset_radio("Natural")), "checked")
-    close_settings(krema)
+    click_el(kdockw, scroll_into_view(kdockw, PRESET_TAB))
+    wait_until(lambda: config_value(kdockw, "ZoomAnimationPreset") in ("0", None), message="Natural preset restored")
+    assert has_state(scroll_into_view(kdockw, preset_radio("Natural")), "checked")
+    close_settings(kdockw)
 
 
 # ------------------------------------------------------------------- QA-CLK-002 / QA-CLK-011
@@ -1185,7 +1185,7 @@ SINGLE_CLICK_CHOICES = ("Activate window", "Minimize active window")
 GROUPED_CLICK_CHOICES = ("Cycle through windows", "Show window previews", "Minimize active window")
 
 
-def click_item_on_output(krema: Krema, name: str, output_x: int = 0) -> None:
+def click_item_on_output(kdockw: KDockW, name: str, output_x: int = 0) -> None:
     """Click the real item on one output; AT-SPI includes its horizontal offset."""
     xpath = TOOLBAR_XPATH + f"/button[@name='{name}']"
 
@@ -1193,14 +1193,14 @@ def click_item_on_output(krema: Krema, name: str, output_x: int = 0) -> None:
         return next(
             (
                 Rect.of(item)
-                for item in krema.find_all(xpath)
+                for item in kdockw.find_all(xpath)
                 if has_state(item, "showing") and output_x <= Rect.of(item).center[0] < output_x + W
             ),
             None,
         )
 
     dock = wait_until(
-        lambda: next((d for d in dock_surfaces(krema) if d.client_x == output_x), None),
+        lambda: next((d for d in dock_surfaces(kdockw) if d.client_x == output_x), None),
         message=f"dock on output at {output_x}",
     )
     rect = wait_until(item_rect, message=f"{name} on output at {output_x}")
@@ -1209,16 +1209,16 @@ def click_item_on_output(krema: Krema, name: str, output_x: int = 0) -> None:
     inp.click(rect.center[0], dock.client_y + rect.center[1])
 
 
-def visible_preview(krema: Krema):
+def visible_preview(kdockw: KDockW):
     """The shown popup, including when another output's popup is hidden first."""
     return next(
-        (popup for popup in krema.find_all(PREVIEW_XPATH) if has_state(popup, "showing") and Rect.of(popup).width > 0),
+        (popup for popup in kdockw.find_all(PREVIEW_XPATH) if has_state(popup, "showing") and Rect.of(popup).width > 0),
         None,
     )
 
 
 def assert_click_action_effects(
-    krema: Krema,
+    kdockw: KDockW,
     single_action: int,
     grouped_action: int,
     solo: TestWindow,
@@ -1227,82 +1227,82 @@ def assert_click_action_effects(
     output_x: int = 0,
 ) -> None:
     """Observe KWin window state and the actual popup, not action dispatch."""
-    krema.move_away(close_preview=False)
-    wait_until(lambda: visible_preview(krema) is None, message="all output previews closed before the next click")
+    kdockw.move_away(close_preview=False)
+    wait_until(lambda: visible_preview(kdockw) is None, message="all output previews closed before the next click")
     kwin.activate(solo.internal_id)
     wait_until(solo.is_active, message="Solo active before its dock click")
-    click_item_on_output(krema, "Solo", output_x)
+    click_item_on_output(kdockw, "Solo", output_x)
     if single_action == 1:
         wait_until(lambda: (w := solo.refresh()) is not None and w.minimized, message="active Solo minimized")
-        assert visible_preview(krema) is None, "the grouped preview choice must not apply to Solo"
-        click_item_on_output(krema, "Solo", output_x)
+        assert visible_preview(kdockw) is None, "the grouped preview choice must not apply to Solo"
+        click_item_on_output(kdockw, "Solo", output_x)
         wait_until(
             lambda: (w := solo.refresh()) is not None and w.active and not w.minimized,
             message="minimized Solo restored and activated",
         )
     else:
         holds(
-            lambda: (w := solo.refresh()) is not None and w.active and not w.minimized and visible_preview(krema) is None,
+            lambda: (w := solo.refresh()) is not None and w.active and not w.minimized and visible_preview(kdockw) is None,
             0.5,
             "Activate window must keep the active single window unminimized",
         )
 
-    krema.move_away()
+    kdockw.move_away()
     for target in (alpha, beta, solo):
         kwin.activate(target.internal_id)
         wait_until(target.is_active, message=f"{target.title} active during MRU setup")
         assert wait_stable(target.is_active, duration=0.5), f"{target.title} active during MRU setup"
     wait_until(
-        lambda: _item_has_description(krema, "Solo", "Active")
-        and not _item_has_description(krema, env.TEST_APP_NAME, "Active"),
+        lambda: _item_has_description(kdockw, "Solo", "Active")
+        and not _item_has_description(kdockw, env.TEST_APP_NAME, "Active"),
         message="dock model to observe Solo backgrounding the group",
     )
     assert wait_stable(
-        lambda: _item_has_description(krema, "Solo", "Active")
-        and not _item_has_description(krema, env.TEST_APP_NAME, "Active"),
+        lambda: _item_has_description(kdockw, "Solo", "Active")
+        and not _item_has_description(kdockw, env.TEST_APP_NAME, "Active"),
         duration=0.5,
     ), "dock model to observe Solo backgrounding the group"
     if grouped_action == 0:
         for target in (beta, alpha, beta):
-            click_item_on_output(krema, env.TEST_APP_NAME, output_x)
+            click_item_on_output(kdockw, env.TEST_APP_NAME, output_x)
             wait_until(target.is_active, message=f"group click cycles to {target.title}")
             assert not alpha.refresh().minimized and not beta.refresh().minimized
-            assert visible_preview(krema) is None
+            assert visible_preview(kdockw) is None
     elif grouped_action == 1:
-        click_item_on_output(krema, env.TEST_APP_NAME, output_x)
-        wait_until(lambda: visible_preview(krema), message="explicit grouped preview opens")
+        click_item_on_output(kdockw, env.TEST_APP_NAME, output_x)
+        wait_until(lambda: visible_preview(kdockw), message="explicit grouped preview opens")
         wait_until(
             lambda: {
                 label.get_attribute("name")
-                for label in krema.find_all(pv.THUMB_XPATH + "/label")
+                for label in kdockw.find_all(pv.THUMB_XPATH + "/label")
                 if has_state(label, "showing")
             }
             == {"Alpha", "Beta"},
             message="both group windows in the shown popup",
         )
-        click_item_on_output(krema, env.TEST_APP_NAME, output_x)
-        assert visible_preview(krema) is not None and solo.is_active(), "repeated preview clicks must not activate a group child"
+        click_item_on_output(kdockw, env.TEST_APP_NAME, output_x)
+        assert visible_preview(kdockw) is not None and solo.is_active(), "repeated preview clicks must not activate a group child"
         assert not alpha.refresh().minimized and not beta.refresh().minimized
         if output_x == 0:
             # The existing painted-popup oracle is limited to the primary output.
-            popup = visible_preview(krema)
-            pv.wait_on_screen(krema, popup)
-            target = pv.screen_rect(krema, krema.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]")).center
-            pv.glide_into(krema, target)
+            popup = visible_preview(kdockw)
+            pv.wait_on_screen(kdockw, popup)
+            target = pv.screen_rect(kdockw, kdockw.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]")).center
+            pv.glide_into(kdockw, target)
             inp.click()
             wait_until(alpha.is_active, message="chosen preview thumbnail activates Alpha")
-            wait_until(lambda: visible_preview(krema) is None, message="thumbnail activation closes the popup")
+            wait_until(lambda: visible_preview(kdockw) is None, message="thumbnail activation closes the popup")
     else:
         kwin.activate(beta.internal_id)
         wait_until(beta.is_active, message="Beta active before grouped minimize")
-        click_item_on_output(krema, env.TEST_APP_NAME, output_x)
+        click_item_on_output(kdockw, env.TEST_APP_NAME, output_x)
         wait_until(lambda: (w := beta.refresh()) is not None and w.minimized, message="only the active group child minimized")
         assert not alpha.refresh().minimized and not solo.refresh().minimized
-        assert visible_preview(krema) is None
+        assert visible_preview(kdockw) is None
         kwin.activate(beta.internal_id)
         wait_until(beta.is_active, message="Beta restored for the next output or restart")
-    krema.move_away(close_preview=False)
-    wait_until(lambda: visible_preview(krema) is None, message="shown output preview closes after leaving")
+    kdockw.move_away(close_preview=False)
+    wait_until(lambda: visible_preview(kdockw) is None, message="shown output preview closes after leaving")
 
 
 @pytest.mark.parametrize(
@@ -1312,7 +1312,7 @@ def assert_click_action_effects(
             single,
             grouped,
             id=f"single-{single}-group-{grouped}",
-            marks=pytest.mark.kremarc(
+            marks=pytest.mark.kdockwrc(
                 {
                     "PinnedLaunchers": [],
                     "PreviewEnabled": False,
@@ -1326,88 +1326,88 @@ def assert_click_action_effects(
     ],
 )
 def test_clk002_click_action_combinations_apply_live_persist_and_restore(
-    krema: Krema, apps: TestWindows, single_action: int, grouped_action: int
+    kdockw: KDockW, apps: TestWindows, single_action: int, grouped_action: int
 ) -> None:
     alpha = apps.open("Alpha")
     beta = apps.open("Beta")
     solo = apps.open("Solo", app_id=env.TEST_APP2_ID)
-    krema.wait_for_item(env.TEST_APP_NAME)
-    open_settings(krema, "Solo")
-    open_page(krema, "Behavior")
+    kdockw.wait_for_item(env.TEST_APP_NAME)
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Behavior")
     original_group = (grouped_action + 1) % 3
-    assert current_choice(krema, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1 - single_action]
-    assert current_choice(krema, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[original_group]
-    pid = krema.pid
+    assert current_choice(kdockw, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1 - single_action]
+    assert current_choice(kdockw, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[original_group]
+    pid = kdockw.pid
 
-    choose(krema, SINGLE_CLICK_ROW, SINGLE_CLICK_CHOICES[single_action])
-    assert current_choice(krema, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[original_group]
+    choose(kdockw, SINGLE_CLICK_ROW, SINGLE_CLICK_CHOICES[single_action])
+    assert current_choice(kdockw, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[original_group]
     wait_until(
-        lambda: int(config_value(krema, "SingleWindowClickAction") or 0) == single_action
-        and int(config_value(krema, "GroupedWindowClickAction") or 0) == original_group,
+        lambda: int(config_value(kdockw, "SingleWindowClickAction") or 0) == single_action
+        and int(config_value(kdockw, "GroupedWindowClickAction") or 0) == original_group,
         message="the single choice saves without changing the grouped choice",
     )
-    choose(krema, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[grouped_action])
-    assert current_choice(krema, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[single_action]
+    choose(kdockw, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[grouped_action])
+    assert current_choice(kdockw, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[single_action]
     wait_until(
-        lambda: int(config_value(krema, "SingleWindowClickAction") or 0) == single_action
-        and int(config_value(krema, "GroupedWindowClickAction") or 0) == grouped_action,
+        lambda: int(config_value(kdockw, "SingleWindowClickAction") or 0) == single_action
+        and int(config_value(kdockw, "GroupedWindowClickAction") or 0) == grouped_action,
         message="both independent click choices saved",
     )
-    close_settings(krema)
-    assert_click_action_effects(krema, single_action, grouped_action, solo, alpha, beta)
-    assert krema.pid == pid, "both choices must take effect without restarting the dock"
+    close_settings(kdockw)
+    assert_click_action_effects(kdockw, single_action, grouped_action, solo, alpha, beta)
+    assert kdockw.pid == pid, "both choices must take effect without restarting the dock"
 
-    krema.restart()
-    open_settings(krema, "Solo")
-    open_page(krema, "Behavior")
-    assert current_choice(krema, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[single_action]
-    assert current_choice(krema, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[grouped_action]
-    close_settings(krema)
-    assert_click_action_effects(krema, single_action, grouped_action, solo, alpha, beta)
+    kdockw.restart()
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Behavior")
+    assert current_choice(kdockw, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[single_action]
+    assert current_choice(kdockw, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[grouped_action]
+    close_settings(kdockw)
+    assert_click_action_effects(kdockw, single_action, grouped_action, solo, alpha, beta)
 
 
 @pytest.mark.outputs(2)
-@pytest.mark.kremarc(
+@pytest.mark.kdockwrc(
     {"PinnedLaunchers": [], "PreviewEnabled": False, "MonitorMode": 0, "SingleWindowClickAction": 0, "GroupedWindowClickAction": 0}
 )
-def test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores_them(krema: Krema, apps: TestWindows) -> None:
+def test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores_them(kdockw: KDockW, apps: TestWindows) -> None:
     alpha = apps.open("Alpha")
     beta = apps.open("Beta")
     solo = apps.open("Solo", app_id=env.TEST_APP2_ID)
-    open_settings(krema, "Solo")
-    open_page(krema, "Behavior")
-    choose(krema, SINGLE_CLICK_ROW, SINGLE_CLICK_CHOICES[1])
-    choose(krema, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[1])
-    open_page(krema, "Monitors & Desktops")
-    pick(krema, "Monitor mode", "All monitors")
-    wait_until(lambda: mapped_dock_xs(krema) == [0, W], message="both All monitors docks mapped")
-    close_settings(krema)
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Behavior")
+    choose(kdockw, SINGLE_CLICK_ROW, SINGLE_CLICK_CHOICES[1])
+    choose(kdockw, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[1])
+    open_page(kdockw, "Monitors & Desktops")
+    pick(kdockw, "Monitor mode", "All monitors")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0, W], message="both All monitors docks mapped")
+    close_settings(kdockw)
     for output_x in (0, W):
-        assert_click_action_effects(krema, 1, 1, solo, alpha, beta, output_x)
+        assert_click_action_effects(kdockw, 1, 1, solo, alpha, beta, output_x)
 
-    open_settings(krema, "Solo")
-    open_page(krema, "Behavior")
-    choose(krema, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[2])
-    assert current_choice(krema, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1]
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Behavior")
+    choose(kdockw, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[2])
+    assert current_choice(kdockw, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1]
     wait_until(
-        lambda: config_value(krema, "SingleWindowClickAction") == "1" and config_value(krema, "GroupedWindowClickAction") == "2",
+        lambda: config_value(kdockw, "SingleWindowClickAction") == "1" and config_value(kdockw, "GroupedWindowClickAction") == "2",
         message="shared independent settings saved",
     )
-    close_settings(krema)
+    close_settings(kdockw)
     for output_x in (0, W):
-        assert_click_action_effects(krema, 1, 2, solo, alpha, beta, output_x)
+        assert_click_action_effects(kdockw, 1, 2, solo, alpha, beta, output_x)
 
-    open_settings(krema, "Solo")
-    open_page(krema, "Monitors & Desktops")
-    pick(krema, "Monitor mode", "Primary monitor only")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], message="secondary dock removed")
-    pick(krema, "Monitor mode", "All monitors")
-    wait_until(lambda: mapped_dock_xs(krema) == [0, W], message="secondary dock recreated")
-    open_page(krema, "Behavior")
-    assert current_choice(krema, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1]
-    assert current_choice(krema, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[2]
-    close_settings(krema)
-    assert_click_action_effects(krema, 1, 2, solo, alpha, beta, W)
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Monitors & Desktops")
+    pick(kdockw, "Monitor mode", "Primary monitor only")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], message="secondary dock removed")
+    pick(kdockw, "Monitor mode", "All monitors")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0, W], message="secondary dock recreated")
+    open_page(kdockw, "Behavior")
+    assert current_choice(kdockw, SINGLE_CLICK_ROW) == SINGLE_CLICK_CHOICES[1]
+    assert current_choice(kdockw, GROUPED_CLICK_ROW) == GROUPED_CLICK_CHOICES[2]
+    close_settings(kdockw)
+    assert_click_action_effects(kdockw, 1, 2, solo, alpha, beta, W)
 
 
 @pytest.mark.parametrize(
@@ -1417,7 +1417,7 @@ def test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores
             hover,
             grouped,
             id=f"hover-{int(hover)}-group-{grouped}",
-            marks=pytest.mark.kremarc(
+            marks=pytest.mark.kdockwrc(
                 {
                     "PinnedLaunchers": [],
                     "PreviewEnabled": not hover,
@@ -1433,21 +1433,21 @@ def test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores
     ],
 )
 def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
-    krema: Krema, apps: TestWindows, hover_enabled: bool, grouped_action: int
+    kdockw: KDockW, apps: TestWindows, hover_enabled: bool, grouped_action: int
 ) -> None:
     apps.open("Alpha")
     apps.open("Beta")
     apps.open("Solo", app_id=env.TEST_APP2_ID)
-    open_settings(krema, "Solo")
-    open_page(krema, "Behavior")
-    choose(krema, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[grouped_action])
-    open_page(krema, "Window Preview")
+    open_settings(kdockw, "Solo")
+    open_page(kdockw, "Behavior")
+    choose(kdockw, GROUPED_CLICK_ROW, GROUPED_CLICK_CHOICES[grouped_action])
+    open_page(kdockw, "Window Preview")
     switch_xpath = f"{SETTINGS}//check_box[@name='Show window previews on hover']"
-    switch = scroll_into_view(krema, switch_xpath)
-    click_el(krema, switch)
-    wait_until(lambda: has_state(krema.wait_for(switch_xpath), "checked") == hover_enabled, message="hover previews changed")
+    switch = scroll_into_view(kdockw, switch_xpath)
+    click_el(kdockw, switch)
+    wait_until(lambda: has_state(kdockw.wait_for(switch_xpath), "checked") == hover_enabled, message="hover previews changed")
     wait_until(
-        lambda: (config_value(krema, "PreviewEnabled") or "true").lower() == str(hover_enabled).lower(),
+        lambda: (config_value(kdockw, "PreviewEnabled") or "true").lower() == str(hover_enabled).lower(),
         message="hover preview setting saved",
     )
 
@@ -1458,276 +1458,276 @@ def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
         ("Hover delay (ms)", hover_enabled, "PreviewHoverDelay", 0, 2000, 50),
     ):
         xpath = f"{SETTINGS}//slider[@name='{label}']"
-        slider = scroll_into_view(krema, xpath)
+        slider = scroll_into_view(kdockw, xpath)
         assert has_state(slider, "enabled") == enabled, f"{label} availability must match how previews can be opened"
         if enabled:
-            slider = focus_slider(krema, xpath, lo, hi)
+            slider = focus_slider(kdockw, xpath, lo, hi)
             old_value = slider_value(slider)
             inp.key("right")
             wait_until(lambda: slider_value(slider) == old_value + step, message=f"{label} changed through the UI")
-            wait_until(lambda: int(config_value(krema, key) or 0) == int(old_value + step), message=f"{label} saved")
-    close_settings(krema)
+            wait_until(lambda: int(config_value(kdockw, key) or 0) == int(old_value + step), message=f"{label} saved")
+    close_settings(kdockw)
 
-    krema.hover_item(env.TEST_APP_NAME)
+    kdockw.hover_item(env.TEST_APP_NAME)
     if not preview_controls_enabled:
-        holds(lambda: not krema.preview_visible(), 0.8, "disabled hover previews must not open on a group")
+        holds(lambda: not kdockw.preview_visible(), 0.8, "disabled hover previews must not open on a group")
         return
     if not hover_enabled:
-        holds(lambda: not krema.preview_visible(), 0.8, "explicit preview mode must not enable hover previews")
-        krema.click_item(env.TEST_APP_NAME)
-    wait_until(krema.preview_visible, message="preview opens through the enabled interaction")
-    wait_until(lambda: set(pv.thumb_titles(krema)) == {"Alpha", "Beta"}, message="group preview children")
-    width = wait_stable(lambda: Rect.of(krema.wait_for(pv.thumb_xpath("Alpha") + "/label")).width)
+        holds(lambda: not kdockw.preview_visible(), 0.8, "explicit preview mode must not enable hover previews")
+        kdockw.click_item(env.TEST_APP_NAME)
+    wait_until(kdockw.preview_visible, message="preview opens through the enabled interaction")
+    wait_until(lambda: set(pv.thumb_titles(kdockw)) == {"Alpha", "Beta"}, message="group preview children")
+    width = wait_stable(lambda: Rect.of(kdockw.wait_for(pv.thumb_xpath("Alpha") + "/label")).width)
     assert width == 220, f"UI-selected thumbnail width was not applied to the real popup: {width}"
     started = time.monotonic()
     inp.move(W // 2, 20)
-    wait_until(lambda: not krema.preview_visible(), message="popup closes using its UI-selected hide delay")
+    wait_until(lambda: not kdockw.preview_visible(), message="popup closes using its UI-selected hide delay")
     elapsed = time.monotonic() - started
     assert elapsed >= 0.25 * 0.95, f"popup closed before the selected 250 ms hide delay: {elapsed:.3f}s"
 # ------------------------------------------------------------------- SET-012
 @pytest.mark.outputs(2)
-@pytest.mark.no_krema_autostart
-def test_set012_selected_monitors_toggle_keeps_settings_open(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.no_kdockw_autostart
+def test_set012_selected_monitors_toggle_keeps_settings_open(kdockw: KDockW, apps: TestWindows) -> None:
     outputs = kwin.evaluate("report(workspace.screens.map(s => ({name: s.name, x: s.geometry.x, y: s.geometry.y})));")
     assert [(o["x"], o["y"]) for o in outputs] == [(0, 0), (W, 0)], outputs
     first, second = [o["name"] for o in outputs]
-    krema.write_config(
+    kdockw.write_config(
         {"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 0, "SelectedOutputs": [first]}
     )
-    krema.start()
+    kdockw.start()
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="primary-only control dock")
-    reveal_dock(krema, "Alpha")
-    win = open_settings(krema)
-    open_page(krema, "Monitors & Desktops")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="primary-only control dock")
+    reveal_dock(kdockw, "Alpha")
+    win = open_settings(kdockw)
+    open_page(kdockw, "Monitors & Desktops")
 
     # Healthy existing-mode control before exercising the new native option.
-    pick(krema, "Monitor mode", "All monitors")
-    wait_until(lambda: mapped_dock_xs(krema) == [0, W], timeout=5, message="all-monitors control docks")
-    pick(krema, "Monitor mode", "Selected monitors")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="only the saved selected output")
+    pick(kdockw, "Monitor mode", "All monitors")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0, W], timeout=5, message="all-monitors control docks")
+    pick(kdockw, "Monitor mode", "Selected monitors")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="only the saved selected output")
 
     second_xpath = f"{SETTINGS}//check_box[@name='{second}']"
-    click_el(krema, scroll_into_view(krema, second_xpath))
-    wait_until(lambda: has_state(krema.wait_for(second_xpath), "checked"), message="second output selected")
-    wait_until(lambda: mapped_dock_xs(krema) == [0, W], timeout=5, message="both selected docks mapped")
-    retained_dock = next(d for d in dock_surfaces(krema) if d.output == second)
+    click_el(kdockw, scroll_into_view(kdockw, second_xpath))
+    wait_until(lambda: has_state(kdockw.wait_for(second_xpath), "checked"), message="second output selected")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0, W], timeout=5, message="both selected docks mapped")
+    retained_dock = next(d for d in dock_surfaces(kdockw) if d.output == second)
     retained_preview = wait_until(
-        lambda: next((p for p in preview_surfaces(krema) if p.output == second), None),
+        lambda: next((p for p in preview_surfaces(kdockw) if p.output == second), None),
         message="new output's preview surface",
     )
     wait_until(
-        lambda: len(items := krema.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
+        lambda: len(items := kdockw.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
         message="new selected dock inherits Settings interaction lock",
     )
     pointer_to_center()
     holds(
-        lambda: len(items := krema.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
+        lambda: len(items := kdockw.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
         1.0,
         "a newly selected dock hid while Settings is open",
     )
     first_xpath = f"{SETTINGS}//check_box[@name='{first}']"
-    click_el(krema, scroll_into_view(krema, first_xpath))
-    wait_until(lambda: not has_state(krema.wait_for(first_xpath), "checked"), message="first output deselected")
-    wait_until(lambda: mapped_dock_xs(krema) == [W], timeout=5, message="exactly one dock on output 2")
-    (dock,) = dock_surfaces(krema)
+    click_el(kdockw, scroll_into_view(kdockw, first_xpath))
+    wait_until(lambda: not has_state(kdockw.wait_for(first_xpath), "checked"), message="first output deselected")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W], timeout=5, message="exactly one dock on output 2")
+    (dock,) = dock_surfaces(kdockw)
     assert dock.output == second and dock.client_x == W, dock
     assert dock.internal_id == retained_dock.internal_id, "deselecting another output rebuilt the retained dock"
     wait_until(
-        lambda: len(previews := preview_surfaces(krema)) == 1
+        lambda: len(previews := preview_surfaces(kdockw)) == 1
         and previews[0].output == second
         and previews[0].internal_id == retained_preview.internal_id,
         message="only the retained output's original preview surface",
     )
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id], "originating dock removal closed Settings"
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id], "originating dock removal closed Settings"
     wait_until(
         lambda: (active := kwin.active_window()) is not None and active.internal_id == win.internal_id,
         message="the same Settings window remains focused",
     )
     wait_until(
-        lambda: config_value(krema, "MonitorMode") == "3" and kcfg.as_list(config_value(krema, "SelectedOutputs") or "") == [second],
+        lambda: config_value(kdockw, "MonitorMode") == "3" and kcfg.as_list(config_value(kdockw, "SelectedOutputs") or "") == [second],
         message="selected output names persisted exactly",
     )
     pointer_to_center()
-    holds(lambda: has_state(krema.wait_for_item("Alpha"), "showing"), 1.0, "retained dock lost Settings interaction lock")
-    close_settings(krema)
-    wait_until(lambda: shown_alpha(krema) is None, timeout=5, message="selected dock auto-hides once Settings closes")
+    holds(lambda: has_state(kdockw.wait_for_item("Alpha"), "showing"), 1.0, "retained dock lost Settings interaction lock")
+    close_settings(kdockw)
+    wait_until(lambda: shown_alpha(kdockw) is None, timeout=5, message="selected dock auto-hides once Settings closes")
 
     # Cold restart must restore mode 3 and the exact output name, not clamp it.
-    old_pid = krema.pid
-    krema.restart()
-    assert krema.pid != old_pid and krema.is_running()
-    wait_until(lambda: mapped_dock_xs(krema) == [W], timeout=5, message="restarted selected dock on output 2")
-    assert config_value(krema, "MonitorMode") == "3"
-    assert kcfg.as_list(config_value(krema, "SelectedOutputs") or "") == [second]
-    assert not settings_windows(krema)
+    old_pid = kdockw.pid
+    kdockw.restart()
+    assert kdockw.pid != old_pid and kdockw.is_running()
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W], timeout=5, message="restarted selected dock on output 2")
+    assert config_value(kdockw, "MonitorMode") == "3"
+    assert kcfg.as_list(config_value(kdockw, "SelectedOutputs") or "") == [second]
+    assert not settings_windows(kdockw)
 
     # The pointer is on unselected output 1. Focus Dock still targets output 2.
     pointer_to_center()
     invoke_shortcut("focus-dock")
-    wait_until(lambda: krema.focused_item() == "Alpha", message="selected dock keyboard navigation")
-    (dock,) = dock_surfaces(krema)
+    wait_until(lambda: kdockw.focused_item() == "Alpha", message="selected dock keyboard navigation")
+    (dock,) = dock_surfaces(kdockw)
     wait_until(
         lambda: (active := kwin.active_window()) is not None and active.internal_id == dock.internal_id,
         message="KWin keyboard focus on selected output's dock",
     )
     inp.key("Up")
-    wait_until(krema.preview_visible, message="selected output's preview opens through keyboard navigation")
+    wait_until(kdockw.preview_visible, message="selected output's preview opens through keyboard navigation")
     (preview,) = wait_until(
-        lambda: p if len(p := preview_surfaces(krema)) == 1 else None,
+        lambda: p if len(p := preview_surfaces(kdockw)) == 1 else None,
         message="one preview surface for the one selected output",
     )
     assert preview.output == second and preview.client_x == W, preview
     wait_until(
-        lambda: krema.find("//popup_menu/button/label[@name='Alpha']") is not None,
+        lambda: kdockw.find("//popup_menu/button/label[@name='Alpha']") is not None,
         message="selected dock's preview contains the actual app window",
     )
 
 
 FALLBACK_WARNING = SETTINGS + "//*[contains(@name, 'temporary dock') and contains(@name, 'primary')]"
-DISCONNECTED_OUTPUT = "KREMA-disconnected-output"
+DISCONNECTED_OUTPUT = "KDOCKW-disconnected-output"
 
 
-def selected_outputs(krema: Krema) -> list[str]:
-    return kcfg.as_list(config_value(krema, "SelectedOutputs") or "")
+def selected_outputs(kdockw: KDockW) -> list[str]:
+    return kcfg.as_list(config_value(kdockw, "SelectedOutputs") or "")
 
 
-def fallback_warning_visible(krema: Krema) -> bool:
-    return any(has_state(el, "showing") for el in krema.find_all(FALLBACK_WARNING))
+def fallback_warning_visible(kdockw: KDockW) -> bool:
+    return any(has_state(el, "showing") for el in kdockw.find_all(FALLBACK_WARNING))
 
 
-def set_output_selected(krema: Krema, name: str, selected: bool) -> None:
+def set_output_selected(kdockw: KDockW, name: str, selected: bool) -> None:
     xpath = f"{SETTINGS}//check_box[@name='{name}']"
-    row = scroll_into_view(krema, xpath)
+    row = scroll_into_view(kdockw, xpath)
     if has_state(row, "checked") != selected:
-        click_el(krema, row)
+        click_el(kdockw, row)
     wait_until(
-        lambda: has_state(krema.wait_for(xpath), "checked") == selected,
+        lambda: has_state(kdockw.wait_for(xpath), "checked") == selected,
         message=f"output {name} selected={selected}",
     )
 
 
 @pytest.mark.outputs(2)
-@pytest.mark.no_krema_autostart
+@pytest.mark.no_kdockw_autostart
 @pytest.mark.parametrize("saved_names", [[], [DISCONNECTED_OUTPUT]], ids=["empty", "disconnected"])
 def test_set012_selected_monitors_fallback_warns_and_keeps_saved_names(
-    krema: Krema, apps: TestWindows, saved_names: list[str]
+    kdockw: KDockW, apps: TestWindows, saved_names: list[str]
 ) -> None:
     outputs = kwin.evaluate("report(workspace.screens.map(s => ({name: s.name, x: s.geometry.x, y: s.geometry.y})));")
     assert [(o["x"], o["y"]) for o in outputs] == [(0, 0), (W, 0)], outputs
     first, second = [o["name"] for o in outputs]
     assert DISCONNECTED_OUTPUT not in (first, second)
-    krema.write_config(
+    kdockw.write_config(
         {"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 3, "SelectedOutputs": saved_names}
     )
-    krema.start()
+    kdockw.start()
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="one temporary primary dock")
-    assert dock_surfaces(krema)[0].output == first
-    reveal_dock(krema, "Alpha")
-    win = open_settings(krema)
-    open_page(krema, "Monitors & Desktops")
-    assert current_card(krema, "Monitor mode") == "Selected monitors"
-    scroll_into_view(krema, FALLBACK_WARNING)
-    wait_until(lambda: fallback_warning_visible(krema), message="temporary primary fallback warning")
-    assert selected_outputs(krema) == saved_names, "fallback rewrote the user's saved selection"
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="one temporary primary dock")
+    assert dock_surfaces(kdockw)[0].output == first
+    reveal_dock(kdockw, "Alpha")
+    win = open_settings(kdockw)
+    open_page(kdockw, "Monitors & Desktops")
+    assert current_card(kdockw, "Monitor mode") == "Selected monitors"
+    scroll_into_view(kdockw, FALLBACK_WARNING)
+    wait_until(lambda: fallback_warning_visible(kdockw), message="temporary primary fallback warning")
+    assert selected_outputs(kdockw) == saved_names, "fallback rewrote the user's saved selection"
     for name in (first, second):
-        assert not has_state(krema.wait_for(f"{SETTINGS}//check_box[@name='{name}']"), "checked")
+        assert not has_state(kdockw.wait_for(f"{SETTINGS}//check_box[@name='{name}']"), "checked")
 
     if saved_names:
         missing_xpath = f"{SETTINGS}//check_box[@name='{DISCONNECTED_OUTPUT}']"
-        assert has_state(krema.wait_for(missing_xpath), "checked"), "saved disconnected output is not removable"
-        pick(krema, "Monitor mode", "All monitors")
-        wait_until(lambda: mapped_dock_xs(krema) == [0, W], timeout=5, message="old all-monitors mode remains healthy")
-        assert selected_outputs(krema) == saved_names
-        assert not fallback_warning_visible(krema), "selected-mode warning remained visible in All monitors"
-        assert not any(has_state(el, "showing") for el in krema.find_all(missing_xpath)), "output switches escaped Selected mode"
-        pick(krema, "Monitor mode", "Primary monitor only")
-        wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="old primary-only mode remains healthy")
-        assert selected_outputs(krema) == saved_names
-        pick(krema, "Monitor mode", "Selected monitors")
-        scroll_into_view(krema, FALLBACK_WARNING)
-        wait_until(lambda: fallback_warning_visible(krema), message="fallback warning restored with saved unavailable selection")
+        assert has_state(kdockw.wait_for(missing_xpath), "checked"), "saved disconnected output is not removable"
+        pick(kdockw, "Monitor mode", "All monitors")
+        wait_until(lambda: mapped_dock_xs(kdockw) == [0, W], timeout=5, message="old all-monitors mode remains healthy")
+        assert selected_outputs(kdockw) == saved_names
+        assert not fallback_warning_visible(kdockw), "selected-mode warning remained visible in All monitors"
+        assert not any(has_state(el, "showing") for el in kdockw.find_all(missing_xpath)), "output switches escaped Selected mode"
+        pick(kdockw, "Monitor mode", "Primary monitor only")
+        wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="old primary-only mode remains healthy")
+        assert selected_outputs(kdockw) == saved_names
+        pick(kdockw, "Monitor mode", "Selected monitors")
+        scroll_into_view(kdockw, FALLBACK_WARNING)
+        wait_until(lambda: fallback_warning_visible(kdockw), message="fallback warning restored with saved unavailable selection")
 
         # Real native toggle, then the unavailable row disappears rather than
         # leaving an unremovable stale screen entry.
-        click_el(krema, scroll_into_view(krema, missing_xpath))
-        wait_until(lambda: selected_outputs(krema) == [], message="disconnected name removed from kremarc")
-        wait_until(lambda: krema.find(missing_xpath) is None, message="removed disconnected output row disappears")
-        wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="one primary fallback after pruning")
+        click_el(kdockw, scroll_into_view(kdockw, missing_xpath))
+        wait_until(lambda: selected_outputs(kdockw) == [], message="disconnected name removed from kdockwrc")
+        wait_until(lambda: kdockw.find(missing_xpath) is None, message="removed disconnected output row disappears")
+        wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="one primary fallback after pruning")
 
     # A live selection removes fallback and its warning without closing the
     # dialog whose originating primary dock has just been destroyed.
-    set_output_selected(krema, second, True)
-    wait_until(lambda: mapped_dock_xs(krema) == [W], timeout=5, message="live selection replaces primary fallback")
-    wait_until(lambda: selected_outputs(krema) == [second], message="only the user's live selection saved")
-    wait_until(lambda: not fallback_warning_visible(krema), message="no warning for a connected selected output")
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id]
+    set_output_selected(kdockw, second, True)
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W], timeout=5, message="live selection replaces primary fallback")
+    wait_until(lambda: selected_outputs(kdockw) == [second], message="only the user's live selection saved")
+    wait_until(lambda: not fallback_warning_visible(kdockw), message="no warning for a connected selected output")
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id]
 
-    set_output_selected(krema, second, False)
-    wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="empty selection restores exactly one fallback")
-    wait_until(lambda: selected_outputs(krema) == [], message="empty selection saved without inventing primary")
-    scroll_into_view(krema, FALLBACK_WARNING)
-    wait_until(lambda: fallback_warning_visible(krema), message="empty selection warning returns")
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id]
+    set_output_selected(kdockw, second, False)
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="empty selection restores exactly one fallback")
+    wait_until(lambda: selected_outputs(kdockw) == [], message="empty selection saved without inventing primary")
+    scroll_into_view(kdockw, FALLBACK_WARNING)
+    wait_until(lambda: fallback_warning_visible(kdockw), message="empty selection warning returns")
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id]
 
 
 @pytest.mark.outputs(3)
-@pytest.mark.no_krema_autostart
-def test_set012_selected_subset_preserves_docks_and_routes_shortcuts(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.no_kdockw_autostart
+def test_set012_selected_subset_preserves_docks_and_routes_shortcuts(kdockw: KDockW, apps: TestWindows) -> None:
     outputs = kwin.evaluate("report(workspace.screens.map(s => ({name: s.name, x: s.geometry.x, y: s.geometry.y})));")
     assert [(o["x"], o["y"]) for o in outputs] == [(0, 0), (W, 0), (2 * W, 0)], outputs
     first, second, third = [o["name"] for o in outputs]
     # Save the opposite of compositor order to prove shortcut routing does
     # not accidentally follow list insertion or unordered-map iteration.
-    krema.write_config(
+    kdockw.write_config(
         {"PinnedLaunchers": [], "VisibilityMode": kcfg.AUTO_HIDE, "MonitorMode": 0, "SelectedOutputs": [third, second]}
     )
-    krema.start()
+    kdockw.start()
     apps.open("Alpha")
-    wait_until(lambda: mapped_dock_xs(krema) == [0], timeout=5, message="primary-only control on three outputs")
-    reveal_dock(krema, "Alpha")
-    win = open_settings(krema)
-    open_page(krema, "Monitors & Desktops")
-    pick(krema, "Monitor mode", "Selected monitors")
-    wait_until(lambda: mapped_dock_xs(krema) == [W, 2 * W], timeout=5, message="selected subset excludes primary")
-    assert [d.output for d in dock_surfaces(krema)] == [second, third]
+    wait_until(lambda: mapped_dock_xs(kdockw) == [0], timeout=5, message="primary-only control on three outputs")
+    reveal_dock(kdockw, "Alpha")
+    win = open_settings(kdockw)
+    open_page(kdockw, "Monitors & Desktops")
+    pick(kdockw, "Monitor mode", "Selected monitors")
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W, 2 * W], timeout=5, message="selected subset excludes primary")
+    assert [d.output for d in dock_surfaces(kdockw)] == [second, third]
     wait_until(
-        lambda: [p.output for p in preview_surfaces(krema)] == [second, third],
+        lambda: [p.output for p in preview_surfaces(kdockw)] == [second, third],
         message="one correctly aligned preview surface per selected output",
     )
-    assert selected_outputs(krema) == [third, second]
-    assert not has_state(krema.wait_for(f"{SETTINGS}//check_box[@name='{first}']"), "checked")
-    retained = next(d for d in dock_surfaces(krema) if d.output == third)
-    retained_preview = next(p for p in preview_surfaces(krema) if p.output == third)
+    assert selected_outputs(kdockw) == [third, second]
+    assert not has_state(kdockw.wait_for(f"{SETTINGS}//check_box[@name='{first}']"), "checked")
+    retained = next(d for d in dock_surfaces(kdockw) if d.output == third)
+    retained_preview = next(p for p in preview_surfaces(kdockw) if p.output == third)
 
-    set_output_selected(krema, second, False)
-    wait_until(lambda: mapped_dock_xs(krema) == [2 * W], timeout=5, message="deselected output removed from subset")
-    assert dock_surfaces(krema)[0].internal_id == retained.internal_id, "selection update rebuilt unrelated dock"
+    set_output_selected(kdockw, second, False)
+    wait_until(lambda: mapped_dock_xs(kdockw) == [2 * W], timeout=5, message="deselected output removed from subset")
+    assert dock_surfaces(kdockw)[0].internal_id == retained.internal_id, "selection update rebuilt unrelated dock"
     wait_until(
-        lambda: len(previews := preview_surfaces(krema)) == 1 and previews[0].internal_id == retained_preview.internal_id,
+        lambda: len(previews := preview_surfaces(kdockw)) == 1 and previews[0].internal_id == retained_preview.internal_id,
         message="selection update retains unrelated preview and removes deselected preview",
     )
-    set_output_selected(krema, second, True)
-    wait_until(lambda: mapped_dock_xs(krema) == [W, 2 * W], timeout=5, message="selected subset restored")
-    assert next(d for d in dock_surfaces(krema) if d.output == third).internal_id == retained.internal_id
-    wait_until(lambda: selected_outputs(krema) == [third, second], message="exact ordered selected names autosaved")
-    assert [w.internal_id for w in settings_windows(krema)] == [win.internal_id]
+    set_output_selected(kdockw, second, True)
+    wait_until(lambda: mapped_dock_xs(kdockw) == [W, 2 * W], timeout=5, message="selected subset restored")
+    assert next(d for d in dock_surfaces(kdockw) if d.output == third).internal_id == retained.internal_id
+    wait_until(lambda: selected_outputs(kdockw) == [third, second], message="exact ordered selected names autosaved")
+    assert [w.internal_id for w in settings_windows(kdockw)] == [win.internal_id]
     pointer_to_center()
     wait_until(
-        lambda: len(items := krema.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
+        lambda: len(items := kdockw.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
         message="restored selected dock inherits open Settings lock",
     )
     holds(
-        lambda: len(items := krema.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
+        lambda: len(items := kdockw.find_all(ALPHA_ITEMS)) == 2 and all(has_state(i, "showing") for i in items),
         1.0,
         "selected subset hid while Settings was still open",
     )
 
-    close_settings(krema)
+    close_settings(kdockw)
     pointer_to_center()
     wait_until(
-        lambda: len(items := krema.find_all(ALPHA_ITEMS)) == 2 and all(not has_state(i, "showing") for i in items),
+        lambda: len(items := kdockw.find_all(ALPHA_ITEMS)) == 2 and all(not has_state(i, "showing") for i in items),
         timeout=5,
         message="both selected docks auto-hide after Settings closes",
     )
@@ -1735,17 +1735,17 @@ def test_set012_selected_subset_preserves_docks_and_routes_shortcuts(krema: Krem
     # wins, even though the saved selection starts with output 3.
     invoke_shortcut("focus-dock")
     wait_until(
-        lambda: krema.find(TOOLBAR_XPATH + "/button[contains(@states, 'focused')]"),
+        lambda: kdockw.find(TOOLBAR_XPATH + "/button[contains(@states, 'focused')]"),
         message="a selected dock button focused from unselected output",
     )
-    target = next(d for d in dock_surfaces(krema) if d.output == second)
+    target = next(d for d in dock_surfaces(kdockw) if d.output == second)
     wait_until(
         lambda: (active := kwin.active_window()) is not None and active.internal_id == target.internal_id,
         message="Focus Dock selects output 2 rather than saved-list-first output 3",
     )
-    assert mapped_dock_xs(krema) == [W, 2 * W]
+    assert mapped_dock_xs(kdockw) == [W, 2 * W]
     inp.key("Escape")
-    wait_until(lambda: krema.focused_item() is None, message="Escape leaves selected dock keyboard navigation")
+    wait_until(lambda: kdockw.focused_item() is None, message="Escape leaves selected dock keyboard navigation")
 
 
 # ------------------------------------------------------------------- SET-015
@@ -1755,36 +1755,36 @@ RESERVE_SWITCH = f"{SETTINGS}//check_box[@name='Reserve screen space']"
 @pytest.mark.parametrize(
     "reserved",
     [
-        pytest.param(False, marks=pytest.mark.kremarc({"PinnedLaunchers": [], "VisibilityMode": kcfg.ALWAYS_VISIBLE, "ReserveScreenSpace": False}), id="off"),
-        pytest.param(True, marks=pytest.mark.kremarc({"PinnedLaunchers": [], "VisibilityMode": kcfg.ALWAYS_VISIBLE, "ReserveScreenSpace": True}), id="on"),
+        pytest.param(False, marks=pytest.mark.kdockwrc({"PinnedLaunchers": [], "VisibilityMode": kcfg.ALWAYS_VISIBLE, "ReserveScreenSpace": False}), id="off"),
+        pytest.param(True, marks=pytest.mark.kdockwrc({"PinnedLaunchers": [], "VisibilityMode": kcfg.ALWAYS_VISIBLE, "ReserveScreenSpace": True}), id="on"),
     ],
 )
 def test_set015_reservation_switch_is_native_conditional_and_autosaves(
-    krema: Krema, apps: TestWindows, reserved: bool
+    kdockw: KDockW, apps: TestWindows, reserved: bool
 ) -> None:
     apps.open("Alpha")
-    krema.wait_for_item("Alpha")
-    open_settings(krema)
-    open_page(krema, "Behavior")
-    switch = scroll_into_view(krema, RESERVE_SWITCH)
+    kdockw.wait_for_item("Alpha")
+    open_settings(kdockw)
+    open_page(kdockw, "Behavior")
+    switch = scroll_into_view(kdockw, RESERVE_SWITCH)
     assert has_state(switch, "checked") == reserved
-    assert "Toggle" in atspi_actions(krema, "check box", "Reserve screen space")
-    pid = krema.pid
-    click_el(krema, switch)
+    assert "Toggle" in atspi_actions(kdockw, "check box", "Reserve screen space")
+    pid = kdockw.pid
+    click_el(kdockw, switch)
     wait_until(
-        lambda: has_state(krema.wait_for(RESERVE_SWITCH), "checked") == (not reserved),
+        lambda: has_state(kdockw.wait_for(RESERVE_SWITCH), "checked") == (not reserved),
         message="reservation switch toggled",
     )
     wait_until(
-        lambda: kcfg.as_bool(config_value(krema, "ReserveScreenSpace") or "true") == (not reserved),
+        lambda: kcfg.as_bool(config_value(kdockw, "ReserveScreenSpace") or "true") == (not reserved),
         message="reservation change autosaved before Settings closes",
     )
     for mode in ("Auto hide", "Dodge windows"):
-        pick(krema, "Visibility mode", mode)
-        assert not any(has_state(row, "showing") for row in krema.find_all(RESERVE_SWITCH)), (
+        pick(kdockw, "Visibility mode", mode)
+        assert not any(has_state(row, "showing") for row in kdockw.find_all(RESERVE_SWITCH)), (
             f"reservation switch must not be available in {mode}"
         )
-        assert kcfg.as_bool(config_value(krema, "ReserveScreenSpace") or "true") == (not reserved)
-    pick(krema, "Visibility mode", "Always visible")
-    assert has_state(scroll_into_view(krema, RESERVE_SWITCH), "checked") == (not reserved)
-    assert krema.pid == pid, "changing visibility policy must not restart Krema or discard the reservation preference"
+        assert kcfg.as_bool(config_value(kdockw, "ReserveScreenSpace") or "true") == (not reserved)
+    pick(kdockw, "Visibility mode", "Always visible")
+    assert has_state(scroll_into_view(kdockw, RESERVE_SWITCH), "checked") == (not reserved)
+    assert kdockw.pid == pid, "changing visibility policy must not restart KDockW or discard the reservation preference"

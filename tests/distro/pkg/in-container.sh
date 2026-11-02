@@ -7,13 +7,13 @@
 # on the host.
 #
 # Mounts provided by the host script:
-#   /stage           read-only, contains krema-<version>.tar.gz
+#   /stage           read-only, contains kdockw-<version>.tar.gz
 #   /pkg/packaging   read-only copy of the repo's packaging/ directory
 #   /pkg/bin         this helper directory
 #   /out             writable output directory for built packages
-#   /ccache          ccache directory (host KREMA_CCACHE_DIR)
+#   /ccache          ccache directory (host KDOCKW_CCACHE_DIR)
 #
-# Environment: TARGET_ID, FAMILY, KREMA_VERSION; HOST_UID/HOST_GID (owner
+# Environment: TARGET_ID, FAMILY, KDOCKW_VERSION; HOST_UID/HOST_GID (owner
 # given back to /out and /ccache on exit); CCACHE_MAXSIZE (default 500M).
 #
 # Steps: rolling upgrade (packages.sh upgrade, a no-op on stable targets),
@@ -22,11 +22,11 @@
 
 set -euo pipefail
 
-: "${TARGET_ID:?}" "${FAMILY:?}" "${KREMA_VERSION:?}"
+: "${TARGET_ID:?}" "${FAMILY:?}" "${KDOCKW_VERSION:?}"
 
 bin_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-packages=/usr/local/lib/krema-distro/packages.sh
-[[ -f "$packages" ]] || { echo "error: $packages missing: not a krema builder image" >&2; exit 66; }
+packages=/usr/local/lib/kdockw-distro/packages.sh
+[[ -f "$packages" ]] || { echo "error: $packages missing: not a kdockw builder image" >&2; exit 66; }
 
 case "$FAMILY" in
     fedora|suse) builder=rpm-build.sh ;;
@@ -35,7 +35,7 @@ case "$FAMILY" in
     *) echo "error: unknown FAMILY '$FAMILY'" >&2; exit 64 ;;
 esac
 
-tarball="/stage/krema-${KREMA_VERSION}.tar.gz"
+tarball="/stage/kdockw-${KDOCKW_VERSION}.tar.gz"
 [[ -f "$tarball" ]] || { echo "error: $tarball missing" >&2; exit 66; }
 
 umask 022

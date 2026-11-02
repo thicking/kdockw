@@ -3,7 +3,7 @@ run.rb: optional --output-count for the nested kwin_wayland
 Multi-monitor scenarios (e.g. SET-008, Monitor mode "All monitors") need
 more than one virtual output. kwin_wayland --virtual supports
 --output-count <n>; pass it through when COMPOSITOR_OUTPUT_COUNT is set
-(tests/appium/entrypoint.sh sets it from KREMA_E2E_OUTPUT_COUNT > 1).
+(tests/appium/entrypoint.sh sets it from KDOCKW_E2E_OUTPUT_COUNT > 1).
 Unset keeps upstream's single output.
 
 --- a/run.rb

@@ -5,7 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import org.kde.kirigami as Kirigami
 import org.kde.taskmanager as TaskManager
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 /**
  * Main dock container.
@@ -19,7 +19,7 @@ Item {
     anchors.fill: parent
 
     Accessible.role: Accessible.ToolBar
-    Accessible.name: i18n("Krema Dock")
+    Accessible.name: i18n("KDockW Dock")
 
     // C++ singletons: DockView, DockModel, DockActions, DockContextMenu, DockVisibility, DockSettings, PreviewController
 
@@ -1142,7 +1142,7 @@ Item {
         property bool mouseInside: mouseX >= 0 && root._zoomActive && !root._dragActive
 
         // --- Hover zoom ---
-        // ZoomStyle (krema.kcfg): 0 = Parabolic (Gaussian magnification;
+        // ZoomStyle (kdockw.kcfg): 0 = Parabolic (Gaussian magnification;
         // neighbours move aside and the background grows), 1 = InPlace (icons
         // scale over their neighbours, nothing moves).
         readonly property int zoomStyle: DockSettings.zoomStyle

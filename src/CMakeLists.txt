@@ -3,9 +3,9 @@
 
 qt_add_resources(QML_RESOURCES qml/qml.qrc)
 
-kconfig_add_kcfg_files(KREMA_KCFG_SRCS GENERATE_MOC config/krema.kcfgc)
+kconfig_add_kcfg_files(KDOCKW_KCFG_SRCS GENERATE_MOC config/kdockw.kcfgc)
 
-add_library(krema_lib STATIC
+add_library(kdockw_lib STATIC
     app/application.cpp
     app/application.h
 
@@ -65,7 +65,7 @@ add_library(krema_lib STATIC
     utils/inputregion.h
     utils/inputregion.cpp
 
-    ${KREMA_KCFG_SRCS}
+    ${KDOCKW_KCFG_SRCS}
     ${QML_RESOURCES}
 )
 
@@ -73,18 +73,18 @@ add_library(krema_lib STATIC
 # vendored because upstream treats the protocol as a DE implementation
 # detail and does not install it. qt6_generate_* emits both the C
 # marshalling layer (wayland-*-protocol.c) and the C++ wrapper.
-qt6_generate_wayland_protocol_client_sources(krema_lib
+qt6_generate_wayland_protocol_client_sources(kdockw_lib
     FILES ${CMAKE_CURRENT_SOURCE_DIR}/protocols/kde-output-order-v1.xml
 )
 
-qt6_add_shaders(krema_lib "acrylic_shaders"
+qt6_add_shaders(kdockw_lib "acrylic_shaders"
     BATCHABLE PRECOMPILE OPTIMIZED
     PREFIX "/"
     FILES qml/shaders/acrylic_overlay.frag
           qml/shaders/outer_shadow.frag
 )
 
-target_link_libraries(krema_lib PUBLIC
+target_link_libraries(kdockw_lib PUBLIC
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets
@@ -111,58 +111,58 @@ target_link_libraries(krema_lib PUBLIC
     PW::LibNotificationManager
     Wayland::Client
 )
-target_link_libraries(krema_lib PRIVATE Qt6::GuiPrivate)
+target_link_libraries(kdockw_lib PRIVATE Qt6::GuiPrivate)
 
-target_include_directories(krema_lib PUBLIC
+target_include_directories(kdockw_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-add_executable(krema main.cpp)
-target_link_libraries(krema PRIVATE krema_lib)
+add_executable(kdockw main.cpp)
+target_link_libraries(kdockw PRIVATE kdockw_lib)
 
 ki18n_install(po)
 
-install(TARGETS krema ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(TARGETS kdockw ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
 # Generate .desktop file with resolved install paths for KWin Wayland protocol access
 configure_file(
-    com.bhyoo.krema.desktop.in
-    ${CMAKE_CURRENT_BINARY_DIR}/com.bhyoo.krema.desktop
+    com.thicking.kdockw.desktop.in
+    ${CMAKE_CURRENT_BINARY_DIR}/com.thicking.kdockw.desktop
     @ONLY
 )
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/com.bhyoo.krema.desktop
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/com.thicking.kdockw.desktop
     DESTINATION ${KDE_INSTALL_APPDIR}
 )
 
 configure_file(
-    com.bhyoo.krema.autostart.desktop.in
-    ${CMAKE_CURRENT_BINARY_DIR}/com.bhyoo.krema.autostart.desktop
+    com.thicking.kdockw.autostart.desktop.in
+    ${CMAKE_CURRENT_BINARY_DIR}/com.thicking.kdockw.autostart.desktop
     @ONLY
 )
 install(
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/com.bhyoo.krema.autostart.desktop
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/com.thicking.kdockw.autostart.desktop
     DESTINATION ${KDE_INSTALL_AUTOSTARTDIR}
 )
 
 install(
-    FILES com.bhyoo.krema.metainfo.xml
+    FILES com.thicking.kdockw.metainfo.xml
     DESTINATION ${KDE_INSTALL_METAINFODIR}
 )
 
 include(ECMInstallIcons)
 ecm_install_icons(
     ICONS
-        icons/16-apps-com.bhyoo.krema.png
-        icons/22-apps-com.bhyoo.krema.png
-        icons/24-apps-com.bhyoo.krema.png
-        icons/32-apps-com.bhyoo.krema.png
-        icons/48-apps-com.bhyoo.krema.png
-        icons/64-apps-com.bhyoo.krema.png
-        icons/128-apps-com.bhyoo.krema.png
-        icons/256-apps-com.bhyoo.krema.png
-        icons/sc-apps-com.bhyoo.krema.svg
+        icons/16-apps-com.thicking.kdockw.png
+        icons/22-apps-com.thicking.kdockw.png
+        icons/24-apps-com.thicking.kdockw.png
+        icons/32-apps-com.thicking.kdockw.png
+        icons/48-apps-com.thicking.kdockw.png
+        icons/64-apps-com.thicking.kdockw.png
+        icons/128-apps-com.thicking.kdockw.png
+        icons/256-apps-com.thicking.kdockw.png
+        icons/sc-apps-com.thicking.kdockw.svg
     DESTINATION ${KDE_INSTALL_ICONDIR}
     THEME hicolor
 )

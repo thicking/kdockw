@@ -3,9 +3,9 @@
 
 // Exercises automatic publication from the real dock QML. A scripted effect
 // reads EffectWindow.iconGeometry inside KWin, independently of libtaskmanager.
-// Run under run-with-kwin.sh with KREMA_TEST_KWIN_EFFECTS=tests/kwin/effects.
+// Run under run-with-kwin.sh with KDOCKW_TEST_KWIN_EFFECTS=tests/kwin/effects.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -52,14 +52,14 @@ namespace
 using TaskManager::AbstractTasksModel;
 constexpr int kTimeoutMs = 15000;
 constexpr auto kWindowArg = "--geometry-window";
-const QString kWindowA = QStringLiteral("krema-geometry-A");
-const QString kWindowB = QStringLiteral("krema-geometry-B");
+const QString kWindowA = QStringLiteral("kdockw-geometry-A");
+const QString kWindowB = QStringLiteral("kdockw-geometry-B");
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 // The same QML singletons as Application::run() and the other shell tests.
@@ -67,30 +67,30 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -128,11 +128,11 @@ QRectF readRect(const QJsonObject &object)
 
 Snapshot latestSnapshot()
 {
-    QFile log(qEnvironmentVariable("KREMA_TEST_KWIN_LOG"));
+    QFile log(qEnvironmentVariable("KDOCKW_TEST_KWIN_LOG"));
     if (!log.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return {};
     }
-    const QByteArray marker("KREMA_GEOMETRY ");
+    const QByteArray marker("KDOCKW_GEOMETRY ");
     Snapshot latest;
     while (!log.atEnd()) {
         const QByteArray line = log.readLine();
@@ -263,7 +263,7 @@ QQuickItem *findDelegate(QQuickItem *root, int row)
     return nullptr;
 }
 
-QRectF waitForPublished(krema::MultiDockManager &manager, const QSet<QString> &titles)
+QRectF waitForPublished(kdockw::MultiDockManager &manager, const QSet<QString> &titles)
 {
     QRectF previous;
     int stableMatches = 0;
@@ -341,7 +341,7 @@ void startWindow(QProcess &process, const QString &title)
 int runWindow(int argc, char *argv[])
 {
     QGuiApplication application(argc, argv);
-    QGuiApplication::setDesktopFileName(QStringLiteral("krema-geometry-control"));
+    QGuiApplication::setDesktopFileName(QStringLiteral("kdockw-geometry-control"));
     class Window : public QRasterWindow
     {
     protected:
@@ -364,7 +364,7 @@ TEST_CASE("KWin uses dock delegate geometry for managed windows", "[delegate-geo
                                                QStringLiteral("/Effects"),
                                                QStringLiteral("org.kde.kwin.Effects"),
                                                QStringLiteral("loadEffect"));
-    load << QStringLiteral("kremageometryprobe");
+    load << QStringLiteral("kdockwgeometryprobe");
     const QDBusReply<bool> loaded = QDBusConnection::sessionBus().call(load, QDBus::Block, kTimeoutMs);
     REQUIRE(loaded.isValid());
     REQUIRE(loaded.value());
@@ -399,33 +399,33 @@ TEST_CASE("KWin uses dock delegate geometry for managed windows", "[delegate-geo
 
     REQUIRE(QTest::qWaitFor(
         [] {
-            return krema::OutputOrderMonitor::instance()->orderReady();
+            return kdockw::OutputOrderMonitor::instance()->orderReady();
         },
         kTimeoutMs));
-    auto manager = std::make_unique<krema::MultiDockManager>(app().settings.get(), app().model.get(), app().tracker.get());
+    auto manager = std::make_unique<kdockw::MultiDockManager>(app().settings.get(), app().model.get(), app().tracker.get());
     manager->initialize();
     const QRectF initial = waitForPublished(*manager, {kWindowA});
     CHECK_FALSE(initial.isEmpty());
 
     // Parent surface placement and delegate layout changes must refresh the
     // compositor's target without any explicit geometry call from this test.
-    app().settings->setEdge(static_cast<int>(krema::DockPlatform::Edge::Left));
+    app().settings->setEdge(static_cast<int>(kdockw::DockPlatform::Edge::Left));
     const QRectF moved = waitForPublished(*manager, {kWindowA});
     CHECK(moved != initial);
 
     // Exercise both orientation changes and every physical edge. Each
     // observation checks the real KWin consumer geometry for the managed
     // window, not only the setting or source wiring.
-    app().settings->setEdge(static_cast<int>(krema::DockPlatform::Edge::Bottom));
+    app().settings->setEdge(static_cast<int>(kdockw::DockPlatform::Edge::Bottom));
     const QRectF returned = waitForPublished(*manager, {kWindowA});
     CHECK(returned != moved);
-    app().settings->setEdge(static_cast<int>(krema::DockPlatform::Edge::Top));
+    app().settings->setEdge(static_cast<int>(kdockw::DockPlatform::Edge::Top));
     const QRectF top = waitForPublished(*manager, {kWindowA});
     CHECK(top != returned);
-    app().settings->setEdge(static_cast<int>(krema::DockPlatform::Edge::Right));
+    app().settings->setEdge(static_cast<int>(kdockw::DockPlatform::Edge::Right));
     const QRectF right = waitForPublished(*manager, {kWindowA});
     CHECK(right != top);
-    app().settings->setEdge(static_cast<int>(krema::DockPlatform::Edge::Bottom));
+    app().settings->setEdge(static_cast<int>(kdockw::DockPlatform::Edge::Bottom));
     const QRectF restored = waitForPublished(*manager, {kWindowA});
     CHECK(restored != right);
 
@@ -437,7 +437,7 @@ TEST_CASE("KWin uses dock delegate geometry for managed windows", "[delegate-geo
     // opened window, before the edge reveal occurs.
     auto *visibility = manager->primaryShell()->view()->visibilityController();
     REQUIRE(visibility);
-    visibility->setMode(krema::DockPlatform::VisibilityMode::AutoHide);
+    visibility->setMode(kdockw::DockPlatform::VisibilityMode::AutoHide);
     visibility->setHovered(false);
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -510,7 +510,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
     return Catch::Session().run(argc, argv);

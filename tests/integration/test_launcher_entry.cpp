@@ -4,13 +4,13 @@
 // Unity LauncherEntry badges, progress and urgency on dock items.
 //
 // Apps send com.canonical.Unity.LauncherEntry.Update signals on the session
-// bus. Krema must show them on its own, without Plasma's private task manager
+// bus. KDockW must show them on its own, without Plasma's private task manager
 // QML module (Plasma 6.6 moved it into the task manager applet plugin).
 //
 // Must run under run-with-kwin.sh, which provides WAYLAND_DISPLAY, a private
 // session bus and throwaway XDG directories.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -51,12 +51,12 @@ static void initResources()
 namespace
 {
 
-using krema::LauncherEntryTracker;
+using kdockw::LauncherEntryTracker;
 
 constexpr int kTimeoutMs = 10000;
 
-// Pinned by default (KremaSettings PinnedLaunchers) and installed in the test
-// environment, as in a default Krema setup.
+// Pinned by default (KDockWSettings PinnedLaunchers) and installed in the test
+// environment, as in a default KDockW setup.
 const QUrl kKonsole(QStringLiteral("applications:org.kde.konsole.desktop"));
 const QUrl kDolphin(QStringLiteral("applications:org.kde.dolphin.desktop"));
 const QString kKonsoleUri = QStringLiteral("application://org.kde.konsole.desktop");
@@ -64,42 +64,42 @@ const QString kDolphinUri = QStringLiteral("application://org.kde.dolphin.deskto
 
 // Mirrors the object graph and wiring Application::run() builds.
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
     std::unique_ptr<LauncherEntryTracker> launcherEntries;
-    std::unique_ptr<krema::MultiDockManager> manager;
+    std::unique_ptr<kdockw::MultiDockManager> manager;
 };
 
 App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
         a->model->setPinnedLaunchers(a->settings->pinnedLaunchers());
-        a->tracker = std::make_unique<krema::NotificationTracker>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
         a->launcherEntries = std::make_unique<LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<LauncherEntryTracker>("com.thicking.kdockw",
                                                        1,
                                                        0,
                                                        "LauncherEntryTracker",
@@ -119,8 +119,8 @@ void startDocks()
     if (a.manager) {
         return;
     }
-    a.manager = std::make_unique<krema::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
-    auto *outputOrder = krema::OutputOrderMonitor::instance();
+    a.manager = std::make_unique<kdockw::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
+    auto *outputOrder = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [outputOrder] {
             return outputOrder->orderReady();
@@ -465,7 +465,7 @@ TEST_CASE("Updates for other or unknown apps do not touch an entry", "[launcher-
     FakeApp sender(QStringLiteral("launcher-entry-unknown"));
 
     // QA-06
-    sender.update(QStringLiteral("application://krema-test-does-not-exist.desktop"), {{QStringLiteral("count"), 9}, {QStringLiteral("count-visible"), true}});
+    sender.update(QStringLiteral("application://kdockw-test-does-not-exist.desktop"), {{QStringLiteral("count"), 9}, {QStringLiteral("count-visible"), true}});
     sender.update(kDolphinUri, {{QStringLiteral("count"), 5}, {QStringLiteral("count-visible"), true}});
     REQUIRE(waitFor([tracker] {
         return tracker->count(kDolphin) == 5;
@@ -552,7 +552,7 @@ TEST_CASE("Do Not Disturb keeps LauncherEntry counts", "[launcher-entry][tracker
         return tracker->countVisible(kKonsole);
     }));
 
-    // QA-09: Krema keeps badges during DND (only the attention animation is
+    // QA-09: KDockW keeps badges during DND (only the attention animation is
     // suppressed); NotificationTracker seeing DND proves the setting landed
     auto config = KSharedConfig::openConfig(QStringLiteral("plasmanotifyrc"));
     KConfigGroup dnd = config->group(QStringLiteral("DoNotDisturb"));
@@ -594,7 +594,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
     qputenv("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell");

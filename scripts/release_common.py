@@ -36,8 +36,8 @@ from pathlib import Path
 from typing import Any, Literal, overload
 
 SCHEMA_VERSION = 1
-PROJECT = "krema"
-USER_AGENT = "krema-release (https://github.com/isac322/krema)"
+PROJECT = "kdockw"
+USER_AGENT = "kdockw-release (https://github.com/thicking/krema)"
 
 BANNER_PATH = "branding/social/release-banner.png"
 
@@ -487,7 +487,7 @@ def release_notes(changelog: str, version: str, banner_url: str | None) -> str:
     if not section:
         raise ReleaseError(f"CHANGELOG.md section {version} is empty")
     head = (
-        f"![Krema v{version} release banner — lightweight KDE Plasma 6 dock for Wayland]({banner_url})\n\n"
+        f"![KDockW v{version} release banner — lightweight KDE Plasma 6 dock for Wayland]({banner_url})\n\n"
         if banner_url
         else ""
     )
@@ -500,32 +500,32 @@ def source_versions(source_dir: Path) -> dict[str, str | None]:
 
     cmake = _read_text(source_dir, "CMakeLists.txt")
     m = re.search(
-        r"^\s*project\(\s*krema\s+VERSION\s+([0-9][0-9.]*)\b", cmake, re.M | re.I
+        r"^\s*project\(\s*kdockw\s+VERSION\s+([0-9][0-9.]*)\b", cmake, re.M | re.I
     )
     found["CMakeLists.txt"] = m.group(1) if m else None
 
     try:
-        root = ET.fromstring(_read_text(source_dir, "src/com.bhyoo.krema.metainfo.xml"))
+        root = ET.fromstring(_read_text(source_dir, "src/com.thicking.kdockw.metainfo.xml"))
     except ET.ParseError as exc:
         raise ReleaseError(f"metainfo XML is invalid: {exc}") from None
     first = root.find("releases/release")
-    found["src/com.bhyoo.krema.metainfo.xml"] = (
+    found["src/com.thicking.kdockw.metainfo.xml"] = (
         first.get("version") if first is not None else None
     )
 
-    spec = _read_text(source_dir, "packaging/obs/krema.spec")
+    spec = _read_text(source_dir, "packaging/obs/kdockw.spec")
     m = re.search(r"^Version:\s*(\S+)\s*$", spec, re.M)
-    found["packaging/obs/krema.spec"] = m.group(1) if m else None
+    found["packaging/obs/kdockw.spec"] = m.group(1) if m else None
 
-    dsc = _read_text(source_dir, "packaging/obs/krema.dsc")
+    dsc = _read_text(source_dir, "packaging/obs/kdockw.dsc")
     m = re.search(r"^Version:\s*(\S+)\s*$", dsc, re.M)
-    found["packaging/obs/krema.dsc"] = m.group(1) if m else None
+    found["packaging/obs/kdockw.dsc"] = m.group(1) if m else None
     m = re.search(r"^DEBTRANSFORM-TAR:\s*(\S+)\s*$", dsc, re.M)
-    found["packaging/obs/krema.dsc DEBTRANSFORM-TAR"] = m.group(1) if m else None
+    found["packaging/obs/kdockw.dsc DEBTRANSFORM-TAR"] = m.group(1) if m else None
 
     debchangelog = _read_text(source_dir, "packaging/obs/debian.changelog")
     first_line = debchangelog.splitlines()[0] if debchangelog else ""
-    m = re.match(r"^krema \(([^)\s]+)\)\s", first_line)
+    m = re.match(r"^kdockw \(([^)\s]+)\)\s", first_line)
     found["packaging/obs/debian.changelog"] = m.group(1) if m else None
     return found
 
@@ -547,12 +547,12 @@ def check_source_versions(source_dir: Path, version: str) -> str:
             problems.append(f"{key}: {found.get(key)!r} != {wanted!r}")
 
     expect("CMakeLists.txt", version)
-    expect("src/com.bhyoo.krema.metainfo.xml", version)
-    expect("packaging/obs/krema.spec", version)
-    expect("packaging/obs/krema.dsc DEBTRANSFORM-TAR", asset_name(version))
+    expect("src/com.thicking.kdockw.metainfo.xml", version)
+    expect("packaging/obs/kdockw.spec", version)
+    expect("packaging/obs/kdockw.dsc DEBTRANSFORM-TAR", asset_name(version))
 
     revisions: list[str] = []
-    for key in ("packaging/obs/krema.dsc", "packaging/obs/debian.changelog"):
+    for key in ("packaging/obs/kdockw.dsc", "packaging/obs/debian.changelog"):
         value = found.get(key) or ""
         upstream, sep, revision = value.rpartition("-")
         if not sep or upstream != version or not DEBIAN_REVISION_RE.match(revision):
@@ -561,7 +561,7 @@ def check_source_versions(source_dir: Path, version: str) -> str:
             revisions.append(revision)
     if len(revisions) == 2 and revisions[0] != revisions[1]:
         problems.append(
-            f"Debian revision differs: krema.dsc -{revisions[0]} vs debian.changelog -{revisions[1]}"
+            f"Debian revision differs: kdockw.dsc -{revisions[0]} vs debian.changelog -{revisions[1]}"
         )
 
     if changelog_section(_read_text(source_dir, "CHANGELOG.md"), version) is None:
@@ -640,7 +640,7 @@ def read_archive(
     """Validate a release tarball and return (pax commit comment, members).
 
     Accepts only directories, regular files and relative symlinks that stay
-    inside the single ``krema-<version>/`` top directory. Each returned
+    inside the single ``kdockw-<version>/`` top directory. Each returned
     member is paired with its path relative to that directory.
     """
     root = source_root_name(version)
@@ -756,9 +756,9 @@ def compare_manifests(expected: Manifest, actual: Manifest) -> list[str]:
 
 
 def extract_archive(data: bytes, version: str, destination: Path) -> Path:
-    """Safely extract a validated tarball; return ``destination/krema-<version>``.
+    """Safely extract a validated tarball; return ``destination/kdockw-<version>``.
 
-    ``destination/krema-<version>`` must not exist yet. Ownership and
+    ``destination/kdockw-<version>`` must not exist yet. Ownership and
     timestamps from the tarball are ignored.
     """
     _, members = read_archive(data, version)

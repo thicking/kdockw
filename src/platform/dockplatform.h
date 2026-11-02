@@ -8,7 +8,7 @@
 #include <QSize>
 #include <QWindow>
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -75,4 +75,4 @@ public:
     virtual void setKeyboardInteractivity(bool enabled) = 0;
 };
 
-} // namespace krema
+} // namespace kdockw

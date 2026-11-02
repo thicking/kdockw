@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
-# Distro E2E (tests/distro/README.md): per target, build the krema package
+# Distro E2E (tests/distro/README.md): per target, build the kdockw package
 # from this tree with the repo's packaging, install it through the distro's
 # package manager into that distro's KWin/Qt/KF test runtime, and run the
-# AT-SPI E2E suite (tests/appium) against /usr/bin/krema. This is the only
+# AT-SPI E2E suite (tests/appium) against /usr/bin/kdockw. This is the only
 # CI run of that suite; e2e.yml builds and runs the CTest suites.
 #
 # Images: run-distro-e2e.sh and build-package.sh pull the target's runtime
-# and builder images from ghcr.io/isac322/krema-ci (published by
+# and builder images from ghcr.io/thicking/kdockw-ci (published by
 # ci-images.yml) and build them locally when a ref is missing (a pull
 # request changing an image input) or the pull fails, so the result never
 # depends on the registry. The package is still installed at job time, which
@@ -22,7 +22,7 @@
 # @pytest.mark.outputs(2) tests with two virtual outputs and the selected
 # subset test with three; every other target skips the multi-output tests.
 #
-# ccache: the package build compiles through ccache (KREMA_CCACHE_DIR),
+# ccache: the package build compiles through ccache (KDOCKW_CCACHE_DIR),
 # restored per target from the default branch's seed (ci-images.yml runs the
 # package build daily for that). Pull requests only restore: twelve
 # per-push entries would churn the repository's 10 GB Actions cache;
@@ -37,14 +37,14 @@
 # Path filter: the package is built with BUILD_TESTING=OFF from src/,
 # CMakeLists.txt and packaging/ (plus LICENSES/, which the packages ship);
 # the suite is tests/appium (not its Dockerfile, which only e2e.yml
-# builds, nor its CMakeLists.txt, read only with KREMA_E2E_TESTS=ON); the
+# builds, nor its CMakeLists.txt, read only with KDOCKW_E2E_TESTS=ON); the
 # harness is tests/distro. tests/unit, qml, kwin, integration and e2e
 # (scenario docs) and Markdown are never used here.
 #
-# The suite runs sharded in three (KREMA_E2E_SHARDS=3;
+# The suite runs sharded in three (KDOCKW_E2E_SHARDS=3;
 # tests/distro/run-distro-e2e.sh), all shards' JUnit files feed the summary.
 # A thumbnail whose PipeWire buffer set arrives untyped (an upstream
-# PipeWire/KWin race that load makes likelier; see tests/appium/krema_e2e/
+# PipeWire/KWin race that load makes likelier; see tests/appium/kdockw_e2e/
 # preview.py) is renegotiated once by the preview oracle and reported as a
 # pytest warning.
 #
@@ -181,8 +181,8 @@ jobs:
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }})
         id: main
         env:
-          KREMA_E2E_SHARDS: "3"
-          KREMA_CCACHE_DIR: ${{ runner.temp }}/ccache
+          KDOCKW_E2E_SHARDS: "3"
+          KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
         run: tests/distro/run-distro-e2e.sh "$TARGET" -rs
 
       - name: Save ccache
@@ -213,16 +213,16 @@ jobs:
           if-no-files-found: ignore
 
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }}, 2 outputs)
-        # KREMA_E2E_OUTPUT_COUNT=2 gives two side-by-side virtual outputs;
+        # KDOCKW_E2E_OUTPUT_COUNT=2 gives two side-by-side virtual outputs;
         # -m outputs collects multi-output tests, with the three-output node
         # explicitly deselected so this session runs only outputs(2) tests.
         # Reuses the package and image the main run built, and runs even when
         # that run failed on a test.
         if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
-          KREMA_E2E_OUTPUT_COUNT: "2"
-          KREMA_DISTRO_SKIP_IMAGE_BUILD: "1"
-          KREMA_E2E_ARTIFACTS: tests/appium/artifacts-distro-${{ matrix.target }}-2out
+          KDOCKW_E2E_OUTPUT_COUNT: "2"
+          KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
+          KDOCKW_E2E_ARTIFACTS: tests/appium/artifacts-distro-${{ matrix.target }}-2out
         run: |
           tests/distro/run-distro-e2e.sh "$TARGET" -m outputs -rs \
             --deselect test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts
@@ -246,9 +246,9 @@ jobs:
         # Reuse the main run's package and image even if its tests failed.
         if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
-          KREMA_E2E_OUTPUT_COUNT: "3"
-          KREMA_DISTRO_SKIP_IMAGE_BUILD: "1"
-          KREMA_E2E_ARTIFACTS: tests/appium/artifacts-distro-${{ matrix.target }}-3out
+          KDOCKW_E2E_OUTPUT_COUNT: "3"
+          KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
+          KDOCKW_E2E_ARTIFACTS: tests/appium/artifacts-distro-${{ matrix.target }}-3out
         run: |
           tests/distro/run-distro-e2e.sh "$TARGET" \
             test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts -rs

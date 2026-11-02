@@ -2,19 +2,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
-# RPM family build (fedora, suse) using packaging/obs/krema.spec inside the
+# RPM family build (fedora, suse) using packaging/obs/kdockw.spec inside the
 # target's builder image. Invoked by in-container.sh after the build deps are
 # installed; rpmbuild re-checks every BuildRequires with its version.
 
 set -euo pipefail
 
-spec=/pkg/packaging/obs/krema.spec
-tarball="/stage/krema-${KREMA_VERSION}.tar.gz"
+spec=/pkg/packaging/obs/kdockw.spec
+tarball="/stage/kdockw-${KDOCKW_VERSION}.tar.gz"
 topdir=/work/rpmbuild
 
 mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-cp "$spec" "$topdir/SPECS/krema.spec"
-cp "$tarball" "$topdir/SOURCES/krema-${KREMA_VERSION}.tar.gz"
+cp "$spec" "$topdir/SPECS/kdockw.spec"
+cp "$tarball" "$topdir/SOURCES/kdockw-${KDOCKW_VERSION}.tar.gz"
 
 # debuginfo/debugsource stay enabled: find-debuginfo is what strips the
 # binary in the shipped rpm (eu-strip + .gnu_debuglink, and .gnu_debugdata on
@@ -24,18 +24,18 @@ cp "$tarball" "$topdir/SOURCES/krema-${KREMA_VERSION}.tar.gz"
 # compressed inside the .rpm, not the installed files or the dependency
 # metadata the E2E suite exercises.
 rpmbuild -bb --define "_topdir $topdir" --define '_binary_payload w3.zstdio' \
-    "$topdir/SPECS/krema.spec"
+    "$topdir/SPECS/kdockw.spec"
 
-# Ship the binary rpm(s): krema-<version>-*.rpm, excluding debuginfo/debugsource
-# (krema-debug*) and .src.rpm.
+# Ship the binary rpm(s): kdockw-<version>-*.rpm, excluding debuginfo/debugsource
+# (kdockw-debug*) and .src.rpm.
 found=0
 while IFS= read -r -d '' rpm; do
     cp "$rpm" /out/
     found=1
-done < <(find "$topdir/RPMS" -name 'krema-[0-9]*.rpm' -print0)
+done < <(find "$topdir/RPMS" -name 'kdockw-[0-9]*.rpm' -print0)
 
 if (( ! found )); then
-    echo "error: rpmbuild finished but produced no krema binary rpm" >&2
+    echo "error: rpmbuild finished but produced no kdockw binary rpm" >&2
     exit 70
 fi
 ls -l /out

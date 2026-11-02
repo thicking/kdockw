@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
-# Build an installable Krema package for a Tier-3 distro E2E target inside a
+# Build an installable KDockW package for a Tier-3 distro E2E target inside a
 # container of that target's builder image, using the repo's own packaging
 # files. tests/distro/run-distro-e2e.sh calls it; it also works standalone.
 #
@@ -13,7 +13,7 @@
 # packaging/arch/PKGBUILD on archlinux:latest (amd64 image only).
 #
 # The package is built from the CURRENT source tree (the worktree minus VCS
-# and build-output directories), packed as krema-<version>.tar.gz with the
+# and build-output directories), packed as kdockw-<version>.tar.gz with the
 # same root directory layout as the GitHub release tarball that OBS consumes
 # via packaging/obs/_service (tar_scm). The build inside the container needs
 # no network other than the distro package repositories.
@@ -30,13 +30,13 @@
 #
 # Environment:
 #   DOCKER_HOST            docker daemon to use (default: ambient socket)
-#   KREMA_DOCKER_PLATFORM  force container platform, e.g. linux/amd64
-#   KREMA_ARCH_IMAGE       arch base image (default: docker.io/archlinux:latest)
-#   KREMA_CCACHE_DIR       host ccache directory, created if missing (default
+#   KDOCKW_DOCKER_PLATFORM  force container platform, e.g. linux/amd64
+#   KDOCKW_ARCH_IMAGE       arch base image (default: docker.io/archlinux:latest)
+#   KDOCKW_CCACHE_DIR       host ccache directory, created if missing (default
 #                          tests/distro/.cache/ccache/<target-id>); given back
 #                          to the invoking user after the build
 #   CCACHE_MAXSIZE         ccache size limit (default 500M)
-#   KREMA_CI_REGISTRY      see tests/distro/image-ref.sh
+#   KDOCKW_CI_REGISTRY      see tests/distro/image-ref.sh
 
 set -euo pipefail
 
@@ -81,9 +81,9 @@ package_version() {
     case "$1" in
         fedora|suse)
             awk '/^Version:[[:space:]]*/ { print $2; exit }' \
-                "$packaging_dir/obs/krema.spec" ;;
+                "$packaging_dir/obs/kdockw.spec" ;;
         debian)
-            sed -n '1s/^krema (\(.*\)) .*/\1/p' "$packaging_dir/obs/debian.changelog" \
+            sed -n '1s/^kdockw (\(.*\)) .*/\1/p' "$packaging_dir/obs/debian.changelog" \
                 | cut -d- -f1 ;;
         arch)
             awk -F= '/^pkgver=/ { print $2; exit }' "$packaging_dir/arch/PKGBUILD" ;;
@@ -91,7 +91,7 @@ package_version() {
     esac
 }
 
-# make_source_tarball <version> <dest-dir> -> writes krema-<version>.tar.gz
+# make_source_tarball <version> <dest-dir> -> writes kdockw-<version>.tar.gz
 # The file set mirrors what OBS tar_scm produces (the git tree). git metadata
 # is not required to be reachable here (worktree mounts may lack it), so the
 # tree is packed directly with VCS and build-output directories excluded.
@@ -118,12 +118,12 @@ make_source_tarball() {
     # mounts (virtiofs, e.g. Lima) report spurious directory ctime changes.
     # Every file is still archived; anything else is fatal.
     local rc=0
-    "$tar_cmd" --create --gzip --file="$dest/krema-$version.tar.gz" \
+    "$tar_cmd" --create --gzip --file="$dest/kdockw-$version.tar.gz" \
         --sort=name --numeric-owner --owner=0 --group=0 \
         --mtime=@1700000000 \
         --warning=no-file-changed \
         "${excludes[@]}" \
-        --transform="s,^\\./,krema-$version/," \
+        --transform="s,^\\./,kdockw-$version/," \
         -C "$repo_root" . || rc=$?
     (( rc <= 1 ))
 }
@@ -137,7 +137,7 @@ make_source_tarball() {
 # checks its status.
 run_build() {
     local id="$1" family="$2"
-    local platform="${KREMA_DOCKER_PLATFORM:-}"
+    local platform="${KDOCKW_DOCKER_PLATFORM:-}"
 
     if [[ -z "$platform" ]]; then
         platform="$(distro_platform "$id")"
@@ -154,12 +154,12 @@ run_build() {
     fi
 
     local image t0=$SECONDS
-    image="$(KREMA_DOCKER_PLATFORM="$platform" \
+    image="$(KDOCKW_DOCKER_PLATFORM="$platform" \
         "$script_dir/build-ci-image.sh" --pull builder "$id")" || return $?
     echo "[distro] builder-image: $((SECONDS - t0))s"
 
     local target_out="$outdir/$id"
-    local ccache_dir="${KREMA_CCACHE_DIR:-$script_dir/.cache/ccache/$id}"
+    local ccache_dir="${KDOCKW_CCACHE_DIR:-$script_dir/.cache/ccache/$id}"
     mkdir -p "$target_out" "$ccache_dir" || return $?
 
     local args=(
@@ -171,7 +171,7 @@ run_build() {
         -v "$(cd -- "$ccache_dir" && pwd):/ccache"
         -e "TARGET_ID=$id"
         -e "FAMILY=$family"
-        -e "KREMA_VERSION=$version"
+        -e "KDOCKW_VERSION=$version"
         -e "HOST_UID=$(id -u)"
         -e "HOST_GID=$(id -g)"
     )
@@ -217,7 +217,7 @@ for target in "${targets[@]}"; do
     trap 'rm -rf "$stage_dir"' EXIT
     chmod 755 "$stage_dir"
     make_source_tarball "$version" "$stage_dir"
-    echo "source: krema-$version.tar.gz  base: $DISTRO_BASE_IMAGE"
+    echo "source: kdockw-$version.tar.gz  base: $DISTRO_BASE_IMAGE"
 
     start=$SECONDS
     if run_build "$target" "$family"; then

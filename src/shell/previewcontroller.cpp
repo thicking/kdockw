@@ -5,7 +5,7 @@
 
 #include "dockview.h"
 #include "dockvisibilitycontroller.h"
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "utils/inputregion.h"
 
@@ -25,12 +25,12 @@
 #include <QScreen>
 #include <qpa/qplatformnativeinterface.h>
 
-Q_LOGGING_CATEGORY(lcPreview, "krema.shell.preview")
+Q_LOGGING_CATEGORY(lcPreview, "kdockw.shell.preview")
 
-namespace krema
+namespace kdockw
 {
 
-PreviewController::PreviewController(DockModel *model, DockView *dockView, KremaSettings *settings, QObject *parent)
+PreviewController::PreviewController(DockModel *model, DockView *dockView, KDockWSettings *settings, QObject *parent)
     : QObject(parent)
     , m_model(model)
     , m_dockView(dockView)
@@ -68,7 +68,7 @@ void PreviewController::initialize()
         // absolute position). The LayerShellQt-level screen is what
         // get_layer_surface() binds to.
         if (auto *screen = m_dockView->screen()) {
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
             // LayerShellQt < 6.6: get_layer_surface() binds QWindow::screen()
             // (ScreenFromQWindow), so the Qt-side screen below is the pin.
             layerWindow->setScreenConfiguration(LayerShellQt::Window::ScreenFromQWindow);
@@ -88,7 +88,7 @@ void PreviewController::initialize()
         }
         layerWindow->setLayer(LayerShellQt::Window::LayerOverlay);
         // KWin types a layer surface only from its scope (layershellv1window.cpp
-        // scopeToType); an unknown name such as "krema-preview" becomes a Normal
+        // scopeToType); an unknown name such as "kdockw-preview" becomes a Normal
         // window. This surface stays mapped, so as a Normal window it would
         // permanently top Slide Back's usable-window list (normal || dialog) and
         // the effect would never fire. Plasma's own task-manager previews are
@@ -579,7 +579,7 @@ void PreviewController::applyEdgeLayout()
 
     m_previewView->setWidth(size.width());
     m_previewView->setHeight(size.height());
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_DESIRED_SIZE
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE
     m_previewView->resize(size);
 #else
     layerWindow->setDesiredSize(size);
@@ -684,4 +684,4 @@ void PreviewController::updateInputRegion()
     commitInputRegion();
 }
 
-} // namespace krema
+} // namespace kdockw

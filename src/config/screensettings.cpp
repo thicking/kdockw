@@ -3,55 +3,55 @@
 
 #include "screensettings.h"
 
-#include "krema.h"
+#include "kdockw.h"
 
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(lcScreenSettings, "krema.config.screen")
+Q_LOGGING_CATEGORY(lcScreenSettings, "kdockw.config.screen")
 
-namespace krema
+namespace kdockw
 {
 
-ScreenSettings::ScreenSettings(const QString &screenName, KremaSettings *fallback, QObject *parent)
+ScreenSettings::ScreenSettings(const QString &screenName, KDockWSettings *fallback, QObject *parent)
     : QObject(parent)
     , m_screenName(screenName)
     , m_fallback(fallback)
-    , m_group(KSharedConfig::openConfig(QStringLiteral("kremarc"))->group(QStringLiteral("Screen-%1").arg(screenName)))
+    , m_group(KSharedConfig::openConfig(QStringLiteral("kdockwrc"))->group(QStringLiteral("Screen-%1").arg(screenName)))
 {
     qCDebug(lcScreenSettings) << "Created ScreenSettings for" << screenName << "hasOverrides:" << hasOverrides();
 
     // Forward global settings changes for non-overridden properties.
     // When a global setting changes and the per-screen group doesn't override it,
     // we re-emit our signal so the DockShell updates.
-    connect(m_fallback, &KremaSettings::IconSizeChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::IconSizeChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("IconSize")))
             Q_EMIT iconSizeChanged();
     });
-    connect(m_fallback, &KremaSettings::EdgeChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::EdgeChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("Edge")))
             Q_EMIT edgeChanged();
     });
-    connect(m_fallback, &KremaSettings::VisibilityModeChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::VisibilityModeChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("VisibilityMode")))
             Q_EMIT visibilityModeChanged();
     });
-    connect(m_fallback, &KremaSettings::BackgroundStyleChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::BackgroundStyleChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("BackgroundStyle")))
             Q_EMIT backgroundStyleChanged();
     });
-    connect(m_fallback, &KremaSettings::BackgroundOpacityChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::BackgroundOpacityChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("BackgroundOpacity")))
             Q_EMIT backgroundOpacityChanged();
     });
-    connect(m_fallback, &KremaSettings::MaxZoomFactorChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::MaxZoomFactorChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("MaxZoomFactor")))
             Q_EMIT maxZoomFactorChanged();
     });
-    connect(m_fallback, &KremaSettings::FloatingChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::FloatingChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("Floating")))
             Q_EMIT floatingChanged();
     });
-    connect(m_fallback, &KremaSettings::CornerRadiusChanged, this, [this]() {
+    connect(m_fallback, &KDockWSettings::CornerRadiusChanged, this, [this]() {
         if (!m_group.hasKey(QStringLiteral("CornerRadius")))
             Q_EMIT cornerRadiusChanged();
     });
@@ -217,4 +217,4 @@ void ScreenSettings::writeOverride(const QString &key, T value)
     m_group.writeEntry(key, value);
 }
 
-} // namespace krema
+} // namespace kdockw

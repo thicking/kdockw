@@ -6,7 +6,7 @@
 #include "config/screensettings.h"
 #include "dockview.h"
 #include "dockvisibilitycontroller.h"
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockactions.h"
 #include "models/dockcontextmenu.h"
 #include "models/dockmodel.h"
@@ -17,10 +17,10 @@
 #include <QQuickItem>
 #include <QtQml>
 
-namespace krema
+namespace kdockw
 {
 
-DockShell::DockShell(KremaSettings *globalSettings,
+DockShell::DockShell(KDockWSettings *globalSettings,
                      ScreenSettings *screenSettings,
                      DockModel *model,
                      NotificationTracker *tracker,
@@ -128,10 +128,10 @@ void DockShell::connectSettingsSignals()
     };
     connect(ss, &ScreenSettings::floatingChanged, m_view.get(), updateFloatingPadding);
     // Floating margin is global-only; it resizes the gap exactly like toggling floating.
-    connect(s, &KremaSettings::FloatingMarginChanged, m_view.get(), updateFloatingPadding);
+    connect(s, &KDockWSettings::FloatingMarginChanged, m_view.get(), updateFloatingPadding);
 
     // Screen-space reservation is global; reflow both the dock and open preview.
-    connect(s, &KremaSettings::ReserveScreenSpaceChanged, this, [this]() {
+    connect(s, &KDockWSettings::ReserveScreenSpaceChanged, this, [this]() {
         m_view->updateSize();
         // Exclusive-zone state is double-buffered; publish it when the dock is idle.
         m_view->update();
@@ -145,9 +145,9 @@ void DockShell::connectSettingsSignals()
     connect(ss, &ScreenSettings::backgroundOpacityChanged, m_view.get(), &DockView::applyBackgroundStyle);
     connect(ss, &ScreenSettings::backgroundStyleChanged, m_view.get(), &DockView::applyBackgroundStyle);
     // Tint/accent/system colors are global-only (not per-screen overrideable)
-    connect(s, &KremaSettings::TintColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
-    connect(s, &KremaSettings::UseAccentColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
-    connect(s, &KremaSettings::UseSystemColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
+    connect(s, &KDockWSettings::TintColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
+    connect(s, &KDockWSettings::UseAccentColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
+    connect(s, &KDockWSettings::UseSystemColorChanged, m_view.get(), &DockView::applyBackgroundStyle);
 
     // Re-apply blur region when panel geometry or corner radius changes
     connect(m_view->visibilityController(), &DockVisibilityController::panelRectChanged, m_view.get(), &DockView::applyBackgroundStyle);
@@ -165,32 +165,32 @@ void DockShell::connectSettingsSignals()
         // Publish the double-buffered zone while interaction keeps the dock visible.
         m_view->update();
     });
-    connect(s, &KremaSettings::DodgeActiveOnlyChanged, this, [this]() {
+    connect(s, &KDockWSettings::DodgeActiveOnlyChanged, this, [this]() {
         m_view->visibilityController()->setDodgeActiveOnly(m_settings->dodgeActiveOnly());
     });
 
     // Icon normalization toggle
-    connect(s, &KremaSettings::IconNormalizationChanged, this, [this]() {
+    connect(s, &KDockWSettings::IconNormalizationChanged, this, [this]() {
         m_view->iconProvider()->setNormalizationEnabled(m_settings->iconNormalization());
         m_view->iconProvider()->clearCache();
         m_view->bumpIconCacheVersion();
     });
 
     // Icon scale
-    connect(s, &KremaSettings::IconScaleChanged, this, [this]() {
+    connect(s, &KDockWSettings::IconScaleChanged, this, [this]() {
         m_view->iconProvider()->setIconScale(m_settings->iconScale());
         m_view->iconProvider()->clearCache();
         m_view->bumpIconCacheVersion();
     });
 
     // Delay settings
-    connect(s, &KremaSettings::ShowDelayChanged, this, [this]() {
+    connect(s, &KDockWSettings::ShowDelayChanged, this, [this]() {
         m_view->visibilityController()->setShowDelay(m_settings->showDelay());
     });
-    connect(s, &KremaSettings::HideDelayChanged, this, [this]() {
+    connect(s, &KDockWSettings::HideDelayChanged, this, [this]() {
         m_view->visibilityController()->setHideDelay(m_settings->hideDelay());
     });
-    connect(s, &KremaSettings::PreviewHideDelayChanged, this, [this]() {
+    connect(s, &KDockWSettings::PreviewHideDelayChanged, this, [this]() {
         m_previewController->setHideDelay(m_settings->previewHideDelay());
     });
 }
@@ -222,4 +222,4 @@ void DockShell::connectMenuSignals()
     }
 }
 
-} // namespace krema
+} // namespace kdockw

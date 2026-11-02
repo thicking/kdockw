@@ -12,7 +12,7 @@
 
 #include <optional>
 
-namespace krema
+namespace kdockw
 {
 
 namespace
@@ -87,4 +87,4 @@ void launchDesktopAction(const KServiceAction &action)
     job->start();
 }
 
-} // namespace krema
+} // namespace kdockw

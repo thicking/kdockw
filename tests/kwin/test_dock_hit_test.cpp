@@ -16,7 +16,7 @@
 // Must run under run-with-kwin.sh, which provides WAYLAND_DISPLAY, a private
 // session bus and throwaway XDG directories.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockactions.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
@@ -54,16 +54,16 @@ static void initResources()
 namespace
 {
 
-using Edge = krema::DockPlatform::Edge;
+using Edge = kdockw::DockPlatform::Edge;
 
 constexpr int kTimeoutMs = 15000;
 constexpr int kLauncherCount = 5;
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 // Mirrors the QML singletons Application::run() registers.
@@ -71,30 +71,30 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -109,7 +109,7 @@ App &app()
 
 QString launcherName(int i)
 {
-    return QStringLiteral("Krema Hit %1").arg(QChar(u'A' + i));
+    return QStringLiteral("KDockW Hit %1").arg(QChar(u'A' + i));
 }
 
 // Pins kLauncherCount launchers whose activation is harmless and observable
@@ -120,7 +120,7 @@ void pinLaunchers()
     REQUIRE(QDir().mkpath(dir));
     QStringList urls;
     for (int i = 0; i < kLauncherCount; ++i) {
-        QFile desktop(dir + QStringLiteral("/krema-hit-%1.desktop").arg(i));
+        QFile desktop(dir + QStringLiteral("/kdockw-hit-%1.desktop").arg(i));
         REQUIRE(desktop.open(QIODevice::WriteOnly | QIODevice::Truncate));
         desktop.write(QStringLiteral("[Desktop Entry]\nType=Application\nName=%1\nExec=true\nStartupNotify=false\nIcon=utilities-terminal\n")
                           .arg(launcherName(i))
@@ -144,7 +144,7 @@ void collectDelegates(QQuickItem *item, QList<QQuickItem *> &out)
 }
 
 // Dock icon delegates in dock order (along the primary axis).
-QList<QQuickItem *> delegates(krema::DockView *view)
+QList<QQuickItem *> delegates(kdockw::DockView *view)
 {
     QList<QQuickItem *> items;
     if (view->rootObject()) {
@@ -209,10 +209,10 @@ void runEdge(Edge edge)
     // order is known, otherwise the shell is recreated underneath the test.
     REQUIRE(QTest::qWaitFor(
         [] {
-            return krema::OutputOrderMonitor::instance()->orderReady();
+            return kdockw::OutputOrderMonitor::instance()->orderReady();
         },
         kTimeoutMs));
-    auto manager = std::make_unique<krema::MultiDockManager>(app().settings.get(), app().model.get(), app().tracker.get());
+    auto manager = std::make_unique<kdockw::MultiDockManager>(app().settings.get(), app().model.get(), app().tracker.get());
     manager->initialize();
     auto *shell = manager->primaryShell();
     REQUIRE(shell);
@@ -244,7 +244,7 @@ void runEdge(Edge edge)
     const qreal maxZoom = app().settings->maxZoomFactor();
     REQUIRE(maxZoom > 1.2);
 
-    QSignalSpy launching(shell->actions(), &krema::DockActions::taskLaunching);
+    QSignalSpy launching(shell->actions(), &kdockw::DockActions::taskLaunching);
     QObject *root = view->rootObject();
 
     for (int i : {0, kLauncherCount / 2, kLauncherCount - 1}) {
@@ -359,7 +359,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

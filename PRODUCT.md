@@ -12,7 +12,7 @@ Plasma 6 users who want a macOS-style dock, many coming from Latte Dock. They op
 
 ## Product Purpose
 
-Krema is a dock for KDE Plasma 6: parabolic hover zoom, PipeWire window previews, notification badges, multi-monitor placement. The settings window must let a non-expert understand and change every setting without documentation, and let power users set exact values.
+KDockW is a dock for KDE Plasma 6: parabolic hover zoom, PipeWire window previews, notification badges, multi-monitor placement. The settings window must let a non-expert understand and change every setting without documentation, and let power users set exact values.
 
 ## Positioning
 
@@ -26,7 +26,7 @@ Spiritual successor to Latte Dock for Plasma 6 on Wayland. Never described as a 
 
 ## Capabilities and Constraints
 
-- Every setting in `src/config/krema.kcfg` that has a UI today must keep one.
+- Every setting in `src/config/kdockw.kcfg` that has a UI today must keep one.
 - Theme colors only through `Kirigami.Theme`; spacing and sizes through `Kirigami.Units`; strings through `i18n()`.
 - Settings UI is built from Kirigami Addons FormCard plus custom QML where a visual editor is needed.
 - Every interactive control must be reachable by keyboard and exposed to AT-SPI with the same accessible name as its visible label (the E2E suite drives the window through AT-SPI).

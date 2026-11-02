@@ -1,6 +1,6 @@
 # Notification Badges for All Apps
 
-Reference for Krema's notification badges: showing badges/counts on dock icons, including apps
+Reference for KDockW's notification badges: showing badges/counts on dock icons, including apps
 that do NOT support the Unity Launcher API.
 
 **Headers**: `/usr/include/notificationmanager/`
@@ -9,9 +9,9 @@ that do NOT support the Unity Launcher API.
 
 ---
 
-## Sources in Krema
+## Sources in KDockW
 
-Krema combines four badge sources:
+KDockW combines four badge sources:
 1. `LauncherEntryTracker` (C++) — Unity Launcher API `com.canonical.Unity.LauncherEntry` (exact count, progress, urgent)
 2. `NotificationTracker` (C++) — unread notifications via `RegisterWatcher` (per `desktop-entry`)
 3. `NotificationTracker` (C++) — SNI `NeedsAttention` (boolean)
@@ -29,7 +29,7 @@ sources 2–4 cover the rest.
 ```
 App → Notify() → org.freedesktop.Notifications (plasmashell owns it)
                         ↓ forwards to every registered watcher
-              RegisterWatcher() → Krema NotificationTracker (passive)
+              RegisterWatcher() → KDockW NotificationTracker (passive)
                                         ↓
                           per-desktop-entry unread counts → QML (badge counts)
 ```
@@ -59,7 +59,7 @@ Use `RegisterWatcher` (C++) or `WatchedNotificationsModel` (QML) instead.
 5. Call `UnRegisterWatcher()` on shutdown.
 
 Only notifications sent after registration are received. `RegisterWatcher` needs plasmashell
-(owner of `org.freedesktop.Notifications`). Quick check: `qdbus6 <krema-bus-name> /NotificationWatcher`
+(owner of `org.freedesktop.Notifications`). Quick check: `qdbus6 <kdockw-bus-name> /NotificationWatcher`
 must list `org.kde.NotificationWatcher.Notify`.
 
 ### Key Roles Available
@@ -267,12 +267,12 @@ That is used only by the notification bell applet and notification history.
 
 `SmartLauncherItem` checks `NotificationManager::Settings::badgesInTaskManager()` and
 `badgeBlacklistedApplications()` at runtime. Since Plasma 6.6 it is compiled into the task
-manager applet plugin and cannot be imported by other processes; Krema's `LauncherEntryTracker`
+manager applet plugin and cannot be imported by other processes; KDockW's `LauncherEntryTracker`
 ports its backend semantics and applies the same settings.
 
 ---
 
-## Krema's Architecture
+## KDockW's Architecture
 
 ### Badge Source Priority
 
@@ -319,7 +319,7 @@ Both trackers are C++ singletons with a `revision` property for reactive QML bin
 find_package(LibNotificationManager REQUIRED)
 
 # Link target
-target_link_libraries(krema_lib PRIVATE PW::LibNotificationManager)
+target_link_libraries(kdockw_lib PRIVATE PW::LibNotificationManager)
 
 # Headers are at: /usr/include/notificationmanager/
 ```
@@ -339,7 +339,7 @@ target_link_libraries(krema_lib PRIVATE PW::LibNotificationManager)
 `KF6::Screen`, `KF6::Service`, `Qt6::Qml`
 
 > Note: The IMPORTED_LINK_DEPENDENT list (runtime deps) is NOT transitively propagated.
-> If Krema code directly uses Qt6::DBus etc., link them explicitly.
+> If KDockW code directly uses Qt6::DBus etc., link them explicitly.
 
 ---
 
@@ -368,7 +368,7 @@ target_link_libraries(krema_lib PRIVATE PW::LibNotificationManager)
 
 2. **Requires plasmashell** — without Plasma's notification server there is no `RegisterWatcher`.
 
-3. **"Unread" is dock-managed** — Krema clears an app's count when it is focused, from the
+3. **"Unread" is dock-managed** — KDockW clears an app's count when it is focused, from the
    context menu, or when its SNI returns to `Active`; it does not share read state with the
    notification bell applet.
 

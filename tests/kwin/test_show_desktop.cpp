@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
-// Show Desktop must not hide the dock (issue #16), and no Krema surface may
+// Show Desktop must not hide the dock (issue #16), and no KDockW surface may
 // block KWin's Slide Back effect.
 //
 // KWin decides what Show Desktop hides from the window type, and a layer-shell
@@ -9,22 +9,22 @@
 // real MultiDockManager against a KWin virtual compositor, toggles Show
 // Desktop through the same org.kde.KWin.showDesktop D-Bus call Meta+D reaches,
 // and reads KWin's own verdict (EffectWindow.hiddenByShowDesktop) from a
-// test-only scripted effect (effects/kremashowdesktopprobe) that logs it.
+// test-only scripted effect (effects/kdockwshowdesktopprobe) that logs it.
 //
 // The same probe logs EffectWindow.normalWindow and .dialog. Slide Back
 // (plugins/slideback/slideback.cpp) only fires when the topmost "usable"
 // window (normal or dialog, not keepAbove/minimized/deleted) changes, so an
-// always-mapped Krema surface typed Normal (any unknown scope) would
+// always-mapped KDockW surface typed Normal (any unknown scope) would
 // permanently top that list and disable the effect. Neither the dock nor the
 // pre-shown preview may be normal or dialog.
 //
 // A plain xdg toplevel from a child process is the control: it must be hidden,
 // which proves Show Desktop actually took effect.
 //
-// Must run under run-with-kwin.sh with KREMA_TEST_KWIN_EFFECTS pointing at
+// Must run under run-with-kwin.sh with KDOCKW_TEST_KWIN_EFFECTS pointing at
 // tests/kwin/effects.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -62,13 +62,13 @@ namespace
 
 constexpr int kTimeoutMs = 15000;
 constexpr auto kControlArg = "--control-window";
-constexpr auto kControlAppId = "krema-showdesktop-control";
+constexpr auto kControlAppId = "kdockw-showdesktop-control";
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 // Mirrors the QML singletons Application::run() registers.
@@ -76,30 +76,30 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->settings->setMonitorMode(krema::MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->settings->setMonitorMode(kdockw::MultiDockManager::PrimaryOnly);
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -130,11 +130,11 @@ struct ProbeWindow {
 // shadow the dock.
 QList<ProbeWindow> latestShowingWindows()
 {
-    QFile log(qEnvironmentVariable("KREMA_TEST_KWIN_LOG"));
+    QFile log(qEnvironmentVariable("KDOCKW_TEST_KWIN_LOG"));
     if (!log.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return {};
     }
-    const QLatin1String marker("KREMA_SHOWDESKTOP ");
+    const QLatin1String marker("KDOCKW_SHOWDESKTOP ");
     int latestToggle = -1;
     QList<ProbeWindow> result;
     while (!log.atEnd()) {
@@ -263,7 +263,7 @@ TEST_CASE("Show Desktop keeps the dock visible", "[show-desktop]")
         control.waitForFinished(kTimeoutMs);
     });
 
-    krema::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
+    kdockw::MultiDockManager manager(app().settings.get(), app().model.get(), app().tracker.get());
     manager.initialize();
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -278,7 +278,7 @@ TEST_CASE("Show Desktop keeps the dock visible", "[show-desktop]")
                                                QStringLiteral("/Effects"),
                                                QStringLiteral("org.kde.kwin.Effects"),
                                                QStringLiteral("loadEffect"));
-    load << QStringLiteral("kremashowdesktopprobe");
+    load << QStringLiteral("kdockwshowdesktopprobe");
     const QDBusReply<bool> loaded = QDBusConnection::sessionBus().call(load, QDBus::Block, kTimeoutMs);
     REQUIRE(loaded.isValid());
     REQUIRE(loaded.value());
@@ -287,7 +287,7 @@ TEST_CASE("Show Desktop keeps the dock visible", "[show-desktop]")
     const auto isControl = [&](const ProbeWindow &w) {
         return w.windowClass.contains(controlClass);
     };
-    // Both Krema surfaces (dock and preview) share one window class; the dock
+    // Both KDockW surfaces (dock and preview) share one window class; the dock
     // is the one with the dock view's size.
     const auto isDock = [&](const ProbeWindow &w) {
         return !isControl(w) && w.size == dockSize;
@@ -320,14 +320,14 @@ TEST_CASE("Show Desktop keeps the dock visible", "[show-desktop]")
     bool controlHidden = true;
     int docks = 0;
     bool dockKept = true;
-    QString kremaClass;
+    QString kdockwClass;
     for (const auto &w : windows) {
         if (isControl(w)) {
             controlHidden = controlHidden && w.hiddenByShowDesktop;
         } else if (isDock(w)) {
             ++docks;
             dockKept = dockKept && w.dock && !w.hiddenByShowDesktop;
-            kremaClass = w.windowClass;
+            kdockwClass = w.windowClass;
         }
     }
 
@@ -338,24 +338,24 @@ TEST_CASE("Show Desktop keeps the dock visible", "[show-desktop]")
     REQUIRE(docks == 1);
     CHECK(dockKept);
 
-    // Slide Back: no Krema surface may be a usable window (normal or dialog).
-    // Krema surfaces share the dock's window class; the preview is the one
+    // Slide Back: no KDockW surface may be a usable window (normal or dialog).
+    // KDockW surfaces share the dock's window class; the preview is the one
     // that is not dock-sized. Requiring it to be present keeps the check from
     // passing vacuously.
-    REQUIRE_FALSE(kremaClass.isEmpty());
+    REQUIRE_FALSE(kdockwClass.isEmpty());
     int previews = 0;
-    bool kremaUnusable = true;
+    bool kdockwUnusable = true;
     for (const auto &w : windows) {
-        if (isControl(w) || w.windowClass != kremaClass) {
+        if (isControl(w) || w.windowClass != kdockwClass) {
             continue;
         }
         if (!isDock(w)) {
             ++previews;
         }
-        kremaUnusable = kremaUnusable && !w.normal && !w.dialog;
+        kdockwUnusable = kdockwUnusable && !w.normal && !w.dialog;
     }
     REQUIRE(previews == 1);
-    CHECK(kremaUnusable);
+    CHECK(kdockwUnusable);
 }
 
 int main(int argc, char *argv[])
@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

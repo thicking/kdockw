@@ -54,19 +54,19 @@ def source_files(
     version: str = "1.2.3", revision: str = "1", **overrides: str
 ) -> dict[str, str]:
     files = {
-        "CMakeLists.txt": f"cmake_minimum_required(VERSION 3.22)\nproject(krema VERSION {version} LANGUAGES C CXX)\n",
+        "CMakeLists.txt": f"cmake_minimum_required(VERSION 3.22)\nproject(kdockw VERSION {version} LANGUAGES C CXX)\n",
         "CHANGELOG.md": f"# Changelog\n\n## [Unreleased]\n\n## [{version}] - 2026-10-05\n\n### Fixed\n\n- Something\n\n## [0.1.0] - 2026-01-01\n",
-        "src/com.bhyoo.krema.metainfo.xml": (
+        "src/com.thicking.kdockw.metainfo.xml": (
             '<?xml version="1.0"?>\n<component><releases>'
             f'<release version="{version}" date="2026-10-05"/><release version="0.1.0"/>'
             "</releases></component>\n"
         ),
-        "packaging/obs/krema.spec": f"Name: krema\nVersion:        {version}\nRelease: 0\n",
-        "packaging/obs/krema.dsc": (
-            f"Format: 1.0\nSource: krema\nVersion: {version}-{revision}\n"
-            f"DEBTRANSFORM-TAR: krema-{version}.tar.gz\n"
+        "packaging/obs/kdockw.spec": f"Name: kdockw\nVersion:        {version}\nRelease: 0\n",
+        "packaging/obs/kdockw.dsc": (
+            f"Format: 1.0\nSource: kdockw\nVersion: {version}-{revision}\n"
+            f"DEBTRANSFORM-TAR: kdockw-{version}.tar.gz\n"
         ),
-        "packaging/obs/debian.changelog": f"krema ({version}-{revision}) unstable; urgency=medium\n\n  * x\n",
+        "packaging/obs/debian.changelog": f"kdockw ({version}-{revision}) unstable; urgency=medium\n\n  * x\n",
         "packaging/arch/PKGBUILD": "pkgver=0.0.1\n",
         "tests/distro/targets.tsv": "# comment\nfedora-42\tfedora\tfedora:42\tsha256:x\tFedora_42\t*.rpm\n",
     }
@@ -83,7 +83,7 @@ def make_archive(
 ) -> bytes:
     raw = io.BytesIO()
     headers = {"comment": commit} if commit else {}
-    root = f"krema-{version}"
+    root = f"kdockw-{version}"
     with tarfile.open(
         fileobj=raw, mode="w", format=tarfile.PAX_FORMAT, pax_headers=headers
     ) as tar:
@@ -123,7 +123,7 @@ class TempDirTest(unittest.TestCase):
 
 class VersionTests(TempDirTest):
     def tree(self, **overrides: str) -> Path:
-        source = self.fresh() / "krema-1.2.3"
+        source = self.fresh() / "kdockw-1.2.3"
         for name, text in source_files(**overrides).items():
             path = source / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -143,12 +143,12 @@ class VersionTests(TempDirTest):
 
     def test_each_disagreeing_field_is_rejected(self) -> None:
         cases = {
-            "CMakeLists.txt": "project(krema VERSION 1.2.2 LANGUAGES C CXX)\n",
+            "CMakeLists.txt": "project(kdockw VERSION 1.2.2 LANGUAGES C CXX)\n",
             "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n",
-            "src/com.bhyoo.krema.metainfo.xml": '<component><releases><release version="1.2.2"/></releases></component>',
-            "packaging/obs/krema.spec": "Version: 1.2.2\n",
-            "packaging/obs/krema.dsc": "Version: 1.2.3-1\nDEBTRANSFORM-TAR: krema-1.2.2.tar.gz\n",
-            "packaging/obs/debian.changelog": "krema (1.2.3-2) unstable; urgency=medium\n",
+            "src/com.thicking.kdockw.metainfo.xml": '<component><releases><release version="1.2.2"/></releases></component>',
+            "packaging/obs/kdockw.spec": "Version: 1.2.2\n",
+            "packaging/obs/kdockw.dsc": "Version: 1.2.3-1\nDEBTRANSFORM-TAR: kdockw-1.2.2.tar.gz\n",
+            "packaging/obs/debian.changelog": "kdockw (1.2.3-2) unstable; urgency=medium\n",
         }
         for name, text in cases.items():
             with self.subTest(name=name):
@@ -168,10 +168,10 @@ class ArchiveSafetyTests(TempDirTest):
 
     def test_path_traversal_and_foreign_roots(self) -> None:
         for name in (
-            "krema-1.2.3/../evil",
+            "kdockw-1.2.3/../evil",
             "/etc/evil",
             "other-1.2.3/file",
-            "krema-1.2.3/./x",
+            "kdockw-1.2.3/./x",
         ):
             with self.subTest(name=name):
                 self.assert_rejected(make_archive(source_files(), raw_names=[name]))
@@ -210,26 +210,26 @@ class ContextFixture(TempDirTest):
         files = source_files() if files is None else files
         work = self.fresh()
         data = make_archive(files)
-        archive = work / "krema-1.2.3.tar.gz"
+        archive = work / "kdockw-1.2.3.tar.gz"
         archive.write_bytes(data)
         source = extract_archive(data, "1.2.3", work)
         banner = None
         if BANNER_PATH in files:
-            banner = f"https://media.githubusercontent.com/media/isac322/krema/v1.2.3/{BANNER_PATH}"
+            banner = f"https://media.githubusercontent.com/media/thicking/krema/v1.2.3/{BANNER_PATH}"
         notes = work / "notes.md"
         notes.write_text(
             release_notes(files["CHANGELOG.md"], "1.2.3", banner), encoding="utf-8"
         )
         context = {
             "schema_version": 1,
-            "repository": "isac322/krema",
+            "repository": "thicking/krema",
             "tag": "v1.2.3",
             "version": "1.2.3",
             "commit": COMMIT,
             "source_dir": str(source),
             "archive": str(archive),
             "sha256": sha256_bytes(data),
-            "source_url": "https://github.com/isac322/krema/releases/download/v1.2.3/krema-1.2.3.tar.gz",
+            "source_url": "https://github.com/thicking/krema/releases/download/v1.2.3/kdockw-1.2.3.tar.gz",
             "work_dir": str(work),
             "notes_path": str(notes),
             "debian_revision": "1",
@@ -267,7 +267,7 @@ class ContextTests(ContextFixture):
         context = load_context(self.write_context(files))
         self.assertTrue(
             context.notes_path.read_text(encoding="utf-8").startswith(
-                "![Krema v1.2.3 release banner"
+                "![KDockW v1.2.3 release banner"
             )
         )
 
@@ -279,23 +279,23 @@ class ContextTests(ContextFixture):
 
     def test_tampered_archive_bytes(self) -> None:
         path = self.write_context()
-        archive = path.parent / "krema-1.2.3.tar.gz"
+        archive = path.parent / "kdockw-1.2.3.tar.gz"
         archive.write_bytes(archive.read_bytes() + b"\0")
         self.assert_invalid(path, "does not match context sha256")
 
     def test_tampered_source_tree(self) -> None:
         path = self.write_context()
-        (path.parent / "krema-1.2.3" / "CMakeLists.txt").write_text("changed\n")
+        (path.parent / "kdockw-1.2.3" / "CMakeLists.txt").write_text("changed\n")
         self.assert_invalid(path, "source_dir differs")
 
     def test_extra_file_in_source_tree(self) -> None:
         path = self.write_context()
-        (path.parent / "krema-1.2.3" / "injected").write_text("x")
+        (path.parent / "kdockw-1.2.3" / "injected").write_text("x")
         self.assert_invalid(path, "unexpected injected")
 
     def test_symlink_injected_into_source_tree(self) -> None:
         path = self.write_context()
-        os.symlink("/etc/passwd", path.parent / "krema-1.2.3" / "leak")
+        os.symlink("/etc/passwd", path.parent / "kdockw-1.2.3" / "leak")
         self.assert_invalid(path, "symlink")
 
     def test_mismatched_identity(self) -> None:
@@ -304,8 +304,8 @@ class ContextTests(ContextFixture):
             ({"tag": "v1.2.4"}, "does not match tag"),
             ({"version": "1.2.4", "tag": "v1.2.4"}, "source_url"),
             ({"debian_revision": "2"}, "debian_revision"),
-            ({"source_url": "https://example.com/krema-1.2.3.tar.gz"}, "source_url"),
-            ({"repository": "../krema"}, "owner/name"),
+            ({"source_url": "https://example.com/kdockw-1.2.3.tar.gz"}, "source_url"),
+            ({"repository": "../kdockw"}, "owner/name"),
             ({"schema_version": 2}, "schema_version"),
         ]
         for changes, fragment in cases:
@@ -329,7 +329,7 @@ class ContextTests(ContextFixture):
 
         path = self.write_context()
         context = json.loads(path.read_text())
-        context["archive"] = str(path.parent / "sub" / ".." / "krema-1.2.3.tar.gz")
+        context["archive"] = str(path.parent / "sub" / ".." / "kdockw-1.2.3.tar.gz")
         path.write_text(json.dumps(context))
         self.assert_invalid(path, "canonical")
 
@@ -509,7 +509,7 @@ class TrustAndResultTests(unittest.TestCase):
         notes = release_notes(
             source_files()["CHANGELOG.md"], "1.2.3", "https://b/banner.png"
         )
-        self.assertTrue(notes.startswith("![Krema v1.2.3 release banner"))
+        self.assertTrue(notes.startswith("![KDockW v1.2.3 release banner"))
         self.assertIn("- Something", notes)
         self.assertNotIn("0.1.0", notes)
         with self.assertRaises(ReleaseError):
@@ -630,7 +630,7 @@ class GitArchiveTests(TempDirTest):
         data = release._git_archive(repo, commit, "1.2.3")
         self.assertIsInstance(data, bytes)
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:") as tar:
-            self.assertIn("krema-1.2.3/README.md", tar.getnames())
+            self.assertIn("kdockw-1.2.3/README.md", tar.getnames())
 
     def test_git_archive_rejects_bad_commit(self) -> None:
         repo = self.tmp / "repo"
@@ -697,7 +697,7 @@ def recompress(raw_tar: bytes, mtime: int) -> bytes:
 class PrepareArchiveSourceTests(TempDirTest):
     """Which source bytes ``prepare`` records for a real annotated tag."""
 
-    URL = "https://github.com/isac322/krema/releases/download/v1.2.3/krema-1.2.3.tar.gz"
+    URL = "https://github.com/thicking/krema/releases/download/v1.2.3/kdockw-1.2.3.tar.gz"
 
     def setUp(self) -> None:
         super().setUp()
@@ -733,7 +733,7 @@ class PrepareArchiveSourceTests(TempDirTest):
             mock.patch.object(release_github, "download_tag_archive", tag_dl),
         ):
             out = release.prepare(
-                "v1.2.3", output, self.repo, "isac322/krema", (PINNED,)
+                "v1.2.3", output, self.repo, "thicking/krema", (PINNED,)
             )
         return out, asset_dl, tag_dl
 
@@ -752,7 +752,7 @@ class PrepareArchiveSourceTests(TempDirTest):
         published = {"draft": False, "assets": [{"name": "unrelated.txt"}]}
         out, asset_dl, tag_dl = self.prepare([published], autoarchive=self.legacy)
         self.assert_recorded(out, self.legacy, "autoarchive")
-        tag_dl.assert_called_once_with("isac322/krema", "v1.2.3")
+        tag_dl.assert_called_once_with("thicking/krema", "v1.2.3")
         asset_dl.assert_not_called()
 
     def test_new_or_draft_only_tag_keeps_the_generated_archive(self) -> None:
@@ -767,7 +767,7 @@ class PrepareArchiveSourceTests(TempDirTest):
         self,
     ) -> None:
         asset = {
-            "name": "krema-1.2.3.tar.gz",
+            "name": "kdockw-1.2.3.tar.gz",
             "state": "uploaded",
             "digest": f"sha256:{sha256_bytes(self.uploaded)}",
         }
@@ -780,7 +780,7 @@ class PrepareArchiveSourceTests(TempDirTest):
         tag_dl.assert_not_called()
 
     def test_autoarchive_of_another_commit_tree_or_root_fails_closed(self) -> None:
-        changed = source_files(**{"CMakeLists.txt": "project(krema VERSION 1.2.3)\n"})
+        changed = source_files(**{"CMakeLists.txt": "project(kdockw VERSION 1.2.3)\n"})
         cases = {
             "commit": (
                 make_archive(source_files(), commit="b" * 40),
@@ -804,22 +804,22 @@ class PrepareArchiveSourceTests(TempDirTest):
     def test_autoarchive_redirects_stay_on_github_archive_hosts(self) -> None:
         handler = release_github._ArchiveRedirect()
         request = urllib.request.Request(
-            release_github.tag_archive_url("isac322/krema", "v1.2.3")
+            release_github.tag_archive_url("thicking/krema", "v1.2.3")
         )
         for url in (
-            "https://example.com/krema-1.2.3.tar.gz",
-            "http://codeload.github.com/isac322/krema/tar.gz/refs/tags/v1.2.3",
+            "https://example.com/kdockw-1.2.3.tar.gz",
+            "http://codeload.github.com/thicking/krema/tar.gz/refs/tags/v1.2.3",
         ):
             with self.subTest(url=url), self.assertRaises(ReleaseError):
                 handler.redirect_request(request, None, 302, "Found", {}, url)
-        allowed = "https://codeload.github.com/isac322/krema/tar.gz/refs/tags/v1.2.3"
+        allowed = "https://codeload.github.com/thicking/krema/tar.gz/refs/tags/v1.2.3"
         followed = handler.redirect_request(request, None, 302, "Found", {}, allowed)
         self.assertEqual(followed.full_url, allowed)
 
 
 class GithubPublishTests(ContextFixture):
     TAG_OBJECT = "1" * 40
-    MATCH = {"krema-1.2.3.tar.gz": "match", "SHA256SUMS": "match"}
+    MATCH = {"kdockw-1.2.3.tar.gz": "match", "SHA256SUMS": "match"}
 
     def refs(
         self, tag_object: str = TAG_OBJECT, commit: str = COMMIT
@@ -880,7 +880,7 @@ class GithubPublishTests(ContextFixture):
                     "api",
                     "--method",
                     "PATCH",
-                    "repos/isac322/krema/releases/7",
+                    "repos/thicking/krema/releases/7",
                     "-F",
                     "draft=false",
                 ]
@@ -913,7 +913,7 @@ class GithubPublishTests(ContextFixture):
     def test_sums_file_is_created_atomically_and_never_follows_links(self) -> None:
         context = load_context(self.write_context())
         path = release_github._sums_file(context)
-        self.assertEqual(path.read_text(), f"{context.sha256}  krema-1.2.3.tar.gz\n")
+        self.assertEqual(path.read_text(), f"{context.sha256}  kdockw-1.2.3.tar.gz\n")
         self.assertEqual(sorted(p.name for p in path.parent.iterdir()), ["SHA256SUMS"])
         self.assertEqual(release_github._sums_file(context), path)
 

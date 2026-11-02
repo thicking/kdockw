@@ -7,7 +7,7 @@
 #include <QObject>
 #include <QUrl>
 
-namespace krema
+namespace kdockw
 {
 
 class DockModel;
@@ -67,4 +67,4 @@ private:
     DockModel *m_model;
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(krema VERSION 0.12.0 LANGUAGES C CXX)
+project(kdockw VERSION 0.12.0 LANGUAGES C CXX)
 
 set(QT_MIN_VERSION "6.8.0")
 set(KF6_MIN_VERSION "6.0.0")
@@ -84,17 +84,17 @@ check_cxx_source_compiles("
 int main() { static_cast<LayerShellQt::Window*>(nullptr)->setScreen(static_cast<QScreen*>(nullptr)); }
 " _HAVE_LAYERSHELLQT_SET_SCREEN)
 
-add_compile_definitions(KREMA_VERSION_STRING="${PROJECT_VERSION}")
+add_compile_definitions(KDOCKW_VERSION_STRING="${PROJECT_VERSION}")
 if(NOT _HAVE_LAYERSHELLQT_DESIRED_SIZE)
-    add_compile_definitions(KREMA_COMPAT_NO_LAYERSHELL_DESIRED_SIZE)
+    add_compile_definitions(KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE)
 endif()
 if(NOT _HAVE_LAYERSHELLQT_SET_SCREEN)
-    add_compile_definitions(KREMA_COMPAT_NO_LAYERSHELL_SCREEN)
+    add_compile_definitions(KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN)
 endif()
 
 add_subdirectory(src)
 
-option(KREMA_E2E_TESTS "Register the Docker-based AT-SPI E2E suite (tests/appium/run-e2e.sh) with CTest" OFF)
+option(KDOCKW_E2E_TESTS "Register the Docker-based AT-SPI E2E suite (tests/appium/run-e2e.sh) with CTest" OFF)
 
 if(BUILD_TESTING)
     add_subdirectory(tests)

@@ -6,8 +6,8 @@
 import QtQuick
 import QtTest
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
-import "../../src/qml" as Krema
+import com.thicking.kdockw 1.0
+import "../../src/qml" as KDockW
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
 // sibling, so effective visibility, layout and pointer delivery are real.
@@ -26,7 +26,7 @@ Item {
         name: "DockItemZoom"
         when: windowShown
 
-        // Gaussian spread as a multiple of the icon size (krema::kDefaultZoomSigmaFactor).
+        // Gaussian spread as a multiple of the icon size (kdockw::kDefaultZoomSigmaFactor).
         readonly property real sigmaFactor: 1.2
 
         Component {
@@ -35,7 +35,7 @@ Item {
         }
 
         function init() {
-            KremaMocks.resetAll()
+            KDockWMocks.resetAll()
         }
 
         property int settledTurns: 0
@@ -634,7 +634,7 @@ Item {
 
         Component {
             id: profileComponent
-            Krema.ZoomAnimationProfile {}
+            KDockW.ZoomAnimationProfile {}
         }
 
         Component {

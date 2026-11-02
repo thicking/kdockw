@@ -11,8 +11,8 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 
 # Unpack the source tarball and drop the OBS debian.* files in as debian/.
-src="/work/krema-${KREMA_VERSION}"
-tar -xzf "/stage/krema-${KREMA_VERSION}.tar.gz" -C /work
+src="/work/kdockw-${KDOCKW_VERSION}"
+tar -xzf "/stage/kdockw-${KDOCKW_VERSION}.tar.gz" -C /work
 mkdir -p "$src/debian"
 install -m644 /pkg/packaging/obs/debian.control "$src/debian/control"
 install -m644 /pkg/packaging/obs/debian.changelog "$src/debian/changelog"
@@ -26,9 +26,9 @@ cd "$src"
 dpkg-buildpackage -b -us -uc
 
 # Artifacts land in the parent of the source tree (/work). Ship the binary
-# .deb only; the dbgsym package (krema-dbgsym_*.ddeb/.deb) is never installed.
+# .deb only; the dbgsym package (kdockw-dbgsym_*.ddeb/.deb) is never installed.
 shopt -s nullglob
-artifacts=(/work/krema_*.deb)
+artifacts=(/work/kdockw_*.deb)
 if (( ${#artifacts[@]} == 0 )); then
     echo "error: dpkg-buildpackage finished but produced no .deb" >&2
     exit 70

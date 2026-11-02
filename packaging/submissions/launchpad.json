@@ -7,11 +7,11 @@
     "commit": "a964a908ecb8904c079a8148403bebaaa427a821"
   },
   "fields": {
-    "display_name": "Krema",
-    "name": "krema",
+    "display_name": "KDockW",
+    "name": "kdockw",
     "summary": "A lightweight dock for KDE Plasma 6 and spiritual successor to Latte Dock.",
-    "home_page_url": "https://krema.bhyoo.com/",
-    "description": "Krema is a lightweight, Wayland-only dock for KDE Plasma 6 and a spiritual successor to Latte Dock. It provides parabolic hover zoom with an optional in-place zoom mode, plus PipeWire window previews for running applications.\n\nThe dock supports primary-screen, all-screens, and follow-active-screen multi-monitor modes, with per-screen settings and virtual desktop filtering. Krema also provides notification badges, task progress indicators, grouped-window cycling, and configurable dock behavior.\n\nKrema integrates with Plasma through Qt 6, KDE Frameworks 6, and Kirigami. It includes keyboard navigation with AT-SPI screen reader support and is licensed under GPL-3.0-or-later.",
+    "home_page_url": "https://github.com/thicking/krema/",
+    "description": "KDockW is a lightweight, Wayland-only dock for KDE Plasma 6 and a spiritual successor to Latte Dock. It provides parabolic hover zoom with an optional in-place zoom mode, plus PipeWire window previews for running applications.\n\nThe dock supports primary-screen, all-screens, and follow-active-screen multi-monitor modes, with per-screen settings and virtual desktop filtering. KDockW also provides notification badges, task progress indicators, grouped-window cycling, and configurable dock behavior.\n\nKDockW integrates with Plasma through Qt 6, KDE Frameworks 6, and Kirigami. It includes keyboard navigation with AT-SPI screen reader support and is licensed under GPL-3.0-or-later.",
     "licenses": [
       "GNU GPL v3"
     ],
@@ -26,14 +26,14 @@
       "form_label": "Name",
       "form_field": "field.display_name",
       "api_key": "display_name",
-      "value": "Krema",
+      "value": "KDockW",
       "verification_status": "historical live-observed read-only on the pre-registration form"
     },
     "url_name": {
       "form_label": "URL",
       "form_field": "field.name",
       "api_key": "name",
-      "value": "krema",
+      "value": "kdockw",
       "verification_status": "historical live-observed read-only on the pre-registration form"
     },
     "summary": {
@@ -47,14 +47,14 @@
       "form_label": "Description",
       "form_field": "field.description",
       "api_key": "description",
-      "value": "Krema is a lightweight, Wayland-only dock for KDE Plasma 6 and a spiritual successor to Latte Dock. It provides parabolic hover zoom with an optional in-place zoom mode, plus PipeWire window previews for running applications.\n\nThe dock supports primary-screen, all-screens, and follow-active-screen multi-monitor modes, with per-screen settings and virtual desktop filtering. Krema also provides notification badges, task progress indicators, grouped-window cycling, and configurable dock behavior.\n\nKrema integrates with Plasma through Qt 6, KDE Frameworks 6, and Kirigami. It includes keyboard navigation with AT-SPI screen reader support and is licensed under GPL-3.0-or-later.",
+      "value": "KDockW is a lightweight, Wayland-only dock for KDE Plasma 6 and a spiritual successor to Latte Dock. It provides parabolic hover zoom with an optional in-place zoom mode, plus PipeWire window previews for running applications.\n\nThe dock supports primary-screen, all-screens, and follow-active-screen multi-monitor modes, with per-screen settings and virtual desktop filtering. KDockW also provides notification badges, task progress indicators, grouped-window cycling, and configurable dock behavior.\n\nKDockW integrates with Plasma through Qt 6, KDE Frameworks 6, and Kirigami. It includes keyboard navigation with AT-SPI screen reader support and is licensed under GPL-3.0-or-later.",
       "verification_status": "historical live-observed read-only in the authenticated pre-registration form; optional"
     },
     "homepage": {
       "form_label": "Homepage URL",
       "form_field": "field.homepageurl",
       "api_key": "home_page_url",
-      "value": "https://krema.bhyoo.com/",
+      "value": "https://github.com/thicking/krema/",
       "verification_status": "historical live-observed read-only in the authenticated pre-registration form; optional"
     },
     "information_type": {
@@ -123,11 +123,11 @@
       "verification_status": "historical live-observed in the authenticated pre-registration form"
     },
     "code": {
-      "source_url": "https://github.com/isac322/krema",
+      "source_url": "https://github.com/thicking/krema",
       "mapping": "Upstream GitHub source repository; this packet makes no claim that a Launchpad code import is configured."
     },
     "bugtracker": {
-      "source_url": "https://github.com/isac322/krema/issues",
+      "source_url": "https://github.com/thicking/krema/issues",
       "mapping": "Upstream GitHub Issues tracker; this packet makes no claim that a separate Launchpad bugtracker configuration is enabled."
     }
   },
@@ -141,8 +141,8 @@
       "height": 14,
       "size_bytes": 298,
       "max_size_bytes": 5000,
-      "caption": "Krema project icon",
-      "alt": "Krema Zoom K icon for the KDE Plasma dock project",
+      "caption": "KDockW project icon",
+      "alt": "KDockW Zoom K icon for the KDE Plasma dock project",
       "upload_status": "published",
       "uploaded_url": "https://launchpadlibrarian.net/878876949/launchpad-icon-14.png",
       "uploaded_sha256": "51ceb57c5983eb02a23bb22bffcbad9a161d24b7deb6e8e97bf0ec395d389044"
@@ -155,8 +155,8 @@
       "height": 64,
       "size_bytes": 741,
       "max_size_bytes": 50000,
-      "caption": "Krema project logo",
-      "alt": "Krema Zoom K logo for a KDE Plasma dock project",
+      "caption": "KDockW project logo",
+      "alt": "KDockW Zoom K logo for a KDE Plasma dock project",
       "upload_status": "published",
       "uploaded_url": "https://launchpadlibrarian.net/878876950/launchpad-logo-64.png",
       "uploaded_sha256": "8e50c66f88ab42efcafd20006c8ed48e07286ba13306516c0c94affcfe044bb5"
@@ -169,8 +169,8 @@
       "height": 192,
       "size_bytes": 1935,
       "max_size_bytes": 100000,
-      "caption": "Krema project brand image",
-      "alt": "Krema brand mark for the KDE Plasma dock project",
+      "caption": "KDockW project brand image",
+      "alt": "KDockW brand mark for the KDE Plasma dock project",
       "upload_status": "published",
       "uploaded_url": "https://launchpadlibrarian.net/878876951/launchpad-brand-192.png",
       "uploaded_sha256": "f8ae56123d610c601989af9f2b1cc195970114d2416b987841f7e2220ee9a7e0"
@@ -179,9 +179,9 @@
   "branding_upload": {
     "object_type": "project",
     "object_api": "https://api.launchpad.net/1.0/#project",
-    "endpoint": "https://launchpad.net/krema/+branding",
+    "endpoint": "https://launchpad.net/kdockw/+branding",
     "destination_status": "existing",
-    "project_url": "https://launchpad.net/krema",
+    "project_url": "https://launchpad.net/kdockw",
     "publication_status": "published",
     "asset_limits": {
       "icon_14": "14x14 PNG, maximum 5000 bytes",
@@ -191,12 +191,12 @@
   },
   "published_project": {
     "status": "published",
-    "project_url": "https://launchpad.net/krema",
-    "api_url": "https://api.launchpad.net/1.0/krema",
+    "project_url": "https://launchpad.net/kdockw",
+    "api_url": "https://api.launchpad.net/1.0/kdockw",
     "owner": "https://api.launchpad.net/1.0/~isac322",
     "information_type": "Public",
     "license": "GNU GPL v3",
-    "branding_url": "https://launchpad.net/krema/+branding",
+    "branding_url": "https://launchpad.net/kdockw/+branding",
     "branding_object_type": "project",
     "verified_branding_urls": [
       "https://launchpadlibrarian.net/878876949/launchpad-icon-14.png",
@@ -206,35 +206,35 @@
   },
   "downloads": [],
   "submission": {
-    "entry_url": "https://launchpad.net/krema",
+    "entry_url": "https://launchpad.net/kdockw",
     "steps": [
-      "Open https://launchpad.net/krema and verify the existing project before using any registration flow. Confirm the project name is Krema, the owner is isac322, the information type is Public, and the project licence is GNU GPL v3.",
-      "Verify the canonical project resource at https://api.launchpad.net/1.0/krema and keep this existing project as the destination.",
-      "Open https://launchpad.net/krema/+branding as the authenticated project-branding editor and verify the public image files at https://launchpadlibrarian.net/878876949/launchpad-icon-14.png, https://launchpadlibrarian.net/878876950/launchpad-logo-64.png, and https://launchpadlibrarian.net/878876951/launchpad-brand-192.png. Match each public image to the corresponding source media and SHA-256 recorded above.",
-      "Because the existing project is Krema and is owned by isac322, skip https://launchpad.net/projects/+new and do not use the duplicate-project or Complete Registration flow. Do not submit with Complete Registration or by pressing Enter in a text input; either action creates a public project when used in that flow.",
-      "Keep the existing project separate from the archive ppa:isac322/krema. Do not transfer the archive, change its owner, or alter the ~isac322 personal profile.",
+      "Open https://launchpad.net/kdockw and verify the existing project before using any registration flow. Confirm the project name is KDockW, the owner is isac322, the information type is Public, and the project licence is GNU GPL v3.",
+      "Verify the canonical project resource at https://api.launchpad.net/1.0/kdockw and keep this existing project as the destination.",
+      "Open https://launchpad.net/kdockw/+branding as the authenticated project-branding editor and verify the public image files at https://launchpadlibrarian.net/878876949/launchpad-icon-14.png, https://launchpadlibrarian.net/878876950/launchpad-logo-64.png, and https://launchpadlibrarian.net/878876951/launchpad-brand-192.png. Match each public image to the corresponding source media and SHA-256 recorded above.",
+      "Because the existing project is KDockW and is owned by isac322, skip https://launchpad.net/projects/+new and do not use the duplicate-project or Complete Registration flow. Do not submit with Complete Registration or by pressing Enter in a text input; either action creates a public project when used in that flow.",
+      "Keep the existing project separate from the archive ppa:thicking/krema. Do not transfer the archive, change its owner, or alter the ~isac322 personal profile.",
       "Treat the registration form mapping below as historical pre-registration provenance. The current destination is the verified existing project and its published project branding."
     ],
     "target_status": "existing"
   },
   "evidence_urls": [
-    "https://launchpad.net/krema",
-    "https://api.launchpad.net/1.0/krema",
-    "https://launchpad.net/krema/+branding",
+    "https://launchpad.net/kdockw",
+    "https://api.launchpad.net/1.0/kdockw",
+    "https://launchpad.net/kdockw/+branding",
     "https://launchpadlibrarian.net/878876949/launchpad-icon-14.png",
     "https://launchpadlibrarian.net/878876950/launchpad-logo-64.png",
     "https://launchpadlibrarian.net/878876951/launchpad-brand-192.png",
     "https://api.launchpad.net/1.0/#project",
     "https://launchpad.net/projects/+new",
-    "https://api.launchpad.net/1.0/~isac322/+archive/ubuntu/krema",
-    "https://launchpad.net/~isac322/+archive/ubuntu/krema",
-    "https://github.com/isac322/krema/releases/tag/v0.10.0",
-    "https://github.com/isac322/krema/commit/a964a908ecb8904c079a8148403bebaaa427a821"
+    "https://api.launchpad.net/1.0/~isac322/+archive/ubuntu/kdockw",
+    "https://launchpad.net/~isac322/+archive/ubuntu/kdockw",
+    "https://github.com/thicking/krema/releases/tag/v0.10.0",
+    "https://github.com/thicking/krema/commit/a964a908ecb8904c079a8148403bebaaa427a821"
   ],
   "limitations": [
-    "The upstream Launchpad project Krema is now registered and publicly verified at https://launchpad.net/krema with owner isac322, Public information type, and GNU GPL v3.",
+    "The upstream Launchpad project KDockW is now registered and publicly verified at https://launchpad.net/kdockw with owner isac322, Public information type, and GNU GPL v3.",
     "The registration_field_mapping entries preserve historical pre-registration form observations; they are provenance and do not describe current editable controls. Project-branding input names were not verified, while the resulting project branding is verified by its public asset URLs.",
-    "The existing PPA ppa:isac322/krema is an archive object and has no per-PPA icon, logo, or brand upload endpoint.",
+    "The existing PPA ppa:thicking/krema is an archive object and has no per-PPA icon, logo, or brand upload endpoint.",
     "The existing PPA, its owner, its APT URL, and the ~isac322 personal profile remain unchanged."
   ]
 }

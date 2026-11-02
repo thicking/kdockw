@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""OBS and COPR release adapters for a verified Krema ReleaseContext.
+"""OBS and COPR release adapters for a verified KDockW ReleaseContext.
 
 Both channels are read-only unless ``execute=True``. Every external write is
 preceded by a fresh remote preflight so retries never duplicate a commit or a
 build, and never downgrade a channel that already serves a newer version.
 
-OBS (``home:<owner>/krema``):
+OBS (``home:<owner>/kdockw``):
   Package inputs are taken only from ``<source_dir>/packaging/obs`` of the
   verified tag. ``_service`` is pinned to the selected tag (``revision``).
   ``project.meta.xml``, ``project.config`` and ``apply-project-config.sh``
@@ -15,7 +15,7 @@ OBS (``home:<owner>/krema``):
   ``osc commit --noservice`` skips only osc's local "trylocal" service run; the
   OBS server still runs ``_service`` on the committed sources.
 
-COPR (``<owner>/krema``):
+COPR (``<owner>/kdockw``):
   The existing SCM package is re-pointed at the selected tag (only the
   committish changes; clone URL, subdirectory, spec and build method must
   already match and are re-verified afterwards), then one build is dispatched
@@ -44,15 +44,15 @@ from typing import Any
 
 from release_common import ReleaseContext, ReleaseError, command, http_json, result
 
-PACKAGE = "krema"
+PACKAGE = "kdockw"
 
 OBS_API_TIMEOUT = 300  # first ``uvx`` use resolves osc before the request
 OBS_CHECKOUT_TIMEOUT = 600
 OBS_COMMIT_TIMEOUT = 900
 OBS_PACKAGE_FILES = (
     "_service",
-    "krema.spec",
-    "krema.dsc",
+    "kdockw.spec",
+    "kdockw.dsc",
     "debian.changelog",
     "debian.control",
     "debian.rules",
@@ -182,7 +182,7 @@ def spec_version(text: str) -> str:
     versions = re.findall(r"^Version:\s*(\S+)\s*$", text, re.MULTILINE)
     if len(versions) != 1:
         raise ReleaseError(
-            f"krema.spec must declare one Version, found {len(versions)}"
+            f"kdockw.spec must declare one Version, found {len(versions)}"
         )
     return versions[0]
 
@@ -220,18 +220,18 @@ def build_obs_inputs(
     except UnicodeDecodeError:
         raise ReleaseError("tagged OBS packaging is not UTF-8") from None
 
-    if spec_version(texts["krema.spec"]) != version:
-        raise ReleaseError(f"tagged krema.spec Version is not {version}")
+    if spec_version(texts["kdockw.spec"]) != version:
+        raise ReleaseError(f"tagged kdockw.spec Version is not {version}")
     full = f"{version}-{debian_revision}"
-    dsc = texts["krema.dsc"]
-    if _single(r"^Version:\s*(\S+)\s*$", dsc, "krema.dsc Version") != full:
-        raise ReleaseError(f"tagged krema.dsc Version is not {full}")
+    dsc = texts["kdockw.dsc"]
+    if _single(r"^Version:\s*(\S+)\s*$", dsc, "kdockw.dsc Version") != full:
+        raise ReleaseError(f"tagged kdockw.dsc Version is not {full}")
     tarball = _single(
-        r"^DEBTRANSFORM-TAR:\s*(\S+)\s*$", dsc, "krema.dsc DEBTRANSFORM-TAR"
+        r"^DEBTRANSFORM-TAR:\s*(\S+)\s*$", dsc, "kdockw.dsc DEBTRANSFORM-TAR"
     )
     if tarball != f"{PACKAGE}-{version}.tar.gz":
-        raise ReleaseError(f"tagged krema.dsc DEBTRANSFORM-TAR is {tarball!r}")
-    top = re.match(r"krema \(([^)]+)\)", texts["debian.changelog"])
+        raise ReleaseError(f"tagged kdockw.dsc DEBTRANSFORM-TAR is {tarball!r}")
+    top = re.match(r"kdockw \(([^)]+)\)", texts["debian.changelog"])
     if top is None or top[1] != full:
         raise ReleaseError(f"tagged debian.changelog top entry is not {full}")
 
@@ -436,8 +436,8 @@ class ObsRemote:
 def _obs_remote(osc: list[str], project: str) -> ObsRemote:
     directory = parse_obs_directory(_osc_api(osc, f"/source/{project}/{PACKAGE}"))
     spec = (
-        _osc_file(osc, project, "krema.spec")
-        if "krema.spec" in directory.entries
+        _osc_file(osc, project, "kdockw.spec")
+        if "kdockw.spec" in directory.entries
         else None
     )
     service = (
@@ -622,7 +622,7 @@ def build_is_ours(config: dict | None, tag: str, clone_url: str) -> bool:
         source.get("type") == "git"
         and source.get("clone_url") == clone_url
         and source.get("subdirectory") == "packaging/obs"
-        and source.get("spec") == "krema.spec"
+        and source.get("spec") == "kdockw.spec"
         and source.get("committish") == tag
     )
 
@@ -668,7 +668,7 @@ def decide_copr(
         "type": "git",
         "clone_url": clone_url,
         "subdirectory": "packaging/obs",
-        "spec": "krema.spec",
+        "spec": "kdockw.spec",
     }
     wrong = sorted(k for k, v in expected.items() if source.get(k) != v)
     if wrong:

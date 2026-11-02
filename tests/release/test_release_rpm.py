@@ -17,12 +17,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import release_rpm as rpm  # noqa: E402
 from release_common import ReleaseError  # noqa: E402
 
-CLONE = "https://github.com/isac322/krema.git"
+CLONE = "https://github.com/thicking/krema.git"
 
 SERVICE = """<services>
   <service name="tar_scm">
     <param name="scm">git</param>
-    <param name="url">https://github.com/isac322/krema.git</param>
+    <param name="url">https://github.com/thicking/krema.git</param>
     <param name="revision">master</param>
     <param name="versionformat">@PARENT_TAG@</param>
   </service>
@@ -37,13 +37,13 @@ def write_obs_tree(root: Path, version: str = "1.2.3", debrev: str = "1") -> Pat
     obs.mkdir(parents=True)
     files = {
         "_service": SERVICE,
-        "krema.spec": f"Name: krema\nVersion:        {version}\nRelease: 1\n",
-        "krema.dsc": (
-            f"Source: krema\nVersion: {version}-{debrev}\n"
-            f"DEBTRANSFORM-TAR: krema-{version}.tar.gz\n"
+        "kdockw.spec": f"Name: kdockw\nVersion:        {version}\nRelease: 1\n",
+        "kdockw.dsc": (
+            f"Source: kdockw\nVersion: {version}-{debrev}\n"
+            f"DEBTRANSFORM-TAR: kdockw-{version}.tar.gz\n"
         ),
-        "debian.changelog": f"krema ({version}-{debrev}) unstable; urgency=medium\n",
-        "debian.control": "Source: krema\n",
+        "debian.changelog": f"kdockw ({version}-{debrev}) unstable; urgency=medium\n",
+        "debian.control": "Source: kdockw\n",
         "debian.rules": "#!/usr/bin/make -f\n",
         "debian.copyright": "Format: x\n",
         "project.meta.xml": "<project/>",
@@ -71,10 +71,10 @@ def directory(
 
 RESULTS_PUBLISHED = """<resultlist state="x">
   <result project="home:isac322" repository="Fedora_44" arch="x86_64" code="published" state="published">
-    <status package="krema" code="succeeded"/>
+    <status package="kdockw" code="succeeded"/>
   </result>
   <result project="home:isac322" repository="openSUSE_Slowroll" arch="aarch64" code="published" state="published">
-    <status package="krema" code="excluded"/>
+    <status package="kdockw" code="excluded"/>
   </result>
 </resultlist>"""
 
@@ -125,7 +125,7 @@ class ObsInputs(unittest.TestCase):
             rpm.pin_service_revision(doubled, "v1.2.3", CLONE)
 
     def test_rejects_symlinked_input(self) -> None:
-        spec = self.root / "packaging" / "obs" / "krema.spec"
+        spec = self.root / "packaging" / "obs" / "kdockw.spec"
         target = self.root / "elsewhere.spec"
         target.write_text(spec.read_text())
         spec.unlink()
@@ -162,17 +162,17 @@ class ObsDecision(unittest.TestCase):
         )
 
     def test_older_remote_is_planned_with_changed_files(self) -> None:
-        entries = dict(self.staged, **{"krema.spec": "old", "_service": "old"})
+        entries = dict(self.staged, **{"kdockw.spec": "old", "_service": "old"})
         plan = self.decide(entries, remote_version="1.2.2", revision="master")
         self.assertEqual(plan.status, "planned")
-        self.assertEqual(plan.differing, ["_service", "krema.spec"])
+        self.assertEqual(plan.differing, ["_service", "kdockw.spec"])
 
     def test_same_version_unpinned_service_is_planned(self) -> None:
         plan = self.decide(dict(self.staged, _service="unpinned"), revision="master")
         self.assertEqual((plan.status, plan.differing), ("planned", ["_service"]))
 
     def test_identical_published_sources(self) -> None:
-        extra = dict(self.staged, **{"_service:tar_scm:krema-1.2.3.tar.gz": "z"})
+        extra = dict(self.staged, **{"_service:tar_scm:kdockw-1.2.3.tar.gz": "z"})
         self.assertEqual(self.decide(extra).status, "published")
 
     def test_newer_remote_version_blocks_downgrade(self) -> None:
@@ -188,8 +188,8 @@ class ObsDecision(unittest.TestCase):
 
     def test_building_is_pending(self) -> None:
         building = RESULTS_PUBLISHED.replace(
-            'state="published">\n    <status package="krema" code="succeeded"/>',
-            'state="building">\n    <status package="krema" code="building"/>',
+            'state="published">\n    <status package="kdockw" code="succeeded"/>',
+            'state="building">\n    <status package="kdockw" code="building"/>',
             1,
         )
         self.assertEqual(
@@ -215,12 +215,12 @@ def package(committish: str = "v1.2.2", **source) -> dict:
         "clone_url": CLONE,
         "subdirectory": "packaging/obs",
         "committish": committish,
-        "spec": "krema.spec",
+        "spec": "kdockw.spec",
         "source_build_method": "rpkg",
     }
     src.update(source)
     return {
-        "name": "krema",
+        "name": "kdockw",
         "source_type": "scm",
         "auto_rebuild": False,
         "source_dict": src,
@@ -228,7 +228,7 @@ def package(committish: str = "v1.2.2", **source) -> dict:
 
 
 def build(bid: int, state: str, version: str | None) -> dict:
-    sp = {"name": "krema", "version": f"{version}-1" if version else None}
+    sp = {"name": "kdockw", "version": f"{version}-1" if version else None}
     return {"id": bid, "state": state, "source_package": sp}
 
 
@@ -239,7 +239,7 @@ def config(committish: str, clone_url: str = CLONE, **source) -> dict:
         "clone_url": clone_url,
         "subdirectory": "packaging/obs",
         "committish": committish,
-        "spec": "krema.spec",
+        "spec": "kdockw.spec",
         "srpm_build_method": "rpkg",
     }
     src.update(source)

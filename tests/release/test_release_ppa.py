@@ -70,18 +70,18 @@ class ControlChecksumTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.dir = Path(self.tmp.name)
         self.orig = b"orig tarball bytes"
-        self.dsc = b"Format: 3.0 (quilt)\nSource: krema\n"
-        (self.dir / "krema_1.0.orig.tar.gz").write_bytes(self.orig)
-        (self.dir / "krema_1.0-1.dsc").write_bytes(self.dsc)
+        self.dsc = b"Format: 3.0 (quilt)\nSource: kdockw\n"
+        (self.dir / "kdockw_1.0.orig.tar.gz").write_bytes(self.orig)
+        (self.dir / "kdockw_1.0-1.dsc").write_bytes(self.dsc)
 
     def tearDown(self) -> None:
         self.tmp.cleanup()
 
     def changes(self, dsc: bytes) -> str:
-        files = (("krema_1.0-1.dsc", dsc), ("krema_1.0.orig.tar.gz", self.orig))
+        files = (("kdockw_1.0-1.dsc", dsc), ("kdockw_1.0.orig.tar.gz", self.orig))
         lines = [
             "Format: 1.8",
-            "Source: krema",
+            "Source: kdockw",
             "Version: 1.0-1~ppa1~resolute1",
             "Distribution: resolute",
         ]
@@ -99,37 +99,37 @@ class ControlChecksumTest(unittest.TestCase):
         text = self.changes(self.dsc)
         self.assertEqual(
             ppa.verify_listed_files(text, self.dir),
-            ["krema_1.0-1.dsc", "krema_1.0.orig.tar.gz"],
+            ["kdockw_1.0-1.dsc", "kdockw_1.0.orig.tar.gz"],
         )
         signed = (
             b"-----BEGIN PGP SIGNED MESSAGE-----\n"
             + self.dsc
             + b"-----BEGIN PGP SIGNATURE-----\n"
         )
-        (self.dir / "krema_1.0-1.dsc").write_bytes(signed)
+        (self.dir / "kdockw_1.0-1.dsc").write_bytes(signed)
         with self.assertRaises(ReleaseError):
             ppa.verify_listed_files(text, self.dir)
-        updated = ppa.update_checksums(text, "krema_1.0-1.dsc", signed)
+        updated = ppa.update_checksums(text, "kdockw_1.0-1.dsc", signed)
         ppa.verify_listed_files(updated, self.dir)
-        entry = ppa.listed_files(updated)["krema_1.0-1.dsc"]
+        entry = ppa.listed_files(updated)["kdockw_1.0-1.dsc"]
         self.assertEqual(
             entry["sha256"], (hashlib.sha256(signed).hexdigest(), len(signed))
         )
         self.assertEqual(entry["md5"], (hashlib.md5(signed).hexdigest(), len(signed)))
-        self.assertIn(" kde optional krema_1.0-1.dsc", updated)
+        self.assertIn(" kde optional kdockw_1.0-1.dsc", updated)
         self.assertEqual(
-            ppa.listed_files(updated)["krema_1.0.orig.tar.gz"],
-            ppa.listed_files(text)["krema_1.0.orig.tar.gz"],
+            ppa.listed_files(updated)["kdockw_1.0.orig.tar.gz"],
+            ppa.listed_files(text)["kdockw_1.0.orig.tar.gz"],
         )
 
     def test_update_refuses_signed_or_partial_listing(self) -> None:
         text = self.changes(self.dsc)
         with self.assertRaises(ReleaseError):
             ppa.update_checksums(
-                "-----BEGIN PGP SIGNED MESSAGE-----\n" + text, "krema_1.0-1.dsc", b"x"
+                "-----BEGIN PGP SIGNED MESSAGE-----\n" + text, "kdockw_1.0-1.dsc", b"x"
             )
         with self.assertRaises(ReleaseError):
-            ppa.update_checksums(text, "krema_1.0-1.debian.tar.xz", b"x")
+            ppa.update_checksums(text, "kdockw_1.0-1.debian.tar.xz", b"x")
         partial = (
             "\n".join(
                 line
@@ -143,11 +143,11 @@ class ControlChecksumTest(unittest.TestCase):
             + "\n"
         )
         with self.assertRaises(ReleaseError):
-            ppa.update_checksums(partial, "krema_1.0-1.dsc", b"x")
+            ppa.update_checksums(partial, "kdockw_1.0-1.dsc", b"x")
 
     def test_size_mismatch_and_unsafe_names_are_rejected(self) -> None:
         text = self.changes(self.dsc).replace(
-            f" {len(self.orig)} krema_1.0.orig", f" {len(self.orig) + 1} krema_1.0.orig"
+            f" {len(self.orig)} kdockw_1.0.orig", f" {len(self.orig) + 1} kdockw_1.0.orig"
         )
         with self.assertRaises(ReleaseError):
             ppa.verify_listed_files(text, self.dir)
@@ -157,7 +157,7 @@ class ControlChecksumTest(unittest.TestCase):
     def test_clearsign_body_is_parsed(self) -> None:
         signed = (
             "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\n"
-            "Source: krema\nVersion: 1.0-1\nDescription: x\n - dash line\n"
+            "Source: kdockw\nVersion: 1.0-1\nDescription: x\n - dash line\n"
             "-----BEGIN PGP SIGNATURE-----\n\nabc\n-----END PGP SIGNATURE-----\n"
         )
         fields = ppa.parse_control(signed)
@@ -175,18 +175,18 @@ class ControlChecksumTest(unittest.TestCase):
         )
         with self.assertRaises(ReleaseError):
             ppa.strip_clearsign(
-                "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\nSource: krema\n"
+                "-----BEGIN PGP SIGNED MESSAGE-----\nHash: SHA512\n\nSource: kdockw\n"
             )
 
 
-CHANGELOG = """krema (0.10.0-1) unstable; urgency=medium
+CHANGELOG = """kdockw (0.10.0-1) unstable; urgency=medium
 
   * New upstream release v0.10.0
   * Fixed something
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Sat, 03 Oct 2026 00:00:00 +0900
 
-krema (0.9.0-1) unstable; urgency=medium
+kdockw (0.9.0-1) unstable; urgency=medium
 
   * Older
 
@@ -203,7 +203,7 @@ class PackagingInputTest(unittest.TestCase):
         )
         self.assertEqual(
             rendered,
-            "krema (0.10.0-1~ppa1~resolute1) resolute; urgency=medium\n\n"
+            "kdockw (0.10.0-1~ppa1~resolute1) resolute; urgency=medium\n\n"
             "  * New upstream release v0.10.0\n  * Fixed something\n\n"
             " -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Sat, 03 Oct 2026 00:00:00 +0900\n",
         )
@@ -215,11 +215,11 @@ class PackagingInputTest(unittest.TestCase):
     def test_changelog_without_trailer_or_date_is_rejected(self) -> None:
         with self.assertRaises(ReleaseError):
             ppa.parse_top_changelog_entry(
-                "krema (1.0-1) unstable; urgency=medium\n\n  * x\n"
+                "kdockw (1.0-1) unstable; urgency=medium\n\n  * x\n"
             )
         with self.assertRaises(ReleaseError):
             ppa.parse_top_changelog_entry(
-                "krema (1.0-1) unstable; urgency=medium\n\n  * x\n\n -- A <a@b>  not a date\n"
+                "kdockw (1.0-1) unstable; urgency=medium\n\n  * x\n\n -- A <a@b>  not a date\n"
             )
 
     def test_repository_packaging_inputs(self) -> None:
@@ -313,7 +313,7 @@ def pub(status: str, source_id: str = "1", version: str = TARGET) -> dict:
     return {
         "status": status,
         "source_package_version": version,
-        "self_link": f"https://api.launchpad.net/devel/~isac322/+archive/ubuntu/krema/+sourcepub/{source_id}",
+        "self_link": f"https://api.launchpad.net/devel/~isac322/+archive/ubuntu/kdockw/+sourcepub/{source_id}",
     }
 
 

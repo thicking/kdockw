@@ -1,4 +1,4 @@
-# Build and install Krema on TUXEDO OS
+# Build and install KDockW on TUXEDO OS
 
 This guide targets TUXEDO OS 24.04 (Ubuntu 24.04 Noble base) with the newer
 Qt 6 and KDE Frameworks packages supplied by the configured TUXEDO OS
@@ -31,7 +31,7 @@ configuration mismatches.
 
 ## Release build and installation
 
-From the Krema source directory:
+From the KDockW source directory:
 
 ```sh
 cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
@@ -44,15 +44,15 @@ the `dev` preset, build it, and use the repository's `dev` test preset instead.
 TUXEDO OS's `catch2` package provides Catch2 3, which the test configuration
 requires.
 
-Krema uses KI18n catalogs. The Russian catalog is built from
-`src/po/ru/krema.po` and installed under the locale directory as
-`krema.mo`. The application also adds the build-tree catalog directory when
-run directly from `build/release/bin/krema`, so translations work both before
+KDockW uses KI18n catalogs. The Russian catalog is built from
+`src/po/ru/kdockw.po` and installed under the locale directory as
+`kdockw.mo`. The application also adds the build-tree catalog directory when
+run directly from `build/release/bin/kdockw`, so translations work both before
 and after installation. The desktop file contains the translated static
 metadata; runtime UI strings come from KI18n.
 
 After installation, retain the installed desktop ID
-`com.bhyoo.krema.desktop` and its `X-KDE-Wayland-Interfaces` entry. That entry
+`com.thicking.kdockw.desktop` and its `X-KDE-Wayland-Interfaces` entry. That entry
 declares the KWin Wayland interfaces the application uses. Do not replace the
 standard desktop file with a custom service shortcut or change its ID. For
 PRIME-specific service setup and diagnostics, see
@@ -60,36 +60,23 @@ PRIME-specific service setup and diagnostics, see
 
 ## Optional systemd user service
 
-If Krema needs a controlled process environment, use a user service that
-starts the installed binary with its standard desktop ID:
-
-```ini
-[Unit]
-Description=Krema Dock
-PartOf=graphical-session.target
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/krema
-Restart=on-failure
-RestartSec=3
-UnsetEnvironment=DRI_PRIME __GLX_VENDOR_LIBRARY_NAME __NV_PRIME_RENDER_OFFLOAD __VK_LAYER_NV_optimus QSG_RHI_BACKEND
-
-[Install]
-WantedBy=graphical-session.target
-```
-
-Save it as `~/.config/systemd/user/krema.service`, then run:
+If KDockW needs a controlled process environment, install the checked-in user
+service template. It starts the installed binary directly and removes only the
+listed PRIME and Qt backend variables from that service:
 
 ```sh
+install -D -m 644 packaging/systemd/kdockw.service \
+  ~/.config/systemd/user/kdockw.service
 systemctl --user daemon-reload
-systemctl --user enable --now krema.service
+systemctl --user enable --now kdockw.service
 ```
 
-`Application::makeAboutData()` sets the desktop ID to `com.bhyoo.krema` by
+For the full one-starter migration sequence and rollback, see
+[`../migration/krema-to-kdockw.md`](../migration/krema-to-kdockw.md).
+
+`Application::makeAboutData()` sets the desktop ID to `com.thicking.kdockw` by
 default, so this service does not need a wrapper or the optional
-`--desktopfile` override. Krema accepts that KDE command-line option, but it
+`--desktopfile` override. KDockW accepts that KDE command-line option, but it
 is not needed for the standard installed desktop entry.
 
 To prevent duplicate instances, choose one login starter: either the installed
@@ -99,29 +86,29 @@ user with the same desktop-file name:
 
 ```sh
 mkdir -p ~/.config/autostart
-cat > ~/.config/autostart/com.bhyoo.krema.autostart.desktop <<'EOF'
+cat > ~/.config/autostart/com.thicking.kdockw.autostart.desktop <<'EOF'
 [Desktop Entry]
 Hidden=true
 EOF
 ```
 
-Keep `/usr/local/share/applications/com.bhyoo.krema.desktop` installed and
+Keep `/usr/local/share/applications/com.thicking.kdockw.desktop` installed and
 unchanged, including its `X-KDE-Wayland-Interfaces` line. If desired, add a
-separate launcher at `~/.local/share/applications/krema-service.desktop`:
+separate launcher at `~/.local/share/applications/kdockw-service.desktop`:
 
 ```ini
 [Desktop Entry]
 Type=Application
-Name=Krema (service)
-Comment=Start Krema through the user service
-Exec=systemctl --user start krema.service
-Icon=com.bhyoo.krema
+Name=KDockW (service)
+Comment=Start KDockW through the user service
+Exec=systemctl --user start kdockw.service
+Icon=com.thicking.kdockw
 Terminal=false
 Categories=Utility;
 StartupNotify=false
 ```
 
-Do not change the original Krema desktop file's `Exec` to point to a wrapper.
+Do not change the original KDockW desktop file's `Exec` to point to a wrapper.
 On the reproduced setup, a wrapper in that file coincided with missing
 unpinned tasks, launch feedback, and previews. Preserve the normal desktop ID
 so KWin can associate the application with its declared Wayland interfaces.
@@ -142,5 +129,5 @@ sudo cmake --build build/release --target uninstall
 The release configuration in this repository exposes this target. If another
 build configuration does not provide it, remove only the files listed in that
 build's `install_manifest.txt`. Do not use a broad `rm -rf /usr/local` command.
-Disable and remove only a user-created Krema service or launcher, and restore
+Disable and remove only a user-created KDockW service or launcher, and restore
 the user's prior autostart choice.

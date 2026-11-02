@@ -38,20 +38,20 @@ namespace
 using TaskManager::AbstractTasksModel;
 
 constexpr int kTimeoutMs = 15000;
-const QString kHealthyAppId = QStringLiteral("krema-icon-healthy");
-const QString kHealthyTitle = QStringLiteral("krema-icon-healthy-window");
+const QString kHealthyAppId = QStringLiteral("kdockw-icon-healthy");
+const QString kHealthyTitle = QStringLiteral("kdockw-icon-healthy-window");
 const QString kHealthyIcon = QStringLiteral("utilities-terminal");
-const QString kUnresolvedAppId = QStringLiteral("krema-icon-unresolved");
-const QString kUnresolvedTitle = QStringLiteral("krema-icon-unresolved-window");
-const QString kRawAppId = QStringLiteral("krema-icon-raw");
-const QString kRawTitle = QStringLiteral("krema-icon-raw-window");
+const QString kUnresolvedAppId = QStringLiteral("kdockw-icon-unresolved");
+const QString kUnresolvedTitle = QStringLiteral("kdockw-icon-unresolved-window");
+const QString kRawAppId = QStringLiteral("kdockw-icon-raw");
+const QString kRawTitle = QStringLiteral("kdockw-icon-raw-window");
 const QString kGenericIcon = QStringLiteral("application-x-executable");
 
-krema::DockModel &model()
+kdockw::DockModel &model()
 {
     // Keep the model alive until process exit. KWin's model owns Wayland-side
     // objects whose teardown order is not useful to this integration test.
-    static auto *instance = new krema::DockModel;
+    static auto *instance = new kdockw::DockModel;
     return *instance;
 }
 
@@ -124,7 +124,7 @@ bool installHealthyDesktopEntry()
     }
     desktop.write(QStringLiteral("[Desktop Entry]\n"
                                  "Type=Application\n"
-                                 "Name=Krema Healthy Icon Test\n"
+                                 "Name=KDockW Healthy Icon Test\n"
                                  "Exec=true\n"
                                  "Icon=%1\n")
                       .arg(kHealthyIcon)
@@ -213,7 +213,7 @@ TEST_CASE("TaskManager named icon reaches DockModel and provider", "[task-icons]
 
     // Disable normalization so this compares the provider's named-theme pixels
     // directly with the independent DecorationRole artwork.
-    krema::TaskIconProvider provider(false);
+    kdockw::TaskIconProvider provider(false);
     QSize returnedSize;
     const QPixmap providerPixmap = provider.requestPixmap(kHealthyIcon, &returnedSize, QSize(64, 64));
     REQUIRE_FALSE(providerPixmap.isNull());
@@ -298,7 +298,7 @@ TEST_CASE("TaskManager nameless client artwork reaches the raw icon provider", "
     CHECK(rawKey != taskManagerAppId);
     CHECK(rawKey != kRawAppId);
 
-    krema::TaskIconProvider provider(false);
+    kdockw::TaskIconProvider provider(false);
     QSize returnedSize;
     const QPixmap providerPixmap = provider.requestPixmap(rawKey, &returnedSize, iconSize);
     REQUIRE_FALSE(providerPixmap.isNull());
@@ -353,7 +353,7 @@ TEST_CASE("TaskManager keeps an unresolved app identity on the placeholder path"
     // this platform; this unresolved client deliberately supplies no artwork.
     // Its supported outcomes remain an empty placeholder name or a generic,
     // "wayland", or "unknown" fallback. AppId stays actionable in every case.
-    krema::TaskIconProvider provider;
+    kdockw::TaskIconProvider provider;
     QSize returnedSize;
     const QPixmap fallbackPixmap = provider.requestPixmap(iconName, &returnedSize, QSize(64, 64));
     REQUIRE_FALSE(fallbackPixmap.isNull());

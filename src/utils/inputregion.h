@@ -6,7 +6,7 @@
 #include <QRect>
 #include <QRegion>
 
-namespace krema
+namespace kdockw
 {
 
 /// Thickness of the edge strip that reveals a hidden dock (and, in Follow
@@ -65,4 +65,4 @@ struct PreviewInputRegionParams {
 /// Never returns an empty region (an empty mask would accept ALL input).
 QRegion computePreviewInputRegion(const PreviewInputRegionParams &p);
 
-} // namespace krema
+} // namespace kdockw

@@ -19,7 +19,7 @@ description: "Apply when writing or editing public-facing text: README, metainfo
 |---|---|
 | `src/**/*.cpp`, `src/**/*.h` | README feature descriptions |
 | `src/qml/*.qml` | README visual features |
-| `src/config/krema.kcfg` | Settings-related docs |
+| `src/config/kdockw.kcfg` | Settings-related docs |
 | `CMakeLists.txt` | Build dependencies and version |
 | `marketing/positioning.yml` | Every SEO-bearing file |
 | `marketing/strategy.md` | Keywords (metainfo, README) |

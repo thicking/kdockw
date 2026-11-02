@@ -1,4 +1,4 @@
-krema (0.12.0-1) unstable; urgency=medium
+kdockw (0.12.0-1) unstable; urgency=medium
 
   * New upstream release v0.12.0
   * Floating margin setting (1 to 32 px, default 8) for the gap between a
@@ -10,7 +10,7 @@ krema (0.12.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Mon, 12 Oct 2026 00:00:00 +0900
 
-krema (0.11.0-1) unstable; urgency=medium
+kdockw (0.11.0-1) unstable; urgency=medium
 
   * New upstream release v0.11.0
   * Redesigned settings window: 8 focused pages plus About, sidebar search,
@@ -18,13 +18,13 @@ krema (0.11.0-1) unstable; urgency=medium
   * Zoom animation presets (Natural, Quick, Relaxed, Instant) and a Custom
     tab; hover zoom now eases in and out by default
   * Separate icon opacity settings and icon spacing up to 64 pixels
-  * krema --version/--help/--author/--license print and exit without a display
+  * kdockw --version/--help/--author/--license print and exit without a display
   * Runtime dependency on the Qt Quick 3D QML module
   * Fixed KWin's Slide Back effect and pinned launchers stored as file paths
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Sat, 10 Oct 2026 00:00:00 +0900
 
-krema (0.10.0-1) unstable; urgency=medium
+kdockw (0.10.0-1) unstable; urgency=medium
 
   * New upstream release v0.10.0
   * Ships its own app icon (application launcher, task switcher, Discover,
@@ -40,7 +40,7 @@ krema (0.10.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Mon, 05 Oct 2026 00:00:00 +0900
 
-krema (0.9.0-1) unstable; urgency=medium
+kdockw (0.9.0-1) unstable; urgency=medium
 
   * New upstream release v0.9.0
   * Parabolic hover zoom: magnified icons push neighbours aside and the dock
@@ -54,7 +54,7 @@ krema (0.9.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Mon, 28 Sep 2026 00:00:00 +0900
 
-krema (0.8.0-1) unstable; urgency=medium
+kdockw (0.8.0-1) unstable; urgency=medium
 
   * New upstream release v0.8.0
   * Multi-monitor support: Primary Only, All Screens and Follow Active Screen
@@ -69,7 +69,7 @@ krema (0.8.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Mon, 28 Sep 2026 00:00:00 +0900
 
-krema (0.7.0-3) unstable; urgency=medium
+kdockw (0.7.0-3) unstable; urgency=medium
 
   * Add missing runtime QML module dependencies so the Settings dialog and
     dock UI load on minimal installs:
@@ -78,14 +78,14 @@ krema (0.7.0-3) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Sun, 27 Sep 2026 00:00:00 +0900
 
-krema (0.7.0-2) unstable; urgency=medium
+kdockw (0.7.0-2) unstable; urgency=medium
 
   * Fix runtime dependency names for openSUSE Tumbleweed/Leap 16.0 and Debian/Ubuntu
     so the package installs cleanly against current distribution repositories
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Thu, 28 May 2026 00:00:00 +0900
 
-krema (0.7.0-1) unstable; urgency=medium
+kdockw (0.7.0-1) unstable; urgency=medium
 
   * New upstream release v0.7.0
   * Task progress bars on dock icons
@@ -98,7 +98,7 @@ krema (0.7.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Fri, 28 Mar 2026 00:00:00 +0900
 
-krema (0.6.0-1) unstable; urgency=medium
+kdockw (0.6.0-1) unstable; urgency=medium
 
   * New upstream release v0.6.0
   * Notification badges with six attention animation styles
@@ -108,7 +108,7 @@ krema (0.6.0-1) unstable; urgency=medium
 
  -- Byeonghoon Yoo <bhyoo@bhyoo.com>  Sun, 02 Mar 2026 00:00:00 +0900
 
-krema (0.5.1-1) unstable; urgency=medium
+kdockw (0.5.1-1) unstable; urgency=medium
 
   * New upstream release v0.5.1
   * Fixed icon rendering on HiDPI displays

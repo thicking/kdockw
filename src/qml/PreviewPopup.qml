@@ -6,7 +6,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.taskmanager as TaskManager
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 /**
  * Preview popup root component.

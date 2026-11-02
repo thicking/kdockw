@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-check_docs_seo.py — Automated documentation-SEO consistency checker for Krema.
+check_docs_seo.py — Automated documentation-SEO consistency checker for KDockW.
 
 Validates that key documentation files contain expected SEO keywords and
 positioning language from marketing/positioning.yml.
@@ -32,7 +32,7 @@ REQUIRED_TERMS: list[tuple[str, list[str]]] = [
         ],
     ),
     (
-        "src/com.bhyoo.krema.metainfo.xml",
+        "src/com.thicking.kdockw.metainfo.xml",
         [
             "dock",
             "kde",
@@ -54,7 +54,7 @@ FORBIDDEN_PHRASES: list[tuple[str, list[str]]] = [
         ],
     ),
     (
-        "src/com.bhyoo.krema.metainfo.xml",
+        "src/com.thicking.kdockw.metainfo.xml",
         [
             "replacement for latte",
             "replaces latte",
@@ -107,7 +107,7 @@ def check_forbidden(rel_path: str, forbidden: list[str]) -> CheckResult:
 
 def check_metainfo_keywords() -> CheckResult:
     """Check metainfo.xml <keywords> against positioning.yml expected list."""
-    path = ROOT / "src/com.bhyoo.krema.metainfo.xml"
+    path = ROOT / "src/com.thicking.kdockw.metainfo.xml"
     result = CheckResult(file="metainfo.xml [keywords]")
 
     if not path.exists():

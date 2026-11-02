@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 /**
  * A single window thumbnail in the preview popup.
@@ -51,7 +51,7 @@ Item {
         id: screencastRequest
         uuid: root.winId ?? ""
         onNodeIdChanged: function() {
-            console.log("[krema.preview] nodeId:", screencastRequest.nodeId,
+            console.log("[kdockw.preview] nodeId:", screencastRequest.nodeId,
                 "for uuid:", screencastRequest.uuid)
         }
     }
@@ -69,7 +69,7 @@ Item {
         if (forceCpuCapture)
             return
 
-        console.warn("[krema.preview] no frame received while streaming; retrying without DMA-BUF, nodeId:",
+        console.warn("[kdockw.preview] no frame received while streaming; retrying without DMA-BUF, nodeId:",
             screencastRequest.nodeId)
         forceCpuCapture = true
         captureLoader.active = false
@@ -81,7 +81,7 @@ Item {
         if (!capture)
             return
         const error = capture.state === 0 ? capture.error() : ""
-        console.log("[krema.preview] capture", reason,
+        console.log("[kdockw.preview] capture", reason,
             "nodeId:", capture.nodeId,
             "state:", capture.state,
             "ready:", capture.ready,

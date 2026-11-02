@@ -1,6 +1,6 @@
 # QML component tests (Tier 1)
 
-Qt Quick Test suites that load Krema's **real** QML files from `src/qml`
+Qt Quick Test suites that load KDockW's **real** QML files from `src/qml`
 (`main.qml`, `DockItem.qml`, `PreviewPopup.qml`, `PreviewThumbnail.qml`) and
 check their behavior headless (`QT_QPA_PLATFORM=offscreen`, software scene
 graph). No compositor, D-Bus, PipeWire, or KWin is needed.
@@ -9,7 +9,7 @@ graph). No compositor, D-Bus, PipeWire, or KWin is needed.
 
 ```sh
 cmake -S . -B build -G Ninja -DBUILD_TESTING=ON
-cmake --build build --target krema_qml_tests
+cmake --build build --target kdockw_qml_tests
 ctest --test-dir build -R qml --output-on-failure
 ```
 
@@ -18,7 +18,7 @@ run a single test function directly:
 
 ```sh
 QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software QT_QUICK_CONTROLS_STYLE=Basic \
-  build/bin/krema_qml_tests -input tests/qml/tst_dockitem_zoom.qml test_peakAtHoveredItemEqualsMaxZoom
+  build/bin/kdockw_qml_tests -input tests/qml/tst_dockitem_zoom.qml test_peakAtHoveredItemEqualsMaxZoom
 ```
 
 The tests reference `src/qml` by relative path (`../../src/qml`), so run them
@@ -36,17 +36,17 @@ from the source tree. They must not be copied into the build directory.
 
 ## How the C++ backends are replaced
 
-Production code exposes C++ objects as `com.bhyoo.krema` singletons
+Production code exposes C++ objects as `com.thicking.kdockw` singletons
 (`DockModel`, `DockSettings`, `NotificationTracker`, `LauncherEntryTracker`)
 and as per-engine context properties (`DockView`, `DockActions`,
 `DockContextMenu`, `DockVisibility`, `PreviewController`). `main.cpp`
 (`QUICK_TEST_MAIN_WITH_SETUP`) prepends `mocks/` to the QML import path, so
 the same identifiers resolve to test doubles:
 
-- `mocks/com/bhyoo/krema/*.qml`: QML singletons with the properties and
-  methods the QML uses. Defaults mirror `src/config/krema.kcfg`. Action
+- `mocks/com/thicking/kdockw/*.qml`: QML singletons with the properties and
+  methods the QML uses. Defaults mirror `src/config/kdockw.kcfg`. Action
   methods record `{ name, args }` into `calls`, which you can query with
-  `callsTo(name)`. `KremaMocks.resetAll()` restores every mock and runs in each
+  `callsTo(name)`. `KDockWMocks.resetAll()` restores every mock and runs in each
   `init()`.
 - `DockModel.tasksModel` is a C++ `MockTasksModel` (a `QStandardItemModel`
   with TaskManager role names). Tests populate it with
@@ -55,8 +55,8 @@ the same identifiers resolve to test doubles:
   `removeTask(row)`. `DockModel.iconName()`, `appId()`, `isPinned()`
   (`IsLauncher`), and `isOnCurrentDesktop()` read from those rows.
 - `DockView.zoomLayout()` is not a copy: it calls the C++ `ZoomLayoutEngine`
-  singleton (`krema.test`), which runs the production
-  `krema::computeDockZoom` (`src/utils/zoomcalculator.h`) exactly as
+  singleton (`kdockw.test`), which runs the production
+  `kdockw::computeDockZoom` (`src/utils/zoomcalculator.h`) exactly as
   `DockView::zoomLayout` does. `DockItemRow.qml` feeds DockItem through the
   same pipeline as `main.qml` (zoom cursor, `zoomAmount` eased by
   `ZoomAnimationProfile` on entering and leaving, for both zoom styles).
@@ -86,7 +86,7 @@ properties they expose (for example, the indicator `Flow` or the badge's
 - A test only runs QML from `src/qml` plus the mocks. Do not copy application
   QML into this directory.
 - Add a new suite by creating `tst_<name>.qml` and listing it in
-  `KREMA_QML_TEST_FILES` in `CMakeLists.txt`.
+  `KDOCKW_QML_TEST_FILES` in `CMakeLists.txt`.
 
 ## Not covered here
 

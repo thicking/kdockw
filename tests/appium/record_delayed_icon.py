@@ -22,13 +22,13 @@ from typing import Any
 import numpy as np
 import pytest
 
-from krema_e2e import env, input as inp, kwin
-from krema_e2e.krema import Krema, Rect
-from krema_e2e.windows import TestWindows
-from krema_e2e.waits import wait_stable, wait_until
+from kdockw_e2e import env, input as inp, kwin
+from kdockw_e2e.kdockw import KDockW, Rect
+from kdockw_e2e.windows import TestWindows
+from kdockw_e2e.waits import wait_stable, wait_until
 
 
-RAW_ICON = "/usr/share/krema-test-window/icon-raw-quadrants.svg"
+RAW_ICON = "/usr/share/kdockw-test-window/icon-raw-quadrants.svg"
 GENERIC_ICON = "application-x-executable"
 CAPTURE_INTERVAL = 0.075  # 13.3 Hz target; ScreenShot2 is the limiting cost.
 BASELINE_SECONDS = 2.5
@@ -55,7 +55,7 @@ def _write_desktop_entry(path: Path, app_id: str, title: str, icon: str) -> None
         "[Desktop Entry]\n"
         "Type=Application\n"
         f"Name={title}\n"
-        f"Exec=krema-test-window --app-id {app_id}\n"
+        f"Exec=kdockw-test-window --app-id {app_id}\n"
         f"Icon={icon}\n"
         "Categories=Utility;\n"
         f"StartupWMClass={app_id}\n",
@@ -85,9 +85,9 @@ def _refresh_service_cache(environment: dict[str, str]) -> dict[str, Any]:
     return details
 
 
-def _recording_environments(krema: Krema) -> list[dict[str, str]]:
-    """Return the session and isolated Krema XDG environments."""
-    return [dict(os.environ), krema.environment()]
+def _recording_environments(kdockw: KDockW) -> list[dict[str, str]]:
+    """Return the session and isolated KDockW XDG environments."""
+    return [dict(os.environ), kdockw.environment()]
 
 
 def _desktop_path(environment: dict[str, str], app_id: str) -> Path:
@@ -169,7 +169,7 @@ def _bounded_area(rect: Rect, margin: int = 16) -> tuple[int, int, int, int]:
     return area
 
 
-def test_record_delayed_icon(krema: Krema, apps: TestWindows, request: pytest.FixtureRequest) -> None:
+def test_record_delayed_icon(kdockw: KDockW, apps: TestWindows, request: pytest.FixtureRequest) -> None:
     """Capture one existing item changing from generic to raw desktop artwork."""
     if not kwin.can_capture():
         pytest.fail("KWin cannot capture (QPainter compositing; the vgem/DRM runner is required)")
@@ -184,10 +184,10 @@ def test_record_delayed_icon(krema: Krema, apps: TestWindows, request: pytest.Fi
     metadata_path = evidence_root / "metadata.json"
 
     suffix = uuid.uuid4().hex[:10]
-    app_id = f"krema-delayed-icon-{suffix}"
+    app_id = f"kdockw-delayed-icon-{suffix}"
     title = f"Delayed Icon {suffix}"
     desktop_entries: list[tuple[dict[str, str], Path, bytes | None]] = []
-    for environment in _recording_environments(krema):
+    for environment in _recording_environments(kdockw):
         desktop_path = _desktop_path(environment, app_id)
         previous_desktop = desktop_path.read_bytes() if desktop_path.exists() else None
         if previous_desktop is not None:
@@ -288,16 +288,16 @@ def test_record_delayed_icon(krema: Krema, apps: TestWindows, request: pytest.Fi
             _write_desktop_entry(desktop_path, app_id, title, GENERIC_ICON)
             metadata["cache_refreshes"].append(_refresh_service_cache(environment))
         window = apps.open(title, app_id=app_id, width=320, height=220)
-        item = krema.wait_for_item(title, timeout=15)
+        item = kdockw.wait_for_item(title, timeout=15)
         wait_until(
-            lambda: krema.item_names().count(title) == 1,
+            lambda: kdockw.item_names().count(title) == 1,
             timeout=10,
-            message=lambda: f"exactly one delayed-icon dock item (have {krema.item_names()})",
+            message=lambda: f"exactly one delayed-icon dock item (have {kdockw.item_names()})",
         )
-        wait_stable(lambda: krema.screen_rect(krema.wait_for_item(title)), duration=0.5, timeout=10)
-        krema.move_away()
+        wait_stable(lambda: kdockw.screen_rect(kdockw.wait_for_item(title)), duration=0.5, timeout=10)
+        kdockw.move_away()
         inp.move(env.SCREEN_WIDTH // 2, env.SCREEN_HEIGHT // 2)
-        item_rect = krema.screen_rect(item)
+        item_rect = kdockw.screen_rect(item)
         area = _bounded_area(item_rect)
         metadata["area"] = {"x": area[0], "y": area[1], "width": area[2], "height": area[3]}
         metadata["window_internal_id"] = window.internal_id
@@ -320,7 +320,7 @@ def test_record_delayed_icon(krema: Krema, apps: TestWindows, request: pytest.Fi
 
         if not post_seen.wait(POST_WAIT_SECONDS):
             diagnostics = {
-                "item_names": krema.item_names(),
+                "item_names": kdockw.item_names(),
                 "window": repr(window.refresh()),
                 "baseline_max_counts": baseline_max_counts,
                 "frames_captured": len(rows),
@@ -335,8 +335,8 @@ def test_record_delayed_icon(krema: Krema, apps: TestWindows, request: pytest.Fi
                 f"task window identity changed during icon transition: before={window.internal_id!r}, "
                 f"after={current_window!r}"
             )
-        if krema.item_names().count(title) != 1:
-            raise AssertionError(f"existing dock item was not stable during transition: {krema.item_names()}")
+        if kdockw.item_names().count(title) != 1:
+            raise AssertionError(f"existing dock item was not stable during transition: {kdockw.item_names()}")
         metadata["outcome"] = "passed"
     except BaseException as error:
         metadata["outcome"] = "failed"

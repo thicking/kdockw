@@ -10,11 +10,11 @@
 // main.qml's dockPanel: zoomCursor holds the last pointer position, both zoom
 // styles ease only the global zoomAmount in and out (timing and easing from
 // ZoomAnimationProfile), and DockView.zoomLayout() (production
-// krema::computeDockZoom) lays the row out in its rest frame. The background
+// kdockw::computeDockZoom) lays the row out in its rest frame. The background
 // bounds are left open (no surface here).
 import QtQuick
-import com.bhyoo.krema 1.0
-import "../../src/qml" as Krema
+import com.thicking.kdockw 1.0
+import "../../src/qml" as KDockW
 
 Item {
     id: host
@@ -36,7 +36,7 @@ Item {
 
     // Resolved zoom timing/easing, exposed so tests can read effective durations.
     readonly property alias profile: zoomProfile
-    Krema.ZoomAnimationProfile {
+    KDockW.ZoomAnimationProfile {
         id: zoomProfile
     }
 
@@ -71,7 +71,7 @@ Item {
             id: repeater
             model: DockModel.tasksModel
 
-            Krema.DockItem {
+            KDockW.DockItem {
                 iconSize: DockSettings.iconSize
                 maxZoomFactor: DockSettings.maxZoomFactor
                 spacing: DockSettings.iconSpacing

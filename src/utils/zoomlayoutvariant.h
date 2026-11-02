@@ -8,12 +8,12 @@
 #include <QVariantList>
 #include <QVariantMap>
 
-namespace krema
+namespace kdockw
 {
 
 /// QML-facing form of computeDockZoom(): same arguments, result as a
 /// QVariantMap (see DockView::zoomLayout and SettingsWindow::zoomLayout).
-/// @p style is a krema::ZoomStyle int (0=Parabolic, 1=InPlace);
+/// @p style is a kdockw::ZoomStyle int (0=Parabolic, 1=InPlace);
 /// unknown values fall back to Parabolic. @p boundary is the first item
 /// in the second zone, or -1 when no separator is present. @p boundaryGap
 /// is the fixed extra primary-axis gap inserted before it.
@@ -72,4 +72,4 @@ namespace krema
     };
 }
 
-} // namespace krema
+} // namespace kdockw

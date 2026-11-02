@@ -9,10 +9,10 @@
 // too, where the observable failure is an incorrect dock subset rather than a
 // missing symbol.
 //
-// Must run under run-with-kwin.sh with KREMA_TEST_OUTPUT_COUNT=3.
+// Must run under run-with-kwin.sh with KDOCKW_TEST_OUTPUT_COUNT=3.
 
 #include "app/application.h"
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -59,40 +59,40 @@ namespace
 constexpr int kTimeoutMs = 15000;
 
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
-        a->model = std::make_unique<krema::DockModel>();
+        a->model = std::make_unique<kdockw::DockModel>();
         a->model->setPinnedLaunchers(a->settings->pinnedLaunchers());
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -116,14 +116,14 @@ QStringList screenNames()
 
 void writeSelectedMonitorConfig(const QStringList &selectedOutputs)
 {
-    const auto config = KSharedConfig::openConfig(QStringLiteral("kremarc"));
+    const auto config = KSharedConfig::openConfig(QStringLiteral("kdockwrc"));
     auto general = config->group(QStringLiteral("General"));
     general.writeEntry(QStringLiteral("MonitorMode"), 3);
     general.writeEntry(QStringLiteral("SelectedOutputs"), selectedOutputs);
     config->sync();
 }
 
-QSet<QString> dockedScreenNames(const krema::MultiDockManager &manager)
+QSet<QString> dockedScreenNames(const kdockw::MultiDockManager &manager)
 {
     QSet<QString> names;
     for (auto *shell : manager.shells()) {
@@ -144,7 +144,7 @@ QScreen *screenNamed(const QString &name)
     return nullptr;
 }
 
-krema::DockShell *shellNamed(const krema::MultiDockManager &manager, const QString &name)
+kdockw::DockShell *shellNamed(const kdockw::MultiDockManager &manager, const QString &name)
 {
     for (auto *shell : manager.shells()) {
         if (shell->view()->screen() && shell->view()->screen()->name() == name) {
@@ -154,9 +154,9 @@ krema::DockShell *shellNamed(const krema::MultiDockManager &manager, const QStri
     return nullptr;
 }
 
-std::unique_ptr<krema::MultiDockManager> makeSelectedManager(const QStringList &selected)
+std::unique_ptr<kdockw::MultiDockManager> makeSelectedManager(const QStringList &selected)
 {
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [order] {
             return order->orderReady();
@@ -165,13 +165,13 @@ std::unique_ptr<krema::MultiDockManager> makeSelectedManager(const QStringList &
     writeSelectedMonitorConfig(selected);
     auto &a = app();
     a.settings->load();
-    auto manager = std::make_unique<krema::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
-    krema::Application::connectSettingsAutoSave(a.settings.get(), manager.get());
+    auto manager = std::make_unique<kdockw::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
+    kdockw::Application::connectSettingsAutoSave(a.settings.get(), manager.get());
     manager->initialize();
     return manager;
 }
 
-void requireDocksOn(const krema::MultiDockManager &manager, const QStringList &names)
+void requireDocksOn(const kdockw::MultiDockManager &manager, const QStringList &names)
 {
     const QSet<QString> expected(names.cbegin(), names.cend());
     REQUIRE(QTest::qWaitFor(
@@ -181,7 +181,7 @@ void requireDocksOn(const krema::MultiDockManager &manager, const QStringList &n
         kTimeoutMs));
     for (auto *shell : manager.shells()) {
         REQUIRE(QTest::qWaitFor(
-            [&] {
+            [shell] {
                 return shell->view()->isExposed();
             },
             kTimeoutMs));
@@ -193,7 +193,7 @@ void requireDocksOn(const krema::MultiDockManager &manager, const QStringList &n
 
 QStringList savedSelection()
 {
-    return KSharedConfig::openConfig(QStringLiteral("kremarc"))->group(QStringLiteral("General")).readEntry(QStringLiteral("SelectedOutputs"), QStringList());
+    return KSharedConfig::openConfig(QStringLiteral("kdockwrc"))->group(QStringLiteral("General")).readEntry(QStringLiteral("SelectedOutputs"), QStringList());
 }
 
 bool runKscreenDoctor(const QStringList &args)
@@ -231,7 +231,7 @@ bool makePrimary(const QString &name)
     // changing the primary when another output already has rank 0. Demote
     // the current incumbent and promote an alternate in one compositor
     // transaction first, then promote the requested output.
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     auto *currentPrimary = order->primaryScreen();
     if (!currentPrimary) {
         return false;
@@ -284,7 +284,7 @@ bool makePrimary(const QString &name)
 
 void requirePrimary(const QString &name)
 {
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     // A primary signal needs a real transition. Complete a different primary
     // first when the requested output is already current.
     if (order->primaryScreen() && order->primaryScreen()->name() == name) {
@@ -295,7 +295,7 @@ void requirePrimary(const QString &name)
             }
         }
     }
-    QSignalSpy changed(order, &krema::OutputOrderMonitor::primaryOutputChanged);
+    QSignalSpy changed(order, &kdockw::OutputOrderMonitor::primaryOutputChanged);
     REQUIRE(makePrimary(name));
     REQUIRE(QTest::qWaitFor(
         [&] {
@@ -312,7 +312,7 @@ QSet<QString> surfaceOutputNames(const char *scope)
         if (!layer || layer->scope() != QLatin1String(scope)) {
             continue;
         }
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
         if (layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow && window->screen()) {
             result.insert(window->screen()->name());
         }
@@ -325,7 +325,7 @@ QSet<QString> surfaceOutputNames(const char *scope)
     return result;
 }
 
-void requireRetained(const QPointer<krema::DockShell> &shell, const QString &name)
+void requireRetained(const QPointer<kdockw::DockShell> &shell, const QString &name)
 {
     REQUIRE(shell);
     REQUIRE(shell->view()->screen());
@@ -338,7 +338,7 @@ TEST_CASE("Selected monitors create docks only on the saved outputs", "[selected
 {
     REQUIRE(QGuiApplication::screens().size() == 3);
 
-    auto *outputOrder = krema::OutputOrderMonitor::instance();
+    auto *outputOrder = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [outputOrder] {
             return outputOrder->orderReady();
@@ -367,7 +367,7 @@ TEST_CASE("Selected monitors create docks only on the saved outputs", "[selected
 
     auto &a = app();
     a.settings->load();
-    auto manager = std::make_unique<krema::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
+    auto manager = std::make_unique<kdockw::MultiDockManager>(a.settings.get(), a.model.get(), a.tracker.get());
     manager->initialize();
 
     REQUIRE(QTest::qWaitFor(
@@ -410,7 +410,7 @@ TEST_CASE("Selected monitors create docks only on the saved outputs", "[selected
         REQUIRE(previewView->screen());
         CHECK(previewView->screen() == view->screen());
         auto *layer = LayerShellQt::Window::get(previewView);
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
         CHECK(layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow);
 #else
         CHECK(layer->screen() == view->screen());
@@ -439,7 +439,7 @@ TEST_CASE(
     }
 
     auto manager = makeSelectedManager(selected);
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     const auto originalPrimary = order->primaryScreen()->name();
     const auto restorePrimary = qScopeGuard([&] {
         makePrimary(originalPrimary);
@@ -460,7 +460,7 @@ TEST_CASE(
     "[selected-output][hotplug]")
 {
     REQUIRE(QGuiApplication::screens().size() == 3);
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [order] {
             return order->orderReady();
@@ -471,7 +471,7 @@ TEST_CASE(
     const auto selected = names.first() == originalPrimary ? names.last() : names.first();
     auto manager = makeSelectedManager({selected});
     requireDocksOn(*manager, {selected});
-    QPointer<krema::DockShell> removed = manager->shells().first();
+    QPointer<kdockw::DockShell> removed = manager->shells().first();
     const auto restoreOutput = qScopeGuard([&] {
         runKscreenDoctor({QStringLiteral("output.%1.enable").arg(selected)});
         makePrimary(originalPrimary);
@@ -491,7 +491,7 @@ TEST_CASE(
         kTimeoutMs));
     CHECK_FALSE(removed);
     CHECK(savedSelection() == QStringList{selected});
-    QPointer<krema::DockShell> fallback = manager->shells().first();
+    QPointer<kdockw::DockShell> fallback = manager->shells().first();
 
     REQUIRE(runKscreenDoctor({QStringLiteral("output.%1.enable").arg(selected)}));
     REQUIRE(QTest::qWaitFor(
@@ -510,7 +510,7 @@ TEST_CASE(
     "[selected-output][identity]")
 {
     REQUIRE(QGuiApplication::screens().size() == 3);
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [order] {
             return order->orderReady();
@@ -522,8 +522,8 @@ TEST_CASE(
     REQUIRE(selected.size() == 2);
     auto manager = makeSelectedManager(selected);
     requireDocksOn(*manager, selected);
-    QPointer<krema::DockShell> first = shellNamed(*manager, selected.first());
-    QPointer<krema::DockShell> second = shellNamed(*manager, selected.last());
+    QPointer<kdockw::DockShell> first = shellNamed(*manager, selected.first());
+    QPointer<kdockw::DockShell> second = shellNamed(*manager, selected.last());
     REQUIRE(first);
     REQUIRE(second);
     QSignalSpy firstDestroyed(first, &QObject::destroyed);
@@ -576,7 +576,7 @@ TEST_CASE(
     "[selected-output][shortcuts]")
 {
     REQUIRE(QGuiApplication::screens().size() == 3);
-    auto *order = krema::OutputOrderMonitor::instance();
+    auto *order = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [order] {
             return order->orderReady();
@@ -589,7 +589,7 @@ TEST_CASE(
     requirePrimary(unselected->name());
     const auto originalOrder = order->outputOrder();
     const auto restoreOrder = qScopeGuard([&] {
-        krema::OutputOrderMonitorTestAccess::deliverOrder(order, originalOrder);
+        kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, originalOrder);
     });
     QStringList selected = screenNames();
     selected.removeAll(unselected->name());
@@ -603,22 +603,22 @@ TEST_CASE(
     REQUIRE(second);
 
     // A selected primary wins even when the saved selection puts it last.
-    krema::OutputOrderMonitorTestAccess::deliverOrder(order, {selected.last(), unselected->name(), selected.first()});
+    kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, {selected.last(), unselected->name(), selected.first()});
     CHECK(manager->primaryShell() == second);
     CHECK(manager->activeShell() == second);
 
     // With an unselected primary, use the first live selected output in the
     // compositor's adopted order, not unordered-map iteration or saved order.
-    krema::OutputOrderMonitorTestAccess::deliverOrder(order, {unselected->name(), selected.last(), selected.first()});
+    kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, {unselected->name(), selected.last(), selected.first()});
     CHECK(manager->primaryShell() == second);
     CHECK(manager->activeShell() == second);
 
     // An incomplete (pending) list must not change the shortcut target.
-    krema::OutputOrderMonitorTestAccess::deliverOrder(order, {QStringLiteral("not-yet-connected"), selected.first(), selected.last()});
+    kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, {QStringLiteral("not-yet-connected"), selected.first(), selected.last()});
     CHECK(manager->activeShell() == second);
 
     // No adopted order: the Qt primary is unselected, so saved-name order wins.
-    krema::OutputOrderMonitorTestAccess::deliverOrder(order, {});
+    kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, {});
     CHECK(manager->primaryShell() == first);
     CHECK(manager->activeShell() == first);
 
@@ -631,7 +631,7 @@ TEST_CASE(
     auto *layer = LayerShellQt::Window::get(&pointerSurface);
     REQUIRE(layer);
     layer->setScope(QStringLiteral("selected-output-pointer-test"));
-#ifndef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifndef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
     layer->setScreen(unselected);
 #endif
     pointerSurface.show();
@@ -673,7 +673,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

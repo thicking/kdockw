@@ -13,18 +13,18 @@
 #include <QTimer>
 #include <QtWaylandClient/QWaylandClientExtension>
 
-Q_LOGGING_CATEGORY(lcOutputOrder, "krema.shell.outputorder")
+Q_LOGGING_CATEGORY(lcOutputOrder, "kdockw.shell.outputorder")
 
 // Client for kde_output_order_v1. Binds the global and reassembles the
 // ordered output list; 'output' events start a new list after each 'done'
 // (mirrors plasma-workspace's WaylandOutputOrder).
-class KremaWaylandOutputOrder
-    : public QWaylandClientExtensionTemplate<KremaWaylandOutputOrder, &QtWayland::kde_output_order_v1::destroy>,
+class KDockWWaylandOutputOrder
+    : public QWaylandClientExtensionTemplate<KDockWWaylandOutputOrder, &QtWayland::kde_output_order_v1::destroy>,
       public QtWayland::kde_output_order_v1
 {
     Q_OBJECT
 public:
-    explicit KremaWaylandOutputOrder(QObject *parent)
+    explicit KDockWWaylandOutputOrder(QObject *parent)
         : QWaylandClientExtensionTemplate(1)
     {
         setParent(parent);
@@ -59,7 +59,7 @@ private:
     bool m_done = true;
 };
 
-namespace krema
+namespace kdockw
 {
 
 OutputOrderMonitor *OutputOrderMonitor::instance()
@@ -75,11 +75,11 @@ OutputOrderMonitor::OutputOrderMonitor(QObject *parent)
     : QObject(parent)
 {
     if (KWindowSystem::isPlatformWayland()) {
-        m_wayland = new KremaWaylandOutputOrder(this);
+        m_wayland = new KDockWWaylandOutputOrder(this);
         if (m_wayland->isActive()) {
             // The extension emits from the Wayland dispatch thread; deliver
             // on the GUI thread so listeners only ever see Qt-side state.
-            connect(m_wayland, &KremaWaylandOutputOrder::outputOrderChanged, this, &OutputOrderMonitor::onOrderReceived, Qt::QueuedConnection);
+            connect(m_wayland, &KDockWWaylandOutputOrder::outputOrderChanged, this, &OutputOrderMonitor::onOrderReceived, Qt::QueuedConnection);
         } else {
             qCDebug(lcOutputOrder) << "kde_output_order_v1 not advertised; using QGuiApplication::primaryScreen() fallback";
         }
@@ -215,6 +215,6 @@ void OutputOrderMonitor::recomputePrimary()
     }
 }
 
-} // namespace krema
+} // namespace kdockw
 
 #include "outputordermonitor.moc"

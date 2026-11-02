@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
-# Krema E2E image: krema build deps + kwin_wayland --virtual + AT-SPI +
+# KDockW E2E image: kdockw build deps + kwin_wayland --virtual + AT-SPI +
 # PipeWire + KDE's selenium-webdriver-at-spi (built from source) + a small
 # deterministic test-window fixture. Build context: tests/appium/.
 #
@@ -73,10 +73,10 @@ RUN git init /src/swas && cd /src/swas \
     && cmake --build build \
     && DESTDIR=/out cmake --install build
 
-COPY tools/krema-test-window /src/krema-test-window
-RUN cmake -S /src/krema-test-window -B /src/krema-test-window/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
-    && cmake --build /src/krema-test-window/build \
-    && DESTDIR=/out cmake --install /src/krema-test-window/build
+COPY tools/kdockw-test-window /src/kdockw-test-window
+RUN cmake -S /src/kdockw-test-window -B /src/kdockw-test-window/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake --build /src/kdockw-test-window/build \
+    && DESTDIR=/out cmake --install /src/kdockw-test-window/build
 
 # ctest-image: base plus ccache, without the AT-SPI stack below. A dedicated
 # stage keeps the ccache install out of base's big dnf layer (a one-package

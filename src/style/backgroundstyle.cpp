@@ -6,7 +6,7 @@
 #include <KColorScheme>
 #include <KWindowEffects>
 
-namespace krema
+namespace kdockw
 {
 
 void applyBackgroundToWindow(QWindow *window, BackgroundStyleType type, const QRegion &region)
@@ -112,4 +112,4 @@ bool isStyleAvailable(BackgroundStyleType /* type */)
     return true;
 }
 
-} // namespace krema
+} // namespace kdockw

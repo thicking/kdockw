@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QString>
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -34,4 +34,4 @@ public:
     [[nodiscard]] virtual QString qmlSource() const = 0;
 };
 
-} // namespace krema
+} // namespace kdockw

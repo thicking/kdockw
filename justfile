@@ -15,7 +15,7 @@ test:
     ctest --preset dev
 
 run: build
-    ./build/dev/bin/krema
+    ./build/dev/bin/kdockw
 
 format:
     ninja -C build/dev clang-format
@@ -35,10 +35,10 @@ package:
     rm -rf "$workdir"
     mkdir -p "$workdir"
     tree=$(git stash create)
-    git archive --format=tar.gz --prefix="krema-$pkgver/" \
-        -o "$workdir/krema-$pkgver.tar.gz" "${tree:-HEAD}"
+    git archive --format=tar.gz --prefix="kdockw-$pkgver/" \
+        -o "$workdir/kdockw-$pkgver.tar.gz" "${tree:-HEAD}"
     sed -e "s|^pkgver=.*|pkgver=$pkgver|" \
-        -e "s|^source=.*|source=(\"krema-$pkgver.tar.gz\")|" \
+        -e "s|^source=.*|source=(\"kdockw-$pkgver.tar.gz\")|" \
         -e "s|^sha256sums=.*|sha256sums=('SKIP')|" \
         packaging/arch/PKGBUILD > "$workdir/PKGBUILD"
     cd "$workdir"
@@ -47,7 +47,7 @@ package:
 
 # OBS 로컬 빌드 테스트
 obs-build-rpm distro="openSUSE_Tumbleweed" arch="x86_64":
-    osc build {{distro}} {{arch}} packaging/obs/krema.spec
+    osc build {{distro}} {{arch}} packaging/obs/kdockw.spec
 
 obs-build-deb distro="Debian_13" arch="x86_64":
     osc build {{distro}} {{arch}} packaging/obs/debian.control
@@ -60,14 +60,14 @@ dev-desktop:
     #!/usr/bin/env bash
     set -euo pipefail
     mkdir -p ~/.local/share/applications
-    sed -e 's|@KDE_INSTALL_FULL_BINDIR@/krema|'"$PWD"'/build/dev/bin/krema|' \
+    sed -e 's|@KDE_INSTALL_FULL_BINDIR@/kdockw|'"$PWD"'/build/dev/bin/kdockw|' \
         -e '/^NoDisplay=/d' \
-        src/com.bhyoo.krema.desktop.in > ~/.local/share/applications/com.bhyoo.krema.desktop
-    for png in src/icons/*-apps-com.bhyoo.krema.png; do
+        src/com.thicking.kdockw.desktop.in > ~/.local/share/applications/com.thicking.kdockw.desktop
+    for png in src/icons/*-apps-com.thicking.kdockw.png; do
         size=$(basename "$png" | cut -d- -f1)
-        install -Dm644 "$png" ~/.local/share/icons/hicolor/${size}x${size}/apps/com.bhyoo.krema.png
+        install -Dm644 "$png" ~/.local/share/icons/hicolor/${size}x${size}/apps/com.thicking.kdockw.png
     done
-    install -Dm644 src/icons/sc-apps-com.bhyoo.krema.svg ~/.local/share/icons/hicolor/scalable/apps/com.bhyoo.krema.svg
+    install -Dm644 src/icons/sc-apps-com.thicking.kdockw.svg ~/.local/share/icons/hicolor/scalable/apps/com.thicking.kdockw.svg
     kbuildsycoca6 --noincremental
     echo "Installed dev launcher and icons under ~/.local/share"
 
@@ -75,10 +75,10 @@ dev-desktop:
 dev-desktop-clean:
     #!/usr/bin/env bash
     set -euo pipefail
-    rm -f ~/.local/share/applications/com.bhyoo.krema.desktop \
-        ~/.local/share/icons/hicolor/scalable/apps/com.bhyoo.krema.svg
-    for png in src/icons/*-apps-com.bhyoo.krema.png; do
+    rm -f ~/.local/share/applications/com.thicking.kdockw.desktop \
+        ~/.local/share/icons/hicolor/scalable/apps/com.thicking.kdockw.svg
+    for png in src/icons/*-apps-com.thicking.kdockw.png; do
         size=$(basename "$png" | cut -d- -f1)
-        rm -f ~/.local/share/icons/hicolor/${size}x${size}/apps/com.bhyoo.krema.png
+        rm -f ~/.local/share/icons/hicolor/${size}x${size}/apps/com.thicking.kdockw.png
     done
     echo "Removed dev .desktop file and icons"

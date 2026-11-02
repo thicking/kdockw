@@ -12,10 +12,10 @@
 # per-test mktemp XDG dirs).
 #
 # The AT-SPI E2E suite (tests/appium) runs in distro-e2e.yml, against the
-# packaged krema on every supported distro including fedora-43.
+# packaged kdockw on every supported distro including fedora-43.
 #
 # Image: the ctest ref of tests/distro/image-ref.sh, pulled from
-# ghcr.io/isac322/krema-ci (published by ci-images.yml); when it is not
+# ghcr.io/thicking/kdockw-ci (published by ci-images.yml); when it is not
 # there (a pull request changing tests/appium/Dockerfile) or the pull fails,
 # tests/distro/build-ci-image.sh builds it locally.
 #
@@ -29,7 +29,7 @@
 # Path filter (pushes here; pull requests through ci.yml's BUILD_PATHS,
 # which must match it): the build is src/ and CMakeLists.txt, BUILD_TESTING=ON adds
 # tests/ (tests/CMakeLists.txt), which adds tests/appium only with
-# KREMA_E2E_TESTS=ON (off here). Of tests/appium only the Dockerfile (the
+# KDOCKW_E2E_TESTS=ON (off here). Of tests/appium only the Dockerfile (the
 # image) is used; tests/distro contributes the two image scripts; tests/e2e
 # holds scenario docs. packaging/ is not built here.
 #

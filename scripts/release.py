@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
-"""Portable Krema release CLI.
+"""Portable KDockW release CLI.
 
   prepare  verify a signed vX.Y.Z tag and write a release context (source
-           tree, krema-X.Y.Z.tar.gz, notes.md, context.json) outside the repo
+           tree, kdockw-X.Y.Z.tar.gz, notes.md, context.json) outside the repo
   gate     inspect the full Distro E2E matrix for the tagged commit
   status   read-only per-channel publication report
   publish  plan (default) or, with --execute, publish to channels
@@ -57,7 +57,7 @@ from release_common import (  # noqa: E402
     source_root_name,
 )
 
-DEFAULT_REPOSITORY = "isac322/krema"
+DEFAULT_REPOSITORY = "thicking/krema"
 PINNED_SIGNERS = ("AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9",)
 CHANNELS = ("github", "aur", "obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"
@@ -590,7 +590,7 @@ def _published_archive(
 ) -> tuple[bytes, str] | None:
     """Source bytes GitHub already serves for a published ``tag``, with origin.
 
-    ``published``: the release's uploaded ``krema-X.Y.Z.tar.gz``.
+    ``published``: the release's uploaded ``kdockw-X.Y.Z.tar.gz``.
     ``autoarchive``: the tag's automatic GitHub source archive, used only when
     a published (non-draft) release lacks that asset. None when no published
     release exists, so a new or draft-only tag keeps the generated archive.

@@ -12,13 +12,13 @@
 #include <QVariantList>
 #include <QVariantMap>
 
-class KremaSettings;
+class KDockWSettings;
 class QQmlComponent;
 class QQmlEngine;
 class QQuickWindow;
 class QScreen;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -45,7 +45,7 @@ class SettingsWindow : public QObject
     Q_PROPERTY(QSizeF screenSize READ screenSize NOTIFY screenGeometryChanged)
 
 public:
-    explicit SettingsWindow(KremaSettings *settings, QObject *parent = nullptr);
+    explicit SettingsWindow(KDockWSettings *settings, QObject *parent = nullptr);
     ~SettingsWindow() override;
 
     /// Show the settings dialog, or raise it if already visible.
@@ -71,8 +71,8 @@ public:
     Q_INVOKABLE bool isStyleAvailable(int styleType) const;
 
     /// Zoom layout for settings previews (MiniDock), identical to
-    /// DockView::zoomLayout (see krema::computeDockZoom).
-    /// @p style is a krema::ZoomStyle int (0=Parabolic, 1=InPlace);
+    /// DockView::zoomLayout (see kdockw::computeDockZoom).
+    /// @p style is a kdockw::ZoomStyle int (0=Parabolic, 1=InPlace);
     /// unknown values fall back to Parabolic. @p boundary is the first item
     /// in the second zone, or -1 when no separator is present. @p boundaryGap
     /// is the fixed extra primary-axis gap inserted before it.
@@ -111,7 +111,7 @@ private:
     void updateScreenGeometry();
     void updateWallpaper();
 
-    KremaSettings *m_settings;
+    KDockWSettings *m_settings;
     QQmlEngine *m_engine = nullptr;
     QQmlComponent *m_component = nullptr;
     // The open window, if any.
@@ -127,4 +127,4 @@ private:
     QSize m_screenPixels;
 };
 
-} // namespace krema
+} // namespace kdockw

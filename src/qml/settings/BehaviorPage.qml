@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 SettingsPage {
     id: page
@@ -685,7 +685,7 @@ SettingsPage {
     FormCard.FormCard {
         FormCard.FormSwitchDelegate {
             text: i18n("Activate a window when dragging files over its app icon")
-            description: i18n("Bring an already running window to the front while you keep dragging. Krema does not open or store the files unless you drop them on the dock.")
+            description: i18n("Bring an already running window to the front while you keep dragging. KDockW does not open or store the files unless you drop them on the dock.")
             checked: DockSettings.activateWindowOnExternalDrag
             onToggled: DockSettings.activateWindowOnExternalDrag = checked
         }

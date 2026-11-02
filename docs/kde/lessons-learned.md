@@ -176,13 +176,13 @@
 
 ## 8. A QML handler must not destroy its own engine: app-wide UI owned by a per-screen object (2026-09, issue #16)
 
-**Symptom:** Choosing another "Monitor mode" in Settings aborted Krema (SIGABRT, `Object ... destroyed while one of its QML signal handlers is in progress`, BehaviorPage.qml:102). Issue #16.
+**Symptom:** Choosing another "Monitor mode" in Settings aborted KDockW (SIGABRT, `Object ... destroyed while one of its QML signal handlers is in progress`, BehaviorPage.qml:102). Issue #16.
 
 **Root cause:**
 - `BehaviorPage.qml` `onActivated` writes `DockSettings.monitorMode`; `MonitorModeChanged` is connected directly to `MultiDockManager::setMonitorMode()`, which destroys every `DockShell` synchronously.
 - Each `DockShell` owned a `SettingsWindow` (and its `QQmlApplicationEngine`), so the engine running the handler was deleted from inside the handler; Qt calls `qFatal()` in `QQmlData::destroyed()`.
-- Same teardown: `PreviewController` never deleted its preview `QQuickView` (one leaked `krema-preview` surface per rebuilt shell), and it outlived `DockView`, so `PreviewPopup.qml` bindings re-ran against a null `DockView` (`Cannot read property 'edge' of null`).
-- Second mechanism on the same flow: `createShellForScreen()` called `setScreen()` on a view left at (0,0). `QWindowPrivate::create()` re-derives the screen from the geometry, so every non-primary dock moved to the primary screen and emitted `screenChanged` while its platform window was being created; `DockView::handleScreenChanged()` then ran `hide()`+`show()`, re-entering `QWindow::create()`. The first `QWaylandWindow` leaked with a dangling `QWindow` pointer, and its next layer-surface configure crashed Krema (typically when Settings was opened after switching back from "All monitors").
+- Same teardown: `PreviewController` never deleted its preview `QQuickView` (one leaked `kdockw-preview` surface per rebuilt shell), and it outlived `DockView`, so `PreviewPopup.qml` bindings re-ran against a null `DockView` (`Cannot read property 'edge' of null`).
+- Second mechanism on the same flow: `createShellForScreen()` called `setScreen()` on a view left at (0,0). `QWindowPrivate::create()` re-derives the screen from the geometry, so every non-primary dock moved to the primary screen and emitted `screenChanged` while its platform window was being created; `DockView::handleScreenChanged()` then ran `hide()`+`show()`, re-entering `QWindow::create()`. The first `QWaylandWindow` leaked with a dangling `QWindow` pointer, and its next layer-surface configure crashed KDockW (typically when Settings was opened after switching back from "All monitors").
 
 **Fix:** One `SettingsWindow` owned by `MultiDockManager` (declared before `m_shells`), shells hold a non-owning pointer and take the interaction lock when created while the dialog is open. Settings QML calls the stateless `SettingsWindow.isStyleAvailable()` instead of a per-dock `DockView`. `DockShell` owns `PreviewController` (which owns its view) and destroys it before `DockView`.
 Each view is also positioned on its target screen before creation, and `handleScreenChanged()` does nothing while no platform window exists.
@@ -198,11 +198,11 @@ Each view is also positioned on its target screen before creation, and `handleSc
 
 ## 9. LayerShellQt < 6.6: no `Window::setScreen`, and `Window::get()` already creates the platform window (2026-09)
 
-**Symptom:** After #23, master no longer compiled on Debian 13 / Ubuntu 25.04 (LayerShellQt 6.3.4: `'class LayerShellQt::Window' has no member named 'setScreen'`). A compile-only fix still put every dock and preview on the first output (WAYLAND_DEBUG: `get_layer_surface(..., wl_output#20, 2, "krema-dock")`, where `wl_output#20` is Virtual-0, while Virtual-1 was the Plasma primary; "All monitors" stacked both docks on Virtual-0).
+**Symptom:** After #23, master no longer compiled on Debian 13 / Ubuntu 25.04 (LayerShellQt 6.3.4: `'class LayerShellQt::Window' has no member named 'setScreen'`). A compile-only fix still put every dock and preview on the first output (WAYLAND_DEBUG: `get_layer_surface(..., wl_output#20, 2, "kdockw-dock")`, where `wl_output#20` is Virtual-0, while Virtual-1 was the Plasma primary; "All monitors" stacked both docks on Virtual-0).
 
 **Verified API history (layer-shell-qt tags):** `Window::setScreen`/`screen` since v6.6.0 (commit 430ad36); `setDesiredSize` since 6.4; `ScreenConfiguration` deprecated in 6.6. In 6.3–6.5 `QWaylandLayerSurface` binds `QWindow::screen()` (ScreenFromQWindow, the default) when the surface is created on show, and `Window::Window()` calls `window->create()`.
 
-**Root causes (compat path, `KREMA_COMPAT_NO_LAYERSHELL_SCREEN`):**
+**Root causes (compat path, `KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN`):**
 1. `Window::get()` creates the platform window, and QtWayland re-derives `QWindow::screen()` from the still-empty geometry, so `DockView` read back the primary screen before pinning it.
 2. On a created QtWayland toplevel, `QWindow::setPosition()` runs `screenForGeometry()` from the stale origin and moved the preview back to the old screen (QtWayland pins a created toplevel to its screen origin anyway, `fixedToplevelPositions`).
 
@@ -214,7 +214,7 @@ Each view is also positioned on its target screen before creation, and `handleSc
 
 ## 10. Destroy JavaScript-owned windows before their QML engine (2026-09, issue #27)
 
-**Symptom:** On Debian 13 (Qt 6.8.2, KF 6.13), Krema segfaulted in `QQmlComponent::~QQmlComponent()` when it quit while the Settings window was still being built or was open. With the real binary, quitting 0 ms after opening Settings crashed 3 out of 3 times, 50 ms 2/3, 300 ms 1/3, and 3 s 0/3. Fedora 44 (Qt 6.11) never crashed, including with kirigami-addons 1.7.0 built from source.
+**Symptom:** On Debian 13 (Qt 6.8.2, KF 6.13), KDockW segfaulted in `QQmlComponent::~QQmlComponent()` when it quit while the Settings window was still being built or was open. With the real binary, quitting 0 ms after opening Settings crashed 3 out of 3 times, 50 ms 2/3, 300 ms 1/3, and 3 s 0/3. Fedora 44 (Qt 6.11) never crashed, including with kirigami-addons 1.7.0 built from source.
 
 **Cause:** `ConfigurationView.open()` creates `ConfigWindow` with `component.createObject(...)`. On every kirigami-addons version (1.7–1.13) the window has no QObject parent and has `QQmlEngine::JavaScriptOwnership`. Passing `root.window` in 1.12+ only sets `transientParent`. `~SettingsWindow` deleted the engine with the window alive, so the engine's teardown sweep (`QV4::QObjectWrapper::destroyObject`) destroyed the window tree, which crashes on the Debian 13 stack.
 
@@ -224,11 +224,11 @@ Each view is also positioned on its target screen before creation, and `handleSc
 
 ## 11. The layer-shell namespace is the window type in KWin (2026-09, issue #16)
 
-**Symptom:** Show Desktop (Meta+D) hid the Krema dock, while Plasma panels stayed.
+**Symptom:** Show Desktop (Meta+D) hid the KDockW dock, while Plasma panels stayed.
 
-**Cause:** The dock used the namespace `"krema-dock"`. KWin derives a layer surface's window type only from its namespace (`layershellv1window.cpp` `scopeToType`); anything outside its short list (`dock`, `desktop`, `notification`, `tooltip`, ...) becomes `WindowType::Normal`. `Workspace::setShowingDesktop()` hides every window whose `breaksShowingDesktop()` is true, which includes every normal window. Observed in KWin `--virtual`: `dock=false hiddenByShowDesktop=true` with `"krema-dock"`, `dock=true hiddenByShowDesktop=false` with `"dock"`.
+**Cause:** The dock used the namespace `"kdockw-dock"`. KWin derives a layer surface's window type only from its namespace (`layershellv1window.cpp` `scopeToType`); anything outside its short list (`dock`, `desktop`, `notification`, `tooltip`, ...) becomes `WindowType::Normal`. `Workspace::setShowingDesktop()` hides every window whose `breaksShowingDesktop()` is true, which includes every normal window. Observed in KWin `--virtual`: `dock=false hiddenByShowDesktop=true` with `"kdockw-dock"`, `dock=true hiddenByShowDesktop=false` with `"dock"`.
 
-**Fix:** The dock surface uses the namespace `"dock"`. `krema_showdesktop_tests` (tests/kwin) toggles Show Desktop over D-Bus and reads KWin's verdict through a test-only scripted effect.
+**Fix:** The dock surface uses the namespace `"dock"`. `kdockw_showdesktop_tests` (tests/kwin) toggles Show Desktop over D-Bus and reads KWin's verdict through a test-only scripted effect.
 
 **Key lessons:**
 - The namespace is not a free-form label on KWin: pick it from KWin's type table for the surface's role.
@@ -240,7 +240,7 @@ Each view is also positioned on its target screen before creation, and `handleSc
 
 **Cause:** `surfaceHeight()` reserves `max(zoomOverflow, tooltipReserve)` in the axis perpendicular to the dock edge. `tooltipReserve` was 36px, enough for the tooltip's height above/below a horizontal panel, but vertical docks open the tooltip beside the panel, where its width (not height) must fit. The compositor clips everything outside the layer surface.
 
-**Fix:** QML publishes `DockView.sideTooltipReserve` (gap + a font-derived max tooltip width of 15 gridUnits; longer names elide). Vertical docks use it as the tooltip reserve; horizontal docks keep 36px. The input region still follows the panel rect, so the wider transparent surface does not take clicks from windows beside the dock. `krema_tooltip_tests` (tests/kwin) checks the tooltip lies inside the surface on all four edges.
+**Fix:** QML publishes `DockView.sideTooltipReserve` (gap + a font-derived max tooltip width of 15 gridUnits; longer names elide). Vertical docks use it as the tooltip reserve; horizontal docks keep 36px. The input region still follows the panel rect, so the wider transparent surface does not take clicks from windows beside the dock. `kdockw_tooltip_tests` (tests/kwin) checks the tooltip lies inside the surface on all four edges.
 
 **Key lessons:**
 - A perpendicular reserve sized for one orientation is wrong for the other: size it from what actually opens on that side.
@@ -252,10 +252,10 @@ Each view is also positioned on its target screen before creation, and `handleSc
 
 **Cause:** `DockItem.qml` created `SmartLauncherItem` with `Qt.createComponent("org.kde.plasma.private.taskmanager", "SmartLauncherItem")`. plasma-desktop 6.6 (commit `4bff79ad`, "Port to plasma_add_applet") compiled that module into the task manager applet plugin, so `qt6/qml/org/kde/plasma/private/taskmanager` no longer exists. The component was never Ready, and the `status` check skipped creation without a log line.
 
-**Fix:** `LauncherEntryTracker` (C++) receives `com.canonical.Unity.LauncherEntry.Update` itself, following the upstream backend semantics; see [notification-badges.md](notification-badges.md). `krema_launcher_entry_tests` sends real D-Bus signals and checks the dock item's badge and progress bar.
+**Fix:** `LauncherEntryTracker` (C++) receives `com.canonical.Unity.LauncherEntry.Update` itself, following the upstream backend semantics; see [notification-badges.md](notification-badges.md). `kdockw_launcher_entry_tests` sends real D-Bus signals and checks the dock item's badge and progress bar.
 
 **Key lessons:**
-- A private module is not a dependency Krema can keep: when the protocol underneath is public (here a D-Bus signal), implement the protocol.
+- A private module is not a dependency KDockW can keep: when the protocol underneath is public (here a D-Bus signal), implement the protocol.
 - A silent fallback (`if (comp.status === Component.Ready)`) hides a missing feature. Cover each feature with a test that observes the visible result.
 
 ## 14. Running KWin + AT-SPI E2E in an unprivileged container (2026-09, tests/appium)
@@ -266,18 +266,18 @@ Verified while building the `tests/appium` harness (KWin 6.7.5, Qt 6.10, KF 6.30
 - **KWin 6.7 needs a DRM device for OpenGL**: the virtual backend opens a DRM device via libdrm (vgem through its primary node is the exception); without `/dev/dri` it falls back to QPainter, and then ScreenShot2 answers every request with `Error.Cancelled` and `zkde_screencast` (KPipeWire thumbnails) is disabled — `ScreencastManager` requires `OpenGLCompositing`. Host fix: `modprobe vgem` (or the out-of-tree `tests/appium/setup-vgem.sh`) so `--virtual` gets a render node. A KMS-only card (vkms) driven by KWin's DRM backend also composites with OpenGL, but without logind/seatd in the container KWin opens devices through its noop session, which only works since KWin 6.5 — so the harness dropped that path and uses vgem + `--virtual` on every KWin version. Docker-on-VM setups (OrbStack, Docker Desktop) have no vgem; use a generic-kernel VM (Lima).
 - **ScreenShot2 PNGs have alpha**: the dock surface's empty areas are alpha-0, so luminance/pixel comparisons must alpha-composite over a known background (the harness uses white) before diffing.
 - **inputsynth press/release must be one W3C action chain**: selenium-webdriver-at-spi spawns a fresh `inputsynth` per `/actions` call and interpolates pointer moves from (0,0), so a press in one call and the release in the next loses the held button and teleports the pointer. `drag()` issues press→hold→move→release in a single chain; the chain must start by moving to the last known pointer position.
-- **`Qt::Popup` windows (QMenu) are never in AT-SPI**: `QAccessibleApplication` builds children from `topLevelWindows()` and skips popups. Drive the menu via its KWin window (screen geometry) plus keyboard navigation over the known enabled-entry order (`krema_e2e.context_menu_entries`).
-- **Meta+F5 collides with a KWin default**: KWin's `MoveMouseToFocus` ("Move Mouse to Focus") owns Meta+F5 in stock KWin, so a `focus-dock` bound to it never receives the real key press, and kglobalacceld < 6.7 drops the contested key from the second component entirely. Krema's default was therefore moved to Meta+Alt+D, which no stock Plasma 6 component claims. Before choosing a global shortcut default, check it against KWin's and plasmashell's defaults; `invokeShortcut("focus-dock")` over D-Bus works regardless of the key.
+- **`Qt::Popup` windows (QMenu) are never in AT-SPI**: `QAccessibleApplication` builds children from `topLevelWindows()` and skips popups. Drive the menu via its KWin window (screen geometry) plus keyboard navigation over the known enabled-entry order (`kdockw_e2e.context_menu_entries`).
+- **Meta+F5 collides with a KWin default**: KWin's `MoveMouseToFocus` ("Move Mouse to Focus") owns Meta+F5 in stock KWin, so a `focus-dock` bound to it never receives the real key press, and kglobalacceld < 6.7 drops the contested key from the second component entirely. KDockW's default was therefore moved to Meta+Alt+D, which no stock Plasma 6 component claims. Before choosing a global shortcut default, check it against KWin's and plasmashell's defaults; `invokeShortcut("focus-dock")` over D-Bus works regardless of the key.
 
 ## 14. Running the AT-SPI suite on older distro stacks (2026-09, tests/distro)
 
 Verified while building Tier 3 (`tests/distro`, `tests/appium` run on 12 distros' own KWin/Qt/KF):
 
 - **vgem is a faux device since kernel 6.15**: KWin < 6.5 (debian-13, ubuntu-25.04/25.10, opensuse-leap-16.0) recognises vgem only on the platform bus — libdrm < 2.4.126 cannot enumerate faux devices at all, and KWin < 6.5 opens a faux vgem's render node where dumb-buffer allocation fails. Both end in QPainter compositing (no ScreenShot2, no screencast). Fix: build vgem out-of-tree registered as a platform device (`tests/appium/setup-vgem.sh`); a packaged `modprobe vgem` on kernel >= 6.15 is not enough.
-- **KWin permission checks are also xdg-activation gating**: with `KWIN_WAYLAND_NO_PERMISSION_CHECKS=1` KWin never reads `X-KDE-Wayland-Interfaces`, so no client is privileged. On KWin < 6.5 a non-privileged client can obtain an xdg-activation token only while it owns the active surface — a packaged dock could not raise its own Settings window from its context menu (`test_set001` failed on debian-13/ubuntu-25.04/25.10). Tier 3 therefore runs with checks on (`tools/run-permission-checks.patch`, `KWIN_WAYLAND_NO_PERMISSION_CHECKS=0`): the installed `com.bhyoo.krema.desktop` declares the interfaces, so krema is privileged — which doubles as a packaging-contract test. A source-tree krema has no matching desktop file and must keep the bypass.
+- **KWin permission checks are also xdg-activation gating**: with `KWIN_WAYLAND_NO_PERMISSION_CHECKS=1` KWin never reads `X-KDE-Wayland-Interfaces`, so no client is privileged. On KWin < 6.5 a non-privileged client can obtain an xdg-activation token only while it owns the active surface — a packaged dock could not raise its own Settings window from its context menu (`test_set001` failed on debian-13/ubuntu-25.04/25.10). Tier 3 therefore runs with checks on (`tools/run-permission-checks.patch`, `KWIN_WAYLAND_NO_PERMISSION_CHECKS=0`): the installed `com.thicking.kdockw.desktop` declares the interfaces, so kdockw is privileged — which doubles as a packaging-contract test. A source-tree kdockw has no matching desktop file and must keep the bypass.
 - **TasksModel windows come only from `org_kde_plasma_window_management`**: `WaylandTasksModel` uses no D-Bus for the window list. If KWin denies the bind (interface missing from `X-KDE-Wayland-Interfaces` with checks on) or never advertises the global, the model stays empty (launchers only, no `IsWindow` rows) and libtaskmanager logs only "The PlasmaWindowManagement protocol hasn't activated in time". Check KWin's log for "not in X-KDE-Wayland-Interfaces of".
 - **Qt < 6.9 reports AT-SPI rects that ignore Item scale**: a zoomed DockItem's rect has the scaled top-left corner but the untransformed size, so `Rect.of(item).width` never changes under zoom. `painted_rect()` recovers the zoom factor from how far the corner rose (`EXTENTS_IGNORE_SCALE`); Qt >= 6.9 returns the scaled rect. Never compare scaled widths through the raw AT-SPI rect.
-- **Qt 6.11 changed AT-SPI roles**: `QQuickPage` moved from PageTab (`page_tab`) to Pane (`panel`), and since every `QQuickControl` is accessible, `ApplicationWindow`'s content adds a `filler` level above the PageRow — and the page stack's own role still differs across distro Qt/Kirigami (`panel`, `layered_pane`). Match structure by children, not by role (`PAGE_ROLE`, `SETTINGS_STACK_XPATH` in `krema_e2e/krema.py`).
+- **Qt 6.11 changed AT-SPI roles**: `QQuickPage` moved from PageTab (`page_tab`) to Pane (`panel`), and since every `QQuickControl` is accessible, `ApplicationWindow`'s content adds a `filler` level above the PageRow — and the page stack's own role still differs across distro Qt/Kirigami (`panel`, `layered_pane`). Match structure by children, not by role (`PAGE_ROLE`, `SETTINGS_STACK_XPATH` in `kdockw_e2e/kdockw.py`).
 - **`XDG_MENU_PREFIX=plasma-` is required for KService on Debian**: KService resolves desktop files (dock item names, icons) through `${XDG_MENU_PREFIX}applications.menu`; startplasma exports it, but the harness's bare session does not, and Debian/Ubuntu ship only `plasma-applications.menu` (Fedora also has redhat-menus' `applications.menu`, which masked the issue there). The Tier 3 image exports it like a real Plasma session (`tests/distro/image/Dockerfile`).
 
 ## 15. A visible preview can still have a pending Wayland input region (2026-10, issue #55)

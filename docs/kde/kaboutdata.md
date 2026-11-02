@@ -19,14 +19,14 @@ KAboutData stores application metadata (name, version, license, authors). Used b
 #include <KAboutData>
 
 KAboutData aboutData(
-    "krema",                              // componentName (internal ID)
-    i18n("Krema"),                        // displayName
+    "kdockw",                              // componentName (internal ID)
+    i18n("KDockW"),                        // displayName
     "0.1.0",                              // version
     i18n("A dock for KDE Plasma 6"),      // shortDescription
     KAboutLicense::GPL_V3,                // license
     i18n("(C) 2024-2026"),                // copyrightStatement
     QString(),                            // otherText
-    "https://github.com/user/krema"       // homepage
+    "https://github.com/user/kdockw"       // homepage
 );
 
 aboutData.addAuthor(i18n("Author Name"), i18n("Developer"), "email@example.com");
@@ -222,16 +222,16 @@ Used for:
 
 ---
 
-## Krema Setup
+## KDockW Setup
 
 ```cpp
 // src/app/application.cpp — shared by main() (early CLI parse, usable before
 // QApplication exists) and Application::run()
 KAboutData Application::makeAboutData() {
     KAboutData aboutData(
-        "krema",
-        i18n("Krema"),
-        KREMA_VERSION_STRING,
+        "kdockw",
+        i18n("KDockW"),
+        KDOCKW_VERSION_STRING,
         i18n("A dock for KDE Plasma 6"),
         KAboutLicense::GPL_V3
     );

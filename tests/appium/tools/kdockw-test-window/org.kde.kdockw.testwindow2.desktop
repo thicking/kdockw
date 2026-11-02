@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KDockW Second Test Window
+Comment=Second window fixture app so tests can have two distinct dock items
+Exec=kdockw-test-window --app-id org.kde.kdockw.testwindow2
+Icon=accessories-text-editor
+Categories=Utility;
+StartupWMClass=org.kde.kdockw.testwindow2

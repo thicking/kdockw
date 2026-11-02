@@ -1,4 +1,4 @@
-/* Hero lens: the headline "krema" magnifies under the pointer like Krema's dock.
+/* Hero lens: the headline "kdockw" magnifies under the pointer like KDockW's dock.
    scale(d) = 1 + (MAX - 1) * cos²(π·d / (2R)) for |d| < R, else 1.
    Layout (offsetLeft/offsetWidth, unaffected by transforms) is cached and only
    re-measured on resize; each frame is pure arithmetic + transform writes.
@@ -124,7 +124,7 @@
       scale[i] = blend > 0 ? rest[i] + (curve(p - centre[i]) - rest[i]) * blend : rest[i];
     }
     // Pack letters edge to edge at their scaled widths: they never overlap and
-    // spacing opens around the magnified letter, like Krema's own layout.
+    // spacing opens around the magnified letter, like KDockW's own layout.
     let x = wordStart;
     for (let i = 0; i < n; i++) {
       packedLeft[i] = x;

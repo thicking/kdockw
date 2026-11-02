@@ -1,0 +1,7 @@
+File=kdockw.kcfg
+ClassName=KDockWSettings
+Mutators=true
+DefaultValueGetters=true
+GenerateProperties=true
+ParentInConstructor=true
+Singleton=false

@@ -29,7 +29,7 @@ family_runtime() {
     # 25.04) can deadlock in its zink fallback while creating a GL context.
     # qt6-svg-plugins: Breeze icons are SVG. A Plasma session has the Qt SVG
     # image/icon-engine plugins (Fedora and openSUSE pull them in with
-    # qt6-qtsvg); here nothing does, and krema and KWin would draw
+    # qt6-qtsvg); here nothing does, and kdockw and KWin would draw
     # placeholders instead of app icons.
     # shellcheck disable=SC2046
     debian_install \
@@ -88,7 +88,7 @@ family_clean() {
 }
 
 # Download the package's declared runtime deps into the apt archive cache
-# while the package builds; the krema install then only runs the
+# while the package builds; the kdockw install then only runs the
 # transaction. Nothing is installed here. apt-get update refreshes the
 # lists the runtime image cleaned.
 family_depfetch() {
@@ -96,7 +96,7 @@ family_depfetch() {
     debian_install --download-only "$@"
 }
 
-family_krema() {
+family_kdockw() {
     if ! debian_install /pkgs/*.deb; then
         # Stale lists (or a depfetch from an older snapshot) can reference
         # versions the archive no longer has: refresh and retry once.

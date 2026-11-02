@@ -4,7 +4,7 @@
 import QtQuick
 import QtQuick3D
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 
 // Interactive 3D stage for the shadow page: the bottom of the user's screen
 // (real wallpaper) seen in three-quarter perspective, the dock floating above

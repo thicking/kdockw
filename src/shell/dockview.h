@@ -18,9 +18,9 @@ class TasksModel;
 class VirtualDesktopInfo;
 }
 
-class KremaSettings;
+class KDockWSettings;
 
-namespace krema
+namespace kdockw
 {
 
 class DockVisibilityController;
@@ -52,7 +52,7 @@ class DockView : public QQuickView
     Q_PROPERTY(bool pointerInside READ isPointerInside NOTIFY pointerInsideChanged)
 
 public:
-    explicit DockView(std::unique_ptr<DockPlatform> platform, KremaSettings *settings, QWindow *parent = nullptr);
+    explicit DockView(std::unique_ptr<DockPlatform> platform, KDockWSettings *settings, QWindow *parent = nullptr);
     ~DockView() override;
 
     /// Initialize the dock view. @p tasksModel is used for visibility control.
@@ -94,8 +94,8 @@ public:
     [[nodiscard]] DockVisibilityController *visibilityController() const;
     [[nodiscard]] TaskIconProvider *iconProvider() const;
 
-    /// Dock zoom layout for QML (see krema::computeDockZoom).
-    /// @p style is a krema::ZoomStyle int (0=Parabolic, 1=InPlace);
+    /// Dock zoom layout for QML (see kdockw::computeDockZoom).
+    /// @p style is a kdockw::ZoomStyle int (0=Parabolic, 1=InPlace);
     /// unknown values fall back to Parabolic. @p boundary is the first item
     /// in the second zone, or -1 when no separator is present. @p boundaryGap
     /// is the fixed extra primary-axis gap inserted before it.
@@ -146,7 +146,7 @@ private Q_SLOTS:
 
 private:
     std::unique_ptr<DockPlatform> m_platform;
-    KremaSettings *m_settings = nullptr;
+    KDockWSettings *m_settings = nullptr;
     ScreenSettings *m_screenSettings = nullptr;
     DockVisibilityController *m_visibilityController = nullptr;
     std::unique_ptr<PointerFocusTracker> m_pointerFocusTracker;
@@ -161,4 +161,4 @@ private:
     static constexpr int s_tooltipReserve = 36;
 };
 
-} // namespace krema
+} // namespace kdockw

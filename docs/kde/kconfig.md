@@ -16,7 +16,7 @@ KConfig provides INI-style persistent configuration. The core classes are:
 
 | Location | Path | Usage |
 |----------|------|-------|
-| App config | `~/.config/<appname>rc` | Primary settings (e.g., `~/.config/kremarc`) |
+| App config | `~/.config/<appname>rc` | Primary settings (e.g., `~/.config/kdockwrc`) |
 | State config | `~/.local/share/<appname>/<appname>rc` | Window positions, etc. |
 | Global KDE | `~/.config/kdeglobals` | System-wide KDE settings |
 | System-wide | `/etc/xdg/*` | Admin defaults (with cascade) |
@@ -29,10 +29,10 @@ KConfig provides INI-style persistent configuration. The core classes are:
 #include <KSharedConfig>
 
 // Open app config (default: ~/.config/<appname>rc)
-KSharedConfig::Ptr config = KSharedConfig::openConfig("kremarc");
+KSharedConfig::Ptr config = KSharedConfig::openConfig("kdockwrc");
 
 // Open state config (for non-critical state like window geometry)
-KSharedConfig::Ptr state = KSharedConfig::openStateConfig("krema");
+KSharedConfig::Ptr state = KSharedConfig::openStateConfig("kdockw");
 ```
 
 ### Factory Methods
@@ -194,7 +194,7 @@ class KConfigBase {
 
 ---
 
-## Krema Usage Pattern
+## KDockW Usage Pattern
 
 ```cpp
 // docksettings.h
@@ -203,7 +203,7 @@ class DockSettings : public QObject {
     KConfigGroup m_group;
 
     DockSettings() {
-        m_config = KSharedConfig::openConfig("kremarc");
+        m_config = KSharedConfig::openConfig("kdockwrc");
         m_group = m_config->group("General");
     }
 
@@ -218,7 +218,7 @@ class DockSettings : public QObject {
 };
 ```
 
-### Config Keys Used in Krema
+### Config Keys Used in KDockW
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
@@ -252,6 +252,6 @@ class DockSettings : public QObject {
 
 The corresponding FormCard switches are labeled **Reserve screen space** (shown only for Always visible mode; maximized windows avoid the dock) and **Separate pinned and running apps** (pinned apps, including running ones, stay together; unpinned running apps follow after the divider).
 
-Both click-action keys are global values in the `[General]` group of `~/.config/kremarc`, shared by every monitor's dock through the application's `DockSettings` singleton. Each choice saves independently when changed and loads on startup. Their default value of `0` preserves single-window activation and grouped-window cycling on upgrade.
+Both click-action keys are global values in the `[General]` group of `~/.config/kdockwrc`, shared by every monitor's dock through the application's `DockSettings` singleton. Each choice saves independently when changed and loads on startup. Their default value of `0` preserves single-window activation and grouped-window cycling on upgrade.
 
 These choices apply only to mouse left clicks. Hover previews remain independent: `GroupedWindowClickAction=1` opens the grouped preview even when `PreviewEnabled=false`.

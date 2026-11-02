@@ -1,8 +1,8 @@
-pkgbase = krema
+pkgbase = kdockw
 	pkgdesc = A lightweight dock for KDE Plasma 6 — spiritual successor to Latte Dock
 	pkgver = 0.10.0
 	pkgrel = 1
-	url = https://krema.bhyoo.com/
+	url = https://github.com/thicking/krema/
 	arch = x86_64
 	arch = aarch64
 	license = GPL-3.0-or-later
@@ -36,7 +36,7 @@ pkgbase = krema
 	depends = kpipewire
 	depends = pipewire
 	depends = wayland>=1.22
-	source = krema-0.10.0.tar.gz::https://github.com/isac322/krema/archive/v0.10.0.tar.gz
+	source = kdockw-0.10.0.tar.gz::https://github.com/thicking/krema/archive/v0.10.0.tar.gz
 	sha256sums = 89612ed09921fa2990bc49f222352590e428a4fb38cd04b1cbefa87162bad7f0
 
-pkgname = krema
+pkgname = kdockw

@@ -8,7 +8,7 @@
 // compositor. Must run under run-with-kwin.sh, which provides WAYLAND_DISPLAY,
 // a private session bus and throwaway XDG directories.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockcontextmenu.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
@@ -50,13 +50,13 @@ static void initResources()
 namespace
 {
 
-using krema::DockShell;
-using krema::MultiDockManager;
+using kdockw::DockShell;
+using kdockw::MultiDockManager;
 
 constexpr int kTimeoutMs = 10000;
 constexpr int kHideDelayMs = 50;
 
-// QML runtime errors (TypeError, ReferenceError, ...) raised by Krema's own
+// QML runtime errors (TypeError, ReferenceError, ...) raised by KDockW's own
 // QML.
 QStringList g_qmlErrors;
 // Every warning raised by the settings window's QML (load errors, binding
@@ -78,10 +78,10 @@ void messageHandler(QtMsgType type, const QMessageLogContext &context, const QSt
 
 // Mirrors the object graph and wiring Application::run() builds.
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
     std::unique_ptr<MultiDockManager> manager;
 };
 
@@ -89,7 +89,7 @@ App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
         // Auto-hide with a short delay: a dock whose settings-dialog interaction
         // lock is missing hides almost immediately, which makes the lock
@@ -98,27 +98,27 @@ App &app()
         a->settings->setShowDelay(0);
         a->settings->setHideDelay(kHideDelayMs);
         a->settings->setMonitorMode(MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -143,7 +143,7 @@ void startDocks()
     // As in Application::run(): the first docks are created only once the
     // Plasma output order is known. Created earlier, they would be rebuilt
     // when the primary output resolves, which production never does.
-    auto *outputOrder = krema::OutputOrderMonitor::instance();
+    auto *outputOrder = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [outputOrder] {
             return outputOrder->orderReady();
@@ -153,7 +153,7 @@ void startDocks()
 
     // Same connection as Application::run(): the settings dialog writes
     // DockSettings.monitorMode and the manager rebuilds its shells.
-    QObject::connect(a.settings.get(), &KremaSettings::MonitorModeChanged, a.manager.get(), [&a]() {
+    QObject::connect(a.settings.get(), &KDockWSettings::MonitorModeChanged, a.manager.get(), [&a]() {
         a.manager->setMonitorMode(static_cast<MultiDockManager::MonitorMode>(a.settings->monitorMode()));
     });
 
@@ -395,7 +395,7 @@ DockShell *shellForOutput(const QString &name)
 } // namespace
 
 TEST_CASE(
-    "Changing monitor mode from the settings dialog keeps Krema and the "
+    "Changing monitor mode from the settings dialog keeps KDockW and the "
     "dialog alive",
     "[settings][monitor-mode]")
 {
@@ -472,7 +472,7 @@ TEST_CASE(
 {
     resetTo(MultiDockManager::PrimaryOnly);
     REQUIRE(QGuiApplication::screens().size() == 2);
-    const auto primary = krema::OutputOrderMonitor::instance()->primaryScreen()->name();
+    const auto primary = kdockw::OutputOrderMonitor::instance()->primaryScreen()->name();
     QString other;
     for (auto *screen : QGuiApplication::screens()) {
         if (screen->name() != primary) {
@@ -512,7 +512,7 @@ TEST_CASE(
     // This signal handler removes the dock on the output from which settings
     // was opened. Its screen overlay must die with it, while the global dialog
     // and the retained dock remain alive and focused.
-    QPointer<krema::ScreenSettings> originSettings = origin->findChild<krema::ScreenSettings *>();
+    QPointer<kdockw::ScreenSettings> originSettings = origin->findChild<kdockw::ScreenSettings *>();
     REQUIRE(originSettings);
     setOutputSelected(primary, false);
     CHECK_FALSE(origin);
@@ -602,9 +602,9 @@ TEST_CASE("Opening settings does not switch the Follow Active dock", "[settings]
     }
     REQUIRE(other);
     auto *otherController = other->view()->visibilityController();
-    krema::EdgeTrigger *edgeTrigger = nullptr;
+    kdockw::EdgeTrigger *edgeTrigger = nullptr;
     for (auto *window : QGuiApplication::allWindows()) {
-        if (auto *candidate = qobject_cast<krema::EdgeTrigger *>(window); candidate && candidate->screen() == other->view()->screen()) {
+        if (auto *candidate = qobject_cast<kdockw::EdgeTrigger *>(window); candidate && candidate->screen() == other->view()->screen()) {
             edgeTrigger = candidate;
         }
     }
@@ -696,7 +696,7 @@ TEST_CASE("Opening settings twice keeps one tracked window", "[settings][single-
     CHECK(allDocksVisible());
 
     // QA-04: closing that window releases the lock, so the tracked window is
-    // the Settings window and not another Krema surface
+    // the Settings window and not another KDockW surface
     closeSettings();
     CHECK(QTest::qWaitFor(allDocksHidden, kTimeoutMs));
     CHECK(g_qmlErrors.isEmpty());
@@ -843,8 +843,8 @@ namespace
 
 // Issue #27: SettingsWindow must destroy the window it opened itself. Left to
 // the QML engine's teardown, the still-open (or still loading) window crashed
-// Krema on Debian 13. A fresh dock graph means a fresh settings engine, so the
-// window's QML is loaded from scratch, as when Krema starts.
+// KDockW on Debian 13. A fresh dock graph means a fresh settings engine, so the
+// window's QML is loaded from scratch, as when KDockW starts.
 void restartDocks()
 {
     if (!visibleSettingsWindows().isEmpty()) {
@@ -869,7 +869,7 @@ QQuickWindow *settingsWindowObject()
     return nullptr;
 }
 
-// The dock graph is gone: no Settings window object is left, and Krema's own
+// The dock graph is gone: no Settings window object is left, and KDockW's own
 // QML raised no errors while it was torn down.
 void checkSettingsTornDown(const QPointer<QQuickWindow> &window)
 {
@@ -1053,7 +1053,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
     // As in Application::run(): opt into the layer-shell platform plugin

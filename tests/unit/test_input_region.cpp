@@ -9,7 +9,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
 {
     SECTION("Hidden: only trigger strip")
     {
-        krema::InputRegionParams p{};
+        kdockw::InputRegionParams p{};
         p.surfaceWidth = 1920;
         p.surfaceHeight = 120;
         p.panelX = 800;
@@ -20,7 +20,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
         p.visible = false;
         p.hovered = false;
 
-        QRegion region = krema::computeDockInputRegion(p);
+        QRegion region = kdockw::computeDockInputRegion(p);
 
         // Should contain only the trigger strip at the bottom
         REQUIRE(region.contains(QPoint(960, 118))); // center bottom
@@ -30,7 +30,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
 
     SECTION("Visible but not hovered: panel area + trigger strip")
     {
-        krema::InputRegionParams p{};
+        kdockw::InputRegionParams p{};
         p.surfaceWidth = 1920;
         p.surfaceHeight = 120;
         p.panelX = 800;
@@ -41,7 +41,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
         p.visible = true;
         p.hovered = false;
 
-        QRegion region = krema::computeDockInputRegion(p);
+        QRegion region = kdockw::computeDockInputRegion(p);
 
         // Panel area should be included (with margin)
         REQUIRE(region.contains(QPoint(960, 100))); // panel center
@@ -52,7 +52,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
 
     SECTION("Visible and hovered: includes zoom overflow")
     {
-        krema::InputRegionParams p{};
+        kdockw::InputRegionParams p{};
         p.surfaceWidth = 1920;
         p.surfaceHeight = 120;
         p.panelX = 800;
@@ -63,7 +63,7 @@ TEST_CASE("Dock input region computation", "[input-region]")
         p.visible = true;
         p.hovered = true;
 
-        QRegion region = krema::computeDockInputRegion(p);
+        QRegion region = kdockw::computeDockInputRegion(p);
 
         // Zoom overflow area above panel should be included
         REQUIRE(region.contains(QPoint(960, 55))); // above panel in zoom area
@@ -72,14 +72,14 @@ TEST_CASE("Dock input region computation", "[input-region]")
 
     SECTION("Panel width zero: fallback to empty (accept all input)")
     {
-        krema::InputRegionParams p{};
+        kdockw::InputRegionParams p{};
         p.surfaceWidth = 1920;
         p.surfaceHeight = 120;
         p.panelWidth = 0;
         p.visible = true;
         p.hovered = false;
 
-        QRegion region = krema::computeDockInputRegion(p);
+        QRegion region = kdockw::computeDockInputRegion(p);
 
         // Empty QRegion = no mask = accept all input
         REQUIRE(region.isEmpty());
@@ -90,7 +90,7 @@ TEST_CASE("Dock screen rect computation", "[screen-rect]")
 {
     SECTION("Bottom edge")
     {
-        krema::DockScreenRectParams p{};
+        kdockw::DockScreenRectParams p{};
         p.screenX = 0;
         p.screenY = 0;
         p.screenWidth = 1920;
@@ -103,7 +103,7 @@ TEST_CASE("Dock screen rect computation", "[screen-rect]")
         p.panelHeight = 40;
         p.edge = 1; // Bottom
 
-        QRect rect = krema::computeDockScreenRect(p);
+        QRect rect = kdockw::computeDockScreenRect(p);
 
         // Surface top-left: (0, 1080-120) = (0, 960)
         // Panel: (0+800, 960+80, 320, 40) = (800, 1040, 320, 40)
@@ -115,7 +115,7 @@ TEST_CASE("Dock screen rect computation", "[screen-rect]")
 
     SECTION("Top edge")
     {
-        krema::DockScreenRectParams p{};
+        kdockw::DockScreenRectParams p{};
         p.screenX = 0;
         p.screenY = 0;
         p.screenWidth = 1920;
@@ -128,7 +128,7 @@ TEST_CASE("Dock screen rect computation", "[screen-rect]")
         p.panelHeight = 40;
         p.edge = 0; // Top
 
-        QRect rect = krema::computeDockScreenRect(p);
+        QRect rect = kdockw::computeDockScreenRect(p);
 
         REQUIRE(rect.x() == 800);
         REQUIRE(rect.y() == 0);
@@ -138,7 +138,7 @@ TEST_CASE("Dock screen rect computation", "[screen-rect]")
 TEST_CASE("Preview input region matches the visible popup", "[input-region][preview]")
 {
     // 400 px deep preview surface; 300x180 popup.
-    krema::PreviewInputRegionParams p{};
+    kdockw::PreviewInputRegionParams p{};
     p.contentWidth = 300;
     p.contentHeight = 180;
 
@@ -149,7 +149,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentX = 800;
         p.edge = 0;
 
-        const QRegion region = krema::computePreviewInputRegion(p);
+        const QRegion region = kdockw::computePreviewInputRegion(p);
 
         REQUIRE(region == QRegion(800, 0, 300, 180));
         REQUIRE_FALSE(region.contains(QPoint(950, 180))); // just below the popup
@@ -163,7 +163,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentX = 800;
         p.edge = 1;
 
-        REQUIRE(krema::computePreviewInputRegion(p) == QRegion(800, 220, 300, 180));
+        REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(800, 220, 300, 180));
     }
 
     SECTION("Left edge: popup flush with the left, nothing to its right")
@@ -173,7 +173,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentY = 450;
         p.edge = 2;
 
-        REQUIRE(krema::computePreviewInputRegion(p) == QRegion(0, 450, 300, 180));
+        REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(0, 450, 300, 180));
     }
 
     SECTION("Right edge: popup flush with the right, nothing to its left")
@@ -183,7 +183,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentY = 450;
         p.edge = 3;
 
-        REQUIRE(krema::computePreviewInputRegion(p) == QRegion(100, 450, 300, 180));
+        REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(100, 450, 300, 180));
     }
 
     SECTION("Fractional popup geometry is fully covered")
@@ -195,7 +195,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentHeight = 180.5;
         p.edge = 0;
 
-        REQUIRE(krema::computePreviewInputRegion(p) == QRegion(800, 0, 301, 181));
+        REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(800, 0, 301, 181));
     }
 
     SECTION("No popup size yet: 1x1 region, never an empty (accept-all) mask")
@@ -207,7 +207,7 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         p.contentHeight = 0;
         p.edge = 1;
 
-        const QRegion region = krema::computePreviewInputRegion(p);
+        const QRegion region = kdockw::computePreviewInputRegion(p);
 
         REQUIRE_FALSE(region.isEmpty());
         REQUIRE(region == QRegion(0, 0, 1, 1));

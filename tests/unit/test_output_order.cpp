@@ -19,8 +19,8 @@
 
 #include <QObject>
 
-using krema::OutputOrderMonitor;
-using krema::OutputOrderMonitorTestAccess;
+using kdockw::OutputOrderMonitor;
+using kdockw::OutputOrderMonitorTestAccess;
 
 TEST_CASE("OutputOrderMonitor::firstOrderedMatch resolves the first known output", "[output-order]")
 {

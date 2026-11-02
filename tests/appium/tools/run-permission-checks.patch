@@ -10,10 +10,10 @@ its context menu (test_set001 fails on debian-13 / ubuntu-25.04 / 25.10).
 
 All clients that bind privileged interfaces in this harness
 (inputsynth, appidlister) ship .desktop files declaring
-X-KDE-Wayland-Interfaces, and Tier 3 runs krema from its installed distro
-package (com.bhyoo.krema.desktop declares the interfaces too), so letting the
+X-KDE-Wayland-Interfaces, and Tier 3 runs kdockw from its installed distro
+package (com.thicking.kdockw.desktop declares the interfaces too), so letting the
 testsuite ask for real permission checks exercises the packaging contract.
-Tier 2 runs krema from the build tree, which no desktop file can match, so
+Tier 2 runs kdockw from the build tree, which no desktop file can match, so
 the default must stay enabled: entrypoint.sh exports
 KWIN_WAYLAND_NO_PERMISSION_CHECKS=0 only for Tier 3 runs and run.rb now
 honours a pre-set value.

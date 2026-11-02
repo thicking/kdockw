@@ -5,7 +5,7 @@
 - ctx-new-instance: Launch new instance from menu
 - ctx-close: Close all windows of the app
 - ctx-settings: Open settings dialog from menu
-- ctx-quit: Quit Krema from menu
+- ctx-quit: Quit KDockW from menu
 - ctx-app-name: App name shown as header in menu
 - ctx-task-zones: Pin and unpin live tasks between zones without duplicate dock items
 - ctx-desktop-actions: The app's .desktop file actions (e.g. "New Private Window") launch from the menu
@@ -22,7 +22,7 @@
 - src/shell/settingswindow.h
 - src/shell/settingswindow.cpp
 - src/qml/SettingsDialog.qml
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 - src/models/dockmodel.h
 - src/models/dockmodel.cpp
 - src/shell/previewcontroller.h
@@ -53,7 +53,7 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 - Menu header shows app name
 - Menu items (top to bottom): AppName, [the app's .desktop actions, then a
   separator — only when the app declares visible actions, see CTX-008],
-  Pin/Unpin, New Instance, Close, separator, Settings..., About Krema, Quit
+  Pin/Unpin, New Instance, Close, separator, Settings..., About KDockW, Quit
 
 **Menu item positions** (approximate y-offsets from menu top):
 - AppName: +0px
@@ -61,11 +61,11 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 - New Instance: +57px
 - Close: +90px
 - Settings...: +123px
-- About Krema: +158px
+- About KDockW: +158px
 - Quit: +180px
 
 **Verification:** screenshot only (menu visible with expected entries)
-**Automated:** tests/appium/test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item, tests/appium/test_04_context_menu.py::test_ctx001_about_krema_is_the_fifth_entry, tests/appium/test_04_context_menu.py::test_ctx001_quit_is_the_last_entry (entry order is verified by effect for every enabled position; the header label text itself is not read since QMenu is not in AT-SPI — its presence as a disabled row is verified by the keyboard highlight skipping it)
+**Automated:** tests/appium/test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item, tests/appium/test_04_context_menu.py::test_ctx001_about_kdockw_is_the_fifth_entry, tests/appium/test_04_context_menu.py::test_ctx001_quit_is_the_last_entry (entry order is verified by effect for every enabled position; the header label text itself is not read since QMenu is not in AT-SPI — its presence as a disabled row is verified by the keyboard highlight skipping it)
 
 ---
 
@@ -154,17 +154,17 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 1. Right-click on any dock item (CTX-001 steps)
 2. Choose "Settings..." (keyboard, or click its position on a screenshot)
 3. Wait 1500ms (settings window creation)
-4. Check the window list — a krema settings window appears
+4. Check the window list — a kdockw settings window appears
 5. Screenshot — verify settings dialog
 6. Check the AT-SPI tree for the "Icon size" control
 
 **Expected:**
 - Settings window titled "Settings" opens as separate window, on the Icons page
-- Sidebar pages: Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, About Krema, About KDE
+- Sidebar pages: Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, About KDockW, About KDE
 - FormCard-based layout with sliders, card pickers, switches, spin boxes and combo boxes
 - Settings UI is fully accessible via AT-SPI
 
-**Verification:** window list (krema window count +1), AT-SPI (FormCard widgets), screenshot (dialog layout)
+**Verification:** window list (kdockw window count +1), AT-SPI (FormCard widgets), screenshot (dialog layout)
 
 **Automated:** tests/appium/test_04_context_menu.py::test_ctx006_settings_entry_opens_the_settings_window
 
@@ -198,10 +198,10 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 (`Actions=new-draft;hidden;_SEPARATOR_;open-inbox;`, where `hidden` has
 `NoDisplay=true`, `new-draft` has an icon and `open-inbox` has none, and the
 `[Desktop Action …]` groups are written in another order), installed in
-`~/.local/share/applications` before Krema starts. Each action launches the
+`~/.local/share/applications` before KDockW starts. Each action launches the
 app with a distinct window title.
 **Steps:**
-1. Pin the app (kremarc `PinnedLaunchers`) with no window running
+1. Pin the app (kdockwrc `PinnedLaunchers`) with no window running
 2. Right-click its dock item — screenshot the menu
 3. Choose "Open Inbox"
 4. Check the window list — one new window of the app, titled by that action
@@ -221,9 +221,9 @@ app with a distinct window title.
   for a pinned launcher, a running window and a grouped app alike
 - Pin/Unpin and the other existing entries keep working after the actions
 - An app without actions (the CTX-001..006 fixture) shows the unchanged menu
-- A failed launch is reported as a KDE notification; Krema keeps running
+- A failed launch is reported as a KDE notification; KDockW keeps running
 
-**Verification:** window list (new window's app id and title), kremarc
+**Verification:** window list (new window's app id and title), kdockwrc
 (pinned membership), AT-SPI (item name and window count), screenshot (labels and icons)
 **Automated:** tests/appium/test_04_context_menu.py::test_ctx008_pinned_launcher_launches_the_chosen_desktop_action, tests/appium/test_04_context_menu.py::test_ctx008_grouped_windows_launch_the_chosen_desktop_action (order and NoDisplay are verified by effect: a wrong position launches a window with another title; labels, icons and the launch-error notification are screenshot/manual only). Resolution (Actions= order, NoDisplay, separators, localized names, applications:/local/absolute-path desktop files) is unit-tested in tests/unit/test_desktop_actions.cpp.
 
@@ -250,11 +250,11 @@ window, so it is a task with a window preview.
   its preview reopens after the normal hover delay.
 - After the menu closes with the pointer off the dock, every item returns to
   its rest size and the preview stays closed, like a normal pointer exit.
-- Variant: Krema starts while no mouse is connected (the seat has no pointer)
+- Variant: KDockW starts while no mouse is connected (the seat has no pointer)
   and the mouse is connected afterwards. Already the first menu closed with
   Escape over a hovered item keeps its zoom, like the second one.
 
 **Verification:** KWin (menu window), AT-SPI (preview `showing`, painted item
-widths through `painted_rect`), screenshot (menu entry highlight), krema's
+widths through `painted_rect`), screenshot (menu entry highlight), kdockw's
 `WAYLAND_DEBUG` log (`wl_seat.capabilities` without pointer at start)
 **Automated:** tests/appium/test_04_context_menu.py::test_ctx009_zoom_and_hover_hold_while_menu_is_open, tests/appium/test_04_context_menu.py::test_ctx009_zoom_releases_when_menu_closes_away_from_the_dock (skip without ScreenShot2 capture; the tooltip is not asserted), tests/appium/test_04_context_menu.py::test_ctx009_zoom_holds_on_the_first_menu_after_starting_without_a_mouse (variant)

@@ -9,7 +9,7 @@
 
 class QUrl;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -31,4 +31,4 @@ QList<KServiceAction> desktopActions(const QUrl &launcherUrl);
 /// activation and launch errors reported as notifications).
 void launchDesktopAction(const KServiceAction &action);
 
-} // namespace krema
+} // namespace kdockw

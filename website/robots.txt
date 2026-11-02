@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://krema.bhyoo.com/sitemap.xml
+Sitemap: https://thicking.github.io/krema/sitemap.xml

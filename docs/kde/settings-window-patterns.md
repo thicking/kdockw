@@ -139,12 +139,12 @@ failed or took the mobile path):
 const bool hasConfigViewItem = configView->metaObject()->indexOfProperty("configViewItem") >= 0;
 ```
 
-Before the settings redesign, Krema's `SettingsWindow` handled 1.7.0 this way: it
+Before the settings redesign, KDockW's `SettingsWindow` handled 1.7.0 this way: it
 snapshotted `QGuiApplication::allWindows()` just before `open()` and took the single new
 `QQuickWindow` with `qmlEngine(window) == m_engine`. `createObject()` runs synchronously and
 gives the object the component's engine context, so this identified the window `open()`
-created without timers. Krema no longer uses `ConfigurationView` (see
-[Krema's Current Implementation](#kremas-current-implementation)).
+created without timers. KDockW no longer uses `ConfigurationView` (see
+[KDockW's Current Implementation](#kdockws-current-implementation)).
 
 ---
 
@@ -167,11 +167,11 @@ StatefulApp.StatefulWindow {
 
 `AbstractKirigamiApplication.configurationView` property: when set, automatically creates a "Configure…" (`options_configure`) action that calls `configurationView.open()`.
 
-**Not applicable for Krema**: dock has no main `ApplicationWindow` (it's a layer-shell surface).
+**Not applicable for KDockW**: dock has no main `ApplicationWindow` (it's a layer-shell surface).
 
 ---
 
-## Krema's Current Implementation
+## KDockW's Current Implementation
 
 **Files**: `src/shell/settingswindow.h`, `src/shell/settingswindow.cpp`,
 `src/qml/SettingsDialog.qml`, `src/qml/settings/*.qml`
@@ -191,7 +191,7 @@ The window is a plain `QQC2.ApplicationWindow` titled "Settings". It draws its o
 a `Kirigami.SearchField` ("Search settings") above a `ListView` ("Settings pages") of
 checkable `Delegates.RoundedItemDelegate` entries — Icons, Layout & Position, Panel Style,
 Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, then an "About"
-section with About Krema and About KDE. Each sidebar entry carries the names of its page's
+section with About KDockW and About KDE. Each sidebar entry carries the names of its page's
 settings as keywords, so the search also matches setting names. The current page is always
 kept in the filtered list. The right side is a `Loader` that shows the `FormCardPage` of the
 current module. Escape closes the window.
@@ -227,12 +227,12 @@ first page (Icons).
   windows. Creating the window directly from a `QQmlComponent` gives `SettingsWindow`
   a direct reference on every supported version and a clear per-open lifecycle.
 
-Trade-off: the sidebar, search, and page switching are maintained in Krema instead of
+Trade-off: the sidebar, search, and page switching are maintained in KDockW instead of
 being reused from Kirigami Addons.
 
 ## Why Retry Loop = Bad Architecture
 
-An earlier Krema version found the `ConfigWindow` with a retry loop (10 attempts × 50 ms over
+An earlier KDockW version found the `ConfigWindow` with a retry loop (10 attempts × 50 ms over
 `QGuiApplication::allWindows()`). That was a sign that:
 1. The code doesn't know **which window** it created (looking by exclusion in all windows)
 2. It assumes async window creation when it's actually sync

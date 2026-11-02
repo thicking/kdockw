@@ -1,6 +1,6 @@
-/* Pagedock: a working mini Krema dock pinned to the bottom of the page.
+/* Pagedock: a working mini KDockW dock pinned to the bottom of the page.
    Tiles are filled rounded-square app icons on one translucent panel; zoom
-   grows icons upward out of the panel floor like Krema itself. The panel
+   grows icons upward out of the panel floor like KDockW itself. The panel
    surface is a separate .pd-bg element so it can widen with the zoom using
    transforms only. Tokens come from css/site.css. */
 

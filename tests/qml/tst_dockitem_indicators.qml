@@ -5,7 +5,7 @@
 // driven by task model roles and notification sources.
 import QtQuick
 import QtTest
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -31,7 +31,7 @@ Item {
         }
 
         function init() {
-            KremaMocks.resetAll()
+            KDockWMocks.resetAll()
         }
 
         // Unity LauncherEntry state is keyed by the task's launcher URL.

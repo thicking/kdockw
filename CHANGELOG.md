@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Rebranded the application as KDockW with its own executable, desktop ID, settings file, translation domain, QML namespace, app icon, and optional PRIME-clean systemd user service; existing Krema settings can be copied and rolled back with explicit migration scripts.
+
 ### Added
 
 - Added a Russian translation for the dock, settings, menus, accessibility labels, and notifications, selected from the system language.
@@ -15,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added an option to activate a running app window after hovering an external file drag over its dock icon, with an adjustable delay.
 
 ### Fixed
+
+- External drag activation preferences now save immediately and remain in effect after restarting KDockW.
 
 - Stopped launch icons from bouncing after five cycles, while keeping launch tracking active until the app opened a window or the launch timed out.
 - Accepted application URLs dragged from the Plasma task manager, including its task-specific launcher URL MIME type.

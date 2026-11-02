@@ -12,10 +12,10 @@
 #       tests/distro/image
 #
 # runtime: the Tier 2 runtime (tests/appium/Dockerfile) on the target distro,
-#   WITHOUT krema and without krema's own runtime dependencies: the job
+#   WITHOUT kdockw and without kdockw's own runtime dependencies: the job
 #   installs the package into it through the distro package manager, so the
 #   package's Requires/Depends must pull those in (run-distro-e2e.sh).
-# builder: the packaging toolchain, ccache and krema's build dependencies
+# builder: the packaging toolchain, ccache and kdockw's build dependencies
 #   (resolved from the packaging/ build context at image build time; the job
 #   installs whatever a newer packaging/ adds, build-package.sh).
 #
@@ -37,10 +37,10 @@ ENV LANG=C.UTF-8 \
     XDG_MENU_PREFIX=plasma- \
     FAMILY=${FAMILY} \
     TARGET_ID=${TARGET_ID}
-COPY packages.sh ${FAMILY}.sh /usr/local/lib/krema-distro/
+COPY packages.sh ${FAMILY}.sh /usr/local/lib/kdockw-distro/
 
 FROM os AS runtime-base
-RUN sh /usr/local/lib/krema-distro/packages.sh runtime
+RUN sh /usr/local/lib/kdockw-distro/packages.sh runtime
 
 # KDE selenium-webdriver-at-spi and the test-window fixture, built on the
 # target distro itself so they link against its Qt/KF libraries. Same pinned
@@ -48,7 +48,7 @@ RUN sh /usr/local/lib/krema-distro/packages.sh runtime
 # entrypoint.sh never runs it (TEST_WITH_VIDEO_RECORDER=0) and it does not
 # build against KPipeWire 6.3 (Ubuntu 25.04: no PipeWireRecord::start()).
 FROM runtime-base AS swas-build
-RUN sh /usr/local/lib/krema-distro/packages.sh build
+RUN sh /usr/local/lib/kdockw-distro/packages.sh build
 ARG SWAS_COMMIT=d45a21e8f1b3591dc921f0be85f1ecd834cbe413
 COPY --from=appium-tools inputsynth-fixes.patch run-output-count.patch run-permission-checks.patch session-attach-probe-first.patch pipelined-tree.patch /src/
 RUN git init /src/swas && cd /src/swas \
@@ -60,16 +60,16 @@ RUN git init /src/swas && cd /src/swas \
     && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DBUILD_TESTING=OFF \
     && cmake --build build \
     && DESTDIR=/out cmake --install build
-COPY --from=appium-tools krema-test-window /src/krema-test-window
-RUN cmake -S /src/krema-test-window -B /src/krema-test-window/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
-    && cmake --build /src/krema-test-window/build \
-    && DESTDIR=/out cmake --install /src/krema-test-window/build
+COPY --from=appium-tools kdockw-test-window /src/kdockw-test-window
+RUN cmake -S /src/kdockw-test-window -B /src/kdockw-test-window/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
+    && cmake --build /src/kdockw-test-window/build \
+    && DESTDIR=/out cmake --install /src/kdockw-test-window/build
 
 # Package builder: tests/distro/pkg/in-container.sh runs in it with the
 # packaging/ tree mounted at the same /pkg/packaging path.
 FROM os AS builder
 RUN --mount=type=bind,from=packaging,target=/pkg/packaging \
-    sh /usr/local/lib/krema-distro/packages.sh builder
+    sh /usr/local/lib/kdockw-distro/packages.sh builder
 
 FROM runtime-base AS runtime
 COPY --from=swas-build /out/ /

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and check Krema's store, branding, and catalog surfaces for a verified release.
+"""Prepare and check KDockW's store, branding, and catalog surfaces for a verified release.
 
 ``prepare`` builds the offline store packet for the release in a verified
 context plus the browser task list. ``status`` reads public pages and APIs and
@@ -66,25 +66,25 @@ KDE_MIRRORS = (
     f"https://www.linux-apps.org/p/{KDE_RECORD}/",
 )
 ALTERNATIVETO_ITEM = "9ea8dc3b-7a8b-4570-837f-9d9f2ef98af1"
-ALTERNATIVETO_URL = "https://alternativeto.net/software/krema/"
+ALTERNATIVETO_URL = "https://alternativeto.net/software/kdockw/"
 ALTERNATIVETO_LATTE_URL = "https://alternativeto.net/software/latte-dock/"
-LAUNCHPAD_PROJECT_API = "https://api.launchpad.net/1.0/krema"
+LAUNCHPAD_PROJECT_API = "https://api.launchpad.net/1.0/kdockw"
 LAUNCHPAD_OWNER = "https://api.launchpad.net/1.0/~isac322"
 LAUNCHPAD_BRANDING = (
     ("project-icon", "icon_link"),
     ("project-logo", "logo_link"),
     ("project-brand", "brand_link"),
 )
-EXPECTED_HOMEPAGE = "https://krema.bhyoo.com/"
+EXPECTED_HOMEPAGE = "https://github.com/thicking/krema/"
 CATALOG_PULLS = {
     "awesome-kde": ("francoism90/awesome-kde", 24),
     "awesome-wayland": ("rcalixte/awesome-wayland", 109),
     "nixpkgs": ("NixOS/nixpkgs", 570731),
 }
-LINUXLINKS_SEARCH = "https://www.linuxlinks.com/?s=krema"
+LINUXLINKS_SEARCH = "https://www.linuxlinks.com/?s=kdockw"
 LINUXLINKS_SUBMITTED = "2026-10-06"
 LINUXLINKS_LISTING_RE = re.compile(
-    r'href="(https://www\.linuxlinks\.com/(?!search/|tag/|category/|page/)[^"#?]*krema[^"#?]*)"',
+    r'href="(https://www\.linuxlinks\.com/(?!search/|tag/|category/|page/)[^"#?]*kdockw[^"#?]*)"',
     re.IGNORECASE,
 )
 BROWSER_STORES = ("kde-store", "alternativeto")
@@ -102,7 +102,7 @@ RECORD_STATES = ("start", "pending", "published", "abort")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 HTML_TAG_RE = re.compile(r"<[^>]*>")
 MAX_FETCH_BYTES = 8 * 1024 * 1024
-USER_AGENT = "Krema-release-stores/1.0"
+USER_AGENT = "KDockW-release-stores/1.0"
 
 
 def http_bytes(url: str, *, timeout: int = 30) -> tuple[int, bytes]:
@@ -392,8 +392,8 @@ def alternativeto_observe(context: ReleaseContext) -> dict[str, Any]:
         problems.append(
             f"description paragraph(s) {', '.join(missing)} of the packet are not on the public listing"
         )
-    if b"/software/krema/" not in relation:
-        problems.append("the Latte Dock page does not list Krema as an alternative")
+    if b"/software/kdockw/" not in relation:
+        problems.append("the Latte Dock page does not list KDockW as an alternative")
     return {
         "observable": True,
         "http_status": 200,
@@ -425,7 +425,7 @@ def alternativeto_status(context: ReleaseContext) -> dict[str, Any]:
         return result(
             "alternativeto",
             "already_published",
-            "the public listing shows this release's packet description and item ID, and the Latte Dock page lists Krema",
+            "the public listing shows this release's packet description and item ID, and the Latte Dock page lists KDockW",
             **extra,
         )
     if observed["observable"]:
@@ -463,8 +463,8 @@ def launchpad_status(context: ReleaseContext) -> dict[str, Any]:
     if not isinstance(project, dict):
         raise ReleaseError("Launchpad project resource is not an object")
     problems = []
-    if project.get("name") != "krema" or project.get("owner_link") != LAUNCHPAD_OWNER:
-        problems.append("project name or owner differs from krema/~isac322")
+    if project.get("name") != "kdockw" or project.get("owner_link") != LAUNCHPAD_OWNER:
+        problems.append("project name or owner differs from kdockw/~isac322")
     if project.get("information_type") != "Public":
         problems.append(f"information type is {project.get('information_type')!r}")
     media = {item["role"]: item for item in schema["media"]}
@@ -491,13 +491,13 @@ def launchpad_status(context: ReleaseContext) -> dict[str, Any]:
             "launchpad",
             "failed",
             "; ".join(problems),
-            project_url="https://launchpad.net/krema",
+            project_url="https://launchpad.net/kdockw",
         )
     return result(
         "launchpad",
         "already_published",
         "project, owner, and static icon/logo/brand match the published receipts; nothing to upload for a version bump",
-        project_url="https://launchpad.net/krema",
+        project_url="https://launchpad.net/kdockw",
     )
 
 
@@ -697,7 +697,7 @@ def browser_tasks(
             templates=templates["source"],
             claims_review_required=templates["human_review_required"],
             conditional=True,
-            done_when="status --store alternativeto reports already_published (public listing shows this packet's description and item ID, Latte Dock page lists Krema); otherwise record pending with the moderation reference",
+            done_when="status --store alternativeto reports already_published (public listing shows this packet's description and item ID, Latte Dock page lists KDockW); otherwise record pending with the moderation reference",
         ),
     ]
 
@@ -735,7 +735,7 @@ def render_tasks_markdown(
     playbook_sha: str,
 ) -> str:
     lines = [
-        f"# Browser tasks for Krema {release['tag']}",
+        f"# Browser tasks for KDockW {release['tag']}",
         "",
         f"Release: `{release['repository']}` `{release['tag']}` at `{release['commit']}`.",
         f"Playbook: `{PLAYBOOK.as_posix()}` (sha256 `{playbook_sha}`). Follow it exactly; it covers sign-in, locks, idempotence, and moderation.",

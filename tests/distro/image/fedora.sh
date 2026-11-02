@@ -50,7 +50,7 @@ family_toolchain() {
 family_builddeps() {
     missing=$(rpm_missing_buildreqs)
     if [ -z "$missing" ]; then
-        echo "packages.sh: every BuildRequires of krema.spec is installed"
+        echo "packages.sh: every BuildRequires of kdockw.spec is installed"
         return 0
     fi
     echo "packages.sh: missing BuildRequires:" $missing
@@ -58,7 +58,7 @@ family_builddeps() {
     # defaults added ~100 packages / ~300 MB nothing builds with
     # (mesa-vulkan-drivers, intel-mediasdk, gdb-minimal...) to the builder
     # image every job pulls.
-    dnf -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs builddep "$PACKAGING/obs/krema.spec"
+    dnf -y --setopt=install_weak_deps=False --setopt=tsflags=nodocs builddep "$PACKAGING/obs/kdockw.spec"
 }
 
 family_clean() {
@@ -66,14 +66,14 @@ family_clean() {
 }
 
 # Download the package's declared runtime deps into the dnf package cache
-# (--downloadonly + keepcache) while the package builds; the krema install
+# (--downloadonly + keepcache) while the package builds; the kdockw install
 # then only runs the transaction. Nothing is installed here.
 family_depfetch() {
     dnf -y --setopt=install_weak_deps=False --setopt=keepcache=True \
         install --downloadonly "$@"
 }
 
-family_krema() {
+family_kdockw() {
     if ! fedora_install /pkgs/*.rpm; then
         # The prefetched cache may hold metadata whose packages no longer
         # exist (newer repo snapshot): refresh and retry once.

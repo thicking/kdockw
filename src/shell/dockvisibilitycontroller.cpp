@@ -15,9 +15,9 @@
 #include <QScreen>
 #include <QWindow>
 
-Q_LOGGING_CATEGORY(lcVisibility, "krema.shell.visibility")
+Q_LOGGING_CATEGORY(lcVisibility, "kdockw.shell.visibility")
 
-namespace krema
+namespace kdockw
 {
 
 DockVisibilityController::DockVisibilityController(DockPlatform *platform,
@@ -580,4 +580,4 @@ void DockVisibilityController::updateRegionGeometry()
     m_overlapModel->setRegionGeometry(rect);
 }
 
-} // namespace krema
+} // namespace kdockw

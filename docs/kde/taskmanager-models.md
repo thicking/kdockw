@@ -65,13 +65,13 @@ Source model switches dynamically in `updateGroupInline()`:
 - Pure window list only (no launchers/startup)
 - No grouping/filtering — all individual windows 1:1
 - Suitable for geometry-based visibility checks
-- Krema creates separate instance: `new TaskManager::WindowTasksModel(this)`
+- KDockW creates separate instance: `new TaskManager::WindowTasksModel(this)`
 
-### Krema Task-Zone Policy
+### KDockW Task-Zone Policy
 
-Krema keeps one `TaskManager::TasksModel` for the dock task list. Its existing configuration remains application grouping, manual sorting, `hideActivatedLaunchers=true`, `launchInPlace=true`, and the native `separateLaunchers=false` setting. The native option separates launcher-model entries; it does not define Krema's pinned-membership boundary.
+KDockW keeps one `TaskManager::TasksModel` for the dock task list. Its existing configuration remains application grouping, manual sorting, `hideActivatedLaunchers=true`, `launchInPlace=true`, and the native `separateLaunchers=false` setting. The native option separates launcher-model entries; it does not define KDockW's pinned-membership boundary.
 
-Krema's `DockModel` adds the dock-specific policy:
+KDockW's `DockModel` adds the dock-specific policy:
 
 ```cpp
 bool separateLaunchers() const;
@@ -308,7 +308,7 @@ that surface-local rectangle with the window's `wl_surface` through
 `set_minimized_geometry()`. A rectangle alone, or an arbitrary `QObject`,
 does not publish a Wayland minimize target.
 
-Krema's `DockModel::publishDelegateGeometry(int, QObject *)` validates a
+KDockW's `DockModel::publishDelegateGeometry(int, QObject *)` validates a
 window-task or group-parent index and forwards the actual item with `QRect{}`.
 Launcher and startup rows are rejected. Each production delegate owns a
 nonvisual geometry proxy whose visual parent is the dock root. The proxy uses
@@ -335,7 +335,7 @@ and [`TaskGroupingProxyModel`](https://invent.kde.org/plasma/plasma-workspace/-/
 
 ### Child-targeted activation and minimization
 
-`makeModelIndex(row, childRow)` resolves an individual window in a group. Pass that child index to `requestToggleMinimized` to affect only that window. Krema's optional minimize action never sends this request to the group-parent index or performs a group-wide minimize.
+`makeModelIndex(row, childRow)` resolves an individual window in a group. Pass that child index to `requestToggleMinimized` to affect only that window. KDockW's optional minimize action never sends this request to the group-parent index or performs a group-wide minimize.
 
 `DockActions::activateOrMinimize(int)` minimizes a valid active window only when `IsMinimizable` is true and `IsMinimized` is false. Other single windows follow the existing activation path. For groups, each click finds the current active child; if it cannot be minimized, that same child is activated. With no active child, `requestActivate` targets the existing most-recently-used entry child, restoring it if minimized.
 

@@ -18,7 +18,7 @@
 #include <QIcon>
 #include <QMenu>
 
-namespace krema
+namespace kdockw
 {
 
 DockContextMenu::DockContextMenu(DockModel *model, DockActions *actions, NotificationTracker *tracker, QObject *parent)
@@ -118,7 +118,7 @@ void DockContextMenu::showForTask(int index)
 
     // Standard KDE actions
     menu->addSeparator();
-    menu->addAction(QIcon::fromTheme(QStringLiteral("help-about")), i18nc("@action:inmenu", "About Krema"), this, [this]() {
+    menu->addAction(QIcon::fromTheme(QStringLiteral("help-about")), i18nc("@action:inmenu", "About KDockW"), this, [this]() {
         Q_EMIT aboutRequested();
     });
     menu->addAction(QIcon::fromTheme(QStringLiteral("application-exit")), i18nc("@action:inmenu", "Quit"), qApp, &QApplication::quit);
@@ -148,4 +148,4 @@ void DockContextMenu::setOpen(bool open)
     Q_EMIT openChanged();
 }
 
-} // namespace krema
+} // namespace kdockw

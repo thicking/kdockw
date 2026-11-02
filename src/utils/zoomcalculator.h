@@ -9,7 +9,7 @@
 #include <numbers>
 #include <vector>
 
-namespace krema
+namespace kdockw
 {
 
 /// Default Gaussian spread of the zoom curve, as a multiple of the icon size.
@@ -181,4 +181,4 @@ struct DockZoomLayout {
     return layout;
 }
 
-} // namespace krema
+} // namespace kdockw

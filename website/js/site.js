@@ -1,4 +1,4 @@
-// Krema landing page: JS flag, install distro tabs, copy-to-clipboard buttons
+// KDockW landing page: JS flag, install distro tabs, copy-to-clipboard buttons
 // for install commands, and the live GitHub star count on the star CTAs.
 (() => {
   "use strict";
@@ -92,7 +92,7 @@
   // Chips stay hidden unless a count (live or cached) exists.
   const chips = document.querySelectorAll("[data-stars]");
   if (chips.length) {
-    const KEY = "krema:stars";
+    const KEY = "kdockw:stars";
     const FRESH = 60 * 60 * 1000;
     const RETRY = 10 * 60 * 1000;
     const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
@@ -113,7 +113,7 @@
       setState("ready");
       const noun = count === 1 ? "star" : "stars";
       document.querySelectorAll("[data-star-link]").forEach((link) => {
-        link.setAttribute("aria-label", `Star Krema on GitHub (${count.toLocaleString("en")} ${noun})`);
+        link.setAttribute("aria-label", `Star KDockW on GitHub (${count.toLocaleString("en")} ${noun})`);
       });
     };
 
@@ -148,7 +148,7 @@
       else setState("pending");
       const abort = new AbortController();
       const timer = window.setTimeout(() => abort.abort(), 8000);
-      fetch("https://api.github.com/repos/isac322/krema", { signal: abort.signal })
+      fetch("https://api.github.com/repos/thicking/krema", { signal: abort.signal })
         .then((res) => {
           if (res.ok) return res.json();
           const reset = Number(res.headers.get("x-ratelimit-reset")) * 1000;

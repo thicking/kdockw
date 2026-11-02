@@ -76,13 +76,13 @@ family_clean() {
 }
 
 # Download the package's declared runtime deps into the pacman cache (-Sw)
-# while the package builds; the krema install then only runs the
+# while the package builds; the kdockw install then only runs the
 # transaction. Nothing is installed here.
 family_depfetch() {
     pacman -Sw --noconfirm "$@"
 }
 
-family_krema() {
+family_kdockw() {
     # Resolve dependencies against a current sync database (no partial
     # upgrades on Arch: upgrade along with it). pacman reuses prefetched
     # packages in /var/cache/pacman/pkg and downloads the rest.

@@ -8,17 +8,17 @@
 
 #include <QObject>
 
-class KremaSettings;
+class KDockWSettings;
 
-namespace krema
+namespace kdockw
 {
 
 /**
- * Per-screen settings overlay on top of global KremaSettings.
+ * Per-screen settings overlay on top of global KDockWSettings.
  *
  * Reads from a KConfig group named "Screen-{screenName}" (e.g. "Screen-HDMI-A-1").
  * If a key exists in the per-screen group, its value is used.
- * Otherwise, falls back to the global KremaSettings default.
+ * Otherwise, falls back to the global KDockWSettings default.
  *
  * Only a subset of properties can be overridden per-screen:
  *   iconSize, edge, visibilityMode, backgroundStyle, backgroundOpacity,
@@ -31,7 +31,7 @@ class ScreenSettings : public QObject
     Q_PROPERTY(bool hasOverrides READ hasOverrides NOTIFY hasOverridesChanged)
 
 public:
-    explicit ScreenSettings(const QString &screenName, KremaSettings *fallback, QObject *parent = nullptr);
+    explicit ScreenSettings(const QString &screenName, KDockWSettings *fallback, QObject *parent = nullptr);
 
     [[nodiscard]] QString screenName() const;
     [[nodiscard]] bool hasOverrides() const;
@@ -92,8 +92,8 @@ private:
     void writeOverride(const QString &key, T value);
 
     QString m_screenName;
-    KremaSettings *m_fallback;
+    KDockWSettings *m_fallback;
     KConfigGroup m_group;
 };
 
-} // namespace krema
+} // namespace kdockw

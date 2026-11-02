@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 """GitHub release channel: the release for the tag plus immutable source assets.
 
-The release carries ``krema-X.Y.Z.tar.gz`` (the context archive) and
+The release carries ``kdockw-X.Y.Z.tar.gz`` (the context archive) and
 ``SHA256SUMS``. Existing assets are never replaced: an asset with the same
 name and the same bytes counts as published, different bytes fail the
 channel. An existing public release's title and notes are left untouched.
@@ -21,7 +21,7 @@ channel and is never edited or deleted.
 
 Uses the authenticated ``gh`` CLI already configured on the machine. The
 tag's automatic source archive, used only by ``release.py prepare`` for a
-published release lacking ``krema-X.Y.Z.tar.gz``, is a public anonymous
+published release lacking ``kdockw-X.Y.Z.tar.gz``, is a public anonymous
 HTTPS download confined to GitHub's archive hosts and size-capped.
 """
 
@@ -97,7 +97,7 @@ def find_releases(repository: str, tag: str) -> list[dict]:
 
 def download_asset(repository: str, tag: str, name: str) -> bytes:
     """Bytes of a release asset, downloaded to a private temporary directory."""
-    with tempfile.TemporaryDirectory(prefix="krema-asset-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="kdockw-asset-") as tmp:
         command(
             [
                 "gh",

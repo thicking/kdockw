@@ -5,7 +5,7 @@
 import QtQuick
 import QtTest
 import org.kde.kirigami as Kirigami
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -60,7 +60,7 @@ Item {
         }
 
         function init() {
-            KremaMocks.resetAll()
+            KDockWMocks.resetAll()
         }
 
         function makeRow(tasks) {

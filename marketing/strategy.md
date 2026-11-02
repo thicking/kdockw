@@ -1,4 +1,4 @@
-# Krema Marketing & SEO Strategy
+# KDockW Marketing & SEO Strategy
 
 ## Target Audience
 
@@ -84,7 +84,7 @@ Before any public announcement:
 | Launch Day | Show HN | Hacker News |
 | Week 1 | "Building a Latte Dock successor" blog post | Blog, Mastodon |
 | Week 2 | Technical deep-dive (PipeWire previews) | Blog, r/kde |
-| Week 4 | Feature comparison (Krema vs alternatives) | Blog, r/linux |
+| Week 4 | Feature comparison (KDockW vs alternatives) | Blog, r/linux |
 | Monthly | Release notes / progress update | r/kde, KDE Discuss |
 
 ## SEO Optimization Status
@@ -105,7 +105,7 @@ Before any public announcement:
 - [x] Screenshots in metainfo.xml (for KDE Discover)
 
 ### Website & Social
-- [x] Dedicated website (https://krema.bhyoo.com/, deployed via GitHub Pages)
+- [x] Dedicated website (https://github.com/thicking/krema/, deployed via GitHub Pages)
 - [x] OpenGraph / social media preview images (`branding/social/`)
 
 ### Future

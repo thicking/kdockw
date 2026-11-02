@@ -1,6 +1,6 @@
 # Multi-Monitor Support
 
-> Source: Qt 6 / LayerShellQt headers, KScreen headers, Krema source
+> Source: Qt 6 / LayerShellQt headers, KScreen headers, KDockW source
 
 ## QScreen API
 
@@ -127,7 +127,7 @@ layerWin->setScreen(screen);              // resets wantsToBeOnActiveScreen to f
 
 ## Multi-Monitor Architecture
 
-`src/config/krema.kcfg` stores `MonitorMode` as an integer with the following values:
+`src/config/kdockw.kcfg` stores `MonitorMode` as an integer with the following values:
 
 | Value | C++ mode | Behavior settings label |
 |---|---|---|
@@ -174,7 +174,7 @@ void DockManager::onScreenRemoved(QScreen *screen) {
 
 ### The Plasma primary is NOT `QGuiApplication::primaryScreen()` (verified)
 
-On QtWayland, `primaryScreen()` is the **first `wl_output` the registry announces** and `primaryScreenChanged` never fires afterwards — it has nothing to do with KWin's per-user output priority. KWin publishes the user-visible order (the same priority the System Settings display page edits via `kde_output_device_v2`) through the **`kde_output_order_v1`** protocol — the one plasmashell uses for panel placement. Krema resolves it via `OutputOrderMonitor` (`src/shell/outputordermonitor.{h,cpp}`), vendored protocol XML at `src/protocols/kde-output-order-v1.xml` (upstream treats it as a DE implementation detail and does not install it; license MIT-CMU). The monitor:
+On QtWayland, `primaryScreen()` is the **first `wl_output` the registry announces** and `primaryScreenChanged` never fires afterwards — it has nothing to do with KWin's per-user output priority. KWin publishes the user-visible order (the same priority the System Settings display page edits via `kde_output_device_v2`) through the **`kde_output_order_v1`** protocol — the one plasmashell uses for panel placement. KDockW resolves it via `OutputOrderMonitor` (`src/shell/outputordermonitor.{h,cpp}`), vendored protocol XML at `src/protocols/kde-output-order-v1.xml` (upstream treats it as a DE implementation detail and does not install it; license MIT-CMU). The monitor:
 
 - emits `primaryOutputChanged` when the resolved primary changes, and `orderReadyChanged` when the first order list arrives — callers should wait for readiness before placing surfaces so they never briefly land on the first-announced output;
 - resolves to the first ordered name mapping to a live `QScreen` (unknown names skipped; mirrors LibKWorkspace `OutputOrderWatcher`);
@@ -229,13 +229,13 @@ Toggle Dock and Meta+number actions use this target through `activeShell()`. Foc
 
 **Verified (SET-008): `QCursor::pos()` is not a global pointer position on Wayland.** QtWayland only knows the pointer while it is over one of the client's own surfaces, and polling is forbidden anyway (`.agents/rules/async-state.md`). The pointer has to enter a mapped surface of the dock on the target screen.
 
-Follow Active unmaps the inactive screens' docks (`setShellVisible(false)` → `QWindow::hide()`), and an unmapped surface receives no `wl_pointer.enter`, so reacting to a hover on the hidden dock (its `DockVisibilityController`) never fires. Krema instead maps an `EdgeTrigger` (`src/shell/edgetrigger.{h,cpp}`) on every inactive screen while the Mouse or Composite trigger is selected:
+Follow Active unmaps the inactive screens' docks (`setShellVisible(false)` → `QWindow::hide()`), and an unmapped surface receives no `wl_pointer.enter`, so reacting to a hover on the hidden dock (its `DockVisibilityController`) never fires. KDockW instead maps an `EdgeTrigger` (`src/shell/edgetrigger.{h,cpp}`) on every inactive screen while the Mouse or Composite trigger is selected:
 
 - a transparent `QRasterWindow` (no scene graph) configured through the same `DockPlatform` as the dock: layer-shell `LayerTop`, namespace `dock` (Show Desktop keeps it), pinned output, exclusive zone -1, anchored to the dock edge
 - `kEdgeTriggerThickness` (4 px, `src/utils/inputregion.h`) thick along the whole edge: the same area as a hidden auto-hide dock's trigger strip
 - `QEvent::Enter` / `QEvent::Leave` on the window drive `MultiDockManager::onEdgeTriggerHovered()`; the switch is debounced (300 ms) and cancelled if the pointer leaves first
 - ignored while the active dock is held by an interaction lock or keyboard navigation (`DockVisibilityController::isInteracting()`): an open Settings dialog, context menu, preview or drag keeps the dock on its screen
-- a surface of the strip's size must still get a buffer: set the `QWindow` size after `DockPlatform::setSize()`, which on `KREMA_COMPAT_NO_LAYERSHELL_DESIRED_SIZE` resizes the window to `QSize(0, h)` itself
+- a surface of the strip's size must still get a buffer: set the `QWindow` size after `DockPlatform::setSize()`, which on `KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE` resizes the window to `QSize(0, h)` itself
 
 ### Strategy 2: Follow Active Window (Recommended)
 
@@ -280,7 +280,7 @@ connect(&m_debounceTimer, &QTimer::timeout, this, &DockManager::performScreenSwi
 ```
 
 - 200-300ms debounce prevents flicker when rapidly alt-tabbing between apps on different screens
-- Timer is permissible per Krema rules (UI delay, not business logic)
+- Timer is permissible per KDockW rules (UI delay, not business logic)
 
 ---
 
@@ -297,9 +297,9 @@ connect(&m_debounceTimer, &QTimer::timeout, this, &DockManager::performScreenSwi
 | Plank (elementary OS) | One dock per screen (or multiple instances) | No migration animation |
 | KDE Taskmanager Panel | Bound to containment screen via shell | No migration animation |
 
-**Key insight**: No reference dock "moves" between screens. The conventional pattern for docks is independent-docks-per-screen. "Follow active" with migration is a Krema-specific UX.
+**Key insight**: No reference dock "moves" between screens. The conventional pattern for docks is independent-docks-per-screen. "Follow active" with migration is a KDockW-specific UX.
 
-### Recommended Animation for Krema Follow-Active
+### Recommended Animation for KDockW Follow-Active
 
 **Fade-out + fade-in** (not slide):
 - Slide requires knowing screen positions relative to each other — complex, platform-dependent
@@ -362,7 +362,7 @@ QScreen *screen = QGuiApplication::screenAt(QPoint(x, y));
 
 ## Screen Change Handling (Already in DockView)
 
-Krema's `DockView::handleScreenChanged()` already handles:
+KDockW's `DockView::handleScreenChanged()` already handles:
 1. Disconnect old screen's `geometryChanged` signal
 2. Reconnect to new screen's `geometryChanged` signal
 3. `hide()` + `updateSize()` + `applyBackgroundStyle()` + `show()` for surface recreation
@@ -389,7 +389,7 @@ KConfigGroup screenGroup = global.group(QStringLiteral("Screen-") + screen->name
 int edge = screenGroup.readEntry("Edge", global.readEntry("Edge", 2));
 ```
 
-**Pattern**: Store screen-specific data under group `"Screen-{output-name}"` in `kremarc`.
+**Pattern**: Store screen-specific data under group `"Screen-{output-name}"` in `kdockwrc`.
 - Key: `QScreen::name()` (e.g., "eDP-1", "HDMI-A-1") — stable across reboots, changes on cable swap
 - Alternative: `QScreen::serialNumber()` — more stable but not always available
 
@@ -421,7 +421,7 @@ connect(op, &KScreen::ConfigOperation::finished, this, [this](KScreen::ConfigOpe
 op->start();
 ```
 
-**Note**: Selected Screens adds no KScreen dependency. Krema uses the existing `OutputOrderMonitor` for the Plasma primary and adopted output order; `QGuiApplication::primaryScreenChanged` is not sufficient on QtWayland. The optional KScreen example above is for additional output metadata.
+**Note**: Selected Screens adds no KScreen dependency. KDockW uses the existing `OutputOrderMonitor` for the Plasma primary and adopted output order; `QGuiApplication::primaryScreenChanged` is not sufficient on QtWayland. The optional KScreen example above is for additional output metadata.
 
 ---
 
@@ -429,8 +429,8 @@ op->start();
 
 1. **Screen naming**: Use `QScreen::name()` for persistent config (e.g., "HDMI-A-1"). Changes on cable swap.
 2. **Hot-plug**: Always handle `screenAdded`/`screenRemoved` — monitors are connected/disconnected at runtime
-3. **DPI differences**: Each screen can have different `devicePixelRatio()` — Krema's zoom/sizing must scale per-screen
-4. **closeOnDismissed=false**: Already set in Krema. When output removed, compositor dismisses but window object survives for reassignment.
+3. **DPI differences**: Each screen can have different `devicePixelRatio()` — KDockW's zoom/sizing must scale per-screen
+4. **closeOnDismissed=false**: Already set in KDockW. When output removed, compositor dismisses but window object survives for reassignment.
 5. **Virtual siblings**: `QScreen::virtualSiblings()` returns all screens in the same virtual desktop
 6. **Null screen check**: Always check `screen()` — can be nullptr on virtual compositors (anti-pattern rule in `.agents/rules/wayland-surfaces.md`)
 7. **Surface recreation after setScreen**: `hide()` + `show()` is required — compositor must create a new layer-shell surface on the new output

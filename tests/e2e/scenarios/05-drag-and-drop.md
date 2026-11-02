@@ -10,7 +10,7 @@
 
 ## Affected Files
 - src/qml/main.qml
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 - src/qml/DockItem.qml
 - src/models/dockactions.h
 - src/models/dockactions.cpp
@@ -31,9 +31,9 @@ remain unchanged; the added contract checks drag release state only.
 ## TC DND-001: Drag Reorder Dock Items
 
 **Precondition:** Dock visible with 3+ items.
-**Important:** Krema drag requires press-hold (300ms) then move (10px+). Press,
+**Important:** KDockW drag requires press-hold (300ms) then move (10px+). Press,
 hold, move and release as separate pointer events; an instant drag without the
-hold delay does not start a Krema drag.
+hold delay does not start a KDockW drag.
 **Steps:**
 1. Show dock and note item order in the AT-SPI tree
 2. Move the pointer to the first item center
@@ -63,7 +63,7 @@ hold delay does not start a Krema drag.
 **Precondition:** DND-001 completed (items reordered).
 **Steps:**
 1. Note current item order (screenshot)
-2. Restart krema
+2. Restart kdockw
 3. Wait 2000ms for startup
 4. Screenshot — verify order preserved
 

@@ -1,6 +1,6 @@
 # E2E test scenarios
 
-Accessibility-first end-to-end test scenarios for the Krema dock. The scenarios
+Accessibility-first end-to-end test scenarios for the KDockW dock. The scenarios
 are the human-readable oracle for the automated tests: each TC lists them on its
 `**Automated:**` lines. The Tier 2 `tests/appium/` harness runs them in a real
 KWin session; MOUSE-008 and VIS-007 also have Tier 2 KWin ctests. Tier 3 reuses
@@ -35,7 +35,7 @@ Each scenario file follows this structure:
 **Steps:**
 1. ...
 **Expected:** ...
-**Verification:** AT-SPI state / screenshot / window list / kremarc
+**Verification:** AT-SPI state / screenshot / window list / kdockwrc
 ```
 
 ### Feature IDs
@@ -56,17 +56,17 @@ This enables the "changed file → affected scenario" lookup (see the mapping be
 - **Tier 2:** `tests/appium/` drives a source-built dock in a real KWin
   session. `tests/kwin` ctests use the same virtual-compositor model-state
   boundary.
-- **Tier 3:** `tests/distro/` runs the Tier 2 Appium scenarios against Krema
+- **Tier 3:** `tests/distro/` runs the Tier 2 Appium scenarios against KDockW
   installed from each distro package.
 
 Two-output cases require the existing command:
 
 ```sh
-KREMA_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs
+KDOCKW_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs
 ```
 
 The `outputs(2)` marker selects the existing multi-screen cases; a one-output
-session skips them. The scenarios use the existing `krema_e2e` helpers and
+session skips them. The scenarios use the existing `kdockw_e2e` helpers and
 retain their documented AT-SPI, EIS, QMenu, coordinate, and DRM/vgem limits.
 
 ## Notes for Running Scenarios
@@ -85,12 +85,12 @@ Key states used in assertions:
 - `sensitive` — element accepts user interaction
 - `active` — frame/window is the active window
 
-### AT-SPI Structure for Krema
+### AT-SPI Structure for KDockW
 
 ```
-[application] "krema"
+[application] "kdockw"
   [frame] ""                          ← dock surface (layer-shell)
-    [tool bar] "Krema Dock"
+    [tool bar] "KDockW Dock"
       [button] "<AppName>"            ← dock items (focusable, focused when keyboard-active)
   [frame] ""                          ← preview surface (layer-shell)
     [filler] ""
@@ -109,7 +109,7 @@ While Settings is open, the same application also has a settings frame
   [frame] "Settings"
     [text] "Search settings"
     [list] "Settings pages"
-      [list item] "Icons" … "Window Preview", "About Krema", "About KDE"   ← checkable; current page is checked
+      [list item] "Icons" … "Window Preview", "About KDockW", "About KDE"   ← checkable; current page is checked
     …page content…                    ← card pickers are [radio button]s named by option,
                                          sliders are [slider]s named by their label
 ```
@@ -120,7 +120,7 @@ While Settings is open, the same application also has a settings frame
    Where synthetic key presses do not reach KGlobalAccel, invoke the action
    over D-Bus instead:
    ```
-   busctl --user call org.kde.kglobalaccel /component/krema \
+   busctl --user call org.kde.kglobalaccel /component/kdockw \
      org.kde.kglobalaccel.Component invokeShortcut s focus-dock
    ```
 
@@ -151,7 +151,7 @@ While Settings is open, the same application also has a settings frame
    `Qt::Popup` window, which Qt does not expose in the AT-SPI tree. Navigate it
    with the keyboard (Down/Return) or locate entries on a screenshot.
    Menu items are in fixed order: AppName, Pin/Unpin, New Instance, Close,
-   separator, Settings..., About Krema, Quit.
+   separator, Settings..., About KDockW, Quit.
 
 8. **Dock-to-preview mouse transition**: Moving the pointer from the dock to the
    preview popup must be gradual (step by step, ~20px increments). A direct jump
@@ -184,7 +184,7 @@ Quick reference: which scenarios to re-run when a source file changes.
 | `src/qml/settings/LayoutPage.qml` | 06, 07 |
 | `src/qml/settings/BehaviorPage.qml` | 06, 07 |
 | `src/qml/settings/PanelStylePage.qml`, `ShadowPage.qml`, `AnimationsPage.qml`, `MonitorsPage.qml`, `PreviewPage.qml` | 06 |
-| `src/config/krema.kcfg` | 02, 03, 05, 06, 07 |
+| `src/config/kdockw.kcfg` | 02, 03, 05, 06, 07 |
 | `src/platform/waylanddockplatform.*` | 01, 07 |
 | `src/platform/kwinpointermotionwatcher.*` | 01 |
 | `src/platform/pointerfocustracker.*` | 02, 03, 04 |
@@ -210,7 +210,7 @@ duplicating their full procedures.
 
 | Contract | Scenario | Required observation |
 |---|---|---|
-| Reservation control/default/persistence | SET-015 | Real Behavior switch, saved value, same maximized KWin window reflows live and after Krema restart |
+| Reservation control/default/persistence | SET-015 | Real Behavior switch, saved value, same maximized KWin window reflows live and after KDockW restart |
 | Reservation geometry | VIS-001, VIS-009, SET-020 | Maximized frame/output bounds on all four edges, floating off/on, floating margin, current icon size, reservation off/on, and no reservation in Auto Hide/Dodge Windows |
 | Section control/default/persistence | SET-016 | Real Behavior switch, ordered dock app names, pinned membership, accessible separator, and restart |
 | Pin/unpin and app lifecycle | CTX-007 | Running pinned apps retain one pinned slot; unpinned apps follow; live launch/close/group and empty-section transitions |

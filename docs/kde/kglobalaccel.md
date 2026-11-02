@@ -166,7 +166,7 @@ For global shortcuts to work correctly:
 
 ---
 
-## Krema Shortcuts
+## KDockW Shortcuts
 
 | Action ID | Default Key | Description |
 |-----------|------------|-------------|

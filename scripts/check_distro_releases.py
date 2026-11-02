@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-check_distro_releases.py — Distro release watcher for Krema.
+check_distro_releases.py — Distro release watcher for KDockW.
 
-Detects distribution releases that a build channel already offers but Krema
+Detects distribution releases that a build channel already offers but KDockW
 does not build there yet, and keeps one GitHub issue per (release, channel)
 pair in sync (label: distro-release). An issue therefore only appears once
 the maintainer can actually add the release on that channel.
@@ -61,32 +61,32 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-USER_AGENT = "krema-distro-release-watch (https://github.com/isac322/krema)"
+USER_AGENT = "kdockw-distro-release-watch (https://github.com/thicking/krema)"
 HTTP_TIMEOUT = 20  # seconds
 
 EOL_API = "https://endoflife.date/api/{distro}.json"
 OBS_META_API = "https://api.opensuse.org/public/source/{project}/_meta"
 COPR_PROJECT_API = (
     "https://copr.fedorainfracloud.org/api_3/project"
-    "?ownername=isac322&projectname=krema"
+    "?ownername=isac322&projectname=kdockw"
 )
 COPR_CHROOTS_API = "https://copr.fedorainfracloud.org/api_3/mock-chroots/list"
 LP_SOURCES_API = (
-    "https://api.launchpad.net/devel/~isac322/+archive/ubuntu/krema"
-    "?ws.op=getPublishedSources&source_name=krema"
+    "https://api.launchpad.net/devel/~isac322/+archive/ubuntu/kdockw"
+    "?ws.op=getPublishedSources&source_name=kdockw"
 )
 LP_SERIES_API = "https://api.launchpad.net/devel/ubuntu/series"
 
 LABEL = "distro-release"
 LABEL_COLOR = "0E8A16"
 LABEL_DESCRIPTION = (
-    "New distribution release a build channel offers but Krema does not "
+    "New distribution release a build channel offers but KDockW does not "
     "build there"
 )
 
 POLICY_LINK = (
     "See the [Distribution Support Policy]"
-    "(https://github.com/isac322/krema/blob/master/AGENTS.md"
+    "(https://github.com/thicking/krema/blob/master/AGENTS.md"
     "#distribution-support-policy) in AGENTS.md."
 )
 
@@ -174,7 +174,7 @@ def tracked_versions(repo_names: set[str], prefix: str) -> set[tuple[int, ...]]:
 
 
 def fetch_copr_tracked() -> set[tuple[int, ...]] | None:
-    """Fedora versions with a chroot enabled on the isac322/krema project."""
+    """Fedora versions with a chroot enabled on the thicking/krema project."""
     data = fetch_json(COPR_PROJECT_API, "COPR project info")
     if data is None:
         return None
@@ -228,7 +228,7 @@ def fetch_lp_series() -> LaunchpadInfo | None:
 
 
 def fetch_ppa_tracked(lp: LaunchpadInfo) -> set[tuple[int, ...]] | None:
-    """Ubuntu versions with published krema sources in the PPA."""
+    """Ubuntu versions with published kdockw sources in the PPA."""
     data = fetch_json(LP_SOURCES_API, "Launchpad published sources")
     if data is None:
         return None
@@ -271,7 +271,7 @@ def eol_candidates(distro: str) -> dict[tuple[int, ...], tuple[str, str]] | None
 
 @dataclass
 class Gap:
-    """A release one channel offers but Krema does not build there yet."""
+    """A release one channel offers but KDockW does not build there yet."""
 
     distro: str  # display name, e.g. "Fedora"
     slug: str  # distro slug used in the marker, e.g. "fedora"
@@ -303,7 +303,7 @@ def build_body(gap: Gap) -> str:
     )
     lines = [
         f"**{gap.channel}** now offers **{gap.distro} {gap.version}**, but "
-        "Krema does not build for it there yet.",
+        "KDockW does not build for it there yet.",
         "",
         f"- Release status: {status}",
         f"- Target: {gap.target}",
@@ -471,7 +471,7 @@ def detect(repo_names: set[str]) -> tuple[list[Gap], list[str], bool]:
         lambda _ver, vstr: (
             f"chroots `fedora-{vstr}-x86_64`, `fedora-{vstr}-aarch64`"
         ),
-        "enable the chroots in the isac322/krema COPR project settings, "
+        "enable the chroots in the thicking/krema COPR project settings, "
         "then rebuild the latest release into them",
     )
 
@@ -613,7 +613,7 @@ def reconcile(gaps: list[Gap], repo: str, dry_run: bool) -> int:
             continue
         number, title = issue["number"], issue["title"]
         comment = (
-            "Nothing to do on this channel anymore: Krema builds this "
+            "Nothing to do on this channel anymore: KDockW builds this "
             "release there, or the channel stopped offering it. Closing."
         )
         if dry_run:
@@ -719,7 +719,7 @@ def main() -> int:
     for gap in gaps:
         print(f"actionable: {gap.distro} {gap.version} on {gap.channel}")
     if not gaps:
-        print("No channel offers a release Krema does not build there.")
+        print("No channel offers a release KDockW does not build there.")
 
     if had_unknown:
         warn(

@@ -8,9 +8,9 @@
 #include <QGuiApplication>
 #include <QLoggingCategory>
 
-Q_LOGGING_CATEGORY(lcPlatformFactory, "krema.platform.factory")
+Q_LOGGING_CATEGORY(lcPlatformFactory, "kdockw.platform.factory")
 
-namespace krema
+namespace kdockw
 {
 
 std::unique_ptr<DockPlatform> DockPlatformFactory::create()
@@ -27,4 +27,4 @@ std::unique_ptr<DockPlatform> DockPlatformFactory::create()
     return nullptr;
 }
 
-} // namespace krema
+} // namespace kdockw

@@ -4,7 +4,7 @@ Verified against the KWin 6.7.5 sources (`src/scripting/scripting.{h,cpp}`,
 `src/scripting/workspace_wrapper.h`, `src/scripting/org.kde.kwin.Script.xml`).
 No D-Bus introspection XML for these interfaces is installed.
 
-Krema uses this to learn about global pointer motion: Wayland delivers
+KDockW uses this to learn about global pointer motion: Wayland delivers
 pointer events only to the surface under the pointer, so a client cannot see
 the pointer moving over other windows (`src/platform/kwinpointermotionwatcher.cpp`).
 

@@ -1,0 +1,1104 @@
+# Russian translation for KDockW.
+# Copyright (C) 2026 KDockW contributors
+# This file is distributed under the same license as the KDockW package.
+msgid ""
+msgstr ""
+"Project-Id-Version: KDockW 0.12.0\n"
+"Report-Msgid-Bugs-To: https://github.com/thicking/krema/issues\n"
+"Last-Translator: KDockW contributors\n"
+"PO-Revision-Date: 2026-11-01 20:00+0500\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/qml/SettingsDialog.qml:24 src/qml/settings/PreviewPage.qml:428
+msgid "Settings"
+msgstr "Параметры"
+
+#: src/qml/SettingsDialog.qml:44 src/qml/settings/IconsPage.qml:15
+msgid "Icons"
+msgstr "Значки"
+
+#: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:315
+msgid "Icon size"
+msgstr "Размер значков"
+
+#: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:326
+msgid "Icon spacing"
+msgstr "Интервал между значками"
+
+#: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:342
+msgid "Zoom factor"
+msgstr "Масштаб увеличения"
+
+#: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:360
+#: src/qml/settings/IconsPage.qml:368
+msgid "Zoom style"
+msgstr "Стиль увеличения"
+
+#: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:422
+#: src/qml/settings/IconsPage.qml:490
+msgid "Zoom animation"
+msgstr "Анимация увеличения"
+
+#: src/qml/SettingsDialog.qml:48 src/qml/settings/IconsPage.qml:643
+msgid "Icon size normalization"
+msgstr "Нормализация размера значков"
+
+#: src/qml/SettingsDialog.qml:48 src/qml/settings/IconsPage.qml:689
+msgid "Icon scale"
+msgstr "Масштаб значков"
+
+#: src/qml/SettingsDialog.qml:48 src/qml/settings/IconsPage.qml:731
+msgid "Active window icon opacity"
+msgstr "Непрозрачность значка активного окна"
+
+#: src/qml/SettingsDialog.qml:49 src/qml/settings/IconsPage.qml:741
+msgid "Inactive window and launcher icon opacity"
+msgstr "Непрозрачность значков неактивных окон и приложений"
+
+#: src/qml/SettingsDialog.qml:49 src/qml/settings/IconsPage.qml:751
+msgid "Minimized window icon opacity"
+msgstr "Непрозрачность значков свёрнутых окон"
+
+#: src/qml/SettingsDialog.qml:53 src/qml/settings/LayoutPage.qml:12
+msgid "Layout & Position"
+msgstr "Расположение и позиция"
+
+#: src/qml/SettingsDialog.qml:56 src/qml/settings/LayoutPage.qml:53
+msgid "Screen edge"
+msgstr "Край экрана"
+
+#: src/qml/SettingsDialog.qml:56 src/qml/settings/LayoutPage.qml:227
+msgid "Floating"
+msgstr "Плавающий док"
+
+#: src/qml/SettingsDialog.qml:56 src/qml/settings/LayoutPage.qml:237
+msgid "Floating margin"
+msgstr "Отступ от края"
+
+#: src/qml/SettingsDialog.qml:56
+msgid "Margin"
+msgstr "Отступ"
+
+#: src/qml/SettingsDialog.qml:56
+msgid "Gap"
+msgstr "Интервал"
+
+#: src/qml/SettingsDialog.qml:57 src/qml/settings/LayoutPage.qml:252
+msgid "Corner radius"
+msgstr "Радиус углов"
+
+#: src/qml/SettingsDialog.qml:61 src/qml/settings/PanelStylePage.qml:13
+msgid "Panel Style"
+msgstr "Стиль панели"
+
+#: src/qml/SettingsDialog.qml:64 src/qml/settings/PanelStylePage.qml:107
+#: src/qml/settings/PanelStylePage.qml:114
+msgid "Style"
+msgstr "Стиль"
+
+#: src/qml/SettingsDialog.qml:64 src/qml/settings/PanelStylePage.qml:163
+msgid "Opacity"
+msgstr "Непрозрачность"
+
+#: src/qml/SettingsDialog.qml:64 src/qml/settings/PanelStylePage.qml:177
+msgid "Use system color"
+msgstr "Использовать системный цвет"
+
+#: src/qml/SettingsDialog.qml:64 src/qml/settings/PanelStylePage.qml:226
+msgid "Use accent color"
+msgstr "Использовать акцентный цвет"
+
+#: src/qml/SettingsDialog.qml:64 src/qml/settings/PanelStylePage.qml:202
+#: src/qml/settings/PanelStylePage.qml:210
+msgid "Tint color"
+msgstr "Цвет тонировки"
+
+#: src/qml/SettingsDialog.qml:68 src/qml/settings/ShadowPage.qml:14
+#: src/qml/settings/ShadowPage.qml:206
+msgid "Shadow"
+msgstr "Тень"
+
+#: src/qml/SettingsDialog.qml:71 src/qml/settings/ShadowPage.qml:198
+msgid "Enable shadow"
+msgstr "Включить тень"
+
+#: src/qml/SettingsDialog.qml:71 src/qml/settings/ShadowPage.qml:305
+msgid "Light X"
+msgstr "Положение света по X"
+
+#: src/qml/SettingsDialog.qml:71 src/qml/settings/ShadowPage.qml:315
+msgid "Light Y"
+msgstr "Положение света по Y"
+
+#: src/qml/SettingsDialog.qml:71 src/qml/settings/ShadowPage.qml:325
+msgid "Light height"
+msgstr "Высота источника света"
+
+#: src/qml/SettingsDialog.qml:71 src/qml/settings/ShadowPage.qml:335
+msgid "Light radius"
+msgstr "Радиус источника света"
+
+#: src/qml/SettingsDialog.qml:72 src/qml/settings/ShadowScene3D.qml:582
+#: src/qml/settings/ShadowPage.qml:346
+msgid "Panel elevation"
+msgstr "Высота панели"
+
+#: src/qml/SettingsDialog.qml:72 src/qml/settings/ShadowPage.qml:214
+msgid "Shadow intensity"
+msgstr "Интенсивность тени"
+
+#: src/qml/SettingsDialog.qml:72 src/qml/settings/ShadowPage.qml:236
+#: src/qml/settings/ShadowPage.qml:244
+msgid "Shadow color"
+msgstr "Цвет тени"
+
+#: src/qml/SettingsDialog.qml:76 src/qml/settings/AnimationsPage.qml:15
+msgid "Animations & Badges"
+msgstr "Анимация и индикаторы"
+
+#: src/qml/SettingsDialog.qml:79 src/qml/settings/AnimationsPage.qml:384
+#: src/qml/settings/AnimationsPage.qml:392
+msgid "Attention animation"
+msgstr "Анимация привлечения внимания"
+
+#: src/qml/SettingsDialog.qml:79 src/qml/settings/AnimationsPage.qml:484
+#: src/qml/settings/AnimationsPage.qml:492
+msgid "Badge display"
+msgstr "Индикатор уведомлений"
+
+#: src/qml/SettingsDialog.qml:83 src/qml/settings/BehaviorPage.qml:14
+msgid "Behavior"
+msgstr "Поведение"
+
+#: src/qml/SettingsDialog.qml:86 src/qml/settings/BehaviorPage.qml:521
+#: src/qml/settings/BehaviorPage.qml:528
+msgid "Visibility mode"
+msgstr "Режим видимости"
+
+#: src/qml/SettingsDialog.qml:86 src/qml/settings/BehaviorPage.qml:589
+msgid "Reserve screen space"
+msgstr "Резервировать место на экране"
+
+#: src/qml/SettingsDialog.qml:86 src/qml/settings/BehaviorPage.qml:601
+msgid "Only dodge active window"
+msgstr "Скрывать только при перекрытии активным окном"
+
+#: src/qml/SettingsDialog.qml:87 src/qml/settings/BehaviorPage.qml:615
+msgid "Show delay (ms)"
+msgstr "Задержка показа (мс)"
+
+#: src/qml/SettingsDialog.qml:87 src/qml/SettingsDialog.qml:104
+#: src/qml/settings/PreviewPage.qml:456 src/qml/settings/BehaviorPage.qml:628
+msgid "Hide delay (ms)"
+msgstr "Задержка скрытия (мс)"
+
+#: src/qml/SettingsDialog.qml:87 src/qml/settings/BehaviorPage.qml:643
+msgid "Separate pinned and running apps"
+msgstr "Отделять закреплённые приложения от запущенных"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "External drag and drop"
+msgstr "Внешнее перетаскивание"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Activate a window when dragging files over its app icon"
+msgstr "Активировать окно при наведении на значок приложения с перетаскиваемыми файлами"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Bring an already running window to the front while you keep dragging. KDockW does not open or store the files unless you drop them on the dock."
+msgstr "Переключиться на уже запущенное окно, пока вы продолжаете перетаскивание. KDockW не открывает и не сохраняет файлы, если вы не отпустите их на доке."
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Activation delay (ms)"
+msgstr "Задержка активации (мс)"
+
+#: src/qml/SettingsDialog.qml:88 src/qml/settings/BehaviorPage.qml:652
+msgid "Single window click action"
+msgstr "Действие при щелчке по одному окну"
+
+#: src/qml/SettingsDialog.qml:88 src/qml/settings/BehaviorPage.qml:667
+msgid "Grouped window click action"
+msgstr "Действие при щелчке по группе окон"
+
+#: src/qml/SettingsDialog.qml:92 src/qml/settings/MonitorsPage.qml:15
+msgid "Monitors & Desktops"
+msgstr "Мониторы и рабочие столы"
+
+#: src/qml/SettingsDialog.qml:95 src/qml/settings/MonitorsPage.qml:518
+#: src/qml/settings/MonitorsPage.qml:525
+msgid "Monitor mode"
+msgstr "Режим мониторов"
+
+#: src/qml/SettingsDialog.qml:95 src/qml/settings/MonitorsPage.qml:23
+#: src/qml/settings/MonitorsPage.qml:572 src/qml/settings/MonitorsPage.qml:587
+msgid "Selected monitors"
+msgstr "Выбранные мониторы"
+
+#: src/qml/SettingsDialog.qml:95 src/qml/settings/MonitorsPage.qml:620
+#: src/qml/settings/MonitorsPage.qml:626
+msgid "Follow trigger"
+msgstr "Условие переключения"
+
+#: src/qml/SettingsDialog.qml:95 src/qml/settings/MonitorsPage.qml:655
+#: src/qml/settings/MonitorsPage.qml:665
+msgid "Screen transition"
+msgstr "Переход между экранами"
+
+#: src/qml/SettingsDialog.qml:96
+msgid "Virtual desktops"
+msgstr "Виртуальные рабочие столы"
+
+#: src/qml/SettingsDialog.qml:96 src/qml/settings/MonitorsPage.qml:714
+#: src/qml/settings/MonitorsPage.qml:721
+msgid "Display mode"
+msgstr "Режим отображения"
+
+#: src/qml/SettingsDialog.qml:96 src/qml/settings/MonitorsPage.qml:765
+msgid "Other desktop opacity"
+msgstr "Непрозрачность окон с других рабочих столов"
+
+#: src/qml/SettingsDialog.qml:100 src/qml/settings/PreviewPage.qml:14
+msgid "Window Preview"
+msgstr "Предпросмотр окон"
+
+#: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:409
+msgid "Show window previews on hover"
+msgstr "Показывать предпросмотр окон при наведении"
+
+#: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:434
+msgid "Thumbnail width (px)"
+msgstr "Ширина миниатюры (пикс.)"
+
+#: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:445
+msgid "Hover delay (ms)"
+msgstr "Задержка перед показом (мс)"
+
+#: src/qml/SettingsDialog.qml:108
+msgid "About KDockW"
+msgstr "О KDockW"
+
+#: src/qml/SettingsDialog.qml:110 src/qml/SettingsDialog.qml:117
+msgctxt "@title:group"
+msgid "About"
+msgstr "О программе"
+
+#: src/qml/SettingsDialog.qml:111
+msgid "Version"
+msgstr "Версия"
+
+#: src/qml/SettingsDialog.qml:111
+msgid "Authors"
+msgstr "Авторы"
+
+#: src/qml/SettingsDialog.qml:111
+msgid "License"
+msgstr "Лицензия"
+
+#: src/qml/SettingsDialog.qml:115
+msgid "About KDE"
+msgstr "О KDE"
+
+#: src/qml/SettingsDialog.qml:118
+msgid "KDE"
+msgstr "KDE"
+
+#: src/qml/SettingsDialog.qml:213
+msgid "Search settings"
+msgstr "Поиск параметров"
+
+#: src/qml/SettingsDialog.qml:258
+msgid "Settings pages"
+msgstr "Страницы параметров"
+
+#: src/qml/SettingsDialog.qml:333
+msgid "Settings page: %1"
+msgstr "Страница параметров: %1"
+
+#: src/qml/PreviewThumbnail.qml:32 src/qml/main.qml:235 src/qml/DockItem.qml:30
+msgid "Active"
+msgstr "Активно"
+
+#: src/qml/PreviewThumbnail.qml:33 src/qml/main.qml:237 src/qml/DockItem.qml:31
+msgid "Minimized"
+msgstr "Свёрнуто"
+
+#: src/qml/PreviewThumbnail.qml:181
+msgid "Close %1"
+msgstr "Закрыть %1"
+
+#: src/qml/main.qml:22
+msgid "KDockW Dock"
+msgstr "Док KDockW"
+
+#: src/qml/main.qml:133
+msgid "Starting %1"
+msgstr "Запуск %1"
+
+#: src/qml/main.qml:224 src/qml/main.qml:238
+msgid "%1 of %2"
+msgstr "%1 из %2"
+
+#: src/qml/main.qml:841
+msgid "Moved %1 to position %2"
+msgstr "%1 перемещено на позицию %2"
+
+#: src/qml/main.qml:1410
+msgid "Pinned and running apps separator"
+msgstr "Разделитель закреплённых и запущенных приложений"
+
+#: src/qml/DockItem.qml:29
+msgid "Pinned"
+msgstr "Закреплено"
+
+#: src/qml/DockItem.qml:33
+msgid "1 window"
+msgid_plural "%1 windows"
+msgstr[0] "%1 окно"
+msgstr[1] "%1 окна"
+msgstr[2] "%1 окон"
+
+#: src/qml/DockItem.qml:34
+msgid "Starting"
+msgstr "Запускается"
+
+#: src/qml/DockItem.qml:35
+msgid "Attention requested"
+msgstr "Требует внимания"
+
+#: src/qml/DockItem.qml:37
+msgid "1 notification"
+msgid_plural "%1 notifications"
+msgstr[0] "%1 уведомление"
+msgstr[1] "%1 уведомления"
+msgstr[2] "%1 уведомлений"
+
+#: src/qml/PreviewPopup.qml:29
+msgid "Preview for %1, %2"
+msgstr "Предпросмотр %1 — %2"
+
+#: src/qml/PreviewPopup.qml:203
+msgid "Preview for %1"
+msgstr "Предпросмотр %1"
+
+#: src/qml/settings/ShadowScene3D.qml:49
+msgid "Light position"
+msgstr "Положение источника света"
+
+#: src/qml/settings/ShadowScene3D.qml:51
+msgctxt "@info light source state and keyboard help"
+msgid "X %1, Y %2, height %3, radius %4. Arrow keys move the light (Shift for larger steps), Page Up and Page Down change its height, plus and minus change its radius."
+msgstr "X: %1, Y: %2, высота: %3, радиус: %4. Перемещайте источник света стрелками (Shift — крупный шаг), меняйте высоту клавишами Page Up и Page Down, а радиус — клавишами «плюс» и «минус»."
+
+#: src/qml/settings/PreviewPage.qml:15
+msgid "Thumbnails of an app's windows, shown above the dock on hover"
+msgstr "Миниатюры окон приложения появляются над доком при наведении"
+
+#: src/qml/settings/PreviewPage.qml:44
+msgctxt "@title sample window title in the preview mockup"
+msgid "Home — Dolphin"
+msgstr "Домашняя папка — Dolphin"
+
+#: src/qml/settings/PreviewPage.qml:204
+msgctxt "@title folder name in the sample window title bar"
+msgid "Home"
+msgstr "Домашняя папка"
+
+#: src/qml/settings/PreviewPage.qml:371
+msgid "Dock with a window preview"
+msgstr "Док с предпросмотром окна"
+
+#: src/qml/settings/PreviewPage.qml:372
+msgid "Sample desktop showing the preview popup above a hovered dock icon"
+msgstr "Пример рабочего стола с окном предпросмотра над значком дока"
+
+#: src/qml/settings/PreviewPage.qml:376 src/qml/settings/PreviewPage.qml:437
+#: src/qml/settings/IconsPage.qml:253 src/qml/settings/IconsPage.qml:258
+#: src/qml/settings/IconsPage.qml:318 src/qml/settings/IconsPage.qml:329
+#: src/qml/settings/LayoutPage.qml:214 src/qml/settings/LayoutPage.qml:215
+#: src/qml/settings/LayoutPage.qml:244 src/qml/settings/LayoutPage.qml:257
+msgctxt "@label pixels"
+msgid "%1 px"
+msgstr "%1 пикс."
+
+#: src/qml/settings/PreviewPage.qml:410
+msgid "Show window thumbnails when hovering dock items"
+msgstr "Показывать миниатюры окон при наведении на значки дока"
+
+#: src/qml/settings/PreviewPage.qml:422
+msgid "Previews still open on click"
+msgstr "Предпросмотр также открывается при щелчке"
+
+#: src/qml/settings/PreviewPage.qml:423
+msgid "Clicking an app with several windows shows previews, so the thumbnail width and hide delay below still apply."
+msgstr "Щелчок по приложению с несколькими окнами открывает их предпросмотр. Поэтому заданные ниже ширина миниатюр и задержка скрытия также применяются."
+
+#: src/qml/settings/PreviewPage.qml:448 src/qml/settings/PreviewPage.qml:459
+#: src/qml/settings/BehaviorPage.qml:618 src/qml/settings/BehaviorPage.qml:631
+msgctxt "@label milliseconds"
+msgid "%1 ms"
+msgstr "%1 мс"
+
+#: src/qml/settings/ShadowPage.qml:15
+msgid "Where the light sits decides where the dock's shadow falls and how soft it is"
+msgstr "Положение источника света определяет направление и мягкость тени дока"
+
+#: src/qml/settings/ShadowPage.qml:122
+msgid "Shadow preview"
+msgstr "Предпросмотр тени"
+
+#: src/qml/settings/ShadowPage.qml:123
+msgid "The shadow the real dock casts on the desktop"
+msgstr "Тень, которую док отбрасывает на рабочий стол"
+
+#: src/qml/settings/ShadowPage.qml:168
+msgctxt "@label chip on the real-shadow inset"
+msgid "Result"
+msgstr "Результат"
+
+#: src/qml/settings/ShadowPage.qml:187
+msgid "Drag the light to move it, scroll for its height, Shift+scroll for softness, and drag the dock for its elevation."
+msgstr "Перетаскивайте источник света, чтобы переместить его; прокручивайте колесо, чтобы менять высоту, а с Shift — мягкость тени. Перетаскивайте док, чтобы изменить его высоту."
+
+#: src/qml/settings/ShadowPage.qml:217 src/qml/settings/MonitorsPage.qml:768
+#: src/qml/settings/PanelStylePage.qml:166
+msgctxt "@label percentage"
+msgid "%1%"
+msgstr "%1%"
+
+#: src/qml/settings/ShadowPage.qml:245
+msgid "Choose shadow color"
+msgstr "Выбрать цвет тени"
+
+#: src/qml/settings/ShadowPage.qml:262
+msgid "Advanced settings"
+msgstr "Дополнительные параметры"
+
+#: src/qml/settings/ShadowPage.qml:266
+msgctxt "@info:status expander"
+msgid "Expanded"
+msgstr "Развёрнуто"
+
+#: src/qml/settings/ShadowPage.qml:267
+msgctxt "@info:status expander"
+msgid "Collapsed"
+msgstr "Свёрнуто"
+
+#: src/qml/settings/ShadowPage.qml:285
+msgid "Exact values for the light position, height, radius and the panel elevation"
+msgstr "Точные значения положения и высоты света, радиуса и высоты панели"
+
+#: src/qml/settings/AnimationsPage.qml:16
+msgid "How apps demand attention and how notification badges appear on the dock"
+msgstr "Как приложения привлекают внимание и как на доке отображаются индикаторы уведомлений"
+
+#: src/qml/settings/AnimationsPage.qml:20
+msgid "None"
+msgstr "Нет"
+
+#: src/qml/settings/AnimationsPage.qml:21
+msgid "Bounce"
+msgstr "Подпрыгивание"
+
+#: src/qml/settings/AnimationsPage.qml:22
+msgid "Wiggle"
+msgstr "Покачивание"
+
+#: src/qml/settings/AnimationsPage.qml:23
+msgid "Pulse"
+msgstr "Пульсация"
+
+#: src/qml/settings/AnimationsPage.qml:24
+msgid "Glow"
+msgstr "Свечение"
+
+#: src/qml/settings/AnimationsPage.qml:25
+msgid "Dot color"
+msgstr "Цвет точки"
+
+#: src/qml/settings/AnimationsPage.qml:26
+msgid "Blink"
+msgstr "Мигание"
+
+#: src/qml/settings/AnimationsPage.qml:31
+msgid "Number"
+msgstr "Число"
+
+#: src/qml/settings/AnimationsPage.qml:32
+msgid "Dot"
+msgstr "Точка"
+
+#: src/qml/settings/AnimationsPage.qml:33
+msgid "Off"
+msgstr "Выключено"
+
+#: src/qml/settings/AnimationsPage.qml:271
+msgid "Animations and badges preview"
+msgstr "Предпросмотр анимации и индикаторов"
+
+#: src/qml/settings/AnimationsPage.qml:272
+msgid "Sample dock where one icon plays the selected attention animation and another carries the selected badge"
+msgstr "Пример дока: один значок показывает выбранную анимацию, другой — индикатор"
+
+#: src/qml/settings/AnimationsPage.qml:374
+msgid "Attention"
+msgstr "Внимание"
+
+#: src/qml/settings/AnimationsPage.qml:385
+#: src/qml/settings/AnimationsPage.qml:399
+msgid "Animation when an app demands attention"
+msgstr "Анимация, когда приложение требует внимания"
+
+#: src/qml/settings/AnimationsPage.qml:455
+msgid "Attention duration (seconds, 0 = infinite)"
+msgstr "Длительность привлечения внимания (секунды, 0 — бесконечно)"
+
+#: src/qml/settings/AnimationsPage.qml:461
+#: src/qml/settings/AnimationsPage.qml:464
+msgid "Infinite"
+msgstr "Бесконечно"
+
+#: src/qml/settings/AnimationsPage.qml:475
+msgid "Badges"
+msgstr "Индикаторы"
+
+#: src/qml/settings/AnimationsPage.qml:485
+#: src/qml/settings/AnimationsPage.qml:499
+msgid "How notification badges appear on dock icons"
+msgstr "Как индикаторы уведомлений отображаются на значках дока"
+
+#: src/qml/settings/AnimationsPage.qml:624
+msgctxt "@label sample badge count"
+msgid "8"
+msgstr "8"
+
+#: src/qml/settings/ColorSwatchButton.qml:34
+msgctxt "@action:button color setting name and current value"
+msgid "%1: %2"
+msgstr "%1: %2"
+
+#: src/qml/settings/MonitorsPage.qml:16
+msgid "Which screens show the dock, and which desktops' windows appear on it"
+msgstr "На каких экранах показывать док и окна каких рабочих столов отображать"
+
+#: src/qml/settings/MonitorsPage.qml:20
+msgid "Primary monitor only"
+msgstr "Только основной монитор"
+
+#: src/qml/settings/MonitorsPage.qml:21
+msgid "All monitors"
+msgstr "Все мониторы"
+
+#: src/qml/settings/MonitorsPage.qml:22
+msgid "Follow active screen"
+msgstr "Следовать за активным экраном"
+
+#: src/qml/settings/MonitorsPage.qml:27
+msgid "Mouse position"
+msgstr "Положение указателя"
+
+#: src/qml/settings/MonitorsPage.qml:28
+msgid "Active window focus"
+msgstr "Фокус активного окна"
+
+#: src/qml/settings/MonitorsPage.qml:29
+msgid "Composite (focus + mouse)"
+msgstr "Комбинированный режим (фокус и указатель)"
+
+#: src/qml/settings/MonitorsPage.qml:32
+msgid "Moves when the pointer reaches the dock edge of another screen"
+msgstr "Перемещать, когда указатель достигает края дока на другом экране"
+
+#: src/qml/settings/MonitorsPage.qml:33
+msgid "Moves to the screen of the focused window"
+msgstr "Перемещать на экран с окном в фокусе"
+
+#: src/qml/settings/MonitorsPage.qml:34
+msgid "Moves on window focus or when the pointer reaches the dock edge"
+msgstr "Перемещать при смене фокуса окна или когда указатель достигает края дока"
+
+#: src/qml/settings/MonitorsPage.qml:39
+msgid "Fade"
+msgstr "Плавное затухание"
+
+#: src/qml/settings/MonitorsPage.qml:40
+msgid "Slide"
+msgstr "Скольжение"
+
+#: src/qml/settings/MonitorsPage.qml:41 src/qml/settings/IconsPage.qml:73
+msgid "Instant"
+msgstr "Мгновенно"
+
+#: src/qml/settings/MonitorsPage.qml:45
+msgid "Show all windows"
+msgstr "Показывать все окна"
+
+#: src/qml/settings/MonitorsPage.qml:46
+msgid "Dim other desktops"
+msgstr "Затемнять окна других рабочих столов"
+
+#: src/qml/settings/MonitorsPage.qml:47
+msgid "Current desktop only"
+msgstr "Только текущий рабочий стол"
+
+#: src/qml/settings/MonitorsPage.qml:493
+msgid "Monitor arrangement preview"
+msgstr "Предпросмотр расположения мониторов"
+
+#: src/qml/settings/MonitorsPage.qml:494
+msgid "Miniature monitors showing on which screens the dock appears"
+msgstr "Миниатюры мониторов показывают, на каких экранах появится док"
+
+#: src/qml/settings/MonitorsPage.qml:509
+msgid "Multi-Monitor"
+msgstr "Несколько мониторов"
+
+#: src/qml/settings/MonitorsPage.qml:581
+msgid "No selected monitors are connected. Showing a temporary dock on the primary display."
+msgstr "Выбранные мониторы не подключены. Временно док отображается на основном экране."
+
+#: src/qml/settings/MonitorsPage.qml:597
+msgid "Disconnected — turn off to remove from the selection"
+msgstr "Отключён — выключите, чтобы убрать из списка выбранных"
+
+#: src/qml/settings/MonitorsPage.qml:598
+msgid "Primary monitor"
+msgstr "Основной монитор"
+
+#: src/qml/settings/MonitorsPage.qml:706
+msgid "Virtual Desktops"
+msgstr "Виртуальные рабочие столы"
+
+#: src/qml/settings/BehaviorPage.qml:15
+msgid "When the dock shows and hides, and what clicking its apps does"
+msgstr "Когда док показывается и скрывается и что происходит при щелчке по приложениям"
+
+#: src/qml/settings/BehaviorPage.qml:81
+msgctxt "@title:window sample window title in the visibility preview"
+msgid "Home — Dolphin"
+msgstr "Домашняя папка — Dolphin"
+
+#: src/qml/settings/BehaviorPage.qml:491
+msgid "Visibility preview"
+msgstr "Предпросмотр видимости"
+
+#: src/qml/settings/BehaviorPage.qml:493
+msgid "The dock always stays visible; with reserved screen space a maximized window ends above it"
+msgstr "Док всегда виден. Если для него зарезервировано место, развёрнутое окно заканчивается над доком."
+
+#: src/qml/settings/BehaviorPage.qml:494
+msgid "The dock slides in when the pointer reaches the screen edge and hides again when it leaves"
+msgstr "Док появляется, когда указатель достигает края экрана, и скрывается, когда указатель уходит"
+
+#: src/qml/settings/BehaviorPage.qml:495
+msgid "The dock slides away while a window covers it"
+msgstr "Док скрывается, когда его перекрывает окно"
+
+#: src/qml/settings/BehaviorPage.qml:512
+msgid "Visibility"
+msgstr "Видимость"
+
+#: src/qml/settings/BehaviorPage.qml:542
+msgid "Always visible"
+msgstr "Всегда виден"
+
+#: src/qml/settings/BehaviorPage.qml:543
+msgid "Stays on screen"
+msgstr "Остаётся на экране"
+
+#: src/qml/settings/BehaviorPage.qml:554
+msgid "Auto hide"
+msgstr "Автоматически скрывать"
+
+#: src/qml/settings/BehaviorPage.qml:555
+msgid "Shows at the screen edge"
+msgstr "Появляется у края экрана"
+
+#: src/qml/settings/BehaviorPage.qml:569
+msgid "Dodge windows"
+msgstr "Скрывать под окнами"
+
+#: src/qml/settings/BehaviorPage.qml:570
+msgid "Hides under windows"
+msgstr "Скрывается под окнами"
+
+#: src/qml/settings/BehaviorPage.qml:590
+msgid "Maximized windows avoid the dock"
+msgstr "Развёрнутые окна не перекрывают док"
+
+#: src/qml/settings/BehaviorPage.qml:602
+msgid "When off, hides for any overlapping window"
+msgstr "Если выключено, док скрывается при перекрытии любым окном"
+
+#: src/qml/settings/BehaviorPage.qml:638
+msgid "Tasks"
+msgstr "Задачи"
+
+#: src/qml/settings/BehaviorPage.qml:644
+msgid "Pinned apps, including running apps, stay together; unpinned running apps appear after the divider."
+msgstr "Закреплённые приложения, в том числе запущенные, остаются вместе; незакреплённые запущенные приложения располагаются после разделителя."
+
+#: src/qml/settings/BehaviorPage.qml:655
+msgid "Activate window"
+msgstr "Активировать окно"
+
+#: src/qml/settings/BehaviorPage.qml:656 src/qml/settings/BehaviorPage.qml:672
+msgid "Minimize active window"
+msgstr "Свернуть активное окно"
+
+#: src/qml/settings/BehaviorPage.qml:670
+msgid "Cycle through windows"
+msgstr "Переключаться между окнами"
+
+#: src/qml/settings/BehaviorPage.qml:671
+msgid "Show window previews"
+msgstr "Показывать предпросмотр окон"
+
+#: src/qml/settings/IconsPage.qml:16
+msgid "Size, spacing, hover zoom and opacity of the dock icons"
+msgstr "Размер и интервалы между значками дока, увеличение при наведении и их непрозрачность"
+
+#: src/qml/settings/IconsPage.qml:42 src/qml/settings/IconsPage.qml:541
+#: src/qml/settings/IconsPage.qml:561
+msgid "Zoom in %1 ms, zoom out %2 ms"
+msgstr "Увеличение: %1 мс, уменьшение: %2 мс"
+
+#: src/qml/settings/IconsPage.qml:52
+msgid "Linear"
+msgstr "Линейная"
+
+#: src/qml/settings/IconsPage.qml:53
+msgid "Ease in"
+msgstr "Замедление в начале"
+
+#: src/qml/settings/IconsPage.qml:54
+msgid "Ease out"
+msgstr "Замедление в конце"
+
+#: src/qml/settings/IconsPage.qml:55
+msgid "Ease in and out"
+msgstr "Замедление в начале и конце"
+
+#: src/qml/settings/IconsPage.qml:56
+msgid "Gentle ease in and out"
+msgstr "Плавное замедление в начале и конце"
+
+#: src/qml/settings/IconsPage.qml:61
+msgid "Natural"
+msgstr "Естественная"
+
+#: src/qml/settings/IconsPage.qml:62
+msgid "Eases in and out, similar to the macOS Dock (default)"
+msgstr "Плавное увеличение и уменьшение, как в Dock macOS (по умолчанию)"
+
+#: src/qml/settings/IconsPage.qml:65
+msgid "Quick"
+msgstr "Быстрая"
+
+#: src/qml/settings/IconsPage.qml:66
+msgid "Fast ease-out, the previous KDockW default"
+msgstr "Быстрое уменьшение; прежний вариант по умолчанию в KDockW"
+
+#: src/qml/settings/IconsPage.qml:69
+msgid "Relaxed"
+msgstr "Плавная"
+
+#: src/qml/settings/IconsPage.qml:70
+msgid "Slow, gentle magnification"
+msgstr "Медленное и плавное увеличение"
+
+#: src/qml/settings/IconsPage.qml:74
+msgid "No zoom transition"
+msgstr "Без анимации увеличения"
+
+#: src/qml/settings/IconsPage.qml:243 src/qml/settings/PanelStylePage.qml:50
+msgid "Dock preview"
+msgstr "Предпросмотр дока"
+
+#: src/qml/settings/IconsPage.qml:244
+msgid "Sample dock showing the icon size, spacing, zoom, zoom animation, normalization, scale and icon opacities"
+msgstr "Пример дока показывает размер и интервалы значков, увеличение, его анимацию, нормализацию, масштаб и непрозрачность значков"
+
+#: src/qml/settings/IconsPage.qml:255
+msgctxt "@label zoom factor and zoomed icon size"
+msgid "%1x · %2 px"
+msgstr "%1× · %2 пикс."
+
+#: src/qml/settings/IconsPage.qml:292
+msgid "Hover"
+msgstr "Наведение"
+
+#: src/qml/settings/IconsPage.qml:300
+msgid "Show hover zoom in preview"
+msgstr "Показывать увеличение при наведении"
+
+#: src/qml/settings/IconsPage.qml:309
+msgid "Size & Spacing"
+msgstr "Размер и интервалы"
+
+#: src/qml/settings/IconsPage.qml:336
+msgid "Zoom"
+msgstr "Увеличение"
+
+#: src/qml/settings/IconsPage.qml:345
+msgctxt "@label zoom factor"
+msgid "%1x"
+msgstr "%1×"
+
+#: src/qml/settings/IconsPage.qml:346
+msgctxt "@label zoom factor slider minimum"
+msgid "No zoom"
+msgstr "Без увеличения"
+
+#: src/qml/settings/IconsPage.qml:347
+msgctxt "@label zoom factor slider maximum"
+msgid "Double size"
+msgstr "Удвоенный размер"
+
+#: src/qml/settings/IconsPage.qml:361 src/qml/settings/IconsPage.qml:374
+msgid "How neighboring icons make room for the magnified icon"
+msgstr "Как соседние значки освобождают место для увеличенного значка"
+
+#: src/qml/settings/IconsPage.qml:390
+msgid "Parabolic - neighbors move aside"
+msgstr "Параболическое — соседи сдвигаются"
+
+#: src/qml/settings/IconsPage.qml:404
+msgid "In place - icons overlap"
+msgstr "На месте — значки перекрываются"
+
+#: src/qml/settings/IconsPage.qml:467
+msgid "Preset"
+msgstr "Предустановка"
+
+#: src/qml/settings/IconsPage.qml:472
+msgid "Custom"
+msgstr "Настраиваемая"
+
+#: src/qml/settings/IconsPage.qml:540
+msgid "Custom zoom animation preview"
+msgstr "Предпросмотр настраиваемой анимации увеличения"
+
+#: src/qml/settings/IconsPage.qml:592
+msgid "Zoom-in duration (ms)"
+msgstr "Длительность увеличения (мс)"
+
+#: src/qml/settings/IconsPage.qml:602
+msgid "Zoom-in easing"
+msgstr "Кривая увеличения"
+
+#: src/qml/settings/IconsPage.qml:613
+msgid "Zoom-out duration (ms)"
+msgstr "Длительность уменьшения (мс)"
+
+#: src/qml/settings/IconsPage.qml:623
+msgid "Zoom-out easing"
+msgstr "Кривая уменьшения"
+
+#: src/qml/settings/IconsPage.qml:633
+msgid "Icon appearance"
+msgstr "Внешний вид значков"
+
+#: src/qml/settings/IconsPage.qml:644
+msgid "Automatically adjust icons with excess padding to appear visually consistent"
+msgstr "Автоматически корректировать значки с большими внутренними полями для единообразного вида"
+
+#: src/qml/settings/IconsPage.qml:655
+msgid "Icon size normalization comparison"
+msgstr "Сравнение нормализации размера значка"
+
+#: src/qml/settings/IconsPage.qml:656
+msgid "The same icon before and after its internal padding is removed"
+msgstr "Один и тот же значок до и после удаления внутренних полей"
+
+#: src/qml/settings/IconsPage.qml:660
+msgctxt "@label icon normalization comparison"
+msgid "Before"
+msgstr "До"
+
+#: src/qml/settings/IconsPage.qml:675
+msgctxt "@label icon normalization comparison"
+msgid "After"
+msgstr "После"
+
+#: src/qml/settings/IconsPage.qml:692 src/qml/settings/IconsPage.qml:734
+#: src/qml/settings/IconsPage.qml:744 src/qml/settings/IconsPage.qml:754
+msgctxt "@label percent"
+msgid "%1%"
+msgstr "%1%"
+
+#: src/qml/settings/IconsPage.qml:705
+msgid "Icon scale preview"
+msgstr "Предпросмотр масштаба значка"
+
+#: src/qml/settings/IconsPage.qml:706
+msgid "The icon fills %1% of its cell"
+msgstr "Значок занимает %1% своей ячейки"
+
+#: src/qml/settings/PanelStylePage.qml:14
+msgid "Background style, opacity and tint of the dock panel"
+msgstr "Стиль фона, непрозрачность и тонировка панели дока"
+
+#: src/qml/settings/PanelStylePage.qml:19
+msgid "Panel Inherit"
+msgstr "Как у панели Plasma"
+
+#: src/qml/settings/PanelStylePage.qml:20
+msgid "Transparent"
+msgstr "Прозрачный"
+
+#: src/qml/settings/PanelStylePage.qml:21
+msgid "Tinted"
+msgstr "Тонированный"
+
+#: src/qml/settings/PanelStylePage.qml:22
+msgid "Acrylic"
+msgstr "Акриловый"
+
+#: src/qml/settings/PanelStylePage.qml:25
+msgid "Matches the Plasma panel"
+msgstr "Соответствует панели Plasma"
+
+#: src/qml/settings/PanelStylePage.qml:26
+msgid "No background"
+msgstr "Без фона"
+
+#: src/qml/settings/PanelStylePage.qml:27
+msgid "Custom color overlay"
+msgstr "Цветная подложка"
+
+#: src/qml/settings/PanelStylePage.qml:28
+msgid "Frosted glass blur"
+msgstr "Размытие матового стекла"
+
+#: src/qml/settings/PanelStylePage.qml:51
+msgid "Sample dock showing the panel background style, opacity and tint"
+msgstr "Пример дока показывает стиль фона, непрозрачность и тонировку панели"
+
+#: src/qml/settings/PanelStylePage.qml:97
+msgid "Background"
+msgstr "Фон"
+
+#: src/qml/settings/PanelStylePage.qml:137
+msgid "Unavailable: not supported in this session"
+msgstr "Недоступно: не поддерживается в текущем сеансе"
+
+#: src/qml/settings/PanelStylePage.qml:178
+msgid "Use the system header color instead of a custom tint color"
+msgstr "Использовать системный цвет заголовка вместо выбранного цвета тонировки"
+
+#: src/qml/settings/PanelStylePage.qml:211
+msgid "Choose tint color"
+msgstr "Выбрать цвет тонировки"
+
+#: src/qml/settings/PanelStylePage.qml:227
+msgid "Use the system accent color instead of the default panel color"
+msgstr "Использовать системный акцентный цвет вместо стандартного цвета панели"
+
+#: src/qml/settings/LayoutPage.qml:13
+msgid "Which screen edge the dock sits on, and how the panel is shaped"
+msgstr "У какого края экрана расположен док и как выглядит панель"
+
+#: src/qml/settings/LayoutPage.qml:17
+msgid "Top"
+msgstr "Сверху"
+
+#: src/qml/settings/LayoutPage.qml:18
+msgid "Bottom"
+msgstr "Снизу"
+
+#: src/qml/settings/LayoutPage.qml:19
+msgid "Left"
+msgstr "Слева"
+
+#: src/qml/settings/LayoutPage.qml:20
+msgid "Right"
+msgstr "Справа"
+
+#: src/qml/settings/LayoutPage.qml:221
+msgid "Position"
+msgstr "Положение"
+
+#: src/qml/settings/LayoutPage.qml:228
+msgid "Detach the dock from the screen edge"
+msgstr "Отделить док от края экрана"
+
+#: src/qml/settings/LayoutPage.qml:238
+msgid "Gap between the dock and the screen edge or panel"
+msgstr "Расстояние между доком и краем экрана или панелью"
+
+#: src/models/dockcontextmenu.cpp:81
+msgctxt "@action:inmenu"
+msgid "Unpin from Dock"
+msgstr "Открепить от дока"
+
+#: src/models/dockcontextmenu.cpp:85
+msgctxt "@action:inmenu"
+msgid "Pin to Dock"
+msgstr "Закрепить в доке"
+
+#: src/models/dockcontextmenu.cpp:91
+msgctxt "@action:inmenu"
+msgid "New Instance"
+msgstr "Запустить новый экземпляр"
+
+#: src/models/dockcontextmenu.cpp:99
+msgctxt "@action:inmenu"
+msgid "Clear Notifications"
+msgstr "Очистить уведомления"
+
+#: src/models/dockcontextmenu.cpp:108
+msgctxt "@action:inmenu"
+msgid "Close"
+msgstr "Закрыть"
+
+#: src/models/dockcontextmenu.cpp:115
+msgctxt "@action:inmenu"
+msgid "Settings..."
+msgstr "Параметры…"
+
+#: src/models/dockcontextmenu.cpp:121
+msgctxt "@action:inmenu"
+msgid "About KDockW"
+msgstr "О KDockW"
+
+#: src/models/dockcontextmenu.cpp:124
+msgctxt "@action:inmenu"
+msgid "Quit"
+msgstr "Выход"
+
+#: src/app/application.cpp:59
+msgid "KDockW"
+msgstr "KDockW"
+
+#: src/app/application.cpp:59
+msgid "A dock for KDE Plasma 6"
+msgstr "Док для KDE Plasma 6"
+
+#: src/app/application.cpp:60
+msgid "Byeonghoon Yoo"
+msgstr "Byeonghoon Yoo"
+
+#: src/app/application.cpp:281
+msgctxt "@action global shortcut"
+msgid "Toggle Dock"
+msgstr "Показать или скрыть док"
+
+#: src/app/application.cpp:297
+msgctxt "@action global shortcut"
+msgid "Focus Dock"
+msgstr "Переключить фокус на док"
+
+#: src/app/application.cpp:315
+msgctxt "@action global shortcut"
+msgid "Activate Entry %1"
+msgstr "Активировать элемент %1"
+
+#: src/app/application.cpp:329
+msgctxt "@action global shortcut"
+msgid "New Instance of Entry %1"
+msgstr "Запустить новый экземпляр элемента %1"

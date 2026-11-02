@@ -1,4 +1,4 @@
-/* Hero lens: the headline wordmark behaves like a Krema dock.
+/* Hero lens: the headline wordmark behaves like a KDockW dock.
    Resting state = zoom wordmark ratios 0.72 / 0.87 / 1.16 / 0.87 / 0.72 with the
    accent dot under the peak letter. js/hero.js drives the live parabolic zoom.
    Horizontal box (max-width, --pad) comes from `main > section` in site.css. */

@@ -23,7 +23,7 @@
 - src/qml/settings/LayoutPage.qml
 - src/qml/settings/IconsPage.qml
 - src/qml/main.qml
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 **Tier:** Tier 2 (Appium) for real visibility, KWin, and multi-output state.
 Tier 3 reuses the Appium cases against installed packages.
 Keyboard navigation still locks visibility, and context-menu actions remain
@@ -181,7 +181,7 @@ geometry in all states; screenshot when capture is available.
 **Expected:**
 - KWin treats the dock surface as a Dock (layer-shell namespace `dock`), so Show Desktop leaves it on screen like a Plasma panel (#16)
 
-**Verification:** screenshot (dock visible while the desktop is shown). Automated: `krema_showdesktop_tests` (tests/kwin).
+**Verification:** screenshot (dock visible while the desktop is shown). Automated: `kdockw_showdesktop_tests` (tests/kwin).
 
 ---
 
@@ -213,7 +213,7 @@ two-output screen placement. Visual popup checks require DRM/vgem capture.
 (four `outputs(2)` cases).
 
 Run the multi-screen cases with:
-`KREMA_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs`.
+`KDOCKW_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs`.
 
 ---
 
@@ -242,7 +242,7 @@ same maximized window alive throughout each toggle.
    reservation is enabled and verify the existing maximized frame updates to
    the current panel-bar thickness plus margin (SET-020). Move the pointer
    away before sampling; hover zoom/tooltip surface space is not reserved.
-5. Disable reservation, restart Krema, and observe the same maximized
+5. Disable reservation, restart KDockW, and observe the same maximized
    fixture using the full output. Enable reservation, restart again, and
    verify the saved setting restores reserved geometry. Check the Behavior
    switch state after each restart.
@@ -255,7 +255,7 @@ same maximized window alive throughout each toggle.
 
 **Expected:**
 - Turning reservation off/on expands/shrinks an already-maximized window
-  in the live session; no window restore/remaximize or Krema restart is
+  in the live session; no window restore/remaximize or KDockW restart is
   needed for the toggle itself.
 - All four edges reserve only the current resting panel bar and floating
   gap (the current Floating margin), not the full zoom/tooltip surface.
@@ -264,7 +264,7 @@ same maximized window alive throughout each toggle.
 - Auto Hide and Dodge Windows reserve no space with either saved value.
 
 **Verification:** KWin maximized state, window identity, output/frame bounds,
-AT-SPI settings/dock state, and `kremarc`. Save geometry samples and assert
+AT-SPI settings/dock state, and `kdockwrc`. Save geometry samples and assert
 their actual differences; source calls, sent commands, and configuration
 values alone are insufficient. Screenshots may supplement these checks.
 Missing DRM/ScreenShot2 capture must not skip the geometry/input/persistence

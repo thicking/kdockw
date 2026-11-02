@@ -73,7 +73,7 @@ family_toolchain() {
 family_builddeps() {
     missing=$(rpm_missing_buildreqs)
     if [ -z "$missing" ]; then
-        echo "packages.sh: every BuildRequires of krema.spec is installed"
+        echo "packages.sh: every BuildRequires of kdockw.spec is installed"
         return 0
     fi
     echo "packages.sh: missing BuildRequires:" $missing
@@ -88,14 +88,14 @@ family_clean() {
 
 # Download the package's declared runtime deps into the zypper package cache
 # (keeppackages on the repos, --download-only) while the package builds; the
-# krema install then only runs the transaction. Nothing is installed here.
+# kdockw install then only runs the transaction. Nothing is installed here.
 family_depfetch() {
     zypper --non-interactive modifyrepo -k --all
     suse_repos
     zypper --non-interactive install --no-recommends --download-only "$@"
 }
 
-family_krema() {
+family_kdockw() {
     if ! suse_install --allow-unsigned-rpm /pkgs/*.rpm; then
         # A stale metadata snapshot can reference packages the repos no
         # longer publish: refresh and retry once.

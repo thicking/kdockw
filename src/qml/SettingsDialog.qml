@@ -105,7 +105,7 @@ Kirigami.AbstractApplicationWindow {
         },
         {
             moduleId: "about",
-            text: i18n("About Krema"),
+            text: i18n("About KDockW"),
             iconName: "help-about",
             group: i18nc("@title:group", "About"),
             keywords: [i18n("Version"), i18n("Authors"), i18n("License")]

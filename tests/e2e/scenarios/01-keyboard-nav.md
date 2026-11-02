@@ -28,7 +28,7 @@
 - src/platform/kwinpointermotionwatcher.h
 - src/platform/kwinpointermotionwatcher.cpp
 - src/app/application.cpp
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 - src/models/dockactions.h
 - src/models/dockactions.cpp
 - src/models/dockmodel.h
@@ -49,10 +49,10 @@ existing keyboard assertions remain the consumer contract for those paths.
 **Steps:**
 1. Press Meta+Alt+D (or invoke `focus-dock` over D-Bus, see README "Focus Dock shortcut")
 2. Wait 500ms for Wayland async round-trip
-3. Check the krema AT-SPI tree
+3. Check the kdockw AT-SPI tree
 
 **Expected:**
-- `[tool bar] "Krema Dock"` has `focused` state
+- `[tool bar] "KDockW Dock"` has `focused` state
 - First dock item `[button]` has both `focusable` and `focused` states
 - Dock items have `showing` and `visible` states (dock slid in)
 - Parabolic zoom applied: focused item has a larger bounding box than others, and neighbouring items move aside per the configured zoom style

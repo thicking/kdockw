@@ -10,10 +10,10 @@
 #include <QRegion>
 #include <QTimer>
 
-class KremaSettings;
+class KDockWSettings;
 class QQuickView;
 
-namespace krema
+namespace kdockw
 {
 
 class DockModel;
@@ -50,7 +50,7 @@ class PreviewController : public QObject
     Q_PROPERTY(int focusedThumbnailIndex READ focusedThumbnailIndex NOTIFY focusedThumbnailIndexChanged)
 
 public:
-    explicit PreviewController(DockModel *model, DockView *dockView, KremaSettings *settings, QObject *parent = nullptr);
+    explicit PreviewController(DockModel *model, DockView *dockView, KDockWSettings *settings, QObject *parent = nullptr);
     ~PreviewController() override;
 
     /// Create the preview QQuickView and configure layer-shell.
@@ -152,7 +152,7 @@ private:
 
     DockModel *m_model;
     DockView *m_dockView;
-    KremaSettings *m_settings;
+    KDockWSettings *m_settings;
     std::unique_ptr<QQuickView> m_previewView;
     QRegion m_inputRegion;
 
@@ -175,4 +175,4 @@ private:
     QTimer m_hideTimer;
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -7,9 +7,9 @@
 #include <QStringList>
 
 class QScreen;
-class KremaWaylandOutputOrder;
+class KDockWWaylandOutputOrder;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -21,7 +21,7 @@ namespace krema
  * first wl_output the registry announced and it never changes afterwards —
  * it is unrelated to KWin's per-user output priority, which KWin publishes
  * only through kde_output_order_v1 (the protocol plasmashell itself uses for
- * panel placement). Krema is a Plasma-only desktop component, so using this
+ * panel placement). KDockW is a Plasma-only desktop component, so using this
  * KDE-specific protocol is appropriate; other compositors get the Qt
  * fallback.
  *
@@ -92,7 +92,7 @@ private:
     void onScreenCountChanged();
     void recomputePrimary();
 
-    KremaWaylandOutputOrder *m_wayland = nullptr;
+    KDockWWaylandOutputOrder *m_wayland = nullptr;
     QStringList m_pendingOrder;
     QStringList m_order;
     QString m_lastPrimaryName;
@@ -103,4 +103,4 @@ private:
     friend class OutputOrderMonitorTestAccess;
 };
 
-} // namespace krema
+} // namespace kdockw

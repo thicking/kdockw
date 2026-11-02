@@ -1,4 +1,4 @@
-/* Section R (#roots): the stock Plasma 6 panel and Krema on one wallpaper,
+/* Section R (#roots): the stock Plasma 6 panel and KDockW on one wallpaper,
    split by a draggable handle.
 
    The scene is drawn at 1:1 CSS px in "logical" desktop pixels, like a
@@ -11,7 +11,7 @@
    that capture. Keep it Breeze: none of it follows the site palette. */
 
 @font-face {
-  font-family: "Krema Noto Sans";
+  font-family: "KDockW Noto Sans";
   src: url("../media/noto-sans-panel.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
@@ -53,7 +53,7 @@ main > section.roots > .section-title + .roots-lede { margin-top: 0.9rem; }
      anchored to the bottom edge like the real screen. */
   background: #18110d url("../media/roots-wall.webp") 50% 100% / cover no-repeat;
   background-image: image-set(url("../media/roots-wall-1x.webp") 1x, url("../media/roots-wall.webp") 2x);
-  font-family: "Krema Noto Sans", "Noto Sans", sans-serif;
+  font-family: "KDockW Noto Sans", "Noto Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
   -webkit-user-select: none;
@@ -165,7 +165,7 @@ main > section.roots > .section-title + .roots-lede { margin-top: 0.9rem; }
 .pp-date { margin-top: 1px; font-size: 13px; }
 .pp-peek { right: 12px; top: 11px; width: 22px; height: 22px; }
 
-/* ---------- Krema dock (default settings, Breeze Dark) ---------- */
+/* ---------- KDockW dock (default settings, Breeze Dark) ---------- */
 
 /* IconSize 48, IconSpacing 4, CornerRadius 12, floating 8 px above the
    edge, panel background at 60%, MaxZoomFactor 1.6. */
@@ -186,7 +186,7 @@ main > section.roots > .section-title + .roots-lede { margin-top: 0.9rem; }
   height: 56px;
   transform-origin: 50% 100%; /* scale grows away from the screen edge; js/panel.js sets translate + scale */
 }
-/* Krema's icon normalization crops each icon's transparent padding; --n is
+/* KDockW's icon normalization crops each icon's transparent padding; --n is
    the resulting scale per icon, measured from the capture. Icons of windows
    that are not active draw at 80% opacity. */
 .kd-item img {

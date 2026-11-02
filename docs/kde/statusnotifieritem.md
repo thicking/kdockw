@@ -192,17 +192,17 @@ contextMenu()->addAction(action);
 ```cpp
 #include <KStatusNotifierItem>
 
-auto *tray = new KStatusNotifierItem("krema-dock", this);
+auto *tray = new KStatusNotifierItem("kdockw-dock", this);
 tray->setCategory(KStatusNotifierItem::ApplicationStatus);
 tray->setStatus(KStatusNotifierItem::Active);
-tray->setTitle("Krema Dock");
+tray->setTitle("KDockW Dock");
 
 // Icons
-tray->setIconByName("krema");
+tray->setIconByName("kdockw");
 tray->setAttentionIconByName("dialog-warning");
 
 // Tooltip
-tray->setToolTip("krema", "Krema Dock", "Running");
+tray->setToolTip("kdockw", "KDockW Dock", "Running");
 
 // Menu
 auto *menu = new QMenu;

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
-# Build a Krema CI image locally and tag it with its tests/distro/image-ref.sh
+# Build a KDockW CI image locally and tag it with its tests/distro/image-ref.sh
 # reference.
 #
 #   tests/distro/build-ci-image.sh [--pull] runtime <target>
@@ -20,18 +20,18 @@
 #
 #   runtime   tests/distro/image/Dockerfile --target runtime: the target's
 #             Tier 2 runtime (kwin_wayland, PipeWire, AT-SPI, fixtures,
-#             selenium-webdriver-at-spi built on that distro), without krema
+#             selenium-webdriver-at-spi built on that distro), without kdockw
 #   builder   tests/distro/image/Dockerfile --target builder: packaging
-#             toolchain, ccache and krema's build deps as of packaging/ when
+#             toolchain, ccache and kdockw's build deps as of packaging/ when
 #             the image was built
 #   ctest     tests/appium/Dockerfile --target ctest-image
 #
 # The vgem image is built by the workflow itself; image-ref.sh names it.
 #
 # Environment:
-#   KREMA_DOCKER_PLATFORM  container platform (default: linux/amd64 for arch
+#   KDOCKW_DOCKER_PLATFORM  container platform (default: linux/amd64 for arch
 #                          and opensuse-slowroll, else native)
-#   KREMA_CI_REGISTRY, KREMA_ARCH_IMAGE  see image-ref.sh
+#   KDOCKW_CI_REGISTRY, KDOCKW_ARCH_IMAGE  see image-ref.sh
 
 set -euo pipefail
 
@@ -60,7 +60,7 @@ esac
 
 ref="$(ci_image_ref "$kind" "$target")"
 
-platform="${KREMA_DOCKER_PLATFORM:-}"
+platform="${KDOCKW_DOCKER_PLATFORM:-}"
 [[ -n "$platform" || "$kind" == ctest ]] || platform="$(distro_platform "$target")"
 platform_args=()
 [[ -z "$platform" ]] || platform_args=(--platform "$platform")
@@ -93,14 +93,14 @@ if ((pull)); then
 fi
 
 label=(--label "org.opencontainers.image.source=https://github.com/isac322/krema")
-# KREMA_CI_PUSH=1 (the publisher): also push the ref with zstd-compressed
+# KDOCKW_CI_PUSH=1 (the publisher): also push the ref with zstd-compressed
 # layers. Consumers pull these multi-GB images on every job; zstd layers are
 # smaller and decompress several times faster than gzip, which is what a
 # pull mostly waits for. Needs a docker-container buildx builder (the default
 # docker driver cannot choose the compression); the image is still loaded
 # locally for the publisher's later steps.
 outputs=(--load)
-if [[ "${KREMA_CI_PUSH:-0}" == 1 ]]; then
+if [[ "${KDOCKW_CI_PUSH:-0}" == 1 ]]; then
     outputs=(--output type=docker
         --output "type=image,name=$ref,push=true,compression=zstd,compression-level=3,force-compression=true,oci-mediatypes=true")
 fi

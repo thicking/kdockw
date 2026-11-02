@@ -11,7 +11,7 @@
 
 class QScreen;
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -53,4 +53,4 @@ private:
     bool m_hovered = false;
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -53,7 +53,7 @@ jobs:
         id: recording
         shell: bash
         env:
-          KREMA_E2E_ARTIFACTS: ${{ runner.temp }}/delayed-icon-evidence
+          KDOCKW_E2E_ARTIFACTS: ${{ runner.temp }}/delayed-icon-evidence
         run: |
           set -euo pipefail
           tests/distro/run-distro-e2e.sh fedora-43 record_delayed_icon.py -q

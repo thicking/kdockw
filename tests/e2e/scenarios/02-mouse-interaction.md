@@ -6,7 +6,7 @@
 - mouse-minimize-state: Active, background, minimized, MRU, and current-child state
 - mouse-membership: 1→2→1 membership reselects the current action
 - mouse-new-instance: Middle-click launches new instance
-- mouse-hover-zoom: Parabolic zoom on mouse hover; magnified icons push neighbours aside, the dock background grows, and in the middle of the dock the background edges and far icons stay still; only entering and leaving the dock animate (pointer movement along the dock never lags). The hover transition follows the Zoom animation preset: Natural (default, 180 ms in / 240 ms out, ease in and out), Quick (100 ms ease-out both ways, the Krema 0.10 behaviour), Relaxed (300 ms in / 400 ms out, gentle ease in and out), Instant (snap), or Custom (separate zoom-in/zoom-out duration 0–1000 ms and easing). Durations are unscaled baselines: Plasma animation scaling still applies, and a 0 ms direction snaps
+- mouse-hover-zoom: Parabolic zoom on mouse hover; magnified icons push neighbours aside, the dock background grows, and in the middle of the dock the background edges and far icons stay still; only entering and leaving the dock animate (pointer movement along the dock never lags). The hover transition follows the Zoom animation preset: Natural (default, 180 ms in / 240 ms out, ease in and out), Quick (100 ms ease-out both ways, the KDockW 0.10 behaviour), Relaxed (300 ms in / 400 ms out, gentle ease in and out), Instant (snap), or Custom (separate zoom-in/zoom-out duration 0–1000 ms and easing). Durations are unscaled baselines: Plasma animation scaling still applies, and a 0 ms direction snaps
 - mouse-hover-tooltip: Tooltip shows app name on hover
 - mouse-wheel-cycle: Scroll wheel cycles windows of grouped app; it never launches a pinned app that isn't running
 - mouse-drag-reorder: Drag to reorder dock items
@@ -19,7 +19,7 @@
 - src/qml/ZoomAnimationProfile.qml
 - src/qml/settings/IconsPage.qml
 - src/utils/zoomcalculator.h
-- src/config/krema.kcfg
+- src/config/kdockw.kcfg
 - src/shell/dockview.h
 - src/shell/dockview.cpp
 - src/models/dockactions.h
@@ -38,7 +38,7 @@ against installed packages.
 **Precondition:** Dock visible with a running app (e.g., kcalc running).
 If the dock is hidden (Auto hide / Dodge windows), show it first (README "Showing a hidden dock for mouse tests").
 **Steps:**
-1. Find the KCalc button in the krema AT-SPI tree and convert its center to screen coordinates (README pattern 5)
+1. Find the KCalc button in the kdockw AT-SPI tree and convert its center to screen coordinates (README pattern 5)
 2. Left-click the dock item center
 3. Wait 300ms
 4. Check which window is active
@@ -144,7 +144,7 @@ shifted item's zoomed bounding box as a target.
 **Verification:** active window after each scroll (KWin's active window, or screenshot comparison)
 **Automated:** tests/appium/test_02_mouse.py::test_mouse005_scroll_wheel_cycles_grouped_windows
 
-**Automated:** `tests/kwin/test_grouped_activation.cpp` (ctest `krema_grouped_activation_tests`) covers the no-launch case
+**Automated:** `tests/kwin/test_grouped_activation.cpp` (ctest `kdockw_grouped_activation_tests`) covers the no-launch case
 
 ---
 
@@ -187,7 +187,7 @@ shifted item's zoomed bounding box as a target.
 
 **Verification:** screenshot comparison (dots appear/disappear)
 
-**Automated:** tests/appium/test_02_mouse.py::test_mouse007_indicator_dots_reflect_running_state; `tests/kwin/test_launch_in_place.cpp` (ctest `krema_launch_in_place_tests`) covers the in-place position for first, middle and last pinned launchers with separation off and on
+**Automated:** tests/appium/test_02_mouse.py::test_mouse007_indicator_dots_reflect_running_state; `tests/kwin/test_launch_in_place.cpp` (ctest `kdockw_launch_in_place_tests`) covers the in-place position for first, middle and last pinned launchers with separation off and on
 
 ---
 
@@ -208,7 +208,7 @@ shifted item's zoomed bounding box as a target.
 - Each further click activates the app's next window, wrapping around (A→B→A)
 - No new instance is launched
 
-**Automated:** `tests/kwin/test_grouped_activation.cpp` (ctest `krema_grouped_activation_tests`)
+**Automated:** `tests/kwin/test_grouped_activation.cpp` (ctest `kdockw_grouped_activation_tests`)
 
 **Verification:** screenshot comparison (different window in foreground after each click)
 **Note:** Click coordinates must come from the rest layout (e.g., the first click
@@ -222,8 +222,8 @@ neighbour's zoomed position as a click target.
 
 **Precondition:** Dock visible with multiple items. `ZoomAnimationPreset=0` (Natural, the default: 180 ms ease in and out on entering, 240 ms on leaving, at normal Plasma animation speed).
 **Steps:**
-1. Set `ZoomStyle=1` in `kremarc` (or click the "In place - icons overlap" card in the "Zoom style"
-   group on the Icons settings page) and restart krema
+1. Set `ZoomStyle=1` in `kdockwrc` (or click the "In place - icons overlap" card in the "Zoom style"
+   group on the Icons settings page) and restart kdockw
 2. Record rest bounding boxes of all dock items from the AT-SPI tree
 3. Move the pointer to the center of a middle dock item
 4. Wait 300ms for the zoom-in animation
@@ -432,7 +432,7 @@ probe to check the target rectangle.
   dock surface, including for tasks or group children created while hidden.
 - Hidden targets use the panel's visible resting position, not its slid-out
   position, a zero rectangle, or an unrelated fallback.
-- Magic Lamp or Squash contracts toward the matching Krema item. Revealing the
+- Magic Lamp or Squash contracts toward the matching KDockW item. Revealing the
   dock confirms the target at the current resting slot after relayout.
 - Dock movement, icon-size changes, and group membership refresh the target.
   Hover zoom does not publish transient transforms or per-frame geometry IPC.
@@ -441,7 +441,7 @@ probe to check the target rectangle.
 animation in a real Plasma Wayland session. The visual effect requires KWin
 animations and is not rendered by the headless compositor probe.
 **Automated (Tier 2):** `tests/kwin/test_delegate_geometry.cpp` (ctest
-`krema_delegate_geometry_tests`).
+`kdockw_delegate_geometry_tests`).
 
 **Recorded coverage:** The native compositor test passed for initial
 publication, dock movement, icon resizing, grouped windows, and teardown.

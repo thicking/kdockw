@@ -1,14 +1,14 @@
 {
-  "name": "Krema: Lightweight Dock for KDE Plasma 6",
-  "short_name": "Krema",
+  "name": "KDockW: Lightweight Dock for KDE Plasma 6",
+  "short_name": "KDockW",
   "description": "A lightweight, Wayland-native dock for KDE Plasma 6.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "browser",
   "lang": "en",
-  "theme_color": "#18110D",
-  "background_color": "#18110D",
+  "theme_color": "#17264e",
+  "background_color": "#0e1630",
   "icons": [
     { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

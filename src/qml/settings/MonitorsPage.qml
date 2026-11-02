@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import QtQuick.Shapes
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
-import com.bhyoo.krema 1.0
+import com.thicking.kdockw 1.0
 import ".."
 
 SettingsPage {

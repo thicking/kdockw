@@ -11,10 +11,10 @@
 #include <memory>
 #include <unordered_map>
 
-class KremaSettings;
+class KDockWSettings;
 class QScreen;
 
-namespace krema
+namespace kdockw
 {
 
 class DockModel;
@@ -46,7 +46,7 @@ public:
         SelectedScreens = 3,
     };
 
-    explicit MultiDockManager(KremaSettings *settings, DockModel *model, NotificationTracker *tracker, QObject *parent = nullptr);
+    explicit MultiDockManager(KDockWSettings *settings, DockModel *model, NotificationTracker *tracker, QObject *parent = nullptr);
     ~MultiDockManager() override;
 
     /// Initialize all dock shells based on the current monitor mode.
@@ -110,7 +110,7 @@ private:
     void updateEdgeTriggers();
     void setShellVisible(DockShell *shell, bool visible);
 
-    KremaSettings *m_settings;
+    KDockWSettings *m_settings;
     DockModel *m_model;
     NotificationTracker *m_tracker;
 
@@ -131,4 +131,4 @@ private:
     bool m_initialized = false;
 };
 
-} // namespace krema
+} // namespace kdockw

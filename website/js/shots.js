@@ -1,5 +1,5 @@
 // Exhibit: feature clips and screenshots on one stage, picked from a mini
-// Krema dock. Every .ex-clip figure in the stage is one picker item; its tile
+// KDockW dock. Every .ex-clip figure in the stage is one picker item; its tile
 // is built here from data-label and the poster (video) or image (still).
 (() => {
   "use strict";

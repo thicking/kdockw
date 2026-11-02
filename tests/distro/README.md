@@ -1,13 +1,13 @@
-# Krema distro E2E tests (Tier 3)
+# KDockW distro E2E tests (Tier 3)
 
-Tier 2 (`tests/appium/`) runs the AT-SPI E2E suite against krema built from
-source on Fedora. Tier 3 runs **the same suite** against krema **installed from
+Tier 2 (`tests/appium/`) runs the AT-SPI E2E suite against kdockw built from
+source on Fedora. Tier 3 runs **the same suite** against kdockw **installed from
 its distro package** on each supported distribution, with that distribution's
 own KWin, Qt, KDE Frameworks, Kirigami and PipeWire. It catches what Tier 2
 cannot:
 
 * packaging bugs: missing or misnamed runtime dependencies (`Requires` in
-  `packaging/obs/krema.spec`, `Depends` in `packaging/obs/debian.control`,
+  `packaging/obs/kdockw.spec`, `Depends` in `packaging/obs/debian.control`,
   `depends` in `packaging/arch/PKGBUILD`), wrong install paths;
 * behaviour that differs with the Qt/KF/Kirigami/KWin versions a distro ships.
 
@@ -42,12 +42,12 @@ Run the installed-package multi-output cases on both targets:
 
 ```sh
 for TARGET in fedora-43 ubuntu-26.04; do
-    KREMA_E2E_OUTPUT_COUNT=2 \
-    KREMA_E2E_ARTIFACTS=tests/appium/artifacts-distro-$TARGET-2out \
+    KDOCKW_E2E_OUTPUT_COUNT=2 \
+    KDOCKW_E2E_ARTIFACTS=tests/appium/artifacts-distro-$TARGET-2out \
         tests/distro/run-distro-e2e.sh "$TARGET" -m outputs -rs \
         --deselect test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts
-    KREMA_E2E_OUTPUT_COUNT=3 \
-    KREMA_E2E_ARTIFACTS=tests/appium/artifacts-distro-$TARGET-3out \
+    KDOCKW_E2E_OUTPUT_COUNT=3 \
+    KDOCKW_E2E_ARTIFACTS=tests/appium/artifacts-distro-$TARGET-3out \
         tests/distro/run-distro-e2e.sh "$TARGET" \
         test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts -rs
 done
@@ -61,7 +61,7 @@ three-output node. The three-output leg runs SET-012's primary-excluding
 subset, retained dock/preview surfaces, and shortcut-routing checks.
 
 These commands build/install the target package as needed. To reuse an
-image already built for that target, add `KREMA_DISTRO_SKIP_IMAGE_BUILD=1`
+image already built for that target, add `KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1`
 to each invocation, as CI does. Each leg has its own directory and
 `junit.xml` at
 `tests/appium/artifacts-distro-<target>-2out/junit.xml` or
@@ -83,45 +83,45 @@ What it does (each phase prints `[distro] <phase>: <seconds>s`):
 
 1. **Runtime container** (in the background). The target's runtime image
    (see [Images](#images)) is taken from the local tag, else pulled from
-   `ghcr.io/isac322/krema-ci`, else built locally with
+   `ghcr.io/thicking/kdockw-ci`, else built locally with
    `tests/distro/build-ci-image.sh`. A container of it starts and, on the
    rolling targets, is fully upgraded (`packages.sh upgrade`) while the
    package builds.
 2. **Package.** `tests/distro/build-package.sh <target>` packs the current
-   worktree as `krema-<version>.tar.gz` and builds it in a container of the
+   worktree as `kdockw-<version>.tar.gz` and builds it in a container of the
    target's builder image (same local → ghcr → local-build order) with the
-   repo's own packaging (`packaging/obs/krema.spec`, `packaging/obs/debian.*`,
+   repo's own packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.*`,
    `packaging/arch/PKGBUILD`; helpers in `pkg/`): rolling targets are fully
    upgraded first, build dependencies that a newer `packaging/` adds are
    installed (the check is offline: rpm database, `dpkg-checkbuilddeps`,
    `pacman -T`), and the compilers run behind ccache
-   (`KREMA_CCACHE_DIR`, default `tests/distro/.cache/ccache/<target>/`).
+   (`KDOCKW_CCACHE_DIR`, default `tests/distro/.cache/ccache/<target>/`).
    The package is cached in `tests/distro/.cache/packages/<target>/`; it is
-   rebuilt only when missing or with `KREMA_DISTRO_REBUILD_PACKAGE=1`, so
+   rebuilt only when missing or with `KDOCKW_DISTRO_REBUILD_PACKAGE=1`, so
    **rebuild after changing `src/` or `packaging/`**.
 3. **Install.** The package is copied into the runtime container and
    installed through the distro's package manager (`dnf`, `zypper`,
    `apt-get`, `pacman -U`), so dependency resolution is part of the test;
-   the container is committed as `krema-e2e-distro:<target>`. Nothing of
-   krema is built from source in it. While the package built, `packages.sh
+   the container is committed as `kdockw-e2e-distro:<target>`. Nothing of
+   kdockw is built from source in it. While the package built, `packages.sh
    depfetch` already downloaded the deps the packaging declares (into the
    package-manager cache, installing nothing), so the install mostly runs
    the transaction.
-4. **Suite.** `tests/appium/run-e2e.sh` with `KREMA_E2E_IMAGE`,
-   `KREMA_E2E_SKIP_BUILD=1` and `KREMA_E2E_BINARY=/usr/bin/krema`: the
+4. **Suite.** `tests/appium/run-e2e.sh` with `KDOCKW_E2E_IMAGE`,
+   `KDOCKW_E2E_SKIP_BUILD=1` and `KDOCKW_E2E_BINARY=/usr/bin/kdockw`: the
    session setup is Tier 2's `entrypoint.sh`, minus the source sync and
-   krema build. `KREMA_E2E_DISTRO=<target>` is exported to the tests, and
+   kdockw build. `KDOCKW_E2E_DISTRO=<target>` is exported to the tests, and
    KWin runs with its Wayland permission checks on
    (`KWIN_WAYLAND_NO_PERMISSION_CHECKS=0`, made overridable by
    `tests/appium/tools/run-permission-checks.patch`): the installed
-   `com.bhyoo.krema.desktop` must declare the privileged interfaces krema
+   `com.thicking.kdockw.desktop` must declare the privileged interfaces kdockw
    binds (`X-KDE-Wayland-Interfaces`), as in a real session. That
-   declaration also makes krema privileged for xdg-activation; on KWin < 6.5
-   without it krema cannot raise its own Settings window from the dock.
-   Tier 2 keeps the checks off: a krema built from source has no installed
-   desktop file. With `KREMA_E2E_SHARDS=N` (N > 1) the script instead starts
+   declaration also makes kdockw privileged for xdg-activation; on KWin < 6.5
+   without it kdockw cannot raise its own Settings window from the dock.
+   Tier 2 keeps the checks off: a kdockw built from source has no installed
+   desktop file. With `KDOCKW_E2E_SHARDS=N` (N > 1) the script instead starts
    N `run-e2e.sh` containers concurrently: shard `i` (0-based) gets
-   `KREMA_E2E_SHARD=i/N` (the suite deselects all but every N-th collected
+   `KDOCKW_E2E_SHARD=i/N` (the suite deselects all but every N-th collected
    test), writes to `artifacts-distro-<target>/shard-<i>/`, and is prefixed
    `[shard i]` in the log; the script fails if any shard fails, after all
    shards finish. Each shard is a full session — own container, KWin,
@@ -136,18 +136,18 @@ Environment:
 
 | Variable | Effect |
 | --- | --- |
-| `KREMA_DISTRO_REBUILD_PACKAGE=1` | rebuild the package even if one is cached |
-| `KREMA_DISTRO_SKIP_IMAGE_BUILD=1` | reuse the existing `krema-e2e-distro:<target>` image: no runtime container, no package install |
-| `KREMA_CCACHE_DIR` | host ccache directory of the package build (default `tests/distro/.cache/ccache/<target>`); `CCACHE_MAXSIZE` (default 500M) is passed through |
-| `KREMA_CI_REGISTRY` | image repository (default `ghcr.io/isac322/krema-ci`) |
-| `KREMA_E2E_ARTIFACTS` | artifacts directory (default `tests/appium/artifacts-distro-<target>`) |
-| `KREMA_E2E_PLATFORM` | container platform; defaults to `linux/amd64` for `arch` and `opensuse-slowroll` |
-| `KREMA_E2E_SHARDS` | number of concurrent suite shards (default 1 = one `run-e2e.sh`); with N > 1, `LP_NUM_THREADS` defaults to CPUs / N so the shards' llvmpipe renderers do not oversubscribe the CPUs |
-| other `KREMA_E2E_*` | as in `tests/appium/run-e2e.sh` (screen size, output count, docker args) |
+| `KDOCKW_DISTRO_REBUILD_PACKAGE=1` | rebuild the package even if one is cached |
+| `KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1` | reuse the existing `kdockw-e2e-distro:<target>` image: no runtime container, no package install |
+| `KDOCKW_CCACHE_DIR` | host ccache directory of the package build (default `tests/distro/.cache/ccache/<target>`); `CCACHE_MAXSIZE` (default 500M) is passed through |
+| `KDOCKW_CI_REGISTRY` | image repository (default `ghcr.io/thicking/kdockw-ci`) |
+| `KDOCKW_E2E_ARTIFACTS` | artifacts directory (default `tests/appium/artifacts-distro-<target>`) |
+| `KDOCKW_E2E_PLATFORM` | container platform; defaults to `linux/amd64` for `arch` and `opensuse-slowroll` |
+| `KDOCKW_E2E_SHARDS` | number of concurrent suite shards (default 1 = one `run-e2e.sh`); with N > 1, `LP_NUM_THREADS` defaults to CPUs / N so the shards' llvmpipe renderers do not oversubscribe the CPUs |
+| other `KDOCKW_E2E_*` | as in `tests/appium/run-e2e.sh` (screen size, output count, docker args) |
 
 ## Images
 
-One package, `ghcr.io/isac322/krema-ci`, holds every prebuilt CI image.
+One package, `ghcr.io/thicking/kdockw-ci`, holds every prebuilt CI image.
 `tests/distro/image-ref.sh <kind> [<target>]` prints a reference;
 `tests/distro/build-ci-image.sh [--pull] <kind> [<target>]` builds it
 locally under that reference (with `--pull`: local tag, else pull, else
@@ -155,15 +155,15 @@ build).
 
 | Reference | Content | Hashed inputs |
 | --- | --- | --- |
-| `runtime-<target>-<hash>` | `image/Dockerfile --target runtime`: base image, `kwin_wayland` (file capabilities dropped, as in Tier 2), PipeWire + WirePlumber, AT-SPI, the suite's python modules, kwrite/kfind fixtures, Breeze icons/style and fonts, `XDG_MENU_PREFIX=plasma-`; KDE's selenium-webdriver-at-spi (same pinned commit and `tests/appium/tools/*.patch`) and `krema-test-window`, both built on the same distro | `image/Dockerfile`, `image/packages.sh`, `image/<family>.sh`, every file under `tests/appium/tools/` (patches and `krema-test-window/`), target id, family and base image with its digest |
-| `builder-<target>-<hash>` | `image/Dockerfile --target builder`: base image, packaging toolchain (`rpm-build`, `devscripts`/`equivs`, `base-devel`), ccache, and krema's build dependencies from `packaging/` at image build time | same as runtime (one hash per target) |
+| `runtime-<target>-<hash>` | `image/Dockerfile --target runtime`: base image, `kwin_wayland` (file capabilities dropped, as in Tier 2), PipeWire + WirePlumber, AT-SPI, the suite's python modules, kwrite/kfind fixtures, Breeze icons/style and fonts, `XDG_MENU_PREFIX=plasma-`; KDE's selenium-webdriver-at-spi (same pinned commit and `tests/appium/tools/*.patch`) and `kdockw-test-window`, both built on the same distro | `image/Dockerfile`, `image/packages.sh`, `image/<family>.sh`, every file under `tests/appium/tools/` (patches and `kdockw-test-window/`), target id, family and base image with its digest |
+| `builder-<target>-<hash>` | `image/Dockerfile --target builder`: base image, packaging toolchain (`rpm-build`, `devscripts`/`equivs`, `base-devel`), ccache, and kdockw's build dependencies from `packaging/` at image build time | same as runtime (one hash per target) |
 | `ctest-fedora-43-<hash>` | `tests/appium/Dockerfile --target ctest-image` (Build & tests) | `tests/appium/Dockerfile` |
 | `vgem-<kernel release>-<hash>` | `FROM scratch` with `/vgem.ko` built by `tests/appium/setup-vgem.sh` for that runner kernel | `tests/appium/setup-vgem.sh` |
 
 Every job pulls a builder and a runtime image, so their size is on the
 critical path. Installs run without weak dependencies/recommends and
 without docs in every family (Fedora's `dnf builddep` included). The
-publisher pushes zstd-compressed layers (`KREMA_CI_PUSH=1` in
+publisher pushes zstd-compressed layers (`KDOCKW_CI_PUSH=1` in
 `build-ci-image.sh`, docker-container buildx builder), which are smaller
 and decompress faster than gzip. A local `--load` build is unaffected.
 
@@ -177,10 +177,10 @@ one file per family so a change to one family leaves the others' images
 
 What deliberately stays out of the images:
 
-* **krema and its runtime dependencies stay out of the runtime image.** The
-  runtime list is Tier 2's minus krema's build and runtime dependencies;
+* **kdockw and its runtime dependencies stay out of the runtime image.** The
+  runtime list is Tier 2's minus kdockw's build and runtime dependencies;
   installing the package at job time through the package manager is what
-  proves that `Requires`/`Depends`/`depends` pull in everything krema
+  proves that `Requires`/`Depends`/`depends` pull in everything kdockw
   needs. Baking them in would hide a missing dependency.
 * **`packaging/` is not a hash input of the builder.** The builder carries
   the build dependencies as of its build; at job time `packages.sh
@@ -196,7 +196,7 @@ What deliberately stays out of the images:
 Freshness: the hash does not change when a distro's repositories move on.
 `.github/workflows/ci-images.yml` rebuilds and re-pushes the images of the
 rolling targets (`fedora-rawhide`, `opensuse-tumbleweed`,
-`opensuse-slowroll`, `arch`) daily and the others weekly. Because krema
+`opensuse-slowroll`, `arch`) daily and the others weekly. Because kdockw
 links Qt private API, a day-old rolling image plus today's repositories
 would be a partial upgrade, so on those four targets both the builder and
 the runtime container run the full upgrade (`dnf distro-sync`,
@@ -209,7 +209,7 @@ Dependency download happens off the critical path. Right after the runtime
 upgrade, `packages.sh depfetch` downloads the packaging's declared runtime
 deps into the package-manager cache (`dnf --downloadonly`+`keepcache`,
 `zypper --download-only`+`keeppackages`, `apt-get --download-only`,
-`pacman -Sw`), which the `krema` install then consumes. A metadata snapshot
+`pacman -Sw`), which the `kdockw` install then consumes. A metadata snapshot
 at most a day old is equally valid evidence: the install still runs the
 package manager's full dependency resolution and transaction; only the
 downloads were warmed. If the snapshot has moved past what the cache holds,
@@ -265,9 +265,9 @@ with upstream releases and does not read `targets.tsv`: when one of its
 
 The pass criterion per target is Tier 2's result for the same suite. A
 difference that only one distro shows is root-caused: harness or image
-problems are fixed here; a genuine krema or packaging bug on that distro is
+problems are fixed here; a genuine kdockw or packaging bug on that distro is
 reported and only then pinned with a `xfail(strict=True)` conditioned on
-`KREMA_E2E_DISTRO`.
+`KDOCKW_E2E_DISTRO`.
 
 ## CI
 
@@ -289,14 +289,14 @@ read`) and loads the platform-bus vgem (see Running): the module comes from
 the `vgem-<kernel release>-<hash>` image when the publisher has built one
 for the runner's kernel, else `tests/appium/setup-vgem.sh` installs the
 headers and builds it. The job restores the target's ccache
-(`KREMA_CCACHE_DIR`, keyed on the builder reference; saved only by
+(`KDOCKW_CCACHE_DIR`, keyed on the builder reference; saved only by
 default-branch runs, which is where Actions caches are shared with every
 pull request). It then runs `tests/distro/run-distro-e2e.sh <target> -rs`
-with `KREMA_E2E_SHARDS=3`: three concurrent `kwin_wayland --virtual` sessions
+with `KDOCKW_E2E_SHARDS=3`: three concurrent `kwin_wayland --virtual` sessions
 compositing with OpenGL through llvmpipe on the vgem device, each running
 every third collected test (all targets, including `ubuntu-25.04`; its old
 preview flake was a PipeWire/KWin untyped-buffer race that
-`tests/appium/krema_e2e/preview.py` now renegotiates once). The job adds a
+`tests/appium/kdockw_e2e/preview.py` now renegotiates once). The job adds a
 JUnit summary of every `junit.xml` (one per shard) to the step summary (a
 skip caused by QPainter compositing or a missing render node fails it) and
 uploads `tests/appium/artifacts-distro-<target>/` as
@@ -313,7 +313,7 @@ the new image in its own jobs.
 Back in `distro-e2e.yml`, the `fedora-43` and `ubuntu-26.04` jobs then run
 the two- and three-output legs from
 [Selected monitor reproduction](#selected-monitor-reproduction), adding
-`KREMA_DISTRO_SKIP_IMAGE_BUILD=1` to reuse each job's installed package
+`KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1` to reuse each job's installed package
 image. These legs are unsharded and have separate JUnit summaries and
 artifacts:
 
@@ -329,10 +329,10 @@ SET-012's two- and three-output cases, and the SET-013 and VIS-008
 two-output cases: they require a different output count. The matching
 two- and three-output legs cover those cases.
 All cases collected for the matching output count are expected to pass;
-no Krema bug is pinned with an xfail.
+no KDockW bug is pinned with an xfail.
 Differences in distro libraries are handled in the harness rather than
 in expectations: Qt's AT-SPI roles and extents (`PAGE_ROLE` and
-`painted_rect()` in `tests/appium/krema_e2e/krema.py`, keyed on runtime
+`painted_rect()` in `tests/appium/kdockw_e2e/kdockw.py`, keyed on runtime
 `env.QT_VERSION`).
 
 Per-phase wall time of a job when the images are published and the ccache
@@ -355,13 +355,13 @@ instead of the pull (a few minutes, like before the images were published).
 ## Cleanup
 
 The script leaves the package and ccache caches (`tests/distro/.cache/`),
-the image `krema-e2e-distro:<target>`, the runtime and builder images
-(`ghcr.io/isac322/krema-ci:*`), their base images and BuildKit's layer
+the image `kdockw-e2e-distro:<target>`, the runtime and builder images
+(`ghcr.io/thicking/kdockw-ci:*`), their base images and BuildKit's layer
 cache. Remove them with:
 
 ```sh
 rm -rf tests/distro/.cache
-docker image rm krema-e2e-distro:<target>
-docker image rm $(docker image ls -q ghcr.io/isac322/krema-ci)
+docker image rm kdockw-e2e-distro:<target>
+docker image rm $(docker image ls -q ghcr.io/thicking/kdockw-ci)
 docker builder prune
 ```

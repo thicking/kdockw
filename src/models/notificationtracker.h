@@ -16,7 +16,7 @@ namespace NotificationManager
 class Settings;
 }
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -116,4 +116,4 @@ private:
     bool m_dndActive = false;
 };
 
-} // namespace krema
+} // namespace kdockw

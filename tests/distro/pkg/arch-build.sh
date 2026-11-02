@@ -19,11 +19,11 @@ chown -R builder:builder /work
 su builder -c "
 set -euo pipefail
 cd /work
-cp /stage/krema-${KREMA_VERSION}.tar.gz .
+cp /stage/kdockw-${KDOCKW_VERSION}.tar.gz .
 
 # Redirect source= to the local tarball, keeping the same extracted
 # directory name (\$pkgname-\$pkgver).
-sed 's|^source=.*|source=(\"krema-${KREMA_VERSION}.tar.gz\")|' \
+sed 's|^source=.*|source=(\"kdockw-${KDOCKW_VERSION}.tar.gz\")|' \
     /pkg/packaging/arch/PKGBUILD > PKGBUILD
 
 # Regenerate the checksum for the local tarball.
@@ -38,9 +38,9 @@ makepkg --noconfirm
 "
 
 shopt -s nullglob
-# Ship the binary package only; krema-debug-* is the automatic debug split
+# Ship the binary package only; kdockw-debug-* is the automatic debug split
 # (kept on: it is what adds .gnu_debuglink to the shipped binary).
-artifacts=(/work/krema-[0-9]*.pkg.tar.zst)
+artifacts=(/work/kdockw-[0-9]*.pkg.tar.zst)
 if (( ${#artifacts[@]} == 0 )); then
     echo "error: makepkg finished but produced no package" >&2
     exit 70

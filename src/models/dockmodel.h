@@ -12,7 +12,7 @@
 
 #include <memory>
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -132,4 +132,4 @@ private:
     std::shared_ptr<TaskManager::ActivityInfo> m_activityInfo;
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -10,7 +10,7 @@ namespace LayerShellQt
 class Window;
 }
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -47,4 +47,4 @@ private:
     int m_exclusiveZone = 0;
 };
 
-} // namespace krema
+} // namespace kdockw

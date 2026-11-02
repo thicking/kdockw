@@ -4,7 +4,7 @@ Every XPath lookup (find element(s), page source) serialises the session
 application's whole AT-SPI tree to XML. _createNode2 reads each node through
 libatspi with about eight synchronous D-Bus round trips (role, role name,
 name, description, accessible id, states, child count, child at index), so a
-lookup costs ~1 ms per node: ~12 ms for the dock, 150-380 ms while krema's
+lookup costs ~1 ms per node: ~12 ms for the dock, 150-380 ms while kdockw's
 Settings window (180-380 nodes) is open. It was half of the suite's time.
 
 Qt's org.a11y.atspi.Cache.GetItems always returns an empty list, so no
@@ -26,7 +26,7 @@ there; the name, description, accessibility-id and states are read only
 when the XPath names them after @ or attribute:: (_xpathAttributes). Any
 other attribute reference (@*, @node(), an @ inside a string literal) reads
 all of them. An XPath cannot observe an attribute it does not reference, so
-it matches the same elements; a lookup like //tool_bar[@name='Krema Dock']
+it matches the same elements; a lookup like //tool_bar[@name='KDockW Dock']
 makes three calls per node instead of six. Python's handling of each reply
 is about half of the build time, so the build takes about half as long.
 The page source is always built with every attribute.

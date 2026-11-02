@@ -3,7 +3,7 @@
 
 #include "dockwidget.h"
 
-namespace krema
+namespace kdockw
 {
 
 DockWidget::DockWidget(QObject *parent)
@@ -13,4 +13,4 @@ DockWidget::DockWidget(QObject *parent)
 
 DockWidget::~DockWidget() = default;
 
-} // namespace krema
+} // namespace kdockw

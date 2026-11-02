@@ -11,18 +11,18 @@
 #                          and the suite, fixture apps (kwrite, kfind),
 #                          fonts/icons
 #   packages.sh build      swas-build stage only: headers/tools to build
-#                          selenium-webdriver-at-spi and krema-test-window
+#                          selenium-webdriver-at-spi and kdockw-test-window
 #   packages.sh builder    builder image: packaging toolchain, ccache and the
 #                          build deps of the packaging in /pkg/packaging
 #   packages.sh upgrade    rolling targets only (is_rolling): full distro
 #                          upgrade; a no-op elsewhere. Runs in both images
-#                          and again at job time, because krema links Qt
+#                          and again at job time, because kdockw links Qt
 #                          private API and a day-old image plus today's
 #                          repositories would otherwise be a partial upgrade
 #   packages.sh depfetch   job time, runtime container, after `upgrade`:
 #                          downloads the packaging's declared runtime deps
 #                          (PKGDEFS=<dir> is a copy of packaging/) so the
-#                          krema install finds them in the package-manager
+#                          kdockw install finds them in the package-manager
 #                          cache. It only fills the cache and tolerates
 #                          failures; the install itself still resolves
 #                          every dependency
@@ -30,12 +30,12 @@
 #                          missing. The check is offline (rpm database,
 #                          dpkg-checkbuilddeps, pacman -T); the package
 #                          manager only runs for a missing delta
-#   packages.sh krema      job time, runtime image: installs the Krema package
+#   packages.sh kdockw      job time, runtime image: installs the KDockW package
 #                          from /pkgs through the distro package manager, so
 #                          the package's own dependency metadata has to pull
 #                          in its runtime
 #
-# The runtime list mirrors tests/appium/Dockerfile (Fedora) minus krema's
+# The runtime list mirrors tests/appium/Dockerfile (Fedora) minus kdockw's
 # build and runtime dependencies, which must come from the package instead.
 #
 # Environment: FAMILY (fedora|suse|debian|arch), TARGET_ID.
@@ -44,7 +44,7 @@ set -eu
 
 : "${FAMILY:?}" "${TARGET_ID:?}"
 
-phase=${1:?usage: packages.sh runtime|build|builder|upgrade|builddeps|krema}
+phase=${1:?usage: packages.sh runtime|build|builder|upgrade|builddeps|kdockw}
 
 PACKAGING=/pkg/packaging
 
@@ -64,7 +64,7 @@ is_rolling() {
 
 # Unprivileged containers have no CAP_SYS_NICE in their bounding set;
 # execve() of a binary with file capability cap_sys_nice fails with EPERM.
-# Also re-run after the krema install in case it pulled a kwin update.
+# Also re-run after the kdockw install in case it pulled a kwin update.
 strip_kwin_caps() {
     kwin=$(readlink -f "$(command -v kwin_wayland)")
     if [ -n "$(getcap "$kwin")" ]; then
@@ -80,11 +80,11 @@ pip_install() {
     touch /tmp/selenium-requirements-installed
 }
 
-# BuildRequires of krema.spec (versions stripped) that no installed package
+# BuildRequires of kdockw.spec (versions stripped) that no installed package
 # provides, one per line. Offline: rpm database only. Version constraints are
 # still enforced by rpmbuild itself, which refuses unmet BuildRequires.
 rpm_missing_buildreqs() {
-    reqs=$(rpmspec -q --buildrequires "$PACKAGING/obs/krema.spec")
+    reqs=$(rpmspec -q --buildrequires "$PACKAGING/obs/kdockw.spec")
     for req in $(printf '%s\n' "$reqs" | awk '{ print $1 }' | sort -u); do
         rpm -q --whatprovides "$req" >/dev/null 2>&1 || echo "$req"
     done
@@ -110,7 +110,7 @@ dep_names() {
                 keep = suse ? (s == 0 || in_suse) : (s == 0 || in_else)
                 if (keep) { name = $2; gsub(/%.*/, "", name); if (name != "") print name }
             }
-        ' "$PKGDEFS/obs/krema.spec"
+        ' "$PKGDEFS/obs/kdockw.spec"
         ;;
     debian)
         # Depends: block of the binary stanza; first name of each
@@ -180,13 +180,13 @@ depfetch)
             echo "packages.sh: depfetch incomplete on $TARGET_ID, install will download the rest"
     fi
     ;;
-krema)
-    family_krema
+kdockw)
+    family_kdockw
     strip_kwin_caps
     # A rolling upgrade to a new python minor leaves the pip packages in the
     # old site-packages directory.
     python3 -c 'import appium, selenium, pytest_timeout' 2>/dev/null || pip_install
-    command -v krema >/dev/null || { echo "package installed no krema binary in PATH" >&2; exit 1; }
+    command -v kdockw >/dev/null || { echo "package installed no kdockw binary in PATH" >&2; exit 1; }
     ;;
 *)
     echo "unknown phase '$phase'" >&2

@@ -52,9 +52,9 @@ def make_archive(
     extra: dict[str, bytes] | None = None,
 ) -> bytes:
     """Return a gzip tarball in the release layout produced by ``git archive``."""
-    root = f"krema-{version}"
+    root = f"kdockw-{version}"
     files = {
-        f"{root}/CMakeLists.txt": f"cmake_minimum_required(VERSION 3.25)\nproject(krema VERSION {cmake_version or version} LANGUAGES CXX)\n".encode(),
+        f"{root}/CMakeLists.txt": f"cmake_minimum_required(VERSION 3.25)\nproject(kdockw VERSION {cmake_version or version} LANGUAGES CXX)\n".encode(),
         f"{root}/LICENSES/GPL-3.0-or-later.txt": b"GNU GENERAL PUBLIC LICENSE\n",
         f"{root}/src/main.cpp": b"int main() { return 0; }\n",
         **(extra or {}),
@@ -85,7 +85,7 @@ def make_archive(
 
 class ReleaseFixture(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmp = Path(tempfile.mkdtemp(prefix="krema-kit-test-"))
+        self.tmp = Path(tempfile.mkdtemp(prefix="kdockw-kit-test-"))
         self.addCleanup(shutil.rmtree, self.tmp)
 
     def tagged_source(self) -> Path:
@@ -108,17 +108,17 @@ class ReleaseFixture(unittest.TestCase):
     def context(
         self, version: str, payload: bytes, source: Path, *, sha256: str | None = None
     ) -> ReleaseContext:
-        archive = self.tmp / f"krema-{version}.tar.gz"
+        archive = self.tmp / f"kdockw-{version}.tar.gz"
         archive.write_bytes(payload)
         return ReleaseContext(
-            repository="isac322/krema",
+            repository="thicking/krema",
             tag=f"v{version}",
             version=version,
             commit=COMMIT,
             source_dir=source,
             archive=archive,
             sha256=sha256 or hashlib.sha256(payload).hexdigest(),
-            source_url=asset_url("isac322/krema", f"v{version}", version),
+            source_url=asset_url("thicking/krema", f"v{version}", version),
             work_dir=self.tmp / "work",
             notes_path=self.tmp / "notes.md",
             debian_revision="1",
@@ -162,7 +162,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
         )
         self.assertEqual(info["source"]["sha256"], context.sha256)
 
-        staged = kit / "kde-store" / "downloads" / "krema-9.8.7.tar.gz"
+        staged = kit / "kde-store" / "downloads" / "kdockw-9.8.7.tar.gz"
         self.assertEqual(staged.read_bytes(), payload)
         self.assertEqual(
             json.loads((kit / "kde-store" / "fields.json").read_text())["Version"],
@@ -172,7 +172,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
             encoding="utf-8"
         )
         self.assertIn(
-            "https://github.com/isac322/krema/blob/v9.8.7/README.md#build--run",
+            "https://github.com/thicking/krema/blob/v9.8.7/README.md#build--run",
             description,
         )
         self.assertNotIn("v0.10.0", description)
@@ -240,7 +240,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
     def test_archive_modified_after_context_is_refused(self) -> None:
         context = self.context("9.8.7", make_archive("9.8.7"), self.tagged_source())
         Path(context.archive).write_bytes(
-            make_archive("9.8.7", extra={"krema-9.8.7/src/extra.cpp": b"// changed\n"})
+            make_archive("9.8.7", extra={"kdockw-9.8.7/src/extra.cpp": b"// changed\n"})
         )
         self.assert_refused(context)
 
@@ -270,19 +270,19 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
     def test_lfs_pointer_license_symlink_target_is_refused(self) -> None:
         payload = make_archive(
             "9.8.7",
-            extra={"krema-9.8.7/LICENSES/GPL-3.0-or-later.txt": PNG_LFS_POINTER},
+            extra={"kdockw-9.8.7/LICENSES/GPL-3.0-or-later.txt": PNG_LFS_POINTER},
         )
         self.assert_refused(self.context("9.8.7", payload, self.tagged_source()))
 
     def test_lfs_pointer_additional_license_is_refused(self) -> None:
         payload = make_archive(
-            "9.8.7", extra={"krema-9.8.7/LICENSES/CC0-1.0.txt": PNG_LFS_POINTER}
+            "9.8.7", extra={"kdockw-9.8.7/LICENSES/CC0-1.0.txt": PNG_LFS_POINTER}
         )
         self.assert_refused(self.context("9.8.7", payload, self.tagged_source()))
 
     def test_unsafe_archive_member_is_refused(self) -> None:
         payload = make_archive(
-            "9.8.7", extra={"krema-9.8.7/../escape.txt": b"escape\n"}
+            "9.8.7", extra={"kdockw-9.8.7/../escape.txt": b"escape\n"}
         )
         self.assert_refused(self.context("9.8.7", payload, self.tagged_source()))
 
@@ -305,7 +305,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
         source = self.tagged_source()
         schema_path = source / SCHEMA_DIR / "kde-store.json"
         data = json.loads(schema_path.read_text(encoding="utf-8"))
-        data["fields"]["Summary"] = "Krema {{version }"
+        data["fields"]["Summary"] = "KDockW {{version }"
         schema_path.write_text(json.dumps(data), encoding="utf-8")
         self.assert_refused(self.context("9.8.7", make_archive("9.8.7"), source))
 
@@ -342,7 +342,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
     staging, and PNG validation run unchanged.
     """
 
-    MEDIA_URL = f"https://media.githubusercontent.com/media/isac322/krema/{COMMIT}/"
+    MEDIA_URL = f"https://media.githubusercontent.com/media/thicking/krema/{COMMIT}/"
 
     def pointerize(self, root: Path) -> dict[str, bytes]:
         """Replace every template media file under ``root`` with its LFS pointer."""
@@ -546,13 +546,13 @@ class TaggedLfsMediaTest(ReleaseFixture):
         )
         media = {item["role"]: item for item in schema["media"]}
         project = {
-            "name": "krema",
+            "name": "kdockw",
             "owner_link": release_stores.LAUNCHPAD_OWNER,
             "information_type": "Public",
         }
         live: dict[str, bytes] = {}
         for role, link_key in release_stores.LAUNCHPAD_BRANDING:
-            link = f"https://api.launchpad.net/1.0/krema/{link_key}"
+            link = f"https://api.launchpad.net/1.0/kdockw/{link_key}"
             project[link_key] = link
             live[link] = payloads[media[role]["source"]]
         with (
@@ -614,9 +614,9 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
             f"<p class='d'>\n    {html.escape(part).replace(' ', chr(10) + '  ', 3)}\n</p>"
             for part in paragraphs
         )
-        listing = f'<html><body><main data-id="{release_stores.ALTERNATIVETO_ITEM}"><h1>Krema</h1>{body}</main></body></html>'.encode()
+        listing = f'<html><body><main data-id="{release_stores.ALTERNATIVETO_ITEM}"><h1>KDockW</h1>{body}</main></body></html>'.encode()
         latte = (
-            b'<a href="/software/krema/">Krema</a>'
+            b'<a href="/software/kdockw/">KDockW</a>'
             if relation
             else b"<a href='/software/plank/'>Plank</a>"
         )
@@ -634,7 +634,7 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
         record = {
             "id": release_stores.KDE_RECORD,
             "version": version,
-            "downloadname1": filename or f"krema-{version}.tar.gz",
+            "downloadname1": filename or f"kdockw-{version}.tar.gz",
             "downloadmd5sum1": md5 or (self.md5 if version == "9.8.7" else "0" * 32),
         }
         return mock.patch.object(release_stores, "ocs_record", return_value=record)
@@ -655,7 +655,7 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
     def test_alternativeto_existing_listing_with_other_description_is_not_published(
         self,
     ) -> None:
-        stale = ["Krema is a dock.", *self.paragraphs[1:]]
+        stale = ["KDockW is a dock.", *self.paragraphs[1:]]
         with self.alternativeto_pages(paragraphs=stale):
             self.assertEqual(self.status("alternativeto")["status"], "browser_required")
             self.record("alternativeto", "start")
@@ -701,7 +701,7 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
             )
         with self.alternativeto_pages(listing_status=404):
             self.assertEqual(self.status("alternativeto")["status"], "browser_required")
-        with self.alternativeto_pages(paragraphs=["Krema is a dock."]):
+        with self.alternativeto_pages(paragraphs=["KDockW is a dock."]):
             self.assertEqual(self.status("alternativeto")["status"], "browser_required")
 
     def test_alternativeto_published_reference_must_be_canonical_listing(self) -> None:

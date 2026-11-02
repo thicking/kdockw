@@ -1,9 +1,9 @@
-// Section R (#roots): Plasma panel / Krema compare slider.
+// Section R (#roots): Plasma panel / KDockW compare slider.
 // - The native range input is the control (mouse, touch, keyboard); the line
 //   and grip only mirror its value.
 // - Below MIN_W the scene keeps a MIN_W-wide desktop and is scaled down, so
 //   the panel never squeezes (a real panel would overflow the same way).
-// - Krema's zoom is the real Parabolic layout (origin/master
+// - KDockW's zoom is the real Parabolic layout (origin/master
 //   src/utils/zoomcalculator.h computeDockZoom, used from main.qml:878 and
 //   applied by DockItem.qml:337-362): a Gaussian scale per icon, neighbours
 //   pushed aside so icons stay edge to edge, the background growing by the
@@ -62,10 +62,10 @@
 
   // ---------- Slider ----------
   const words = (v) => {
-    if (v <= 0) return "All Krema";
+    if (v <= 0) return "All KDockW";
     if (v >= 100) return "All Plasma panel";
-    if (v === 50) return "Half Plasma panel, half Krema";
-    return `${v}% Plasma panel, ${100 - v}% Krema`;
+    if (v === 50) return "Half Plasma panel, half KDockW";
+    return `${v}% Plasma panel, ${100 - v}% KDockW`;
   };
   const setPos = () => {
     const v = Number(range.value);
@@ -77,12 +77,12 @@
   range.value = String(Math.max(20, Math.min(50, Math.floor((bgX0 / sceneW) * 100) - 4)));
   setPos();
 
-  // ---------- Pointer: Krema zoom and Plasma hover ----------
+  // ---------- Pointer: KDockW zoom and Plasma hover ----------
   // Task buttons start 190 px into the panel (panel at x 8), 54 px apart.
   const TASK_X = 8 + 190;
   const TASK_PITCH = 54;
   const ppTip = cmp.querySelector("[data-pp-tip]");
-  let over = false; // pointer in the dock's input zone, on the Krema side
+  let over = false; // pointer in the dock's input zone, on the KDockW side
   let zoomActive = false; // main.qml _zoomActive: set by an icon hit, kept until the pointer leaves the zone
   let hoverTask = null;
   let frame = 0;
@@ -107,7 +107,7 @@
     return 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
   };
 
-  // Port of krema::computeDockZoom (src/utils/zoomcalculator.h:99-189), Parabolic
+  // Port of kdockw::computeDockZoom (src/utils/zoomcalculator.h:99-189), Parabolic
   // only. Returns per-item scales, per-item centre offsets in the scene's rest
   // frame, and the leading/trailing growth of the dock background.
   const layout = (cursor, M) => {
@@ -213,7 +213,7 @@
     const y = (e.clientY - rect.top) / k;
     const split = (sceneW * Number(range.value)) / 100;
 
-    // Krema: the zone is the panel height plus the zoom extension above it
+    // KDockW: the zone is the panel height plus the zoom extension above it
     // (onPositionChanged, main.qml:640-651); zoom starts on an icon hit and
     // lasts until the pointer leaves the zone. Cursor x is kept on exit so the
     // zoom-out collapses around it (zoomCursor, main.qml:840-846).

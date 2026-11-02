@@ -9,9 +9,9 @@
 
 #include <memory>
 
-class KremaSettings;
+class KDockWSettings;
 
-namespace krema
+namespace kdockw
 {
 
 class DockActions;
@@ -36,7 +36,7 @@ class DockShell : public QObject
     Q_OBJECT
 
 public:
-    explicit DockShell(KremaSettings *globalSettings,
+    explicit DockShell(KDockWSettings *globalSettings,
                        ScreenSettings *screenSettings,
                        DockModel *model,
                        NotificationTracker *tracker,
@@ -60,7 +60,7 @@ private:
     void connectSettingsSignals();
     void connectMenuSignals();
 
-    KremaSettings *m_settings;
+    KDockWSettings *m_settings;
     ScreenSettings *m_screenSettings;
     DockModel *m_model;
     SettingsWindow *m_settingsWindow; // shared, owned by MultiDockManager
@@ -73,4 +73,4 @@ private:
     std::unique_ptr<PreviewController> m_previewController;
 };
 
-} // namespace krema
+} // namespace kdockw

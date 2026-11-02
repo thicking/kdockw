@@ -14,9 +14,9 @@
 #include <QLoggingCategory>
 #include <QTimer>
 
-Q_LOGGING_CATEGORY(lcNotif, "krema.notifications")
+Q_LOGGING_CATEGORY(lcNotif, "kdockw.notifications")
 
-namespace krema
+namespace kdockw
 {
 
 // Strip ".desktop" suffix if present.
@@ -203,7 +203,7 @@ void NotificationTracker::clearUnreadNotifications(const QString &appId)
 
 void NotificationTracker::dumpState() const
 {
-    qCInfo(lcNotif) << "=== Krema Notification State ===";
+    qCInfo(lcNotif) << "=== KDockW Notification State ===";
 
     // Notification watcher data
     const bool badgesEnabled = m_notifSettings ? m_notifSettings->badgesInTaskManager() : true;
@@ -587,4 +587,4 @@ void NotificationTracker::onSniServiceUnregistered(const QString &service)
     }
 }
 
-} // namespace krema
+} // namespace kdockw

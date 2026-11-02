@@ -1,14 +1,14 @@
-# Krema AT-SPI E2E tests
+# KDockW AT-SPI E2E tests
 
-This is the Tier 2 suite: it runs a source-built `krema` in a real KWin
+This is the Tier 2 suite: it runs a source-built `kdockw` in a real KWin
 session. Tier 3 reuses the same scenarios against the installed package on
 each supported distribution; see `tests/distro/README.md`.
 
-Automated end-to-end tests for the real dock. Each test starts a fresh krema
+Automated end-to-end tests for the real dock. Each test starts a fresh kdockw
 inside a private `kwin_wayland --virtual` session, drives it with real input
 (KWin fake-input), and asserts on observable
 state: the AT-SPI tree (through
-KDE's [selenium-webdriver-at-spi]), KWin's window list, `kremarc`, and
+KDE's [selenium-webdriver-at-spi]), KWin's window list, `kdockwrc`, and
 screenshots.
 
 Everything runs in one unprivileged container (`docker run`, no
@@ -23,7 +23,7 @@ tests/appium/run-e2e.sh                          # every tests/appium/test_*.py
 tests/appium/run-e2e.sh test_smoke.py            # one file
 tests/appium/run-e2e.sh test_smoke.py::test_focus_dock_shortcut_focuses_a_dock_button
 tests/appium/run-e2e.sh -k zoom -x               # any pytest arguments
-tests/appium/run-e2e.sh --shell                  # shell in the container after the krema build
+tests/appium/run-e2e.sh --shell                  # shell in the container after the kdockw build
 ```
 
 Test paths may also be given relative to the repository root
@@ -33,16 +33,16 @@ Multi-monitor tests are marked `@pytest.mark.outputs(n)` and run in a
 session with `n` outputs, placed left to right:
 
 ```sh
-KREMA_E2E_OUTPUT_COUNT=2 KREMA_E2E_ARTIFACTS=tests/appium/artifacts-2out \
+KDOCKW_E2E_OUTPUT_COUNT=2 KDOCKW_E2E_ARTIFACTS=tests/appium/artifacts-2out \
     tests/appium/run-e2e.sh -m outputs -rs \
     --deselect test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts
-KREMA_E2E_OUTPUT_COUNT=3 KREMA_E2E_ARTIFACTS=tests/appium/artifacts-3out \
+KDOCKW_E2E_OUTPUT_COUNT=3 KDOCKW_E2E_ARTIFACTS=tests/appium/artifacts-3out \
     tests/appium/run-e2e.sh \
     test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts -rs
 ```
 
-`--output-count n` creates `n` outputs of `KREMA_E2E_SCREEN_WIDTH` x
-`KREMA_E2E_SCREEN_HEIGHT` each. Screenshots and previews need a DRM render
+`--output-count n` creates `n` outputs of `KDOCKW_E2E_SCREEN_WIDTH` x
+`KDOCKW_E2E_SCREEN_HEIGHT` each. Screenshots and previews need a DRM render
 node (see "Screenshots and previews"): `sudo modprobe vgem` on kernels that
 ship it, otherwise `sudo tests/appium/setup-vgem.sh` builds and loads vgem
 out-of-tree. On kernels >= 6.15, whose vgem is a faux device, use
@@ -62,18 +62,18 @@ dock's AT-SPI rects shifted by the output's x offset.
 
 What it does:
 
-1. `docker build` of `tests/appium/Dockerfile` (cached; `KREMA_E2E_SKIP_BUILD=1`
+1. `docker build` of `tests/appium/Dockerfile` (cached; `KDOCKW_E2E_SKIP_BUILD=1`
    skips it).
 2. Mounts the checkout read-only at `/src`, rsyncs it to `/work`, and builds
-   the `krema` target incrementally into the named volume
-   `krema-e2e-build-<arch>` (`KREMA_E2E_VOLUME` overrides it; delete the
+   the `kdockw` target incrementally into the named volume
+   `kdockw-e2e-build-<arch>` (`KDOCKW_E2E_VOLUME` overrides it; delete the
    volume for a clean build).
 3. Starts PipeWire, then `selenium-webdriver-at-spi-run`, which creates a
    private D-Bus session, `kwin_wayland --virtual`, the AT-SPI bus, and the
    WebDriver server on `:4723`, and finally runs pytest inside that session.
 
-With CMake: `-DBUILD_TESTING=ON -DKREMA_E2E_TESTS=ON` registers the whole
-suite as the CTest test `krema_e2e` (label `e2e`), which calls
+With CMake: `-DBUILD_TESTING=ON -DKDOCKW_E2E_TESTS=ON` registers the whole
+suite as the CTest test `kdockw_e2e` (label `e2e`), which calls
 `run-e2e.sh`.
 
 ### Local setup
@@ -95,45 +95,45 @@ skip or fail (see "Screenshots and previews"). Run the suite inside a Lima
 VM with a generic kernel instead:
 
 ```sh
-limactl create --name=krema-e2e --cpus=8 --memory=16 --disk=80 \
+limactl create --name=kdockw-e2e --cpus=8 --memory=16 --disk=80 \
     --vm-type=vz template://docker-rootful
 # load vgem on every boot (and once now); the VM's kernel (>= 6.15) makes it
 # a faux device, which KWin < 6.5 cannot use: for Tier 3 targets with such a
 # KWin, replace it after each boot with `sudo rmmod vgem &&
 # sudo tests/appium/setup-vgem.sh` (needs make, gcc and the kernel headers)
-limactl shell krema-e2e -- sudo sh -c 'echo vgem >/etc/modules-load.d/vgem.conf'
-limactl shell krema-e2e -- sudo modprobe vgem
+limactl shell kdockw-e2e -- sudo sh -c 'echo vgem >/etc/modules-load.d/vgem.conf'
+limactl shell kdockw-e2e -- sudo modprobe vgem
 # the checkout must be writable: run-e2e.sh recreates tests/appium/artifacts/
 # and the Docker build context is the repository
-limactl edit krema-e2e --set '.mounts=[{"location":"<repo>","writable":true}]'
+limactl edit kdockw-e2e --set '.mounts=[{"location":"<repo>","writable":true}]'
 
-limactl shell --workdir <repo> krema-e2e -- sudo tests/appium/run-e2e.sh
+limactl shell --workdir <repo> kdockw-e2e -- sudo tests/appium/run-e2e.sh
 ```
 
-(`limactl edit` applies on the next start; `limactl stop krema-e2e` first if
+(`limactl edit` applies on the next start; `limactl stop kdockw-e2e` first if
 the VM is already running.)
 
 ### Environment variables
 
-Consumed by `run-e2e.sh`/`entrypoint.sh` (host side) and `krema_e2e.env`
+Consumed by `run-e2e.sh`/`entrypoint.sh` (host side) and `kdockw_e2e.env`
 (inside the session):
 
 | Variable | Default | Effect |
 |---|---|---|
-| `KREMA_E2E_SKIP_BUILD` | unset | `1` skips the `docker build`; the image must already exist |
-| `KREMA_E2E_IMAGE` | `krema-e2e:local` | image tag to build and run |
-| `KREMA_E2E_VOLUME` | `krema-e2e-build-<arch>` | named volume holding the incremental krema build; delete it for a clean build |
-| `KREMA_E2E_ARTIFACTS` | `tests/appium/artifacts` | output directory; emptied at the start of each run |
-| `KREMA_E2E_PLATFORM` | native | `--platform` for docker build/run, e.g. `linux/amd64` |
-| `KREMA_E2E_SCREEN_WIDTH`, `KREMA_E2E_SCREEN_HEIGHT` | 1024, 768 | size of each virtual output (px) |
-| `KREMA_E2E_OUTPUT_COUNT` | 1 | number of outputs (`--output-count`), laid out left to right; tests marked `@pytest.mark.outputs(n)` run only when the session has exactly `n` |
-| `KREMA_E2E_DOCKER_ARGS` | unset | extra `docker run` arguments, e.g. `--cpus=2` to approximate a slower CI runner |
-| `KREMA_E2E_SHARD` | unset | `<i>/<N>` (0-based): run only every N-th collected test and deselect the rest. `tests/distro/run-distro-e2e.sh` sets it per shard container (`KREMA_E2E_SHARDS`); composes with `-k`/`-m` (sharding applies to the filtered collection). The default build volume gets a `-shard-<i>` suffix |
+| `KDOCKW_E2E_SKIP_BUILD` | unset | `1` skips the `docker build`; the image must already exist |
+| `KDOCKW_E2E_IMAGE` | `kdockw-e2e:local` | image tag to build and run |
+| `KDOCKW_E2E_VOLUME` | `kdockw-e2e-build-<arch>` | named volume holding the incremental kdockw build; delete it for a clean build |
+| `KDOCKW_E2E_ARTIFACTS` | `tests/appium/artifacts` | output directory; emptied at the start of each run |
+| `KDOCKW_E2E_PLATFORM` | native | `--platform` for docker build/run, e.g. `linux/amd64` |
+| `KDOCKW_E2E_SCREEN_WIDTH`, `KDOCKW_E2E_SCREEN_HEIGHT` | 1024, 768 | size of each virtual output (px) |
+| `KDOCKW_E2E_OUTPUT_COUNT` | 1 | number of outputs (`--output-count`), laid out left to right; tests marked `@pytest.mark.outputs(n)` run only when the session has exactly `n` |
+| `KDOCKW_E2E_DOCKER_ARGS` | unset | extra `docker run` arguments, e.g. `--cpus=2` to approximate a slower CI runner |
+| `KDOCKW_E2E_SHARD` | unset | `<i>/<N>` (0-based): run only every N-th collected test and deselect the rest. `tests/distro/run-distro-e2e.sh` sets it per shard container (`KDOCKW_E2E_SHARDS`); composes with `-k`/`-m` (sharding applies to the filtered collection). The default build volume gets a `-shard-<i>` suffix |
 
 ### CI
 
 `run-e2e.sh` is the local development loop; CI does not call it on a
-source-built krema. Four workflows are involved:
+source-built kdockw. Four workflows are involved:
 
 * `.github/workflows/ci.yml` runs on every pull request. Its `Detect
   changes` job matches the changed files against the path rules of the two
@@ -143,7 +143,7 @@ source-built krema. Four workflows are involved:
   passed, a failed or cancelled one fails the gate. Pushes to `master`,
   schedules and manual dispatch start the suites directly.
 * `.github/workflows/ci-images.yml` publishes the prebuilt images the two
-  suites pull, all in the package `ghcr.io/isac322/krema-ci`, tagged by
+  suites pull, all in the package `ghcr.io/thicking/kdockw-ci`, tagged by
   `tests/distro/image-ref.sh` with a hash of the files that define each
   image: the `ctest-image` stage of this directory's Dockerfile, each distro
   target's runtime and builder images (`tests/distro/README.md`), and a
@@ -166,12 +166,12 @@ source-built krema. Four workflows are involved:
   desktop-entry tests) except the `e2e` label, in parallel with
   `-j$(nproc)`.
 * `.github/workflows/distro-e2e.yml`: runs this suite against the packaged
-  krema on each of the 12 distro targets (`tests/distro/README.md`), on
+  kdockw on each of the 12 distro targets (`tests/distro/README.md`), on
   `kwin_wayland --virtual` with an out-of-tree vgem (`setup-vgem.sh`;
   GitHub's Azure kernel ships no vgem, so the module for the runner kernel
   comes from ghcr.io, or is built in the job on a kernel ci-images.yml has
   not seen). The suite runs sharded in three containers
-  (`KREMA_E2E_SHARDS=3`, `KREMA_E2E_SHARD` above). The `fedora-43` and
+  (`KDOCKW_E2E_SHARDS=3`, `KDOCKW_E2E_SHARD` above). The `fedora-43` and
   `ubuntu-26.04` entries also run two-output SET-008 and SET-012 cases, then
   the three-output SET-012 subset/shortcut case, reusing the installed
   package image. Each leg writes
@@ -194,13 +194,13 @@ skip `Build & tests`. `CI gate` still reports for them.
 | `junit.xml` | JUnit report |
 | `pytest.log` | pytest output (also streamed to the console) |
 | `session.log` | KWin, D-Bus, AT-SPI and WebDriver stderr, and how `kwin_wayland` ended (`[e2e] kwin_wayland exited with status N` / `killed by signal N`, also printed to the console when the session fails) |
-| `<test id>/krema-N.log` | krema stdout/stderr for the N-th start in that test |
-| `<test id>/failure.png`, `atspi-tree.xml`, `kwin-windows.json`, `kremarc` | written when a test fails |
+| `<test id>/kdockw-N.log` | kdockw stdout/stderr for the N-th start in that test |
+| `<test id>/failure.png`, `atspi-tree.xml`, `kwin-windows.json`, `kdockwrc` | written when a test fails |
 | `<test id>/slide-samples.txt` | VIS-002/VIS-003: time and y of every dock item sample taken while the panel slid |
 | `<test id>/thumbnail-focus.txt` | KBD-006: focus ring vs other thumbnail blue pixel counts, one line per screenshot until the ring was painted |
 | `<test id>/reservation-geometry.jsonl` | VIS-009: observed KWin fixture ID/frame/workarea/full-output bounds and resting AT-SPI icon/dock-surface bounds for reserved states |
 | `test-windows.log` | fixture window output, including received key presses |
-| `krema-build.log`, `cmake-configure.log` | krema build |
+| `kdockw-build.log`, `cmake-configure.log` | kdockw build |
 | `kactivitymanagerd.log` | activity manager output, only when the image has it (Tier 3; see below) |
 | `startup-crash/` | logs of a session whose KWin crashed before pytest started (see below) |
 | `[startup-crash-]backtrace-<core>.txt` | gdb backtrace of a KWin core, only when the host's `core_pattern` is a path mounted into the container and the image has gdb |
@@ -214,19 +214,19 @@ XDG homes) and says so on the console (`[e2e] kwin_wayland crashed during
 session startup (signal N); restarting the session once`). It does so only
 if all three hold: the session failed, KWin died from a signal, and the
 session's inner half, which runs pytest, never started, so no test ran and
-no krema was started. A crash after pytest started, a second startup crash,
+no kdockw was started. A crash after pytest started, a second startup crash,
 or any other failure fails the run as before. To get a backtrace (e.g. for
 an upstream report), run with `sudo sysctl kernel.core_pattern=/tmp/cores/core.%e.%p`,
-`KREMA_E2E_DOCKER_ARGS="-v /tmp/cores:/tmp/cores --ulimit core=-1"` and an
+`KDOCKW_E2E_DOCKER_ARGS="-v /tmp/cores:/tmp/cores --ulimit core=-1"` and an
 image with gdb (symbols come from debuginfod when `DEBUGINFOD_URLS` is set in the container).
 
 **Activity manager.** When the image has kactivitymanagerd (Tier 3:
-krema's `plasma-workspace` dependency pulls it in), `entrypoint.sh` starts
+kdockw's `plasma-workspace` dependency pulls it in), `entrypoint.sh` starts
 it inside the kwin session before pytest and waits for
 `org.kde.ActivityManager` on the bus, as Plasma starts it as a session
 service. Left to D-Bus activation, it would start from the bus's
 environment, which has no `WAYLAND_DISPLAY`: it tried xcb and aborted
-(SIGABRT) on every krema start (about 100 times per CI run), and the CI
+(SIGABRT) on every kdockw start (about 100 times per CI run), and the CI
 runner's apport processed each core dump.
 
 ### Timings (this host: OrbStack on macOS arm64, 10 CPUs)
@@ -234,12 +234,12 @@ runner's apport processed each core dump.
 | Step | Cold | Warm |
 |---|---|---|
 | Image build | ~6 min (dnf ~4.2 min, image export ~1 min, selenium-webdriver-at-spi ~14 s) | ~1 s (cached) |
-| krema build | ~35 s (empty volume) | <1 s (no changes) |
+| kdockw build | ~35 s (empty volume) | <1 s (no changes) |
 | `test_smoke.py` (6 tests) | ~12 s | ~12 s |
 
 ## Coverage
 
-`test_smoke.py` (6 tests) exercises the harness itself: the `Krema Dock`
+`test_smoke.py` (6 tests) exercises the harness itself: the `KDockW Dock`
 tool bar is exposed and bottom-anchored, windows group into one dock item,
 a click activates a window, hover zooms, the Focus Dock shortcut focuses a
 dock button, and ScreenShot2 captures the rendered dock.
@@ -253,7 +253,7 @@ separator accessibility/geometry, and zone-drag checks.
 keyboard traversal, magnified hit targets, and grouped-preview retargeting.
 Each scenario's `**Automated:**` lines point back to the tests below. Rows with
 named automated nodes assert on the AT-SPI tree (states, names, geometry),
-the KWin window list, the `kremarc` file, pixel analysis of ScreenShot2
+the KWin window list, the `kdockwrc` file, pixel analysis of ScreenShot2
 screenshots, or AT-SPI events. Existing pass statuses reflect the recorded
 suite results. Issue 54 rows remain `pending` until the parent completes Tier 2
 and packaged Tier 3 QA.
@@ -275,7 +275,7 @@ its switch/fallback/persistence cases with two outputs and its
 primary-excluding subset/shortcut case with three outputs. SET-013 and VIS-008
 also have two-output cases; use the commands in Running above.
 SET-008 is also covered by `tests/integration/test_settings_lifecycle.cpp`
-(ctest `krema_integration_tests`).
+(ctest `kdockw_integration_tests`).
 
 Lower level than this suite, Tier 1 `tests/qml/` (`ctest -R qml`, label
 `qml`; see `tests/qml/README.md`) loads the real QML files headless against
@@ -303,7 +303,7 @@ Tier 3 runs the Tier 2 Appium scenarios against installed distro packages.
 | MOUSE-005 | `test_02_mouse.py::test_mouse005_scroll_wheel_cycles_grouped_windows` (six click-policy cases) | KWin | baseline pass; Issue 54 cases pending |
 | MOUSE-006 | `test_02_mouse.py::test_mouse006_middle_click_launches_new_instance`, `test_mouse006_launch_bounce_lasts_until_the_new_window_maps` (six click-policy cases for the launch test) | KWin, AT-SPI events | baseline pass; Issue 54 cases pending |
 | MOUSE-007 | `test_02_mouse.py::test_mouse007_indicator_dots_reflect_running_state` | screenshot | pass |
-| MOUSE-008 | `tests/kwin/test_grouped_activation.cpp` (ctest `krema_grouped_activation_tests`; existing cycle/no-launch cases plus Issue 54 click-minimize cases) | KWin | baseline pass; Issue 54 cases pending |
+| MOUSE-008 | `tests/kwin/test_grouped_activation.cpp` (ctest `kdockw_grouped_activation_tests`; existing cycle/no-launch cases plus Issue 54 click-minimize cases) | KWin | baseline pass; Issue 54 cases pending |
 | MOUSE-009 | `test_02_mouse.py::test_mouse009_in_place_zoom_scales_icons_without_moving_them` | AT-SPI, screenshot | pass |
 | PREV-001 | `test_03_preview.py::test_prev001_hover_opens_preview_above_dock_with_live_thumbnails`; `test_08_reservation.py::test_prev_reservation_hover_popup_stays_inward_of_resting_dock_item` (four edges × reservation off/on, floating on; geometry/title only, no DRM) | AT-SPI, screenshot for original thumbnail case; KWin popup/surface/item geometry and real hover for reservation regression | baseline pass; reservation geometry regression 8/8 native Tier 2 pass; current thumbnail pixels/DRM and installed Tier 3 unverified |
 | ICON-008 | `test_03_preview.py::test_icon008_minimized_preview_fallback_preserves_raw_artwork` | screenshot, KWin, TaskManager | pending; DRM capture required on current host |
@@ -314,38 +314,38 @@ Tier 3 runs the Tier 2 Appium scenarios against installed distro packages.
 | PREV-006 | `test_03_preview.py::test_prev006_single_window_preview` | screenshot, AT-SPI | pass |
 | PREV-007 | `test_03_preview.py::test_prev007_opening_preview_announces_window_count` | AT-SPI event | pass |
 | QA-PREV-01 | `test_03_preview.py::test_qa_prev01_atspi_visible_popup_accepts_fast_pointer_entry` | AT-SPI, KWin, real input | pass (pre-fix failed at 33 ms; fixed 1/1) |
-| CTX-001 | `test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item`, `test_ctx001_about_krema_is_the_fifth_entry`, `test_ctx001_quit_is_the_last_entry` | KWin | pass |
-| CTX-002 | `test_04_context_menu.py::test_ctx002_pin_keeps_the_app_in_the_dock_after_it_closes` | AT-SPI, kremarc | pass |
-| CTX-003 | `test_04_context_menu.py::test_ctx003_unpin_removes_a_closed_app`, `test_ctx003_unpinned_running_app_stays_until_it_closes` | AT-SPI, kremarc | pass |
+| CTX-001 | `test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item`, `test_ctx001_about_kdockw_is_the_fifth_entry`, `test_ctx001_quit_is_the_last_entry` | KWin | pass |
+| CTX-002 | `test_04_context_menu.py::test_ctx002_pin_keeps_the_app_in_the_dock_after_it_closes` | AT-SPI, kdockwrc | pass |
+| CTX-003 | `test_04_context_menu.py::test_ctx003_unpin_removes_a_closed_app`, `test_ctx003_unpinned_running_app_stays_until_it_closes` | AT-SPI, kdockwrc | pass |
 | CTX-004 | `test_04_context_menu.py::test_ctx004_new_instance_launches_another_window` | KWin | pass |
 | CTX-005 | `test_04_context_menu.py::test_ctx005_close_closes_every_window_of_an_unpinned_app`, `test_ctx005_close_keeps_a_pinned_app_without_indicator` | KWin, AT-SPI | pass |
 | CTX-006 | `test_04_context_menu.py::test_ctx006_settings_entry_opens_the_settings_window` | KWin, AT-SPI | pass |
-| CTX-008 | `test_04_context_menu.py::test_ctx008_pinned_launcher_launches_the_chosen_desktop_action`, `test_ctx008_grouped_windows_launch_the_chosen_desktop_action` | KWin (launched window title), kremarc | pending: not yet run |
-| CTX-009 | `test_04_context_menu.py::test_ctx009_zoom_and_hover_hold_while_menu_is_open`, `test_ctx009_zoom_releases_when_menu_closes_away_from_the_dock` (skip without ScreenShot2 capture), `test_ctx009_zoom_holds_on_the_first_menu_after_starting_without_a_mouse` (Krema started without pointer capability: `input.drop_pointer_capability()`) | KWin, AT-SPI, screenshot, real input | pass |
+| CTX-008 | `test_04_context_menu.py::test_ctx008_pinned_launcher_launches_the_chosen_desktop_action`, `test_ctx008_grouped_windows_launch_the_chosen_desktop_action` | KWin (launched window title), kdockwrc | pending: not yet run |
+| CTX-009 | `test_04_context_menu.py::test_ctx009_zoom_and_hover_hold_while_menu_is_open`, `test_ctx009_zoom_releases_when_menu_closes_away_from_the_dock` (skip without ScreenShot2 capture), `test_ctx009_zoom_holds_on_the_first_menu_after_starting_without_a_mouse` (KDockW started without pointer capability: `input.drop_pointer_capability()`) | KWin, AT-SPI, screenshot, real input | pass |
 | DND-001 | `test_05_drag.py::test_dnd_001_drag_reorders_dock_items` (also: focus returns to the previously active window) | AT-SPI, screenshot, KWin | pass |
-| DND-002 | `test_05_drag.py::test_dnd_002_reorder_persists_after_restart` | AT-SPI, kremarc | pass |
+| DND-002 | `test_05_drag.py::test_dnd_002_reorder_persists_after_restart` | AT-SPI, kdockwrc | pass |
 | DND-003 | `test_05_drag.py::test_dnd_003_drag_shows_ghost_dimmed_source_and_drop_indicator` | screenshot | pass |
 | ICON-009 | `test_05_drag.py::test_icon009_drag_ghost_uses_raw_client_artwork` | screenshot, KWin, TaskManager | pending; DRM capture required on current host |
-| DND-004 | `test_05_drag.py::test_dnd_004_drag_released_outside_dock_keeps_order`, `test_dnd_004_escape_cancels_drag` (both also: focus returns to the previously active window) | AT-SPI, kremarc, screenshot, KWin | pass |
+| DND-004 | `test_05_drag.py::test_dnd_004_drag_released_outside_dock_keeps_order`, `test_dnd_004_escape_cancels_drag` (both also: focus returns to the previously active window) | AT-SPI, kdockwrc, screenshot, KWin | pass |
 | SET-001 | `test_06_settings.py::test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown` | KWin, AT-SPI | pass |
-| SET-002 | `test_06_settings.py::test_set002_icon_size_spinbox_resizes_dock_live_and_keeps_zoom_proportion` | AT-SPI, kremarc | pass |
-| SET-003 | `test_06_settings.py::test_set003_auto_hide_applies_immediately_and_persists` | AT-SPI, kremarc | pass |
-| SET-004 | `test_06_settings.py::test_set004_acrylic_background_applies_live` | screenshot, kremarc | pass |
-| SET-005 | `test_06_settings.py::test_set005_changed_settings_persist_across_restart` | AT-SPI, kremarc, screenshot | pass |
-| SET-006 | `test_06_settings.py::test_set006_screen_edge_top_moves_dock_to_top` | KWin, kremarc, screenshot | pass |
-| SET-007 | `test_06_settings.py::test_set007_custom_tint_color_is_applied_and_saved` | AT-SPI, kremarc, screenshot | pass |
-| SET-008 | `test_06_settings.py::test_set008_monitor_mode_all_monitors_from_open_settings`, `test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen`, `test_set008_follow_active_shortcuts_act_on_the_shown_dock`, `test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen` | KWin, AT-SPI, kremarc | pass |
+| SET-002 | `test_06_settings.py::test_set002_icon_size_spinbox_resizes_dock_live_and_keeps_zoom_proportion` | AT-SPI, kdockwrc | pass |
+| SET-003 | `test_06_settings.py::test_set003_auto_hide_applies_immediately_and_persists` | AT-SPI, kdockwrc | pass |
+| SET-004 | `test_06_settings.py::test_set004_acrylic_background_applies_live` | screenshot, kdockwrc | pass |
+| SET-005 | `test_06_settings.py::test_set005_changed_settings_persist_across_restart` | AT-SPI, kdockwrc, screenshot | pass |
+| SET-006 | `test_06_settings.py::test_set006_screen_edge_top_moves_dock_to_top` | KWin, kdockwrc, screenshot | pass |
+| SET-007 | `test_06_settings.py::test_set007_custom_tint_color_is_applied_and_saved` | AT-SPI, kdockwrc, screenshot | pass |
+| SET-008 | `test_06_settings.py::test_set008_monitor_mode_all_monitors_from_open_settings`, `test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen`, `test_set008_follow_active_shortcuts_act_on_the_shown_dock`, `test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen` | KWin, AT-SPI, kdockwrc | pass |
 | SET-009 | `test_06_settings.py::test_set009_quit_while_settings_is_open_exits_cleanly` | KWin (process exit) | pass |
-| SET-010 | `test_06_settings.py::test_set010_zoom_style_combo_switches_zoom_live_and_persists` | AT-SPI, kremarc | pass |
-| SET-011 | `test_06_settings.py::test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist`; preset default/persistence/Instant/disabled state also in `test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown`, `test_set005_changed_settings_persist_across_restart`, `test_set010_zoom_style_combo_switches_zoom_live_and_persists` | AT-SPI, kremarc | partial: settings automated (validation pending for SET-011); timing and easing covered by QML tests, live-dock curve screenshots manual |
-| SET-012 | `test_06_settings.py::test_set012_selected_monitors_toggle_keeps_settings_open`, `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[empty]`, `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[disconnected]` (2 outputs); `test_set012_selected_subset_preserves_docks_and_routes_shortcuts` (3 outputs) | KWin dock/preview output and identity, AT-SPI switches/warning/focus, kremarc, KGlobalAccel | automated; validation pending |
+| SET-010 | `test_06_settings.py::test_set010_zoom_style_combo_switches_zoom_live_and_persists` | AT-SPI, kdockwrc | pass |
+| SET-011 | `test_06_settings.py::test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist`; preset default/persistence/Instant/disabled state also in `test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown`, `test_set005_changed_settings_persist_across_restart`, `test_set010_zoom_style_combo_switches_zoom_live_and_persists` | AT-SPI, kdockwrc | partial: settings automated (validation pending for SET-011); timing and easing covered by QML tests, live-dock curve screenshots manual |
+| SET-012 | `test_06_settings.py::test_set012_selected_monitors_toggle_keeps_settings_open`, `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[empty]`, `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[disconnected]` (2 outputs); `test_set012_selected_subset_preserves_docks_and_routes_shortcuts` (3 outputs) | KWin dock/preview output and identity, AT-SPI switches/warning/focus, kdockwrc, KGlobalAccel | automated; validation pending |
 | VIS-001 | `test_07_visibility.py::test_vis001_always_visible_dock_stays_shown_over_a_maximized_window`, `test_vis001_always_visible_reserves_the_dock_area_for_maximized_windows` | AT-SPI, screenshot, KWin | pass |
 | VIS-002 | `test_07_visibility.py::test_vis002_auto_hide_hides_after_timeout_and_frees_the_screen` | AT-SPI, KWin | pass |
 | VIS-003 | `test_07_visibility.py::test_vis003_auto_hide_shows_on_screen_edge_approach` | AT-SPI, KWin | pass |
 | VIS-004 | `test_07_visibility.py::test_vis004_dodge_windows_hides_while_a_window_overlaps_the_dock`, `test_vis004_dodge_windows_hides_for_an_inactive_overlapping_window` | AT-SPI, KWin | pass |
 | VIS-005 | `test_07_visibility.py::test_vis005_smart_hide_hides_only_for_the_active_overlapping_window` | AT-SPI, KWin | pass |
 | VIS-006 | `test_07_visibility.py::test_vis006_keyboard_navigation_keeps_auto_hide_dock_visible`, `test_07_visibility.py::test_vis006_keyboard_menu_over_preview_lets_the_dock_hide_again` (AutoHide and DodgeWindows; Menu key from the preview-hovered state) | AT-SPI, KWin | pass |
-| VIS-007 | `tests/kwin` ctest `krema_showdesktop_tests` (added on master) | KWin | pass (C++ KWin test, not this suite) |
+| VIS-007 | `tests/kwin` ctest `kdockw_showdesktop_tests` (added on master) | KWin | pass (C++ KWin test, not this suite) |
 | MOUSE-010 | `test_02_mouse.py::test_mouse010_click_policies_observe_single_and_group_window_state` (six policy cases) | KWin, AT-SPI | pending |
 | MOUSE-011 | `test_02_mouse.py::test_mouse011_membership_change_reselects_single_and_group_actions` | KWin, AT-SPI | pending |
 | MOUSE-012 | `test_02_mouse.py::test_mouse012_group2_restores_one_mru_child_when_all_children_are_minimized` | KWin, AT-SPI | pending |
@@ -353,20 +353,20 @@ Tier 3 runs the Tier 2 Appium scenarios against installed distro packages.
 | MOUSE-014 | `test_02_mouse.py::test_mouse014_fast_hover_launcher_tooltip_healthy_control` | screenshot | pending; DRM capture required |
 | MOUSE-015 | `test_02_mouse.py::test_mouse015_unconfigured_defaults_keep_single_active_and_group_cycle_mru` | KWin | pending |
 | MOUSE-016 | `test_02_mouse.py::test_mouse016_nonleft_activation_paths_ignore_mouse_click_policies` (six policy cases) | KWin, AT-SPI | pending |
-| MOUSE-017 | `tests/kwin/test_delegate_geometry.cpp` (ctest `krema_delegate_geometry_tests`) | Independent KWin `EffectWindow.iconGeometry` | partial: initial target, move/resize, groups, teardown passed; hidden new-task/group and reveal pending; visible Magic Lamp/Squash animation manual |
+| MOUSE-017 | `tests/kwin/test_delegate_geometry.cpp` (ctest `kdockw_delegate_geometry_tests`) | Independent KWin `EffectWindow.iconGeometry` | partial: initial target, move/resize, groups, teardown passed; hidden new-task/group and reveal pending; visible Magic Lamp/Squash animation manual |
 | PREV-008 | `test_03_preview.py::test_prev008_explicit_group_click_shows_all_thumbnails_and_selected_child_closes` | KWin, AT-SPI, screenshot | pending; DRM capture required |
 | PREV-009 | `test_03_preview.py::test_prev009_explicit_group_pending_hide_retargets_after_reenter` | AT-SPI, screenshot | pending; DRM capture required |
 | PREV-011 | `test_11_preview_surface.py::test_prev011_grouped_preview_surface_tracks_two_three_and_single_layouts` (Left, Right, horizontal control) | Entire popup/thumbnail containment in KWin native surface, real last-thumbnail input, exact PID/internalId, wrong underlying-client negative, live grow/shrink/reuse, transparent-area pass-through | pass: source-built and Fedora 43 installed RPM; no DRM or pixel proof |
 | DND-005 | `test_05_drag.py::test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state` (72 base scenarios: six policy pairs × 12 source/release cases, plus 24 held-left/right release-order controls) | KWin, AT-SPI, screenshot | pending; DRM capture required |
-| CLK-002 | `test_06_settings.py::test_clk002_click_action_combinations_apply_live_persist_and_restore` (six cases), `test_06_settings.py::test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores_them` (`outputs(2)`) | KWin, AT-SPI, `kremarc` | pending |
-| CLK-011 | `test_06_settings.py::test_clk011_preview_controls_follow_hover_and_explicit_group_choice` (six cases) | AT-SPI, screenshot, `kremarc` | pending; DRM capture required |
+| CLK-002 | `test_06_settings.py::test_clk002_click_action_combinations_apply_live_persist_and_restore` (six cases), `test_06_settings.py::test_clk002_all_screens_share_live_click_choices_and_recreated_dock_restores_them` (`outputs(2)`) | KWin, AT-SPI, `kdockwrc` | pending |
+| CLK-011 | `test_06_settings.py::test_clk011_preview_controls_follow_hover_and_explicit_group_choice` (six cases) | AT-SPI, screenshot, `kdockwrc` | pending; DRM capture required |
 | CLK-012 | `test_07_visibility.py::test_clk012_repeated_explicit_preview_releases_visibility_hold` (six cases), `test_clk012_repeated_explicit_preview_releases_follow_active_screen_hold` (four `outputs(2)` cases) | KWin, AT-SPI, screenshot | pending; DRM capture required |
-| KWIN-CLK | `tests/kwin/test_grouped_activation.cpp` ctest `krema_grouped_activation_tests`: seven named click-minimize/default/membership cases | KWin model state | pending |
+| KWIN-CLK | `tests/kwin/test_grouped_activation.cpp` ctest `kdockw_grouped_activation_tests`: seven named click-minimize/default/membership cases | KWin model state | pending |
 | QML-CLK | `tests/qml/tst_dock_main.qml`: 12 named popup, tooltip, membership, group0, single, and non-left/drag consumer cases | QML consumer state | pending |
-| SET-015 | `test_06_settings.py::test_set015_reservation_switch_is_native_conditional_and_autosaves` (native switch, autosave, mode-dependent visibility); VIS-009 for geometry/restart | AT-SPI switch, unchanged process, `kremarc`; KWin geometry in VIS-009 | native Tier 2 coverage; installed Tier 3 unverified |
+| SET-015 | `test_06_settings.py::test_set015_reservation_switch_is_native_conditional_and_autosaves` (native switch, autosave, mode-dependent visibility); VIS-009 for geometry/restart | AT-SPI switch, unchanged process, `kdockwrc`; KWin geometry in VIS-009 | native Tier 2 coverage; installed Tier 3 unverified |
 | VIS-009 | `test_08_reservation.py::test_vis009_reservation_off_maximized_window_uses_full_output`, `test_vis009_already_maximized_window_reflows_on_live_reservation_toggle`, `test_vis009_live_icon_size_and_floating_update_maximized_consumer`, `test_vis009_visibility_policy_ignores_and_retains_reservation_preference`, `test_vis009_fresh_config_default_reserves_screen_space_for_maximized_consumer` (four edges, both saved preferences for mode changes; fresh default also verifies the AT-SPI description `Maximized windows avoid the dock`, checked/showing states, and no stored reservation key); `test_vis009_reservation_off_and_on_persist_and_reflow_existing_window_after_restart` (bottom) | Real KWin maximized state/frame/workarea/output bounds, window identity, and edge-aware dock geometry | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
-| SET-016 | `test_09_task_zones.py::test_tzone001_live_toggle_orders_visible_tasks_and_persists` (four edges, live on/off, ON/OFF restarts), `test_tzone007_fresh_default_separation_is_off` | AT-SPI switch/ordered items/separator, real app windows, `kremarc` | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
-| SET-020 | `test_08_reservation.py::test_vis009_live_floating_margin_update_maximized_consumer` (four edges: fresh 8 px default, Page Up to 18 px with autosave, reserved strip grows by exactly 10 px, slider disabled and full margin removed with Floating off, margin retained, restart restores the 18 px strip) | AT-SPI slider value/enabled state, `kremarc` `FloatingMargin`, real KWin maximized frame/workarea/output bounds, process identity | pending: not yet run |
+| SET-016 | `test_09_task_zones.py::test_tzone001_live_toggle_orders_visible_tasks_and_persists` (four edges, live on/off, ON/OFF restarts), `test_tzone007_fresh_default_separation_is_off` | AT-SPI switch/ordered items/separator, real app windows, `kdockwrc` | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
+| SET-020 | `test_08_reservation.py::test_vis009_live_floating_margin_update_maximized_consumer` (four edges: fresh 8 px default, Page Up to 18 px with autosave, reserved strip grows by exactly 10 px, slider disabled and full margin removed with Floating off, margin retained, restart restores the 18 px strip) | AT-SPI slider value/enabled state, `kdockwrc` `FloatingMargin`, real KWin maximized frame/workarea/output bounds, process identity | pending: not yet run |
 | CTX-007 | `test_09_task_zones.py::test_tzone003_grouped_instances_keep_one_pinned_slot_and_close_differently`, `test_tzone004_pin_and_unpin_use_real_context_menu_and_preserve_membership`; TZONE-002 for empty-section divider state | Real fixture windows/context menu input, ordered AT-SPI app names, separator state, saved pinned membership | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
 | DND-006 | `test_09_task_zones.py::test_tzone005_on_reorders_inside_both_zones_and_clamps_cross_boundary`, `test_tzone006_off_allows_real_cross_zone_reorder_without_auto_pin` (both cross-boundary directions with separation on/off) | Real drags, ordered AT-SPI app names, saved pinned membership | native Tier 2 coverage; visual drop-indicator/drag ghost/paint unverified; installed Tier 3 unverified |
 | KBD-010 | `tests/appium/test_10_task_zone_input.py::test_kbd010_task_navigation_survives_native_launch_and_close` (four edges) | Real keys, AT-SPI item focus, native launch/close, KWin activation | native Tier 2 coverage; F12 is a delivery probe, not launch proof; painted-divider quality and KWin RPC unverified |
@@ -427,12 +427,12 @@ Run the native reservation-control and real maximized-window checks against
 the current source build:
 
 ```sh
-KREMA_E2E_SKIP_BUILD=1 tests/appium/run-e2e.sh \
+KDOCKW_E2E_SKIP_BUILD=1 tests/appium/run-e2e.sh \
     test_06_settings.py::test_set015_reservation_switch_is_native_conditional_and_autosaves \
     test_08_reservation.py -rs
 ```
 
-`KREMA_E2E_SKIP_BUILD=1` reuses the existing image, not the source binary;
+`KDOCKW_E2E_SKIP_BUILD=1` reuses the existing image, not the source binary;
 the runner still builds the changed source incrementally. This command
 does not cover task-section acceptance checks. Off/live-toggle, icon-size/floating, and Auto Hide/Dodge Windows cases run on all four edges.
 The matrix covers both saved reservation preferences with Settings open and after it closes, restoration to AlwaysVisible, restart persistence/reflow, the fresh-config default reservation case, and the supplemental hover-preview geometry cases.
@@ -450,7 +450,7 @@ are not exercised by this node.
 Run the task-section suite separately:
 
 ```sh
-KREMA_E2E_SKIP_BUILD=1 tests/appium/run-e2e.sh test_09_task_zones.py -rs
+KDOCKW_E2E_SKIP_BUILD=1 tests/appium/run-e2e.sh test_09_task_zones.py -rs
 ```
 
 The live-switch and separator-geometry nodes run on all four edges.
@@ -501,7 +501,7 @@ does not establish painted-divider quality or the root cause in the user's
 original desktop environment. Tier 3 status remains pending until the same
 checks run against an installed package.
 
-## Known krema bugs
+## Known kdockw bugs
 
 Grouped preview rows can still exceed the available output capacity. The
 native preview depth is limited by the output extent; thumbnail wrapping and
@@ -513,74 +513,74 @@ test precondition.
 Issue #55 is covered by `QA-PREV-01`.
 
 To pin a newly found bug, write the test for the correct behavior and mark
-it `@pytest.mark.xfail(strict=True, reason="krema bug: ...")` (or put the
+it `@pytest.mark.xfail(strict=True, reason="kdockw bug: ...")` (or put the
 mark on the failing `pytest.param`), and list it here with its mechanism.
 `strict=True` turns the fix into an XPASS that fails the run until the
-marker is removed. Condition the mark (`KREMA_E2E_DISTRO`, a runtime
+marker is removed. Condition the mark (`KDOCKW_E2E_DISTRO`, a runtime
 version) only when the bug shows on some stacks alone; differences in the
 libraries themselves, such as Qt's AT-SPI roles and extents, are handled in
-the harness (`krema_e2e.krema`), not with xfails.
+the harness (`kdockw_e2e.kdockw`), not with xfails.
 
 ## Writing tests
 
 ```python
-from krema_e2e import config, env, kwin, input as inp, wait_until
-from krema_e2e.krema import Krema, Rect
+from kdockw_e2e import config, env, kwin, input as inp, wait_until
+from kdockw_e2e.kdockw import KDockW, Rect
 import pytest
 
-@pytest.mark.kremarc({"PinnedLaunchers": [config.launcher("org.kde.kwrite")], "IconSize": 64})
-def test_something(krema: Krema, apps):
+@pytest.mark.kdockwrc({"PinnedLaunchers": [config.launcher("org.kde.kwrite")], "IconSize": 64})
+def test_something(kdockw: KDockW, apps):
     win = apps.open("Alpha")                       # fixture window, waits until KWin maps it
-    krema.click_item("Alpha")                      # real pointer click on the dock item
+    kdockw.click_item("Alpha")                      # real pointer click on the dock item
     wait_until(lambda: kwin.active_window().pid == win.pid)
 ```
 
 Rules:
 
 * Every assertion waits for a condition with a timeout (`wait_until`,
-  `wait_stable`, `krema.wait_for_item`). Never assert after a fixed sleep.
-* Each test gets its own krema, XDG directories, and fixture windows; nothing
+  `wait_stable`, `kdockw.wait_for_item`). Never assert after a fixed sleep.
+* Each test gets its own kdockw, XDG directories, and fixture windows; nothing
   leaks between tests. Tests run serially: they share one KWin, one pointer,
   and one keyboard.
 * A dock item's accessible name is the **window title** while its task has
   one window, and the app's `.desktop` `Name` once several windows are
   grouped. A pinned launcher whose `.desktop` file is missing shows the
   desktop id (`org.kde.dolphin.desktop`).
-* The default test config pins nothing (`krema_e2e.krema.DEFAULT_CONFIG`),
-  so the dock only shows what the test opens. Use `@pytest.mark.kremarc({})`
-  to get krema's built-in defaults.
+* The default test config pins nothing (`kdockw_e2e.kdockw.DEFAULT_CONFIG`),
+  so the dock only shows what the test opens. Use `@pytest.mark.kdockwrc({})`
+  to get kdockw's built-in defaults.
 
-## API contract (`krema_e2e`)
+## API contract (`kdockw_e2e`)
 
 The follow-up scenario suites build on this API. All coordinates passed to
-`krema_e2e.input` are global screen pixels.
+`kdockw_e2e.input` are global screen pixels.
 
-### pytest fixtures and markers (`krema_e2e.pytest_plugin`, loaded by `conftest.py`)
+### pytest fixtures and markers (`kdockw_e2e.pytest_plugin`, loaded by `conftest.py`)
 
 | Name | Description |
 |---|---|
-| `krema` fixture | A started `Krema` with fresh XDG dirs. Stopped after the test. Collects failure artifacts. Fails the test if krema exited during it. |
+| `kdockw` fixture | A started `KDockW` with fresh XDG dirs. Stopped after the test. Collects failure artifacts. Fails the test if kdockw exited during it. |
 | `apps` fixture | `TestWindows` manager; closes leftover windows after the test. |
-| `@pytest.mark.kremarc(settings)` | kremarc written before krema starts (format below). `{}` = krema defaults. |
-| `@pytest.mark.no_krema_autostart` | The `krema` fixture does not call `start()`. |
-| `class KremaTest` | Optional base class: sets `self.krema`/`self.apps`; the class attribute `kremarc` applies to all its tests. |
+| `@pytest.mark.kdockwrc(settings)` | kdockwrc written before kdockw starts (format below). `{}` = kdockw defaults. |
+| `@pytest.mark.no_kdockw_autostart` | The `kdockw` fixture does not call `start()`. |
+| `class KDockWTest` | Optional base class: sets `self.kdockw`/`self.apps`; the class attribute `kdockwrc` applies to all its tests. |
 
-### `krema_e2e.krema`
+### `kdockw_e2e.kdockw`
 
-`Krema(home: Path, config: Mapping | None = None, name: str = "krema")` is one
-krema process with `XDG_{CONFIG,DATA,CACHE,STATE}_HOME` under `home`.
+`KDockW(home: Path, config: Mapping | None = None, name: str = "kdockw")` is one
+kdockw process with `XDG_{CONFIG,DATA,CACHE,STATE}_HOME` under `home`.
 `config=None` writes `DEFAULT_CONFIG`; `{}` writes nothing.
 
 Lifecycle and config:
 
 | Member | Description |
 |---|---|
-| `start(timeout=30)` | Launch krema (log: `artifacts/<name>/krema-N.log`), attach a WebDriver session to its AT-SPI tree by PID, and wait for the `Krema Dock` tool bar and the KWin dock surface. Waits for a previous instance to release `org.kde.krema` first. |
-| `stop(timeout=10)` | Quit the session, SIGTERM (then SIGKILL) krema. |
-| `restart(timeout=30)` | `stop()` + `start()`; XDG dirs and kremarc are kept. |
+| `start(timeout=30)` | Launch kdockw (log: `artifacts/<name>/kdockw-N.log`), attach a WebDriver session to its AT-SPI tree by PID, and wait for the `KDockW Dock` tool bar and the KWin dock surface. Waits for a previous instance to release `org.kde.kdockw` first. |
+| `stop(timeout=10)` | Quit the session, SIGTERM (then SIGKILL) kdockw. |
+| `restart(timeout=30)` | `stop()` + `start()`; XDG dirs and kdockwrc are kept. |
 | `is_running() -> bool`, `pid`, `process`, `driver` | `driver` is the raw Appium `webdriver.Remote` (implicit wait 50 ms, one lookup pass per call). |
-| `config_path`, `write_config(settings)`, `read_config() -> {group: {key: str}}` | kremarc. `write_config` takes effect on the next (re)start. |
-| `environment() -> dict` | Environment krema is started with. |
+| `config_path`, `write_config(settings)`, `read_config() -> {group: {key: str}}` | kdockwrc. `write_config` takes effect on the next (re)start. |
+| `environment() -> dict` | Environment kdockw is started with. |
 
 AT-SPI lookup (XPath tags are role names with `_`: `tool_bar`, `button`,
 `popup_menu`, `frame`, `label`; attributes `name`, `description`, `states`,
@@ -588,8 +588,8 @@ AT-SPI lookup (XPath tags are role names with `_`: `tool_bar`, `button`,
 
 | Member | Description |
 |---|---|
-| `find(xpath) -> WebElement \| None`, `find_all(xpath) -> list`, `wait_for(xpath, timeout=10)` | Generic lookup in krema's tree. |
-| `toolbar()` | The `[tool bar] "Krema Dock"`. |
+| `find(xpath) -> WebElement \| None`, `find_all(xpath) -> list`, `wait_for(xpath, timeout=10)` | Generic lookup in kdockw's tree. |
+| `toolbar()` | The `[tool bar] "KDockW Dock"`. |
 | `items()`, `item_names() -> list[str]` | Dock item buttons in visual order. |
 | `item(name)`, `wait_for_item(name, timeout=10)`, `wait_for_no_item(name, timeout=10)` | One dock item by accessible name. |
 | `focused_item() -> str \| None` | Name of the item with the `focused` state. |
@@ -602,7 +602,7 @@ AT-SPI lookup (XPath tags are role names with `_`: `tool_bar`, `button`,
 
 Lookup cost. Every XPath lookup (`find`, `find_all`, `wait_for`, every
 `item*`/`preview*`/`surface_rect` helper) makes selenium-webdriver-at-spi
-build an XML tree of krema's AT-SPI tree and evaluate the XPath on it.
+build an XML tree of kdockw's AT-SPI tree and evaluate the XPath on it.
 Upstream reads each node with about eight synchronous D-Bus round trips
 (~1 ms per node). The image patches it (`tools/pipelined-tree.patch`) to
 send each node's calls (`GetRole`, the `Name`, `Description` and
@@ -625,7 +625,7 @@ read. name, description, accessibility-id and states are read only when the
 XPath names them after `@` or `attribute::`, and any other attribute
 reference (`@*`, `@node()`, an `@` inside a string literal) reads all of
 them. An XPath cannot see an attribute it does not name, so it matches the
-same elements. A lookup like `//tool_bar[@name='Krema Dock']` makes three
+same elements. A lookup like `//tool_bar[@name='KDockW Dock']` makes three
 calls per node instead of six, which halves lookups while Settings is open.
 The page source always has every attribute.
 
@@ -642,13 +642,13 @@ a match is dropped only when its object has left the tree.
 
 Geometry. On Wayland, AT-SPI rects (`element.rect`, `Rect.of(element)`) are
 relative to the element's surface. The surface's screen position comes from
-KWin: the krema window whose client size equals the surface's AT-SPI frame.
+KWin: the kdockw window whose client size equals the surface's AT-SPI frame.
 
 | Member | Description |
 |---|---|
 | `Rect(x, y, width, height)`, `.center`, `.contains(x, y)`, `Rect.of(element)` | |
 | `painted_rect(rect, rest) -> Rect` (module function), `EXTENTS_IGNORE_SCALE` | Where a zoomed bottom-edge dock item is drawn, given its unzoomed rect `rest`. Qt < 6.9 (`EXTENTS_IGNORE_SCALE`) reports a scaled item's transformed top-left corner with its untransformed size, so a zoomed item keeps its base width there; the zoom factor is recovered from how far the corner rose above `rest`. From 6.9 on it returns `rect` unchanged. Compare zoomed widths through it, never through `Rect.of(item).width`. |
-| `windows() -> list[kwin.Window]` | KWin windows of this krema (dock, preview, menus, settings). |
+| `windows() -> list[kwin.Window]` | KWin windows of this kdockw (dock, preview, menus, settings). |
 | `surface_rect(surface="dock") -> Rect \| None` | Screen rect of `"dock"`, `"preview"` or `"settings"`; None while unmapped. |
 | `to_screen(rect, surface="dock") -> Rect`, `screen_rect(element, surface="dock") -> Rect` | Surface-local to screen coordinates. |
 | `item_center(name) -> (x, y)` | Screen centre of a dock item. |
@@ -665,15 +665,15 @@ Input and UI flows:
 | `choose_context_menu_entry(label, entries)` | Keyboard selection (Down x position, Return) in the open menu. |
 | `context_menu_entries(pinned, is_window, has_notifications=False, desktop_actions=()) -> list[str]` (module function) | Enabled menu entries in order, mirroring `src/models/dockcontextmenu.cpp`; `desktop_actions` are the app's visible .desktop actions, listed first. |
 | `open_settings(via_item, entries=None) -> kwin.Window` | Open Settings through an item's context menu; returns the "Settings" window. |
-| `screenshot(name, area=None) -> PIL.Image.Image` | RGB screen image, also saved to `artifacts/<name of krema>/<name>.png`. With `area` only that part is captured, the rest is black, and the PNG holds only the area (see "Screenshots and previews"). |
+| `screenshot(name, area=None) -> PIL.Image.Image` | RGB screen image, also saved to `artifacts/<name of kdockw>/<name>.png`. With `area` only that part is captured, the rest is black, and the PNG holds only the area (see "Screenshots and previews"). |
 
-### `krema_e2e.windows` (fixture windows)
+### `kdockw_e2e.windows` (fixture windows)
 
-`krema-test-window` is a small Qt program: one process shows one window with a
+`kdockw-test-window` is a small Qt program: one process shows one window with a
 chosen title and Wayland app_id. It logs each key press it receives.
 Installed app ids with `.desktop` files: `env.TEST_APP_ID`
-(`org.kde.krema.testwindow`, "Krema Test Window") and `env.TEST_APP2_ID`
-(`org.kde.krema.testwindow2`, "Krema Second Test Window"). Any other app id
+(`org.kde.kdockw.testwindow`, "KDockW Test Window") and `env.TEST_APP2_ID`
+(`org.kde.kdockw.testwindow2`, "KDockW Second Test Window"). Any other app id
 works too, e.g. `org.kde.kwrite` to pose as KWrite (kwrite and kfind
 `.desktop` files and breeze icons are installed).
 
@@ -685,7 +685,7 @@ works too, e.g. `org.kde.kwrite` to pose as KWrite (kwrite and kfind
 | `TestWindow.title`, `app_id`, `pid`, `process`, `window`, `internal_id` | `window` is the KWin snapshot taken when the window appeared. |
 | `TestWindow.refresh() -> kwin.Window \| None`, `is_active() -> bool` | Current KWin state. |
 
-### `krema_e2e.input` (real input through KWin fake-input)
+### `kdockw_e2e.input` (real input through KWin fake-input)
 
 | Function | Description |
 |---|---|
@@ -748,7 +748,7 @@ Every inputsynth process registers its own fake-input device, and KWin
 advertises `wl_seat` pointer capability only while some pointer device
 exists. Without one the seat loses the pointer, and Qt releases its
 `wl_pointer` without a leave: the surface under the pointer stays hovered,
-and if krema binds the new `wl_pointer` only after KWin has handled the next
+and if kdockw binds the new `wl_pointer` only after KWin has handled the next
 motion, it also misses that enter or leave. When each call ran its own
 inputsynth process, this left the dock hovered under load after the pointer
 had moved away. The session fixture `_pointer_capability`
@@ -757,7 +757,7 @@ whole session, so the pointer capability never drops, as with a real mouse,
 also before the first chain and while the `--stdin` process restarts. It
 parks the pointer mid-screen first.
 
-### `krema_e2e.kwin` (oracle)
+### `kdockw_e2e.kwin` (oracle)
 
 | Function | Description |
 |---|---|
@@ -775,31 +775,31 @@ parks the pointer mid-screen first.
 `resource_class`, `pid`, `active`, `minimized`, frame geometry `x, y, width,
 height` (`.geometry`), client geometry `client_x, client_y, client_width,
 client_height` (`.client_geometry`), `normal_window`, `dock`,
-`special_window`, `skip_taskbar`, `desktops`, `output`. Krema's layer-shell
+`special_window`, `skip_taskbar`, `desktops`, `output`. KDockW's layer-shell
 surfaces report `normal_window=True`, `skip_taskbar=True` and no desktops.
 Its QMenu popups report `normal_window=False`.
 
-### `krema_e2e.shortcuts` (KGlobalAccel)
+### `kdockw_e2e.shortcuts` (KGlobalAccel)
 
 | Function | Description |
 |---|---|
-| `invoke_shortcut(name, component="krema", timeout=10)` | `invokeShortcut` over D-Bus; waits until the action is registered. Krema actions: `toggle-dock`, `focus-dock`, `activate-entry-1..9`, `new-instance-entry-1..9`. |
-| `shortcut_names(component="krema")`, `shortcut_keys(action, component="krema") -> [int]` | Registered actions and their active keys (Qt combined key ints). |
-| `set_shortcut_keys(action, keys, component="krema")` | Rebind; `[]` unbinds. |
-| `META_ALT_D` | Qt combined key of krema's default Focus Dock shortcut, Meta+Alt+D. |
+| `invoke_shortcut(name, component="kdockw", timeout=10)` | `invokeShortcut` over D-Bus; waits until the action is registered. KDockW actions: `toggle-dock`, `focus-dock`, `activate-entry-1..9`, `new-instance-entry-1..9`. |
+| `shortcut_names(component="kdockw")`, `shortcut_keys(action, component="kdockw") -> [int]` | Registered actions and their active keys (Qt combined key ints). |
+| `set_shortcut_keys(action, keys, component="kdockw")` | Rebind; `[]` unbinds. |
+| `META_ALT_D` | Qt combined key of kdockw's default Focus Dock shortcut, Meta+Alt+D. |
 
-### `krema_e2e.config` (kremarc)
+### `kdockw_e2e.config` (kdockwrc)
 
-`write_kremarc(path, settings)` and `read_kremarc(path) -> {group: {key: raw}}`.
+`write_kdockwrc(path, settings)` and `read_kdockwrc(path) -> {group: {key: raw}}`.
 `settings` is either flat (`{"IconSize": 64}`, group `General`) or grouped
 (`{"General": {...}, "Screen-Virtual-0": {...}}`). bool becomes
 `true`/`false`, and lists are comma-joined with KConfig escaping. Helpers:
 `launcher(desktop_id) -> "applications:<id>.desktop"`, `as_bool(raw)`,
 `as_list(raw)`, and the constants `ALWAYS_VISIBLE`, `AUTO_HIDE`,
 `DODGE_WINDOWS`, `EDGE_TOP`, `EDGE_BOTTOM`, `EDGE_LEFT`, `EDGE_RIGHT`. Key
-names are the entries in `src/config/krema.kcfg`.
+names are the entries in `src/config/kdockw.kcfg`.
 
-### `krema_e2e.waits`, `krema_e2e.dbus`, `krema_e2e.env`
+### `kdockw_e2e.waits`, `kdockw_e2e.dbus`, `kdockw_e2e.env`
 
 * `wait_until(predicate, timeout=10, interval=0.05, message=None)` returns the
   first truthy value. Exceptions count as "not yet". On timeout it raises
@@ -809,7 +809,7 @@ names are the entries in `src/config/krema.kcfg`.
 * `dbus.call(service, path, iface, method, signature=None, *args)`,
   `dbus.get_property`, `dbus.has_name`, `dbus.list_names`, `dbus.name_pid`,
   and `dbus.session_bus()` for the test session bus.
-* `env`: `SCREEN_WIDTH`, `SCREEN_HEIGHT`, `KREMA_BINARY`, `ARTIFACTS_DIR`,
+* `env`: `SCREEN_WIDTH`, `SCREEN_HEIGHT`, `KDOCKW_BINARY`, `ARTIFACTS_DIR`,
   `WEBDRIVER_URL`, `TEST_APP_ID`, `TEST_APP_NAME`, `TEST_APP2_ID`,
   `TEST_APP2_NAME`, `QT_VERSION` (runtime Qt version as an int tuple, for
   version-conditional expectations), and
@@ -855,7 +855,7 @@ tests/appium/run-e2e.sh
 The OrbStack VM on the development Mac has no DRM driver, so capture cannot
 be exercised there.
 
-Screenshots of an area: `krema.screenshot(name, area)` and
+Screenshots of an area: `kdockw.screenshot(name, area)` and
 `kwin.screenshot(path, area)` take an optional `(x, y, width, height)` in
 screen coordinates (a `Rect`, or `kwin.bounds(...)` of several). KWin then
 renders and reads back only that area (ScreenShot2.CaptureArea through the
@@ -867,13 +867,13 @@ coordinates, and inside the area it has the same pixels as a full capture
 (compared for the areas the tests use on both targets). The PNG in
 `artifacts/` then holds only the area. Pass the rect the check reads. If
 that rect is read only after the shot, pass the surface that contains it
-(`krema.surface_rect(...)`) and keep the read after the shot. Checks that
+(`kdockw.surface_rect(...)`) and keep the read after the shot. Checks that
 diff or scan the whole screen, checks over the whole preview surface or the
 Settings window, artifact-only shots and the failure screenshot capture the
 full screen.
 
 Thumbnail-click, close-button, and outside-close tests still call
-`preview.wait_on_screen(krema, popup)` first (PREV-003, PREV-004 close
+`preview.wait_on_screen(kdockw, popup)` first (PREV-003, PREV-004 close
 button, PREV-005), so they need capture as well. AT-SPI reports the popup
 as shown before its rows finish layout; it starts at 17x38 and grows as
 they arrive. The helper originally also guarded against the delayed
@@ -917,7 +917,7 @@ below the 108 px surface (`y=120`). Pointer moves had these results:
 | 10-step glide from y=700 to y=767 | shown |
 
 Tests can therefore use real edge hover: `inp.move(x, env.SCREEN_HEIGHT - 1)`
-followed by `wait_until(lambda: has_state(krema.item(name), "showing"))`.
+followed by `wait_until(lambda: has_state(kdockw.item(name), "showing"))`.
 
 ### 2. Does a real Meta+F5 key combo trigger KGlobalAccel? Yes, but KWin's own Meta+F5 binding wins.
 
@@ -937,16 +937,16 @@ centre of the active window. KGlobalAccel lists the same key,
 `0x10000000|0x01000034` (Meta+F5), for two actions:
 
 * `kwin/MoveMouseToFocus` ("Move Mouse to Focus", a KWin default)
-* `krema/focus-dock`
+* `kdockw/focus-dock`
 
 KWin's action handles the key. After
 `shortcuts.set_shortcut_keys("MoveMouseToFocus", [], component="kwin")`,
 the real Meta+F5 gives a dock button the `focused` state.
 
-**Product finding (resolved):** Krema's former default Focus Dock shortcut
+**Product finding (resolved):** KDockW's former default Focus Dock shortcut
 conflicted with this stock KWin default. On an unmodified Plasma session,
 Meta+F5 moved the mouse instead of focusing the dock, and kglobalacceld < 6.7
-dropped the contested key from krema entirely. The default is now
+dropped the contested key from kdockw entirely. The default is now
 Meta+Alt+D, which no stock Plasma component claims; setups still on Meta+F5
 are moved to it. `test_kbd001_meta_alt_d_focuses_first_dock_item` presses
 the real combo. `invokeShortcut("focus-dock")` over D-Bus always works.
@@ -954,15 +954,15 @@ the real combo. `invokeShortcut("focus-dock")` over D-Bus always works.
 ### 3. Is the native QMenu context menu in AT-SPI with a proper registry? No, by Qt design.
 
 The registry in this setup works: `at-spi2-registryd` runs on the session's
-a11y bus, and the webdriver, krema and fixture windows all see each other.
-After a right-click, KWin maps a new krema window: the popup, with
+a11y bus, and the webdriver, kdockw and fixture windows all see each other.
+After a right-click, KWin maps a new kdockw window: the popup, with
 `normal_window=False`, 128x183 at the cursor. A walk of the whole desktop
 tree finds no menu, `Pin to Dock` or `Quit` entries. `QAccessibleApplication`
 builds its children from `topLevelWindows()` and skips `Qt::Popup` windows,
 so a QMenu is never a child of the application. This is Qt behavior, not a
 bus problem.
 
-How to use the menu anyway, as implemented in `Krema`:
+How to use the menu anyway, as implemented in `KDockW`:
 
 * `open_context_menu(name)` returns the popup's KWin window with its screen
   geometry.
@@ -970,7 +970,7 @@ How to use the menu anyway, as implemented in `Krema`:
   (`choose_context_menu_entry`). The disabled app-name header and separators
   are skipped, and the order of enabled entries comes from
   `context_menu_entries()`. Choosing "Close" this way closed the window.
-  Choosing "Settings..." opened "Settings — Krema", whose AT-SPI frame
+  Choosing "Settings..." opened "Settings — KDockW", whose AT-SPI frame
   (`name="Settings"`) matches the KWin client geometry.
 
 ### 4. Historical issue #55: AT-SPI visibility preceded the input-region commit.
@@ -980,7 +980,7 @@ input region through `updateInputRegion()` → `QWindow::setMask()`
 (`src/shell/previewcontroller.cpp`). Qt's Wayland backend sent
 `wl_surface.set_input_region` without a commit. This double-buffered state
 applied with the preview surface's next commit: the first frame that drew
-the popup. On the first open after a krema start that commit came 100-190 ms
+the popup. On the first open after a kdockw start that commit came 100-190 ms
 after `set_input_region`
 (`WAYLAND_DEBUG=client`). AT-SPI showed the popup at once. A pointer
 flicked onto the popup in between received no `wl_pointer.enter`. KWin did

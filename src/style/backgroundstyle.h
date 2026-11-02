@@ -6,7 +6,7 @@
 #include <QColor>
 #include <QWindow>
 
-namespace krema
+namespace kdockw
 {
 
 enum class BackgroundStyleType : int {
@@ -37,4 +37,4 @@ bool styleUsesBlur(BackgroundStyleType type);
 /// Whether the given style is available on this system.
 bool isStyleAvailable(BackgroundStyleType type);
 
-} // namespace krema
+} // namespace kdockw

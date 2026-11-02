@@ -16,9 +16,9 @@
 // same test source compiles on both sides of the fix for the
 // old-fails/new-passes proof. OutputOrderMonitor access goes through the
 // friend seam; on master the file has no friend, so those cases are guarded
-// at compile time by the KREMA_TEST_HAS_MONITOR macro below.
+// at compile time by the KDOCKW_TEST_HAS_MONITOR macro below.
 
-#include "krema.h"
+#include "kdockw.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -34,10 +34,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 // OutputOrderMonitor exists only on the fix branch; guard every use so this
-// same file still compiles against master's krema_lib for the
+// same file still compiles against master's kdockw_lib for the
 // old-fails/new-passes proof.
 #if __has_include("shell/outputordermonitor.h")
-#define KREMA_TEST_HAS_MONITOR 1
+#define KDOCKW_TEST_HAS_MONITOR 1
 #include "outputordermonitortestaccess.h"
 #include "shell/outputordermonitor.h"
 #endif
@@ -65,47 +65,47 @@ static void initResources()
 namespace
 {
 
-using krema::DockShell;
-using krema::MultiDockManager;
+using kdockw::DockShell;
+using kdockw::MultiDockManager;
 
 constexpr int kTimeoutMs = 15000;
 
 // Mirrors the object graph and wiring Application::run() builds.
 struct App {
-    std::unique_ptr<KremaSettings> settings;
-    std::unique_ptr<krema::DockModel> model;
-    std::unique_ptr<krema::NotificationTracker> tracker;
-    std::unique_ptr<krema::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<KDockWSettings> settings;
+    std::unique_ptr<kdockw::DockModel> model;
+    std::unique_ptr<kdockw::NotificationTracker> tracker;
+    std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
 };
 
 App &app()
 {
     static App *instance = [] {
         auto *a = new App;
-        a->settings = std::make_unique<KremaSettings>();
+        a->settings = std::make_unique<KDockWSettings>();
         a->settings->load();
         a->settings->setMonitorMode(MultiDockManager::PrimaryOnly);
-        a->model = std::make_unique<krema::DockModel>();
-        a->tracker = std::make_unique<krema::NotificationTracker>();
-        a->launcherEntries = std::make_unique<krema::LauncherEntryTracker>();
+        a->model = std::make_unique<kdockw::DockModel>();
+        a->tracker = std::make_unique<kdockw::NotificationTracker>();
+        a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
 
         auto *model = a->model.get();
-        qmlRegisterSingletonType<krema::DockModel>("com.bhyoo.krema", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(model, QQmlEngine::CppOwnership);
             return model;
         });
         auto *settings = a->settings.get();
-        qmlRegisterSingletonType<KremaSettings>("com.bhyoo.krema", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
         });
         auto *tracker = a->tracker.get();
-        qmlRegisterSingletonType<krema::NotificationTracker>("com.bhyoo.krema", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
+        qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
             return tracker;
         });
         auto *launcherEntries = a->launcherEntries.get();
-        qmlRegisterSingletonType<krema::LauncherEntryTracker>("com.bhyoo.krema",
+        qmlRegisterSingletonType<kdockw::LauncherEntryTracker>("com.thicking.kdockw",
                                                               1,
                                                               0,
                                                               "LauncherEntryTracker",
@@ -227,7 +227,7 @@ QSet<QString> layerScreenNames(const char *scope)
 
 // Same as layerScreenNames but reports the output the surface binds at
 // get_layer_surface(). LayerShellQt >= 6.6 uses its own Window::screen().
-// Older LayerShellQt (KREMA_COMPAT_NO_LAYERSHELL_SCREEN) has no such pin: in
+// Older LayerShellQt (KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN) has no such pin: in
 // ScreenFromQWindow mode it binds QWindow::screen() at surface creation, so
 // the bound output is the Qt screen and the configuration must be
 // ScreenFromQWindow (ScreenFromCompositor would let KWin pick).
@@ -239,7 +239,7 @@ QSet<QString> boundOutputNames(const char *scope)
         if (!layerWindow || layerWindow->scope() != QLatin1String(scope)) {
             continue;
         }
-#ifdef KREMA_COMPAT_NO_LAYERSHELL_SCREEN
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
         if (layerWindow->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow && window->screen()) {
             result.insert(window->screen()->name());
         }
@@ -261,7 +261,7 @@ bool dockAndBoundMatch(const char *scope, const QString &expected)
     return qtScreens == QSet<QString>{expected} && bound == QSet<QString>{expected};
 }
 
-#if KREMA_TEST_HAS_MONITOR
+#if KDOCKW_TEST_HAS_MONITOR
 // Counts MultiDockManager "Creating dock shell" messages so the startup test
 // can prove exactly one shell is created on the correct output (issue #18 P1:
 // a premature orderReadyChanged caused a wrong-output create followed by a
@@ -277,7 +277,7 @@ void countingHandler(QtMsgType type, const QMessageLogContext &ctx, const QStrin
         g_prevHandler(type, ctx, msg);
     }
 }
-#endif // KREMA_TEST_HAS_MONITOR
+#endif // KDOCKW_TEST_HAS_MONITOR
 
 std::unique_ptr<MultiDockManager> makeManager()
 {
@@ -428,7 +428,7 @@ TEST_CASE("Preview popup centers on its icon on an output not at the desktop ori
     // coordinates, so on an output at x=1024 (horizontal dock) or y=768
     // (vertical dock) the popup was pushed to the far edge of the output
     // instead of centering on the icon.
-    using Edge = krema::DockPlatform::Edge;
+    using Edge = kdockw::DockPlatform::Edge;
     REQUIRE(QGuiApplication::screens().size() == 2);
     app().settings->setMonitorMode(MultiDockManager::PrimaryOnly);
 
@@ -520,7 +520,7 @@ TEST_CASE("Preview popup centers on its icon on an output not at the desktop ori
         run(otherScreen, Edge::Right);
     }
 }
-#if KREMA_TEST_HAS_MONITOR
+#if KDOCKW_TEST_HAS_MONITOR
 TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[primary-output]")
 {
     // Regression for the premature orderReadyChanged (issue #18 P1): the
@@ -550,7 +550,7 @@ TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[prim
     app().settings->setMonitorMode(MultiDockManager::PrimaryOnly);
 
     // The singleton is already up (it bound at first use in this process).
-    auto *singleton = krema::OutputOrderMonitor::instance();
+    auto *singleton = kdockw::OutputOrderMonitor::instance();
     REQUIRE(singleton->protocolActive());
 
     // Move the Plasma primary to the other output.
@@ -573,7 +573,7 @@ TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[prim
 
     // A fresh monitor binds now, so its first 'done' delivers the republished
     // (post-makePrimary) order, not the stale bind-time one.
-    auto *monitor = krema::OutputOrderMonitorTestAccess::create();
+    auto *monitor = kdockw::OutputOrderMonitorTestAccess::create();
     REQUIRE(monitor->protocolActive());
 
     // Record the resolved primary inside the readiness slot — the production
@@ -582,7 +582,7 @@ TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[prim
     // slot reads back the Qt fallback (Virtual-0), which != newPrimary.
     QString readyPrimary;
     bool readyFired = false;
-    QObject::connect(monitor, &krema::OutputOrderMonitor::orderReadyChanged, monitor, [&] {
+    QObject::connect(monitor, &kdockw::OutputOrderMonitor::orderReadyChanged, monitor, [&] {
         readyFired = true;
         readyPrimary = monitor->primaryScreen() ? monitor->primaryScreen()->name() : QString();
     });
@@ -600,7 +600,7 @@ TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[prim
             g_prevHandler = nullptr;
         }
     });
-    QObject::connect(monitor, &krema::OutputOrderMonitor::orderReadyChanged, monitor, [&] {
+    QObject::connect(monitor, &kdockw::OutputOrderMonitor::orderReadyChanged, monitor, [&] {
         manager->initialize();
     });
 
@@ -626,7 +626,7 @@ TEST_CASE("Startup creates exactly one dock shell on the Plasma primary", "[prim
     CHECK(g_dockCreations.load() == 1);
     CHECK(layerScreenNames("dock") == QSet<QString>{newPrimary});
 }
-#endif // KREMA_TEST_HAS_MONITOR
+#endif // KDOCKW_TEST_HAS_MONITOR
 
 int main(int argc, char *argv[])
 {
@@ -638,7 +638,7 @@ int main(int argc, char *argv[])
     if (QQuickStyle::name().isEmpty()) {
         QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     }
-    KAboutData aboutData(QStringLiteral("krema"), QStringLiteral("Krema"), QStringLiteral("test"));
+    KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
 

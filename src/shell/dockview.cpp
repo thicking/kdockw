@@ -5,7 +5,7 @@
 
 #include "config/screensettings.h"
 #include "dockvisibilitycontroller.h"
-#include "krema.h"
+#include "kdockw.h"
 #include "models/taskiconprovider.h"
 #include "platform/pointerfocustracker.h"
 #include "utils/surfacegeometry.h"
@@ -23,12 +23,12 @@
 #include <QScreen>
 #include <QtQml>
 
-Q_LOGGING_CATEGORY(lcDockView, "krema.shell.dockview")
+Q_LOGGING_CATEGORY(lcDockView, "kdockw.shell.dockview")
 
-namespace krema
+namespace kdockw
 {
 
-DockView::DockView(std::unique_ptr<DockPlatform> platform, KremaSettings *settings, QWindow *parent)
+DockView::DockView(std::unique_ptr<DockPlatform> platform, KDockWSettings *settings, QWindow *parent)
     : QQuickView(parent)
     , m_platform(std::move(platform))
     , m_settings(settings)
@@ -214,7 +214,7 @@ void DockView::setScreenSettings(ScreenSettings *screenSettings)
 int DockView::panelBarHeight() const
 {
     const int iconSize = m_screenSettings ? m_screenSettings->iconSize() : m_settings->iconSize();
-    return krema::panelBarHeight(iconSize, s_padding, floatingPadding());
+    return kdockw::panelBarHeight(iconSize, s_padding, floatingPadding());
 }
 
 DockPlatform *DockView::platform() const
@@ -265,7 +265,7 @@ void DockView::updateSize()
     // Horizontal docks open the tooltip above/below the panel (fits s_tooltipReserve);
     // vertical docks open it beside the panel, so the reserve must fit its full width.
     const int tooltipReserve = isVertical() ? std::max(s_tooltipReserve, m_sideTooltipReserve) : s_tooltipReserve;
-    const int h = krema::surfaceHeight(iconSize, s_padding, maxZoom, tooltipReserve, floatingPadding());
+    const int h = kdockw::surfaceHeight(iconSize, s_padding, maxZoom, tooltipReserve, floatingPadding());
     const QRect screenGeo = screen() ? screen()->geometry() : QRect();
 
     if (isVertical()) {
@@ -294,7 +294,7 @@ int DockView::zoomOverflowHeight() const
 {
     const int iconSize = m_screenSettings ? m_screenSettings->iconSize() : m_settings->iconSize();
     const double maxZoom = m_screenSettings ? m_screenSettings->maxZoomFactor() : m_settings->maxZoomFactor();
-    return krema::zoomOverflowHeight(iconSize, maxZoom);
+    return kdockw::zoomOverflowHeight(iconSize, maxZoom);
 }
 
 void DockView::handleScreenChanged(QScreen *newScreen)
@@ -420,4 +420,4 @@ void DockView::applyBackgroundStyle()
     Q_EMIT backgroundStyleTypeChanged();
 }
 
-} // namespace krema
+} // namespace kdockw

@@ -21,7 +21,7 @@ Icons in this directory, copied unmodified from Fedora 44 packages:
   Firefox and the Firefox logo are trademarks of the Mozilla Foundation.
 
 ../roots-wall.webp and ../roots-wall-1x.webp: "Roast Contours", original
-artwork made for Krema (branding/wallpaper/), same licence as the repository
+artwork made for KDockW (branding/wallpaper/), same licence as the repository
 (GPL-3.0-or-later).
 
 ../noto-sans-panel.woff2: Noto Sans Regular, ASCII subset. SIL Open Font

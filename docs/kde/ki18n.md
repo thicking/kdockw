@@ -10,7 +10,7 @@
 #include <KLocalizedString>
 
 // Must be called early in main()
-KLocalizedString::setApplicationDomain("krema");
+KLocalizedString::setApplicationDomain("kdockw");
 ```
 
 ### Available Translations
@@ -77,7 +77,7 @@ Use `xi18n` variants for rich text with semantic markup:
 
 ```cpp
 QString msg = xi18n("Press <shortcut>Ctrl+S</shortcut> to save.");
-QString msg = xi18nc("context", "Use <command>krema</command>.");
+QString msg = xi18nc("context", "Use <command>kdockw</command>.");
 ```
 
 KUIT tags: `<filename>`, `<command>`, `<shortcut>`, `<emphasis>`, `<link>`, `<email>`, `<resource>`, `<nl>`, `<para>`, `<title>`, `<subtitle>`, `<list>`, `<item>`, etc.
@@ -132,7 +132,7 @@ QString clean = KLocalizedString::removeAcceleratorMarker("&File");
 QString path = KLocalizedString::localizedFilePath("/path/to/file.html");
 
 // Custom locale directory
-KLocalizedString::addDomainLocaleDir("krema", "/custom/locale/path");
+KLocalizedString::addDomainLocaleDir("kdockw", "/custom/locale/path");
 ```
 
 ---

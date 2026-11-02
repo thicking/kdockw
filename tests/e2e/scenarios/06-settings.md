@@ -1,7 +1,7 @@
 # Settings UI
 
 ## Features
-- settings-window: Sidebar of 8 pages plus About (Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, About Krema, About KDE), settings search, one window per open
+- settings-window: Sidebar of 8 pages plus About (Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, About KDockW, About KDE), settings search, one window per open
 - settings-icons: Icon size, spacing, scale, icon opacity (active, inactive/launcher, minimized), zoom factor, zoom style cards, zoom animation preset cards and custom zoom-in/zoom-out timing, with a live desktop preview (real wallpaper, miniature dock with real theme icons) and measurement guides
 - settings-layout: Screen edge picker on the live desktop preview, floating, floating margin, corner radius
 - settings-visual-pickers: Card pickers (ChoiceCard) and screen edge radios that work by mouse, keyboard, and AT-SPI
@@ -54,8 +54,8 @@
 - src/shell/outputordermonitor.cpp
 - src/models/taskiconprovider.h
 - src/models/taskiconprovider.cpp
-- src/config/krema.kcfg
-- src/config/krema.kcfgc
+- src/config/kdockw.kcfg
+- src/config/kdockw.kcfgc
 
 **Tier:** Tier 2 (Appium) for real settings controls, persistence, and KWin
 effects. Tier 1 QML does not replace these FormCard and multi-dock checks.
@@ -74,8 +74,8 @@ and task-section rows check their real controls and consumer effects.
 1. Right-click a dock item → context menu appears
 2. Choose "Settings..."
 3. Wait 1500ms (settings window creation)
-4. Check the window list — krema window count increased
-5. Check the AT-SPI tree: frame "Settings", "Search settings" field, list "Settings pages" whose items are, in order, "Icons", "Layout & Position", "Panel Style", "Shadow", "Animations & Badges", "Behavior", "Monitors & Desktops", "Window Preview", "About Krema", "About KDE"; "Icons" is checked. The Icons page shows the "Icon size" slider and the "Zoom animation" card: the "Preset" tab is selected and the "Natural" preset card is checked
+4. Check the window list — kdockw window count increased
+5. Check the AT-SPI tree: frame "Settings", "Search settings" field, list "Settings pages" whose items are, in order, "Icons", "Layout & Position", "Panel Style", "Shadow", "Animations & Badges", "Behavior", "Monitors & Desktops", "Window Preview", "About KDockW", "About KDE"; "Icons" is checked. The Icons page shows the "Icon size" slider and the "Zoom animation" card: the "Preset" tab is selected and the "Natural" preset card is checked
 6. Screenshot — verify settings dialog
 7. Right-click the dock again → "Settings..." while the dialog is open
 8. Check the window list — there is still exactly one settings window (it is raised, not duplicated). Run this on the oldest supported kirigami-addons (1.7.0, Debian 13 / Ubuntu 25.04) as well
@@ -85,7 +85,7 @@ and task-section rows check their real controls and consumer effects.
 
 **Expected:**
 - Settings dialog opens as separate window ("Settings" title, localized)
-- Left sidebar: search field, then Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, and an "About" section with About Krema and About KDE
+- Left sidebar: search field, then Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, and an "About" section with About KDockW and About KDE
 - Icons page shown by default
 - FormCard layout with sliders, card pickers, switches, spin boxes and combo boxes
 - All controls accessible via AT-SPI (labels, sliders with Increase/Decrease, cards as radio buttons)
@@ -137,7 +137,7 @@ and task-section rows check their real controls and consumer effects.
 - Setting persists in KConfig
 
 **Verification:** screenshot (dock hidden)
-**Automated:** tests/appium/test_06_settings.py::test_set003_auto_hide_applies_immediately_and_persists (the open Settings dialog holds the dock shown by design, see SET-008, so hiding is checked after the dialog is closed with Alt+F4, in the same krema process)
+**Automated:** tests/appium/test_06_settings.py::test_set003_auto_hide_applies_immediately_and_persists (the open Settings dialog holds the dock shown by design, see SET-008, so hiding is checked after the dialog is closed with Alt+F4, in the same kdockw process)
 
 ---
 
@@ -166,7 +166,7 @@ and task-section rows check their real controls and consumer effects.
 **Steps:**
 1. Note current settings values
 2. Close settings dialog
-3. Restart krema
+3. Restart kdockw
 4. Wait 2000ms
 5. Open settings dialog
 6. Verify all settings match previously set values on the Icons, Behavior, and Panel Style pages
@@ -226,7 +226,7 @@ and task-section rows check their real controls and consumer effects.
 **Steps:**
 1. Click the "All monitors" card in "Monitor mode"
 2. Wait 500ms
-3. Check the window list — Krema is still running and one dock window exists per output
+3. Check the window list — KDockW is still running and one dock window exists per output
 4. Screenshot — the settings dialog is still open and docks on both outputs are shown
 5. Right-click the dock on the second output → "Settings..."
 6. Check the window list — there is still exactly one settings window
@@ -234,7 +234,7 @@ and task-section rows check their real controls and consumer effects.
 8. Move the mouse away from the dock and wait for the hide delay
 
 **Expected:**
-- Krema does not crash (issue #16); the mode is applied immediately
+- KDockW does not crash (issue #16); the mode is applied immediately
 - The same settings dialog stays open across the change
 - Docks created by the change stay visible while the dialog is open and auto-hide after it closes
 - All docks open the same settings dialog
@@ -244,10 +244,10 @@ and task-section rows check their real controls and consumer effects.
 - In "Follow active screen" mode with the mouse trigger (dialog closed), moving the pointer to the dock edge of another output moves the dock there
 - The Toggle Dock / Focus Dock / Meta+N shortcuts act on the currently shown dock, not the hidden primary-screen dock
 
-**Automated:** `tests/integration/test_settings_lifecycle.cpp` (ctest `krema_integration_tests`)
+**Automated:** `tests/integration/test_settings_lifecycle.cpp` (ctest `kdockw_integration_tests`)
 
 **Verification:** window list (window counts), screenshot (dialog + docks)
-**Automated (E2E, run with `KREMA_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh test_06_settings.py`):** tests/appium/test_06_settings.py::test_set008_monitor_mode_all_monitors_from_open_settings, ::test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen, ::test_set008_follow_active_shortcuts_act_on_the_shown_dock (Toggle Dock and Focus Dock; the dock is moved with the Focus trigger), ::test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen (pointer at the second output's bottom edge). Meta+N is not checked end to end: activating entry N has no per-dock observable result and remains covered by the integration test.
+**Automated (E2E, run with `KDOCKW_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh test_06_settings.py`):** tests/appium/test_06_settings.py::test_set008_monitor_mode_all_monitors_from_open_settings, ::test_set008_follow_active_mouse_opening_settings_keeps_dock_on_its_screen, ::test_set008_follow_active_shortcuts_act_on_the_shown_dock (Toggle Dock and Focus Dock; the dock is moved with the Focus trigger), ::test_set008_follow_active_mouse_trigger_moves_dock_to_the_pointer_screen (pointer at the second output's bottom edge). Meta+N is not checked end to end: activating entry N has no per-dock observable result and remains covered by the integration test.
 
 ---
 
@@ -256,10 +256,10 @@ and task-section rows check their real controls and consumer effects.
 **Precondition:** Dock visible. Run on Debian 13 or Ubuntu 25.04 as well (Qt 6.8, KF 6.13).
 **Steps:**
 1. Right-click the dock → "Settings...", then immediately right-click the dock → "Quit"
-2. Start Krema again, open "Settings...", wait until the window is drawn, then right-click the dock → "Quit"
+2. Start KDockW again, open "Settings...", wait until the window is drawn, then right-click the dock → "Quit"
 
 **Expected:**
-- Krema exits normally both times (exit status 0, no crash report)
+- KDockW exits normally both times (exit status 0, no crash report)
 - No Settings window remains after exit
 
 **Verification:** process exit status, window list
@@ -277,7 +277,7 @@ and task-section rows check their real controls and consumer effects.
 4. Click the "In place - icons overlap" card, wait 500ms
 5. Move the pointer away and back to the middle dock item, wait 200ms
 6. Screenshot and AT-SPI bounding boxes — icons magnify in place without moving; bounding-box centres unchanged, magnified icons may overlap
-7. Check `~/.config/kremarc` (or the cards after reopening Settings) — `ZoomStyle=1` persisted
+7. Check `~/.config/kdockwrc` (or the cards after reopening Settings) — `ZoomStyle=1` persisted
 8. Click the "Parabolic - neighbors move aside" card, verify `ZoomStyle=0` persisted (or the key is removed as the default)
 9. Set "Zoom factor" slider to 1.0 — verify the zoom style cards and the "Zoom animation" card controls become disabled
 10. Restore zoom factor > 1.0
@@ -286,10 +286,10 @@ and task-section rows check their real controls and consumer effects.
 - Cards default to "Parabolic - neighbors move aside", exactly one card is checked, and the choice applies live without restart
 - "In place - icons overlap" restores in-place zoom: icons scale in place (positions unchanged, overlap allowed)
 - "Parabolic - neighbors move aside" pushes neighbours aside and grows the dock background
-- Setting persists to `kremarc` as `ZoomStyle` (0 = Parabolic, 1 = In place)
+- Setting persists to `kdockwrc` as `ZoomStyle` (0 = Parabolic, 1 = In place)
 - Zoom style cards and "Zoom animation" controls are disabled while zoom factor is 1.0 (no zoom to lay out); the selected zoom animation preset is preserved
 
-**Verification:** AT-SPI (card checked/enabled state, item bounding-box centres), screenshot (Parabolic vs In place zoom), kremarc (`ZoomStyle` key)
+**Verification:** AT-SPI (card checked/enabled state, item bounding-box centres), screenshot (Parabolic vs In place zoom), kdockwrc (`ZoomStyle` key)
 **Automated:** tests/appium/test_06_settings.py::test_set010_zoom_style_cards_switch_zoom_live_and_persists
 
 ---
@@ -300,7 +300,7 @@ and task-section rows check their real controls and consumer effects.
 **Steps:**
 1. Find the "Zoom animation" section and verify it has two tabs, "Preset" and "Custom"; "Preset" is selected and the "Natural" card is checked. The preset cards are "Natural", "Quick", "Relaxed", and "Instant", each with a description, a looping zoom motion preview, and (except Instant) a "Zoom in … ms, zoom out … ms" summary
 2. Move the pointer onto a middle dock item, wait 100ms, capture a screenshot; wait another 150ms and capture again; move the pointer away and repeat. Natural accelerates then decelerates into the peak (180 ms in, 240 ms out at normal animation speed)
-3. Select "Quick" and repeat the hover check: the zoom starts fast and decelerates (100 ms ease-out in both directions, the Krema 0.10 behaviour). Verify `ZoomAnimationPreset=1`
+3. Select "Quick" and repeat the hover check: the zoom starts fast and decelerates (100 ms ease-out in both directions, the KDockW 0.10 behaviour). Verify `ZoomAnimationPreset=1`
 4. Select "Relaxed" (300 ms in, 400 ms out, gentle ease in and out) and then "Instant" (hover zoom snaps), checking `ZoomAnimationPreset=2` and `3`
 5. Select "Quick", then click the "Custom" tab. Verify `ZoomAnimationPreset=4` and the tab shows an easing curve and motion preview with a "Zoom in … ms, zoom out … ms" summary, then "Zoom-in duration (ms)", "Zoom-in easing", "Zoom-out duration (ms)", and "Zoom-out easing" with the Natural defaults (180 ms / 240 ms, "Ease in and out")
 6. Raise "Zoom-in duration (ms)" by two steps (10 ms each) to 200 and choose "Linear" for "Zoom-out easing". Verify `ZoomInDuration=200` and `ZoomOutEasing=0`; the easing combos offer exactly "Linear", "Ease in", "Ease out", "Ease in and out", "Gentle ease in and out"
@@ -311,7 +311,7 @@ and task-section rows check their real controls and consumer effects.
 11. Click "Custom" again: the custom values are unchanged
 12. Click the "In place - icons overlap" zoom style card and repeat a hover check: moving the pointer along the dock tracks it directly without lag; only entering and leaving the dock animate
 13. Set "Zoom factor" to 1.0 and verify the whole section is disabled; restore zoom factor > 1.0
-14. With the "Custom" tab selected, close Settings, restart Krema, and reopen Settings. Verify the "Custom" tab and values are restored. Click "Preset": with no earlier preset in this Settings session, "Natural" is selected
+14. With the "Custom" tab selected, close Settings, restart KDockW, and reopen Settings. Verify the "Custom" tab and values are restored. Click "Preset": with no earlier preset in this Settings session, "Natural" is selected
 
 **Expected:**
 - Preset and custom changes apply to hover zoom immediately in both Parabolic and In place styles; durations are unscaled baselines, so Plasma animation scaling remains active and Plasma "Instant" animation speed still snaps
@@ -323,25 +323,25 @@ and task-section rows check their real controls and consumer effects.
 - The section is disabled while zoom factor is 1.0
 - Preset, custom durations, and custom easing persist across restart
 
-**Verification:** AT-SPI (tab and card checked/enabled state, spin box value and step, combo choice), screenshot (hover transitions), `kremarc` (`ZoomAnimationPreset`, `ZoomInDuration`, `ZoomOutDuration`, `ZoomInEasing`, `ZoomOutEasing` keys)
+**Verification:** AT-SPI (tab and card checked/enabled state, spin box value and step, combo choice), screenshot (hover transitions), `kdockwrc` (`ZoomAnimationPreset`, `ZoomInDuration`, `ZoomOutDuration`, `ZoomInEasing`, `ZoomOutEasing` keys)
 **Automated:** `tests/appium/test_06_settings.py::test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist` covers the tabs, custom spin box and easing combo, Preset restore with exactly one checked card (steps 8–9, including re-clicking the checked card), the tab-bar wheel regression (step 10), and restart; its hover check after the custom edits is only a smoke check (hover still zooms, no restart), not a timing check. `tests/qml/tst_dock_main.qml::test_customZoomTimingDrivesProductionDock` covers the custom zoom-in/zoom-out timing driving the production `main.qml` dock (step 7). `test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown`, `test_set005_changed_settings_persist_across_restart`, and `test_set010_zoom_style_cards_switch_zoom_live_and_persists` cover the Natural default, preset persistence, the Instant preset, and the disabled state. `tests/qml/tst_dockitem_zoom.qml::test_scaleEasesInAndSettlesBackOnExit`, `test_zeroDurationSnapsInAndOut`, `test_customInOutDurationsUseConfiguredTimelines`, `test_presetsResolveTimingAndEasing`, `test_naturalEasesInSlowerThanQuick`, `test_zeroZoomInDurationSnapsInButAnimatesOut`, and `test_inPlaceTracksPointerWithoutLag` cover timing, easing, and pointer tracking in both styles. `tests/unit/test_settings_migration.cpp` covers migrating a legacy duration to the Custom preset. The live-dock screenshot checks of the curve shape remain manual.
 
 ---
 
 ## TC SET-012: Selected Monitors, Fallback, and Shortcut Routing
 
-**Precondition:** Three usable outputs A, B, and C, with A primary. Krema uses Auto hide. Open two windows of one app for preview checks. The two-output automation covers switches, fallback, and persistence; the three-output automation covers a subset that excludes the primary.
+**Precondition:** Three usable outputs A, B, and C, with A primary. KDockW uses Auto hide. Open two windows of one app for preview checks. The two-output automation covers switches, fallback, and persistence; the three-output automation covers a subset that excludes the primary.
 
 **Steps:**
 1. Confirm "Primary monitor only" shows one dock on A and "All monitors" shows one dock on each output. Open Settings → Monitors & Desktops and record the focused Settings window.
-2. Click the "Selected monitors" card. Enable C, then B, leaving A off. Verify docks and their preview surfaces appear only on B and C, and `kremarc` saves `MonitorMode=3` with `SelectedOutputs` in the exact chosen order C, B.
+2. Click the "Selected monitors" card. Enable C, then B, leaving A off. Verify docks and their preview surfaces appear only on B and C, and `kdockwrc` saves `MonitorMode=3` with `SelectedOutputs` in the exact chosen order C, B.
 3. Turn B off and on. Verify C's dock and preview surfaces keep their window identities. The same Settings window stays open and focused; the newly created B dock stays visible while Settings is open. Close Settings and verify both docks auto-hide normally.
 4. Put the pointer on unselected A and invoke Focus Dock. Verify it targets B when compositor order is A, B, C, despite saved order C, B. Check Toggle Dock, Meta+N, and Meta+Shift+N use B. Make C primary and verify those actions target C without recreating the retained B/C dock or preview surfaces. Restore A as primary.
 5. Disconnect and reconnect unselected A while B and C remain usable. Verify their retained dock and preview surfaces stay on their outputs with the same window identities.
 6. Open Settings again. Disconnect B, then C. Verify one temporary dock appears on primary A, the warning appears, and saved names remain C, B. Reconnect B, then C; verify the selected subset returns and the temporary dock and warning disappear without closing Settings.
 7. Disconnect C again and turn off its disconnected switch. Verify C is removed from `SelectedOutputs` and its disconnected row disappears. Reconnect C and verify it remains unselected, with no dock.
 8. Turn B off so the selection is empty. Verify one temporary primary dock and the warning, with an empty saved list rather than A being added. Select B again and verify the warning clears and only B has a dock.
-9. Switch through the other monitor modes. Verify the selected switches and warning are hidden without clearing the saved B name. Return to Selected monitors, close Settings, restart Krema, and verify mode 3, the exact B name, its dock placement, and its output-aligned preview restore.
+9. Switch through the other monitor modes. Verify the selected switches and warning are hidden without clearing the saved B name. Return to Selected monitors, close Settings, restart KDockW, and verify mode 3, the exact B name, its dock placement, and its output-aligned preview restore.
 
 **Expected:**
 - Mode 3 selects only exact saved output names that are connected and have non-empty geometry; modes 0, 1, and 2 retain their behavior, and the default remains 0
@@ -352,8 +352,8 @@ and task-section rows check their real controls and consumer effects.
 - Shortcut order is selected primary, adopted compositor order, then saved selection order; Focus Dock on an unselected output uses the same fallback
 - Mode 3 and exact selected names persist across restart; previews stay aligned with their own output
 
-**Verification:** AT-SPI (native switches, disconnected rows, warning, focused Settings), KWin (mapped dock/preview output and window identity, keyboard focus), `kremarc` (mode and exact name list), KGlobalAccel actions, and output enable/disable or cable reconnection for topology steps.
-**Automated:** `tests/appium/test_06_settings.py::test_set012_selected_monitors_toggle_keeps_settings_open` and `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[empty]` / `[disconnected]` run with two outputs. `test_set012_selected_subset_preserves_docks_and_routes_shortcuts` runs with three outputs. `tests/kwin/test_selected_outputs.cpp` (ctest `krema_selected_output_tests`) covers primary changes, actual virtual-output disable/enable, retained shells, and deterministic routing; `tests/integration/test_settings_lifecycle.cpp` covers the shared Settings lifecycle. Physical cable reconnection remains a manual check.
+**Verification:** AT-SPI (native switches, disconnected rows, warning, focused Settings), KWin (mapped dock/preview output and window identity, keyboard focus), `kdockwrc` (mode and exact name list), KGlobalAccel actions, and output enable/disable or cable reconnection for topology steps.
+**Automated:** `tests/appium/test_06_settings.py::test_set012_selected_monitors_toggle_keeps_settings_open` and `test_set012_selected_monitors_fallback_warns_and_keeps_saved_names[empty]` / `[disconnected]` run with two outputs. `test_set012_selected_subset_preserves_docks_and_routes_shortcuts` runs with three outputs. `tests/kwin/test_selected_outputs.cpp` (ctest `kdockw_selected_output_tests`) covers primary changes, actual virtual-output disable/enable, retained shells, and deterministic routing; `tests/integration/test_settings_lifecycle.cpp` covers the shared Settings lifecycle. Physical cable reconnection remains a manual check.
 
 ---
 
@@ -367,7 +367,7 @@ labels `Single window click action` and `Grouped window click action`.
    `Cycle through windows`/`Show window previews`/`Minimize active window`.
 2. Change both controls from their initial values and observe single and
    grouped windows without restarting.
-3. Restart Krema, reopen Settings, and repeat the state checks.
+3. Restart KDockW, reopen Settings, and repeat the state checks.
 4. In a two-output session, choose the `All monitors` card on the Monitors &
    Desktops page, recreate the second dock, return to Behavior, and verify
    the choices remain shared.
@@ -377,7 +377,7 @@ labels `Single window click action` and `Grouped window click action`.
 - The saved pair survives restart and remains available to recreated docks.
 - Single and grouped consumer effects match the selected pair.
 
-**Verification:** AT-SPI FormComboBoxDelegate values, `kremarc`, KWin
+**Verification:** AT-SPI FormComboBoxDelegate values, `kdockwrc`, KWin
 active/minimized state, popup state, and two-output dock state.
 **Automated (Tier 2):** `tests/appium/test_06_settings.py::test_clk002_click_action_combinations_apply_live_persist_and_restore`
 (six cases) and
@@ -385,7 +385,7 @@ active/minimized state, popup state, and two-output dock state.
 (`outputs(2)`).
 
 Run the multi-screen cases with:
-`KREMA_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs`.
+`KDOCKW_E2E_OUTPUT_COUNT=2 tests/appium/run-e2e.sh -m outputs`.
 
 ---
 
@@ -406,10 +406,10 @@ labels `Show window previews on hover`, `Thumbnail width (px)`, `Hover delay
   enabled or the grouped action is `Show window previews`.
 - `Hover delay (ms)` is enabled only when hover previews are enabled.
 - Hover-off group1 still opens an explicit popup on click.
-- Changed values are saved to `kremarc` and affect popup width/hide behavior
+- Changed values are saved to `kdockwrc` and affect popup width/hide behavior
   without restarting.
 
-**Verification:** AT-SPI control enabled state and values, `kremarc`, popup
+**Verification:** AT-SPI control enabled state and values, `kdockwrc`, popup
 visibility, labels, and thumbnail width. Visual thumbnail checks require
 DRM/vgem capture.
 **Automated (Tier 2):** `tests/appium/test_06_settings.py::test_clk011_preview_controls_follow_hover_and_explicit_group_choice`
@@ -421,7 +421,7 @@ DRM/vgem capture.
 
 **Precondition:** A fresh configuration, one output without another panel,
 and a real fixture window maximized by KWin. Open Settings → Behavior with
-visibility mode `Always visible`. Record Krema's process and the fixture
+visibility mode `Always visible`. Record KDockW's process and the fixture
 window's identity and frame geometry.
 
 **Steps:**
@@ -429,12 +429,12 @@ window's identity and frame geometry.
    and its description explains that maximized windows avoid the dock.
 2. Turn it off using the actual switch. Wait for the already-maximized
    fixture's frame to reach the output edge occupied by the dock; do not
-   restore/remaximize the fixture or restart Krema.
+   restore/remaximize the fixture or restart KDockW.
 3. Turn it on. Verify the same fixture frame moves inward to leave the
    panel-bar space while the dock stays visible and the process is unchanged.
-4. Turn it off again, close Settings, and restart Krema. Reopen Behavior
+4. Turn it off again, close Settings, and restart KDockW. Reopen Behavior
    and verify the switch remains off and the maximized fixture uses the
-   full output. Check `ReserveScreenSpace=false` in `[General]` in `kremarc`.
+   full output. Check `ReserveScreenSpace=false` in `[General]` in `kdockwrc`.
 5. Select `Auto hide`, then `Dodge windows`. Verify the reservation row is
    hidden in each mode, without clearing the saved value.
 6. Return to `Always visible`, turn the switch on, and restart again.
@@ -450,7 +450,7 @@ window's identity and frame geometry.
   switch value.
 - The switch state and observed window bounds agree after restart.
 
-**Verification:** AT-SPI switch state/visibility, `kremarc`, process/window
+**Verification:** AT-SPI switch state/visibility, `kdockwrc`, process/window
 identity, and KWin output/frame geometry. Record the actual frame bounds,
 not only the maximize command or an exclusive-zone setter call. Screenshot
 capture is supplementary; missing DRM must not skip geometry checks.
@@ -479,7 +479,7 @@ Open Settings → Behavior.
    Locate the accessible separator named `Pinned and running apps separator`.
 4. Reopen Settings and turn it off. Verify the separator disappears without
    losing apps or changing their pinned membership.
-5. Turn it on again, close Settings, and restart Krema. Reopen Settings;
+5. Turn it on again, close Settings, and restart KDockW. Reopen Settings;
    verify the switch is checked, `[General]` saves `SeparateLaunchers=true`,
    and the real dock restores its two sections.
 6. Turn it off and restart again. Verify the switch is unchecked and the
@@ -496,7 +496,7 @@ Open Settings → Behavior.
 - With separation off, existing manual ordering remains available.
 
 **Verification:** AT-SPI switch, ordered app names and separator role/state,
-KWin fixture windows, `kremarc` membership and setting, and actual input.
+KWin fixture windows, `kdockwrc` membership and setting, and actual input.
 Divider paint, hover movement, and hit-testing require the additional
 interaction scenarios; a checked switch alone is not their proof.
 **Automated (Tier 2 native coverage):**
@@ -529,7 +529,7 @@ the window, Orca or an AT-SPI inspector available.
    AT-SPI radio buttons named "Always visible", "Auto hide", and "Dodge
    windows", with `checkable` and exactly one `checked`.
 2. Focus "Auto hide" and press Space; focus "Dodge windows" and press Return.
-   Verify each choice applies (`VisibilityMode` in `kremarc`) and only the
+   Verify each choice applies (`VisibilityMode` in `kdockwrc`) and only the
    chosen card is checked. Return to "Always visible".
 3. Open Layout & Position. Tab to the "Screen edge" group: only the checked
    edge is a Tab stop. Press Up, then Down: the dock moves to the top and
@@ -556,7 +556,7 @@ the window, Orca or an AT-SPI inspector available.
   elevation changed, from the keyboard.
 
 **Verification:** AT-SPI (roles, names, `checked`/`focused` states,
-descriptions), `kremarc`, screenshot of the dock edge.
+descriptions), `kdockwrc`, screenshot of the dock edge.
 **Automated:** none; pointer clicks on the same cards and on the "Top" edge
 radio are covered by SET-003, SET-004, SET-006, and SET-010. The keyboard
 paths remain manual checks.
@@ -597,13 +597,13 @@ on, dock visible.
 **Expected:**
 - Scene drags, wheel input, advanced sliders, the "Result" inset, and the
   real dock shadow stay in sync live.
-- Values persist in `kremarc` (`ShadowLightX`, `ShadowLightY`,
+- Values persist in `kdockwrc` (`ShadowLightX`, `ShadowLightY`,
   `ShadowLightZ`, `ShadowLightRadius`, `ShadowElevation`,
   `ShadowIntensity`).
 
 **Verification:** AT-SPI (slider values, "Light position" description,
 expander description), screenshot (3D scene, "Result" inset, dock shadow),
-`kremarc`.
+`kdockwrc`.
 **Automated:** none (manual).
 
 ---
@@ -618,7 +618,7 @@ expander description), screenshot (3D scene, "Result" inset, dock shadow),
    mouse)") and the "Screen transition" cards ("Fade", "Slide", "Instant")
    appear.
 2. Select "Mouse position" and "Slide". Verify `FollowActiveTrigger=0`
-   and `ScreenTransition=1` in `kremarc`, and only those options are checked.
+   and `ScreenTransition=1` in `kdockwrc`, and only those options are checked.
 3. Click "Primary monitor only". Verify the follow trigger and transition
    controls are hidden.
 4. In the "Display mode" group, click "Dim other desktops". Verify the "Other
@@ -632,7 +632,7 @@ expander description), screenshot (3D scene, "Result" inset, dock shadow),
 - Conditional controls appear only for the mode they belong to.
 - Card previews animate only while the page is shown.
 
-**Verification:** AT-SPI (checked state, control visibility), `kremarc`,
+**Verification:** AT-SPI (checked state, control visibility), `kdockwrc`,
 dock item opacity/visibility.
 **Automated:** none; monitor mode cards and the selected monitor switches are
 covered by SET-008 and SET-012.
@@ -644,7 +644,7 @@ covered by SET-008 and SET-012.
 **Precondition:** A fresh configuration (no `FloatingMargin` key), one
 output without another panel, visibility mode `Always visible`, `Reserve
 screen space` on, `Floating` on. A real fixture window maximized by KWin.
-Open Settings → Layout & Position. Record Krema's process and the fixture
+Open Settings → Layout & Position. Record KDockW's process and the fixture
 window's identity and frame geometry.
 
 **Steps:**
@@ -652,11 +652,11 @@ window's identity and frame geometry.
    is an AT-SPI slider named "Floating margin", enabled, with value 8 and a
    "8 px" value text.
 2. Focus it and press Page Up (ten 1 px steps). Verify the value reads 18,
-   `FloatingMargin=18` is saved in `[General]` in `kremarc`, the gap between
+   `FloatingMargin=18` is saved in `[General]` in `kdockwrc`, the gap between
    the dock panel and the screen edge widens, and the already-maximized
    fixture's frame moves inward by exactly 10 px at the dock edge (the
    reserved strip is the panel bar plus the margin). Do not
-   restore/remaximize the fixture or restart Krema.
+   restore/remaximize the fixture or restart KDockW.
 3. Press Home and End. Verify the slider stops at 1 and 32 px and the
    reserved strip follows; return to 18.
 4. Repeat steps 2–3 on the top, left, and right edges using the "Screen
@@ -672,7 +672,7 @@ window's identity and frame geometry.
    from the edge and verify it rests at the 18 px gap. Hovering inside the
    gap and over the panel hits the dock; the input region matches the
    visible panel and the margin, not the empty space beside the panel.
-7. Return to `Always visible`, close Settings, and restart Krema. Verify the
+7. Return to `Always visible`, close Settings, and restart KDockW. Verify the
    slider shows 18 px and the maximized fixture keeps the 18 px reserved
    strip.
 8. With a Plasma panel already reserving the dock's edge, verify the dock
@@ -688,10 +688,10 @@ window's identity and frame geometry.
   disabled but keeps its value.
 - Auto Hide and Dodge Windows hide the dock completely and reveal it at the
   configured gap.
-- The value persists in `kremarc` as `FloatingMargin` and survives restart.
+- The value persists in `kdockwrc` as `FloatingMargin` and survives restart.
 
 **Verification:** AT-SPI (slider name, value, value text, enabled state),
-KWin (maximized frame and work area against the full output), `kremarc`
+KWin (maximized frame and work area against the full output), `kdockwrc`
 (`FloatingMargin`), process identity, screenshot of the dock gap when DRM
 capture is available.
 **Automated (Tier 2):**

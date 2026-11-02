@@ -12,9 +12,9 @@
 #include <QLoggingCategory>
 #include <QTemporaryFile>
 
-Q_LOGGING_CATEGORY(lcPointerMotion, "krema.platform.pointermotion")
+Q_LOGGING_CATEGORY(lcPointerMotion, "kdockw.platform.pointermotion")
 
-namespace krema
+namespace kdockw
 {
 
 namespace
@@ -23,7 +23,7 @@ const QString kKWinService = QStringLiteral("org.kde.KWin");
 const QString kScriptingPath = QStringLiteral("/Scripting");
 const QString kScriptingInterface = QStringLiteral("org.kde.kwin.Scripting");
 const QString kScriptInterface = QStringLiteral("org.kde.kwin.Script");
-const QString kWatcherInterface = QStringLiteral("com.bhyoo.krema.PointerMotionWatcher");
+const QString kWatcherInterface = QStringLiteral("com.thicking.kdockw.PointerMotionWatcher");
 
 int s_instanceCount = 0;
 
@@ -36,7 +36,7 @@ QDBusMessage scriptingCall(const QString &method)
 KWinPointerMotionWatcher::KWinPointerMotionWatcher(QObject *parent)
     : QObject(parent)
     , m_instance(s_instanceCount++)
-    , m_objectPath(QStringLiteral("/com/bhyoo/krema/PointerMotionWatcher/%1").arg(m_instance))
+    , m_objectPath(QStringLiteral("/com/thicking/kdockw/PointerMotionWatcher/%1").arg(m_instance))
 {
 }
 
@@ -65,18 +65,18 @@ bool KWinPointerMotionWatcher::ensureScriptFile()
 
     // KWin reads the script from a file. It reports the first cursor motion
     // back to this object and then stays silent until it is unloaded.
-    auto file = std::make_unique<QTemporaryFile>(QDir::tempPath() + QStringLiteral("/krema-pointer-motion-XXXXXX.js"));
+    auto file = std::make_unique<QTemporaryFile>(QDir::tempPath() + QStringLiteral("/kdockw-pointer-motion-XXXXXX.js"));
     if (!file->open()) {
         qCWarning(lcPointerMotion) << "Failed to create the KWin script file:" << file->errorString();
         bus.unregisterObject(m_objectPath);
         return false;
     }
     const QString script = QStringLiteral(
-                               "function kremaPointerMoved() {\n"
-                               "    workspace.cursorPosChanged.disconnect(kremaPointerMoved);\n"
+                               "function kdockwPointerMoved() {\n"
+                               "    workspace.cursorPosChanged.disconnect(kdockwPointerMoved);\n"
                                "    callDBus(\"%1\", \"%2\", \"%3\", \"notifyPointerMoved\");\n"
                                "}\n"
-                               "workspace.cursorPosChanged.connect(kremaPointerMoved);\n")
+                               "workspace.cursorPosChanged.connect(kdockwPointerMoved);\n")
                                .arg(bus.baseService(), m_objectPath, kWatcherInterface);
     file->write(script.toUtf8());
     file->flush();
@@ -93,7 +93,7 @@ void KWinPointerMotionWatcher::arm()
     // A fresh plugin name per arm: KWin unloads scripts with deleteLater(), so
     // the previous name may still be taken right after disarm().
     const quint64 generation = ++m_generation;
-    m_pluginName = QStringLiteral("krema-pointer-motion-%1-%2-%3").arg(QCoreApplication::applicationPid()).arg(m_instance).arg(generation);
+    m_pluginName = QStringLiteral("kdockw-pointer-motion-%1-%2-%3").arg(QCoreApplication::applicationPid()).arg(m_instance).arg(generation);
 
     auto load = scriptingCall(QStringLiteral("loadScript"));
     load << m_scriptFile->fileName() << m_pluginName;
@@ -141,4 +141,4 @@ void KWinPointerMotionWatcher::notifyPointerMoved()
     Q_EMIT pointerMoved();
 }
 
-} // namespace krema
+} // namespace kdockw

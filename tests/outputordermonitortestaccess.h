@@ -9,7 +9,7 @@
 
 #include "shell/outputordermonitor.h"
 
-namespace krema
+namespace kdockw
 {
 
 class OutputOrderMonitorTestAccess
@@ -39,4 +39,4 @@ public:
     }
 };
 
-} // namespace krema
+} // namespace kdockw

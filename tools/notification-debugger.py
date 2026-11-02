@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Notification Debugger GUI for Krema.
+Notification Debugger GUI for KDockW.
 
 Full-featured debugger for fd.o Notifications, Portal notifications,
 StatusNotifierItem (SNI), Unity LauncherEntry, KDE Jobs, Inbox simulation,
@@ -147,7 +147,7 @@ class NotificationWatcherService(dbus.service.Object):
 
     def __init__(self, bus: dbus.Bus) -> None:
         bus_name = dbus.service.BusName(
-            "org.krema.NotificationDebugger", bus=bus
+            "org.kdockw.NotificationDebugger", bus=bus
         )
         super().__init__(bus_name, "/NotificationWatcher")
 
@@ -201,21 +201,21 @@ class StatusNotifierItemService(dbus.service.Object):
     def __init__(self, bus: dbus.Bus) -> None:
         self._bus = bus
         self._props = {
-            "Id": "krema-notification-debugger",
+            "Id": "kdockw-notification-debugger",
             "Status": "Active",
             "Category": "ApplicationStatus",
-            "Title": "Krema Debugger",
+            "Title": "KDockW Debugger",
             "IconName": "dialog-information",
             "AttentionIconName": "dialog-warning",
             "OverlayIconName": "",
             "ToolTip": dbus.Struct(
-                ("", dbus.Array([], signature="(iiay)"), "Krema Debugger", ""),
+                ("", dbus.Array([], signature="(iiay)"), "KDockW Debugger", ""),
                 signature=None,
             ),
             "ItemIsMenu": dbus.Boolean(False),
             "Menu": dbus.ObjectPath("/NO_DBUSMENU"),
         }
-        self._service_name = "org.krema.NotificationDebugger"
+        self._service_name = "org.kdockw.NotificationDebugger"
         bus_name = dbus.service.BusName(self._service_name, bus=bus)
         super().__init__(bus_name, "/StatusNotifierItem")
 
@@ -451,7 +451,7 @@ def send_unity_update(bus, desktop_entry, props):
     try:
         uri = f"application://{desktop_entry}.desktop"
         msg = dbus.lowlevel.SignalMessage(
-            "/kremaDebugger", "com.canonical.Unity.LauncherEntry", "Update"
+            "/kdockwDebugger", "com.canonical.Unity.LauncherEntry", "Update"
         )
         msg.append(uri, signature="s")
         msg.append(dbus.Dictionary(props, signature="sv"), signature="a{sv}")
@@ -692,7 +692,7 @@ class TargetBar(QWidget):
         idx = self._combo.currentIndex()
         if 0 <= idx < len(TARGET_APPS):
             return TARGET_APPS[idx][0]
-        return "krema-debugger"
+        return "kdockw-debugger"
 
 
 class LogPanel(QWidget):
@@ -1036,7 +1036,7 @@ class PortalTab(QWidget):
 
         row = QHBoxLayout()
         row.addWidget(QLabel("Notification ID:"))
-        self._notif_id = QLineEdit("krema-debug-1")
+        self._notif_id = QLineEdit("kdockw-debug-1")
         row.addWidget(self._notif_id)
         auto_btn = QPushButton("Auto")
         auto_btn.clicked.connect(self._auto_id)
@@ -1119,7 +1119,7 @@ class PortalTab(QWidget):
 
     def _auto_id(self) -> None:
         self._portal_counter += 1
-        self._notif_id.setText(f"krema-debug-{self._portal_counter}")
+        self._notif_id.setText(f"kdockw-debug-{self._portal_counter}")
 
     def _parse_buttons(self):
         text = self._buttons.toPlainText().strip()
@@ -1284,8 +1284,8 @@ class SNITab(QWidget):
         pgl = QVBoxLayout(pg)
 
         for label, attr, default in [
-            ("Id:", "_id", "krema-notification-debugger"),
-            ("Title:", "_title", "Krema Debugger"),
+            ("Id:", "_id", "kdockw-notification-debugger"),
+            ("Title:", "_title", "KDockW Debugger"),
             ("IconName:", "_icon", "dialog-information"),
             ("AttentionIcon:", "_att_icon", "dialog-warning"),
             ("OverlayIcon:", "_overlay_icon", ""),
@@ -1317,7 +1317,7 @@ class SNITab(QWidget):
         pgl.addWidget(QLabel("ToolTip:"))
         row = QHBoxLayout()
         row.addWidget(QLabel("Title:"))
-        self._tt_title = QLineEdit("Krema Debugger")
+        self._tt_title = QLineEdit("KDockW Debugger")
         row.addWidget(self._tt_title)
         row.addWidget(QLabel("Body:"))
         self._tt_body = QLineEdit()
@@ -1833,7 +1833,7 @@ class DNDTab(QWidget):
         igl = QVBoxLayout(ig)
         row = QHBoxLayout()
         row.addWidget(QLabel("App:"))
-        self._app = QLineEdit("krema-debugger")
+        self._app = QLineEdit("kdockw-debugger")
         row.addWidget(self._app)
         igl.addLayout(row)
         row = QHBoxLayout()
@@ -1929,7 +1929,7 @@ class DNDTab(QWidget):
 class DebuggerWindow(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Krema Notification Debugger")
+        self.setWindowTitle("KDockW Notification Debugger")
         self.resize(1024, 700)
 
         self._bus = None

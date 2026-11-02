@@ -7,7 +7,7 @@
 # so the test never touches the user's session, config or running dock.
 #
 # Usage: run-with-kwin.sh <test-binary> [args...]
-# Set KREMA_TEST_OUTPUT_COUNT=3 for selected-monitor subset coverage.
+# Set KDOCKW_TEST_OUTPUT_COUNT=3 for selected-monitor subset coverage.
 
 set -eu
 
@@ -40,20 +40,20 @@ export QT_FORCE_STDERR_LOGGING=1
 # without a registered desktop file.
 export KWIN_WAYLAND_NO_PERMISSION_CHECKS=1
 
-socket=krema-test
+socket=kdockw-test
 # Optional test-only KWin effects (a directory of effect packages), installed
 # into the private data directory before KWin starts. KWin only loads scripted
 # effects when animations are supported, which the virtual backend's software
 # compositing does not report unless forced.
-if [ -n "${KREMA_TEST_KWIN_EFFECTS:-}" ]; then
+if [ -n "${KDOCKW_TEST_KWIN_EFFECTS:-}" ]; then
     mkdir -p "$XDG_DATA_HOME/kwin/effects"
-    cp -R "$KREMA_TEST_KWIN_EFFECTS"/. "$XDG_DATA_HOME/kwin/effects/"
+    cp -R "$KDOCKW_TEST_KWIN_EFFECTS"/. "$XDG_DATA_HOME/kwin/effects/"
     export KWIN_EFFECTS_FORCE_ANIMATIONS=1
 fi
 # Tests may read what KWin scripts and effects log (console.* -> "js").
-export KREMA_TEST_KWIN_LOG="$scratch/kwin.log"
-output_count=${KREMA_TEST_OUTPUT_COUNT:-2}
-QT_LOGGING_RULES="js.info=true" kwin_wayland --virtual --no-lockscreen --socket "$socket" --width 1024 --height 768 --output-count "$output_count" >"$KREMA_TEST_KWIN_LOG" 2>&1 &
+export KDOCKW_TEST_KWIN_LOG="$scratch/kwin.log"
+output_count=${KDOCKW_TEST_OUTPUT_COUNT:-2}
+QT_LOGGING_RULES="js.info=true" kwin_wayland --virtual --no-lockscreen --socket "$socket" --width 1024 --height 768 --output-count "$output_count" >"$KDOCKW_TEST_KWIN_LOG" 2>&1 &
 kwin_pid=$!
 
 tries=0

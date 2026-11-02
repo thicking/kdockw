@@ -30,13 +30,13 @@ import numpy as np
 from PIL import Image
 import pytest
 
-from krema_e2e import config, env, kwin
-from krema_e2e import input as inp
-from krema_e2e.krema import Krema, Rect, painted_rect
-from krema_e2e.waits import wait_stable, wait_until
-from krema_e2e.windows import TestWindow, TestWindows
+from kdockw_e2e import config, env, kwin
+from kdockw_e2e import input as inp
+from kdockw_e2e.kdockw import KDockW, Rect, painted_rect
+from kdockw_e2e.waits import wait_stable, wait_until
+from kdockw_e2e.windows import TestWindow, TestWindows
 
-ICON = 48  # krema.kcfg IconSize default; IconSpacing default is 4
+ICON = 48  # kdockw.kcfg IconSize default; IconSpacing default is 4
 HOLD_MS = 450  # > main.qml dragHoldTimer (300 ms)
 STEP_MS = 40
 PAUSE_MS = 8000  # upper bound of the mid-drag pause; the body's end cuts it short
@@ -51,14 +51,14 @@ DESKTOP_IDS = {
 }
 
 
-def kremarc(*pinned: str) -> dict:
+def kdockwrc(*pinned: str) -> dict:
     # The hover tooltip / preview (PreviewHoverDelay, 500 ms) would be drawn
     # over the pixels these tests inspect; push it out of every test's span.
     return {"PinnedLaunchers": [config.launcher(DESKTOP_IDS[n]) for n in pinned], "PreviewHoverDelay": 60000}
 
 
-def pinned_launchers(krema: Krema) -> list[str]:
-    return config.as_list(krema.read_config()["General"]["PinnedLaunchers"])
+def pinned_launchers(kdockw: KDockW) -> list[str]:
+    return config.as_list(kdockw.read_config()["General"]["PinnedLaunchers"])
 
 
 # --------------------------------------------------------------------- input
@@ -102,7 +102,7 @@ def _pointer(actions: list[dict]) -> list[dict]:
 def drag(start: tuple[int, int], legs: Sequence[tuple[int, int] | int]) -> None:
     """A complete drag, in the foreground."""
     inp.run_actions(_pointer(drag_actions(start, legs)), timeout=60)
-    inp.move(*_end(start, legs))  # keep krema_e2e.input's pointer bookkeeping in sync
+    inp.move(*_end(start, legs))  # keep kdockw_e2e.input's pointer bookkeeping in sync
 
 
 @contextmanager
@@ -177,20 +177,20 @@ def _blue_columns(rgb: np.ndarray, top: int, x0: int, x1: int) -> set[int]:
 class Scene:
     """The dock at rest (pointer away, nothing zoomed) before a drag."""
 
-    krema: Krema
+    kdockw: KDockW
     names: list[str]
     rects: dict[str, Rect]
     base: np.ndarray  # RGB screenshot of the resting dock
 
     @classmethod
-    def capture(cls, krema: Krema, names: list[str]) -> "Scene":
+    def capture(cls, kdockw: KDockW, names: list[str]) -> "Scene":
         for n in names:
-            krema.wait_for_item(n, timeout=15)
-        wait_until(lambda: krema.item_names() == names, message=lambda: f"dock order {names} (have {krema.item_names()})")
-        krema.move_away(close_preview=False)
-        rects = wait_stable(lambda: {n: krema.screen_rect(krema.item(n)) for n in names}, duration=0.6)
+            kdockw.wait_for_item(n, timeout=15)
+        wait_until(lambda: kdockw.item_names() == names, message=lambda: f"dock order {names} (have {kdockw.item_names()})")
+        kdockw.move_away(close_preview=False)
+        rects = wait_stable(lambda: {n: kdockw.screen_rect(kdockw.item(n)) for n in names}, duration=0.6)
         assert all(r.width == ICON for r in rects.values()), f"items not at rest: {rects}"
-        scene = cls(krema, names, rects, np.zeros(0))
+        scene = cls(kdockw, names, rects, np.zeros(0))
         scene.base = scene.stable_shot("baseline")
         return scene
 
@@ -200,7 +200,7 @@ class Scene:
         rows every pixel check reads: from 60 px above the item row (the
         drag ghost sits 16 px above it) down to the screen edge."""
         top = min(r.y for r in self.rects.values()) - 60
-        return np.asarray(self.krema.screenshot(name, Rect(0, top, env.SCREEN_WIDTH, env.SCREEN_HEIGHT - top)))
+        return np.asarray(self.kdockw.screenshot(name, Rect(0, top, env.SCREEN_WIDTH, env.SCREEN_HEIGHT - top)))
 
     def stable_shot(self, name: str) -> np.ndarray:
         """Screenshot once the dock band stopped changing (icons loaded,
@@ -218,7 +218,7 @@ class Scene:
         return self.rects[name].center
 
     def item_rects(self) -> dict[str, Rect]:
-        return {n: self.krema.screen_rect(self.krema.item(n)) for n in self.names}
+        return {n: self.kdockw.screen_rect(self.kdockw.item(n)) for n in self.names}
 
     # -- drop indicator (main.qml dropIndicator: 2 px wide, icon high)
     def indicator_columns(self, shot: np.ndarray, ghost_x: int | None = None) -> set[int]:
@@ -280,10 +280,10 @@ class Scene:
 # -------------------------------------------------------------------- tests
 
 
-@pytest.mark.kremarc(kremarc(KWRITE, KFIND, TW, TW2))
-def test_dnd_001_drag_reorders_dock_items(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))
+def test_dnd_001_drag_reorders_dock_items(kdockw: KDockW, apps: TestWindows) -> None:
     focus = open_active_window(apps, FOCUS)
-    scene = Scene.capture(krema, [KWRITE, KFIND, FOCUS, TW2])
+    scene = Scene.capture(kdockw, [KWRITE, KFIND, FOCUS, TW2])
     start = scene.center(KWRITE)
     over = (scene.center(FOCUS)[0], start[1])  # third item's slot
 
@@ -295,37 +295,37 @@ def test_dnd_001_drag_reorders_dock_items(krema: Krema, apps: TestWindows) -> No
             timeout=5,
             message=f"drop indicator right after {FOCUS!r} (columns {sorted(expected)})",
         )
-        krema.wait_keyboard_focus()  # the drag took KWin's activation
+        kdockw.wait_keyboard_focus()  # the drag took KWin's activation
 
     order = [KFIND, FOCUS, KWRITE, TW2]
-    wait_until(lambda: krema.item_names() == order, message=lambda: f"AT-SPI order {order} (have {krema.item_names()})")
+    wait_until(lambda: kdockw.item_names() == order, message=lambda: f"AT-SPI order {order} (have {kdockw.item_names()})")
     # The reordering drop activates no task: focus goes back.
     wait_focus_returned(focus)
 
 
-@pytest.mark.kremarc(kremarc(KWRITE, KFIND, TW, TW2))
-def test_dnd_002_reorder_persists_after_restart(krema: Krema) -> None:
-    scene = Scene.capture(krema, [KWRITE, KFIND, TW, TW2])
+@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))
+def test_dnd_002_reorder_persists_after_restart(kdockw: KDockW) -> None:
+    scene = Scene.capture(kdockw, [KWRITE, KFIND, TW, TW2])
     start = scene.center(TW2)
     drag(start, [(scene.center(KFIND)[0], start[1])])
 
     order = [KWRITE, TW2, KFIND, TW]
-    wait_until(lambda: krema.item_names() == order, message=lambda: f"AT-SPI order {order} (have {krema.item_names()})")
+    wait_until(lambda: kdockw.item_names() == order, message=lambda: f"AT-SPI order {order} (have {kdockw.item_names()})")
     saved = [config.launcher(DESKTOP_IDS[n]) for n in order]
-    wait_until(lambda: pinned_launchers(krema) == saved, message=lambda: f"kremarc PinnedLaunchers {saved} (have {pinned_launchers(krema)})")
+    wait_until(lambda: pinned_launchers(kdockw) == saved, message=lambda: f"kdockwrc PinnedLaunchers {saved} (have {pinned_launchers(kdockw)})")
 
-    krema.restart()
+    kdockw.restart()
     for n in order:
-        krema.wait_for_item(n, timeout=15)
-    wait_until(lambda: krema.item_names() == order, message=lambda: f"order after restart {order} (have {krema.item_names()})")
-    assert pinned_launchers(krema) == saved
+        kdockw.wait_for_item(n, timeout=15)
+    wait_until(lambda: kdockw.item_names() == order, message=lambda: f"order after restart {order} (have {kdockw.item_names()})")
+    assert pinned_launchers(kdockw) == saved
 
 
-@pytest.mark.kremarc(kremarc(KWRITE, KFIND, TW, TW2))
-def test_dnd_003_drag_shows_ghost_dimmed_source_and_drop_indicator(krema: Krema) -> None:
+@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))
+def test_dnd_003_drag_shows_ghost_dimmed_source_and_drop_indicator(kdockw: KDockW) -> None:
     if not kwin.can_capture():
         pytest.fail("KWin cannot capture (QPainter compositing, no /dev/dri render node); DND-003 is a visual check")
-    scene = Scene.capture(krema, [KWRITE, KFIND, TW, TW2])
+    scene = Scene.capture(kdockw, [KWRITE, KFIND, TW, TW2])
     # Light text-editor icon, dragged backwards onto the first slot: it
     # contrasts both with the black desktop (ghost) and the grey panel (source).
     source, target = TW2, KWRITE
@@ -365,21 +365,21 @@ def test_dnd_003_drag_shows_ghost_dimmed_source_and_drop_indicator(krema: Krema)
         assert all(r.width == ICON for r in rects.values()), f"items zoomed during drag: {rects}"
 
     order = [TW2, KWRITE, KFIND, TW]
-    wait_until(lambda: krema.item_names() == order, message=lambda: f"AT-SPI order {order} (have {krema.item_names()})")
+    wait_until(lambda: kdockw.item_names() == order, message=lambda: f"AT-SPI order {order} (have {kdockw.item_names()})")
 
 
 
 # ICON-009: an absolute-path window icon keeps its raw artwork in the drag ghost.
 # DND-003 covers source dimming and ghost opacity; this oracle independently
 # identifies the four raw-artwork colors after normalization and alpha blending.
-@pytest.mark.kremarc(kremarc(KWRITE))
+@pytest.mark.kdockwrc(kdockwrc(KWRITE))
 def test_icon009_drag_ghost_uses_raw_client_artwork(
-    tmp_path: Path, krema: Krema, apps: TestWindows
+    tmp_path: Path, kdockw: KDockW, apps: TestWindows
 ) -> None:
     if not kwin.can_capture():
         pytest.fail("KWin cannot capture (QPainter compositing, no /dev/dri render node); ICON-009 is a visual check")
 
-    icon_path = Path("/usr/share/krema-test-window/icon-raw-quadrants.svg")
+    icon_path = Path("/usr/share/kdockw-test-window/icon-raw-quadrants.svg")
     assert icon_path.is_file(), (
         f"ICON-009 static icon fixture is missing: {icon_path}; "
         "install the test-window fixture before starting the session"
@@ -387,9 +387,9 @@ def test_icon009_drag_ghost_uses_raw_client_artwork(
 
     source = "ICON-009 Raw Icon"
     target = KWRITE
-    app_id = "org.krema.icon009.drag-raw"
+    app_id = "org.kdockw.icon009.drag-raw"
     apps.open(source, app_id=app_id)
-    scene = Scene.capture(krema, [target, source])
+    scene = Scene.capture(kdockw, [target, source])
     start = scene.center(source)
     over = (scene.center(target)[0], scene.row_top - 16)
     drop = (over[0], start[1])
@@ -491,11 +491,11 @@ def test_icon009_drag_ghost_uses_raw_client_artwork(
         )
 
 
-@pytest.mark.kremarc(kremarc(KWRITE, KFIND))
-def test_dnd_004_drag_released_outside_dock_keeps_order(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND))
+def test_dnd_004_drag_released_outside_dock_keeps_order(kdockw: KDockW, apps: TestWindows) -> None:
     alpha = open_active_window(apps, "Alpha")  # unpinned window task
-    scene = Scene.capture(krema, [KWRITE, KFIND, "Alpha"])
-    rc_before = krema.config_path.read_text()
+    scene = Scene.capture(kdockw, [KWRITE, KFIND, "Alpha"])
+    rc_before = kdockw.config_path.read_text()
     start = scene.center("Alpha")
     over = (scene.center(KWRITE)[0], start[1])
     outside = (over[0], 450)  # well above the dock surface
@@ -508,7 +508,7 @@ def test_dnd_004_drag_released_outside_dock_keeps_order(krema: Krema, apps: Test
             timeout=5,
             message="drag in progress with a pending reorder before the first item",
         )
-        krema.wait_keyboard_focus()  # the drag took KWin's activation
+        kdockw.wait_keyboard_focus()  # the drag took KWin's activation
 
     # The drag ended: no indicator, the dock looks as before the drag.
     def at_rest() -> bool:
@@ -516,16 +516,16 @@ def test_dnd_004_drag_released_outside_dock_keeps_order(krema: Krema, apps: Test
         return not scene.indicator_columns(shot) and scene.item_rects() == scene.rects
 
     wait_until(at_rest, timeout=5, message=lambda: f"dock back at rest (rects {scene.item_rects()} vs {scene.rects})")
-    assert krema.item_names() == [KWRITE, KFIND, "Alpha"]
-    assert krema.config_path.read_text() == rc_before
+    assert kdockw.item_names() == [KWRITE, KFIND, "Alpha"]
+    assert kdockw.config_path.read_text() == rc_before
     wait_focus_returned(alpha)
 
 
-@pytest.mark.kremarc(kremarc(KWRITE, KFIND, TW, TW2))
-def test_dnd_004_escape_cancels_drag(krema: Krema, apps: TestWindows) -> None:
+@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))
+def test_dnd_004_escape_cancels_drag(kdockw: KDockW, apps: TestWindows) -> None:
     focus = open_active_window(apps, FOCUS)
-    scene = Scene.capture(krema, [KWRITE, KFIND, FOCUS, TW2])
-    rc_before = krema.config_path.read_text()
+    scene = Scene.capture(kdockw, [KWRITE, KFIND, FOCUS, TW2])
+    rc_before = kdockw.config_path.read_text()
     start = scene.center(KWRITE)
     over = (scene.center(FOCUS)[0], start[1])
 
@@ -537,7 +537,7 @@ def test_dnd_004_escape_cancels_drag(krema: Krema, apps: TestWindows) -> None:
             timeout=5,
             message="drag in progress with a pending reorder",
         )
-        krema.wait_keyboard_focus()  # Escape goes to the dock, not to the focus window
+        kdockw.wait_keyboard_focus()  # Escape goes to the dock, not to the focus window
         inp.key("Escape")
         wait_until(
             lambda: not scene.indicator_columns(scene.shot("after-escape"), ghost_x=over[0]),
@@ -545,8 +545,8 @@ def test_dnd_004_escape_cancels_drag(krema: Krema, apps: TestWindows) -> None:
             message="Escape to cancel the drag (drop indicator gone)",
         )
 
-    assert krema.item_names() == [KWRITE, KFIND, FOCUS, TW2]
-    assert krema.config_path.read_text() == rc_before
+    assert kdockw.item_names() == [KWRITE, KFIND, FOCUS, TW2]
+    assert kdockw.config_path.read_text() == rc_before
     wait_focus_returned(focus)
 
 
@@ -554,20 +554,20 @@ def test_dnd_004_escape_cancels_drag(krema: Krema, apps: TestWindows) -> None:
 DRAG_CLICK_ACTION_CASES = [(single, grouped) for single in (0, 1) for grouped in (0, 1, 2)]
 
 
-def _configure_drag_click_actions(krema: Krema, single: int, grouped: int) -> None:
+def _configure_drag_click_actions(kdockw: KDockW, single: int, grouped: int) -> None:
     """Keep drag checks on the same six policy combinations as click tests."""
-    krema.write_config(
+    kdockw.write_config(
         {
-            **kremarc(KWRITE, KFIND, TW, TW2),
+            **kdockwrc(KWRITE, KFIND, TW, TW2),
             "PreviewEnabled": False,
             "SingleWindowClickAction": single,
             "GroupedWindowClickAction": grouped,
         }
     )
-    krema.restart()
+    kdockw.restart()
     wait_until(
-        lambda: krema.read_config().get("General", {}).get("SingleWindowClickAction") == str(single)
-        and krema.read_config().get("General", {}).get("GroupedWindowClickAction") == str(grouped),
+        lambda: kdockw.read_config().get("General", {}).get("SingleWindowClickAction") == str(single)
+        and kdockw.read_config().get("General", {}).get("GroupedWindowClickAction") == str(grouped),
         message=f"drag policy pair persisted ({single}, {grouped})",
     )
 
@@ -578,10 +578,10 @@ def _configure_drag_click_actions(krema: Krema, single: int, grouped: int) -> No
     ids=[f"single{single}-group{grouped}" for single, grouped in DRAG_CLICK_ACTION_CASES],
 )
 def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
-    krema: Krema, apps: TestWindows, single: int, grouped: int
+    kdockw: KDockW, apps: TestWindows, single: int, grouped: int
 ) -> None:
     """Drag release never routes through a configured click action."""
-    _configure_drag_click_actions(krema, single, grouped)
+    _configure_drag_click_actions(kdockw, single, grouped)
     alpha = apps.open("Alpha", app_id=env.TEST_APP_ID, width=300, height=200)
     beta = apps.open("Beta", app_id=env.TEST_APP_ID, width=300, height=200)
     solo = apps.open("Solo", app_id=env.TEST_APP2_ID, width=300, height=200)
@@ -592,7 +592,7 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
             "w.frameGeometry = {x: 0, y: 0, width: 300, height: 200}; report(true);"
         )
     for name in (TW, "Solo", FOCUS):
-        krema.wait_for_item(name)
+        kdockw.wait_for_item(name)
 
     def states() -> dict[str, tuple[bool, bool]]:
         return {w.internal_id: (w.active, w.minimized) for w in kwin.app_windows()}
@@ -600,8 +600,8 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
     def observation() -> tuple[dict[str, tuple[bool, bool]], bool, set[str]]:
         return (
             states(),
-            krema.preview_visible(),
-            {w.internal_id for w in krema.windows() if not w.normal_window},
+            kdockw.preview_visible(),
+            {w.internal_id for w in kdockw.windows() if not w.normal_window},
         )
 
     # Active sources catch accidental minimize/cycle. Background sources catch
@@ -610,16 +610,16 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
         for release_kind in ("inside", "outside", "exit-reenter"):
             kwin.activate(active.internal_id)
             wait_until(active.is_active, message=f"{active.title!r} active before dragging {source!r}")
-            scene = Scene.capture(krema, wait_stable(krema.item_names))
-            krema.hover_item(source)
+            scene = Scene.capture(kdockw, wait_stable(kdockw.item_names))
+            kdockw.hover_item(source)
             start = wait_stable(
-                lambda: painted_rect(krema.screen_rect(krema.item(source)), scene.rects[source]).center
+                lambda: painted_rect(kdockw.screen_rect(kdockw.item(source)), scene.rects[source]).center
             )
-            current = painted_rect(krema.screen_rect(krema.item(source)), scene.rects[source])
+            current = painted_rect(kdockw.screen_rect(kdockw.item(source)), scene.rects[source])
             assert current.contains(*start), f"zoomed hit point {start} outside current {source!r} bounds {current}"
             outside = (env.SCREEN_WIDTH // 2, 20)
             inside = (start[0] + current.width, start[1])
-            dock = krema.surface_rect("dock")
+            dock = kdockw.surface_rect("dock")
             assert dock is not None and dock.contains(*start) and dock.contains(*inside), (
                 f"horizontal latch path {start} -> {inside} left the actual dock surface {dock}"
             )
@@ -645,9 +645,9 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
             if source == TW and active is alpha and release_kind == "outside":
                 # The first fresh right press after an outside drop must not
                 # be swallowed by the retained drag-release click guard.
-                click = krema.settled_item_center(source)
-                menu = krema.open_context_menu(source)
-                assert menu.pid == krema.pid and not menu.normal_window
+                click = kdockw.settled_item_center(source)
+                menu = kdockw.open_context_menu(source)
+                assert menu.pid == kdockw.pid and not menu.normal_window
                 area = Rect(*menu.client_geometry)
                 work = Rect(
                     *(
@@ -680,16 +680,16 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
         for release_order in (("right", "left"), ("left", "right")):
             kwin.activate(active.internal_id)
             wait_until(active.is_active, message=f"{active.title!r} active before the chord drag")
-            scene = Scene.capture(krema, wait_stable(krema.item_names))
-            krema.hover_item(source)
+            scene = Scene.capture(kdockw, wait_stable(kdockw.item_names))
+            kdockw.hover_item(source)
             start = wait_stable(
-                lambda: painted_rect(krema.screen_rect(krema.item(source)), scene.rects[source]).center
+                lambda: painted_rect(kdockw.screen_rect(kdockw.item(source)), scene.rects[source]).center
             )
-            current = painted_rect(krema.screen_rect(krema.item(source)), scene.rects[source])
+            current = painted_rect(kdockw.screen_rect(kdockw.item(source)), scene.rects[source])
             assert current.contains(*start), f"chord start {start} outside current {source!r} bounds {current}"
             outside = (env.SCREEN_WIDTH // 2, 20)
             inside = (start[0] + current.width, start[1])
-            dock = krema.surface_rect("dock")
+            dock = kdockw.surface_rect("dock")
             assert dock is not None and dock.contains(*start) and dock.contains(*inside), (
                 f"chord latch path {start} -> {inside} left the actual dock surface {dock}"
             )
@@ -701,7 +701,7 @@ def test_dnd005_release_inside_outside_and_exit_reenter_preserves_window_state(
                 inp.run_actions(_pointer([_pause(HOLD_MS)]))
                 inp.move_path(inp.line(start, inside, 8), step_ms=STEP_MS)
                 wait_cursor(inside)
-                krema.wait_keyboard_focus()
+                kdockw.wait_keyboard_focus()
                 inp.move_path(inp.line(inside, outside, 8), step_ms=STEP_MS)
                 wait_cursor(outside)
                 inp.move_path(inp.line(outside, start, 8), step_ms=STEP_MS)

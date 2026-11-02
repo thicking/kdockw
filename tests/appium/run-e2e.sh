@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
-# Host entrypoint for the Krema AT-SPI E2E suite.
+# Host entrypoint for the KDockW AT-SPI E2E suite.
 #
 #   tests/appium/run-e2e.sh                         # every tests/appium/test_*.py
 #   tests/appium/run-e2e.sh test_smoke.py           # one file
@@ -10,62 +10,62 @@
 #   tests/appium/run-e2e.sh --shell                 # debug shell in the container
 #
 # Builds (or reuses) the image, syncs the checkout into the container, builds
-# krema incrementally in a named volume, runs pytest under a private
+# kdockw incrementally in a named volume, runs pytest under a private
 # kwin_wayland --virtual session and writes JUnit XML, screenshots and logs to
 # tests/appium/artifacts/. Needs only an unprivileged `docker run`.
 #
 # Environment:
-#   KREMA_E2E_IMAGE          image tag (default krema-e2e:local)
-#   KREMA_E2E_SKIP_BUILD=1   do not (re)build the image
-#   KREMA_E2E_VOLUME         build volume (default krema-e2e-build-<arch>)
-#   KREMA_E2E_ARTIFACTS      artifacts directory (default tests/appium/artifacts)
-#   KREMA_E2E_PLATFORM       e.g. linux/amd64 (default: native)
-#   KREMA_E2E_SCREEN_WIDTH, KREMA_E2E_SCREEN_HEIGHT   virtual output size
-#   KREMA_E2E_OUTPUT_COUNT   number of outputs (default 1); tests marked
+#   KDOCKW_E2E_IMAGE          image tag (default kdockw-e2e:local)
+#   KDOCKW_E2E_SKIP_BUILD=1   do not (re)build the image
+#   KDOCKW_E2E_VOLUME         build volume (default kdockw-e2e-build-<arch>)
+#   KDOCKW_E2E_ARTIFACTS      artifacts directory (default tests/appium/artifacts)
+#   KDOCKW_E2E_PLATFORM       e.g. linux/amd64 (default: native)
+#   KDOCKW_E2E_SCREEN_WIDTH, KDOCKW_E2E_SCREEN_HEIGHT   virtual output size
+#   KDOCKW_E2E_OUTPUT_COUNT   number of outputs (default 1); tests marked
 #                            @pytest.mark.outputs(n) need n
-#   KREMA_E2E_DOCKER_ARGS    extra `docker run` arguments, e.g. "--cpus=2" to
+#   KDOCKW_E2E_DOCKER_ARGS    extra `docker run` arguments, e.g. "--cpus=2" to
 #                            approximate a slow CI runner (default: none)
-#   KREMA_E2E_BINARY         absolute path of an installed krema inside the
-#                            image (e.g. /usr/bin/krema): skips the source
-#                            sync and krema build, runs the suite from the
+#   KDOCKW_E2E_BINARY         absolute path of an installed kdockw inside the
+#                            image (e.g. /usr/bin/kdockw): skips the source
+#                            sync and kdockw build, runs the suite from the
 #                            read-only checkout (tests/distro/run-distro-e2e.sh)
-#   KREMA_E2E_DISTRO         target id exported to the tests (tests/distro)
-#   KREMA_E2E_SHARD=<i>/<N>  select only every N-th collected test (shard i,
-#                            0-based; krema_e2e/pytest_plugin.py deselects the
+#   KDOCKW_E2E_DISTRO         target id exported to the tests (tests/distro)
+#   KDOCKW_E2E_SHARD=<i>/<N>  select only every N-th collected test (shard i,
+#                            0-based; kdockw_e2e/pytest_plugin.py deselects the
 #                            rest). tests/distro/run-distro-e2e.sh sets it from
-#                            KREMA_E2E_SHARDS; the default build volume then
+#                            KDOCKW_E2E_SHARDS; the default build volume then
 #                            gets a -shard-<i> suffix.
 #
 # If the host has /dev/dri (e.g. after `sudo tests/appium/setup-vgem.sh`), it
 # is passed through so KWin composites with OpenGL on the vgem render node:
 # needed for screenshots and PipeWire window thumbnails. Without it KWin falls
-# back to QPainter. KREMA_E2E_OUTPUT_COUNT maps to kwin's --output-count.
+# back to QPainter. KDOCKW_E2E_OUTPUT_COUNT maps to kwin's --output-count.
 
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(cd "$here/../.." && pwd)
-image=${KREMA_E2E_IMAGE:-krema-e2e:local}
+image=${KDOCKW_E2E_IMAGE:-kdockw-e2e:local}
 arch=$(uname -m)
-volume=${KREMA_E2E_VOLUME:-krema-e2e-build-$arch}
-artifacts=${KREMA_E2E_ARTIFACTS:-$here/artifacts}
+volume=${KDOCKW_E2E_VOLUME:-kdockw-e2e-build-$arch}
+artifacts=${KDOCKW_E2E_ARTIFACTS:-$here/artifacts}
 
 platform_args=
-if [ -n "${KREMA_E2E_PLATFORM:-}" ]; then
-    platform_args="--platform $KREMA_E2E_PLATFORM"
-    volume=${KREMA_E2E_VOLUME:-krema-e2e-build-$(echo "$KREMA_E2E_PLATFORM" | tr '/' '-')}
+if [ -n "${KDOCKW_E2E_PLATFORM:-}" ]; then
+    platform_args="--platform $KDOCKW_E2E_PLATFORM"
+    volume=${KDOCKW_E2E_VOLUME:-kdockw-e2e-build-$(echo "$KDOCKW_E2E_PLATFORM" | tr '/' '-')}
 fi
 
 # Sharded runs share neither volume nor artifacts. An explicit
-# KREMA_E2E_VOLUME is already suffixed per shard by the caller; the default
-# is suffixed here so concurrent krema builds do not race on /build.
-if [ -n "${KREMA_E2E_SHARD:-}" ] && [ -z "${KREMA_E2E_VOLUME:-}" ]; then
-    volume="$volume-shard-${KREMA_E2E_SHARD%/*}"
+# KDOCKW_E2E_VOLUME is already suffixed per shard by the caller; the default
+# is suffixed here so concurrent kdockw builds do not race on /build.
+if [ -n "${KDOCKW_E2E_SHARD:-}" ] && [ -z "${KDOCKW_E2E_VOLUME:-}" ]; then
+    volume="$volume-shard-${KDOCKW_E2E_SHARD%/*}"
 fi
 
 now() { date +%s; }
 
-if [ "${KREMA_E2E_SKIP_BUILD:-0}" != "1" ]; then
+if [ "${KDOCKW_E2E_SKIP_BUILD:-0}" != "1" ]; then
     t0=$(now)
     # shellcheck disable=SC2086
     if ! docker build $platform_args -q -t "$image" "$here" >/dev/null; then
@@ -85,7 +85,7 @@ done
 
 rm -rf "$artifacts"
 mkdir -p "$artifacts"
-# docker -v needs an absolute path (relative KREMA_E2E_ARTIFACTS would be a
+# docker -v needs an absolute path (relative KDOCKW_E2E_ARTIFACTS would be a
 # named volume).
 artifacts=$(cd "$artifacts" && pwd -P)
 
@@ -100,7 +100,7 @@ if [ -t 0 ] && [ -t 1 ]; then
 fi
 
 build_args="-v $volume:/build"
-if [ -n "${KREMA_E2E_BINARY:-}" ]; then
+if [ -n "${KDOCKW_E2E_BINARY:-}" ]; then
     build_args=
 fi
 
@@ -111,7 +111,7 @@ docker run --rm --init $tty_args $platform_args \
     $build_args \
     -v "$artifacts:/artifacts" \
     -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
-    -e KREMA_E2E_SCREEN_WIDTH -e KREMA_E2E_SCREEN_HEIGHT -e KREMA_E2E_OUTPUT_COUNT \
-    -e KREMA_E2E_BINARY -e KREMA_E2E_DISTRO -e KREMA_E2E_SHARD -e LP_NUM_THREADS \
-    $dri_args ${KREMA_E2E_DOCKER_ARGS:-} \
+    -e KDOCKW_E2E_SCREEN_WIDTH -e KDOCKW_E2E_SCREEN_HEIGHT -e KDOCKW_E2E_OUTPUT_COUNT \
+    -e KDOCKW_E2E_BINARY -e KDOCKW_E2E_DISTRO -e KDOCKW_E2E_SHARD -e LP_NUM_THREADS \
+    $dri_args ${KDOCKW_E2E_DOCKER_ARGS:-} \
     "$image" sh /src/tests/appium/entrypoint.sh "$@"

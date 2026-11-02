@@ -5,7 +5,7 @@ Research only. Nothing listed here was registered, requested or submitted, and a
 ## Method and counts
 
 - 34 candidate channels were classified against their official documentation with a fixed rubric.
-- 13 more were excluded before classification because Krema is already on them, a submission is pending, or they duplicate another row (see the channel map in `../SKILL.md`, section 7).
+- 13 more were excluded before classification because KDockW is already on them, a submission is pending, or they duplicate another row (see the channel map in `../SKILL.md`, section 7).
 - No candidate was dropped by a size cap, and no classification errored.
 - The first pass gave: conditional 23, other 8, incompatible 2, viable for automation 1. All 33 flagged rows were then checked against their official quotations; one high-confidence incompatible row was not re-read by hand.
 
@@ -18,9 +18,9 @@ In priority order:
 1. **Awesome-Linux-Software** — viable, manual. The official CONTRIBUTING accepts an application name, a homepage or install guide, a short description, an icon and the correct section; the README already has a Dock section with Cairo-Dock, Docky and Latte-style projects. A one-time pull request. Source: <https://raw.githubusercontent.com/luong-komorebi/Awesome-Linux-Software/master/CONTRIBUTING.md>
 2. **freshcode.club** — viable, manual. The submit form takes project, homepage and release metadata plus an Autoupdate URL, with GitHub/changelog autodiscovery, so later releases can update from a feed after a one-time form submission. Source: <https://freshcode.club/submit>
 3. **Chaotic-AUR** — conditional. It builds binaries from AUR recipes, which would add prebuilt Arch packages on top of the existing AUR entry, but its request and acceptance policy has not been verified. Source: <https://raw.githubusercontent.com/chaotic-aur/packages/main/README.md>
-4. **FSF Free Software Directory** — conditional. Its requirements accept free software that runs on GNU/Linux, which matches Krema's license and platform; the submission form details are still unknown. Source: <https://directory.fsf.org/wiki/Free_Software_Directory:Requirements>
+4. **FSF Free Software Directory** — conditional. Its requirements accept free software that runs on GNU/Linux, which matches KDockW's license and platform; the submission form details are still unknown. Source: <https://directory.fsf.org/wiki/Free_Software_Directory:Requirements>
 
-**Repology** was rated viable for automation, but it is not new work: <https://repology.org/project/krema/versions> already indexes the AUR package at 0.10.0. Whether it also picks up COPR, OBS or the PPA is not established. Requirements: <https://repology.org/docs/requirements>
+**Repology** was rated viable for automation, but it is not new work: <https://repology.org/project/kdockw/versions> already indexes the AUR package at 0.10.0. Whether it also picks up COPR, OBS or the PPA is not established. Requirements: <https://repology.org/docs/requirements>
 
 ## Blocked by policy
 
@@ -48,5 +48,5 @@ Each needs facts that the official sources did not establish. Don't call any of 
 
 - **KaOS KCP**: moving from GitHub to Codeberg; acceptance details missing.
 - **makedeb MPR**: the official site shows an unmaintained banner; upload process unverified.
-- **SaaSHub, Slant, OpenHub, Mageia**: the policy pages could not be fetched (HTTP 502/526/403 or a bot challenge). Treat that as unknown, not as incompatible or as proof Krema is not listed.
+- **SaaSHub, Slant, OpenHub, Mageia**: the policy pages could not be fetched (HTTP 502/526/403 or a bot challenge). Treat that as unknown, not as incompatible or as proof KDockW is not listed.
 - **pkgs.org**: a package index, not a way to publish an application directly.

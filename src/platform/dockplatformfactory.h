@@ -7,7 +7,7 @@
 
 #include <memory>
 
-namespace krema
+namespace kdockw
 {
 
 /**
@@ -24,4 +24,4 @@ public:
     static std::unique_ptr<DockPlatform> create();
 };
 
-} // namespace krema
+} // namespace kdockw

@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-namespace krema
+namespace kdockw
 {
 
 QRegion computeDockInputRegion(const InputRegionParams &p)
@@ -138,4 +138,4 @@ QRegion computePreviewInputRegion(const PreviewInputRegionParams &p)
     return QRegion(rect);
 }
 
-} // namespace krema
+} // namespace kdockw

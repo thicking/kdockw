@@ -7,34 +7,34 @@ find_program(KWIN_WAYLAND_EXECUTABLE kwin_wayland)
 find_program(DBUS_RUN_SESSION_EXECUTABLE dbus-run-session)
 find_package(Qt6 REQUIRED COMPONENTS Test)
 
-add_executable(krema_integration_tests
+add_executable(kdockw_integration_tests
     test_settings_lifecycle.cpp
 )
 
-target_link_libraries(krema_integration_tests PRIVATE
+target_link_libraries(kdockw_integration_tests PRIVATE
     Catch2::Catch2
     Qt6::Test
-    krema_lib
+    kdockw_lib
 )
 
-add_executable(krema_launcher_entry_tests
+add_executable(kdockw_launcher_entry_tests
     test_launcher_entry.cpp
 )
 
-target_link_libraries(krema_launcher_entry_tests PRIVATE
+target_link_libraries(kdockw_launcher_entry_tests PRIVATE
     Catch2::Catch2
     Qt6::Test
-    krema_lib
+    kdockw_lib
 )
 
 if(KWIN_WAYLAND_EXECUTABLE AND DBUS_RUN_SESSION_EXECUTABLE)
-    add_test(NAME krema_integration_tests
-        COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh $<TARGET_FILE:krema_integration_tests>
+    add_test(NAME kdockw_integration_tests
+        COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh $<TARGET_FILE:kdockw_integration_tests>
     )
-    add_test(NAME krema_launcher_entry_tests
-        COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh $<TARGET_FILE:krema_launcher_entry_tests>
+    add_test(NAME kdockw_launcher_entry_tests
+        COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh $<TARGET_FILE:kdockw_launcher_entry_tests>
     )
-    set_tests_properties(krema_integration_tests krema_launcher_entry_tests PROPERTIES TIMEOUT 180)
+    set_tests_properties(kdockw_integration_tests kdockw_launcher_entry_tests PROPERTIES TIMEOUT 180)
 else()
-    message(STATUS "kwin_wayland or dbus-run-session not found: krema_integration_tests is built but not registered with CTest")
+    message(STATUS "kwin_wayland or dbus-run-session not found: kdockw_integration_tests is built but not registered with CTest")
 endif()

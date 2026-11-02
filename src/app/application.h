@@ -9,9 +9,9 @@
 
 class KAboutData;
 class KActionCollection;
-class KremaSettings;
+class KDockWSettings;
 
-namespace krema
+namespace kdockw
 {
 
 class DockModel;
@@ -37,19 +37,19 @@ public:
 
     /// Saves @p settings to disk whenever one of its user-facing entries
     /// changes. PinnedLaunchers is saved by its own handler in run().
-    static void connectSettingsAutoSave(KremaSettings *settings, QObject *context);
+    static void connectSettingsAutoSave(KDockWSettings *settings, QObject *context);
 
-    /// Migrates settings written by older Krema releases. A legacy
+    /// Migrates settings written by older KDockW releases. A legacy
     /// ZoomAnimationDuration key becomes the Custom zoom animation preset with
     /// that duration and an ease-out curve in both directions (unless a preset
     /// is already stored); the legacy key is always removed and @p settings
     /// saved. Call right after load().
-    static void migrateLegacySettings(KremaSettings *settings);
+    static void migrateLegacySettings(KDockWSettings *settings);
 
 private:
     void registerGlobalShortcuts();
 
-    std::unique_ptr<KremaSettings> m_settings;
+    std::unique_ptr<KDockWSettings> m_settings;
     std::unique_ptr<DockModel> m_dockModel;
     std::unique_ptr<NotificationTracker> m_notificationTracker;
     std::unique_ptr<LauncherEntryTracker> m_launcherEntryTracker;
@@ -57,4 +57,4 @@ private:
     KActionCollection *m_actionCollection = nullptr;
 };
 
-} // namespace krema
+} // namespace kdockw

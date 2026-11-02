@@ -40,7 +40,7 @@ pkg_check_modules(Flatpak IMPORTED_TARGET flatpak)
 set(plasma-workspace_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/upstream")
 set(SCREENSAVER_DBUS_INTERFACE
     "${CMAKE_CURRENT_SOURCE_DIR}/kscreenlocker/dbus/org.freedesktop.ScreenSaver.xml")
-# Krema and this package target Wayland; no X11 session or X11-only models.
+# KDockW and this package target Wayland; no X11 session or X11-only models.
 set(HAVE_X11 OFF)
 configure_file("${plasma-workspace_SOURCE_DIR}/config-X11.h.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/config-X11.h")
