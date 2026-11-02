@@ -417,11 +417,32 @@ The visible index and `KDockWSettings.language` could therefore diverge.
 
 **Fix:** Keep a stable `system`/`ru`/`en` model and translate its display text
 separately. Synchronize valid `currentIndex` changes with the KConfigXT
-setting; its existing change signal saves immediately and applies KI18n. A
-regression test loads the real General page and FormCard delegate, changes its
-index, recreates the page, reloads `KDockWSettings`, and verifies that multiple
-QML strings follow English, Russian, and system mode.
+setting; its existing change signal saves immediately and applies KI18n.
 
 **Key lesson:** Keep option identity independent of translated labels. Test
 the actual QML control, language retranslation, and KConfig round-trip;
 testing only a setter or a displayed index can miss state divergence.
+
+## 22. FormCard option delegates resolve functions on their owning page (2026-11, language setting)
+
+**Symptom:** The language popup opened with its title and blank contents. The
+control could still display a selected label when its index changed.
+
+**Cause:** `dialogDelegate` tried to call `languageLabel()` through the
+`FormComboBoxDelegate` id, but the function belonged to the containing page.
+QML reported `TypeError: Property 'languageLabel' ... is not a function` for
+each option delegate, so no option text was rendered. The previous test changed
+`currentIndex` directly and never created or inspected the popup delegates.
+
+**Fix:** Use the desktop ComboBox display mode and have its delegate resolve
+labels through the page id. The test opens the actual SettingsDialog, opens the
+FormCard popup, checks all three visible labels, activates each option, and
+asserts that the sidebar, page title, section header, subtitle, and description
+follow the selected language. KI18n's `KLocalizedQmlContext` owns QML engine
+retranslation: send `QEvent::LanguageChange` to the application and let its
+queued `QQmlEngine::retranslate()` run after the QML handler unwinds. C++ values
+stored in long-lived objects are refreshed explicitly.
+
+**Key lesson:** A working selected-value label does not prove that popup rows
+exist. Exercise FormCard delegates inside their real SettingsDialog and
+preserve KI18n's queued retranslation path.

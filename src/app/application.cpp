@@ -29,21 +29,13 @@
 #include <QIcon>
 #include <QLoggingCategory>
 #include <QLocale>
-#include <QQmlEngine>
-#include <QPointer>
 #include <QQuickStyle>
 #include <QtQml>
 
 #include <algorithm>
 #include <clocale>
-#include <utility>
 
 Q_LOGGING_CATEGORY(lcApp, "kdockw.app")
-
-namespace
-{
-QList<QPointer<QQmlEngine>> s_localizedEngines;
-}
 
 // Static library resources must be explicitly initialized.
 // Must be called from global namespace, not inside kdockw namespace.
@@ -100,26 +92,12 @@ void Application::applyLanguagePreference(const QString &language)
         QLocale::setDefault(QLocale::system());
     }
 
-    // KLocalizedQmlContext re-evaluates i18n() bindings after a language
-    // change event. This also notifies existing Qt/KDE widgets without
-    // changing the process environment.
+    // KLocalizedQmlContext watches this application event and queues
+    // QQmlEngine::retranslate() after KI18n has processed the new language.
+    // Keep retranslation asynchronous: calling it here would run inside the
+    // settings control's change handler, before the QML event has unwound.
     QEvent event(QEvent::LanguageChange);
     QCoreApplication::sendEvent(QCoreApplication::instance(), &event);
-    s_localizedEngines.removeIf([](const QPointer<QQmlEngine> &engine) {
-        return engine.isNull();
-    });
-    for (const QPointer<QQmlEngine> &engine : std::as_const(s_localizedEngines)) {
-        engine->retranslate();
-    }
-}
-
-void Application::registerQmlEngine(QQmlEngine *engine)
-{
-    if (engine && std::ranges::none_of(s_localizedEngines, [engine](const QPointer<QQmlEngine> &entry) {
-            return entry == engine;
-        })) {
-        s_localizedEngines.append(engine);
-    }
 }
 
 void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *context)

@@ -3,7 +3,6 @@
 
 #include "settingswindow.h"
 
-#include "app/application.h"
 #include "kdockw.h"
 #include "multidockmanager.h"
 #include "outputordermonitor.h"
@@ -395,7 +394,6 @@ QQuickWindow *SettingsWindow::createWindow(const QString &defaultModule)
     if (!m_engine) {
         m_engine = new QQmlEngine(this);
         KLocalization::setupLocalizedContext(m_engine);
-        Application::registerQmlEngine(m_engine);
 
         // Expose this object so settings QML can call
         // SettingsWindow.isStyleAvailable() without process-global singleton

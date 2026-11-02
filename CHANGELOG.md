@@ -9,6 +9,13 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed the language selector popup so all three options are visible, and
+  applied language changes across the open settings sidebar and page. The
+  selected language continues to save immediately and is applied before QML
+  is loaded on the next launch.
+
 ### Changed
 
 - Replaced the inherited Krema roadmap and release history with an independent,

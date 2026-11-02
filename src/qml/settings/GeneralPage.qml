@@ -6,6 +6,8 @@ import org.kde.kirigamiaddons.delegates as Delegates
 import org.kde.kirigamiaddons.formcard as FormCard
 
 SettingsPage {
+    id: rootPage
+
     title: i18n("General")
     subtitle: i18n("General settings and application language")
 
@@ -19,6 +21,7 @@ SettingsPage {
     }
 
     FormCard.FormHeader {
+        objectName: "languageSectionHeader"
         title: i18n("Language")
     }
 
@@ -28,7 +31,12 @@ SettingsPage {
             objectName: "languageSelector"
             text: i18n("Language")
             description: i18n("Choose the language used by KDockW. System default follows the KDE and Qt locale settings.")
-            displayMode: FormCard.FormComboBoxDelegate.Dialog
+            displayMode: FormCard.FormComboBoxDelegate.ComboBox
+            comboBoxDelegate: Delegates.RoundedItemDelegate {
+                required property int index
+                text: rootPage.languageLabel(index)
+                highlighted: languageSelector.highlightedIndex === index
+            }
             // Keep option identity stable across KI18n retranslation. If
             // translated labels are the model itself, replacing that array
             // can reset ComboBox.currentIndex and overwrite the preference.

@@ -3,24 +3,53 @@
 
 #include <catch2/catch_session.hpp>
 
+#include "app/application.h"
 #include "kdockw.h"
 
 #include <KLocalizedString>
+#include <KLocalizedQmlContext>
 
 #include <QApplication>
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QDir>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QProcess>
 #include <QString>
+#include <QUrl>
+#include <memory>
 
 int main(int argc, char *argv[])
 {
     if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-language-preference")) {
+        KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
         QCoreApplication app(argc, argv);
+        KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
+        if (QDir(QStringLiteral(KDOCKW_TEST_LOCALE_DIR)).exists()) {
+            KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), QStringLiteral(KDOCKW_TEST_LOCALE_DIR));
+        }
         KDockWSettings settings;
         settings.load();
-        return settings.language() == QString::fromLocal8Bit(argv[2]) ? 0 : 1;
+        const QString expectedLanguage = QString::fromLocal8Bit(argv[2]);
+        if (settings.language() != expectedLanguage) {
+            return 1;
+        }
+        kdockw::Application::applyLanguagePreference(settings.language());
+
+        QQmlEngine engine;
+        KLocalization::setupLocalizedContext(&engine);
+        QQmlComponent component(&engine);
+        component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string general: i18n(\"General\") }"), QUrl());
+        if (!component.isReady()) {
+            return 2;
+        }
+        const std::unique_ptr<QObject> object(component.create());
+        if (!object) {
+            return 3;
+        }
+        const QString expectedLabel = expectedLanguage == QLatin1String("ru") ? QStringLiteral("Общие") : QStringLiteral("General");
+        return object->property("general").toString() == expectedLabel ? 0 : 4;
     }
 
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));

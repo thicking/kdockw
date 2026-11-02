@@ -15,9 +15,13 @@
 #include <QQmlEngine>
 #include <QLocale>
 #include <QProcess>
+#include <QQuickItem>
+#include <QQuickWindow>
 #include <QTemporaryDir>
 
+#include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace
 {
@@ -78,6 +82,7 @@ TEST_CASE("Language preference defaults to the system and persists without reset
     CHECK(restarted.iconSize() == 64);
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("en"));
+    QCoreApplication::processEvents();
     settings.setLanguage(QStringLiteral("en"));
     CHECK(KLocalizedString::languages().value(0).startsWith(QLatin1String("en")));
     settings.setLanguage(QStringLiteral("system"));
@@ -89,7 +94,6 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
 {
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
-    kdockw::Application::registerQmlEngine(&engine);
     QQmlComponent component(&engine);
     component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\"); property string generalLabel: i18n(\"General\") }"), QUrl());
     REQUIRE(component.isReady());
@@ -103,12 +107,14 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     CHECK(i18nc("@action global shortcut", "Toggle Dock") == QLatin1String("Toggle Dock"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
+    QCoreApplication::processEvents();
     CHECK(object->property("settingsLabel").toString() == QStringLiteral("Параметры"));
     CHECK(object->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
     CHECK(object->property("generalLabel").toString() == QStringLiteral("Общие"));
     CHECK(i18nc("@action global shortcut", "Toggle Dock") == QStringLiteral("Показать или скрыть док"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("system"));
+    QCoreApplication::processEvents();
     CHECK(object->property("settingsLabel").toString() == QLatin1String("Settings"));
     CHECK(object->property("previewLabel").toString() == QLatin1String("Window Preview"));
     CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
@@ -127,7 +133,6 @@ TEST_CASE("The General page saves the selected language when its index changes",
     Q_INIT_RESOURCE(qml);
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
-    kdockw::Application::registerQmlEngine(&engine);
     engine.rootContext()->setContextProperty(QStringLiteral("DockSettings"), &settings);
     QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/settings/GeneralPage.qml")));
     REQUIRE(component.isReady());
@@ -147,6 +152,7 @@ TEST_CASE("The General page saves the selected language when its index changes",
     // FormComboBoxDelegate changes currentIndex before emitting activated.
     // The setting must follow that actual UI property change and be flushed.
     REQUIRE(selector->setProperty("currentIndex", 2));
+    QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("en"));
     CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
     CHECK(labels->property("previewLabel").toString() == QLatin1String("Window Preview"));
@@ -172,12 +178,240 @@ TEST_CASE("The General page saves the selected language when its index changes",
     CHECK(restartedProcess.exitCode() == 0);
 
     REQUIRE(reopenedSelector->setProperty("currentIndex", 1));
+    QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("ru"));
     CHECK(labels->property("settingsLabel").toString() == QStringLiteral("Параметры"));
     CHECK(labels->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
     REQUIRE(reopenedSelector->setProperty("currentIndex", 0));
+    QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("system"));
     CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
+}
+
+TEST_CASE("The settings window language selector shows real options and retranslates the settings UI", "[settings][language][qml][regression]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+    QObject saveContext;
+    kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
+    settings.setIconSize(64);
+
+    const QLocale systemLocale = QLocale::system();
+    const QString russianDescription = QStringLiteral(
+        "Выберите язык KDockW. Системный режим использует настройки локали KDE и Qt.");
+    const QString englishDescription = QStringLiteral(
+        "Choose the language used by KDockW. System default follows the KDE and Qt locale settings.");
+    kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
+
+    Q_INIT_RESOURCE(qml);
+    QQmlEngine engine;
+    KLocalization::setupLocalizedContext(&engine);
+    engine.rootContext()->setContextProperty(QStringLiteral("DockSettings"), &settings);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/SettingsDialog.qml")));
+    REQUIRE(component.isReady());
+    QObject *dialogObject = component.createWithInitialProperties({{QStringLiteral("defaultModule"), QStringLiteral("general")}});
+    REQUIRE(dialogObject);
+    auto *window = qobject_cast<QQuickWindow *>(dialogObject);
+    REQUIRE(window);
+    window->show();
+    QCoreApplication::processEvents();
+
+    auto *pageLoader = window->findChild<QObject *>(QStringLiteral("settingsPageLoader"));
+    REQUIRE(pageLoader);
+    QObject *page = pageLoader->property("item").value<QObject *>();
+    REQUIRE(page);
+    CHECK(page->property("title").toString() == QStringLiteral("Общие"));
+    CHECK(page->property("subtitle").toString() == QStringLiteral("Основные настройки и язык приложения"));
+    CHECK(window->property("title").toString() == QStringLiteral("Параметры"));
+    QObject *sectionHeader = page->findChild<QObject *>(QStringLiteral("languageSectionHeader"));
+    REQUIRE(sectionHeader);
+    CHECK(sectionHeader->property("title").toString() == QStringLiteral("Язык"));
+
+    QObject *selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
+    REQUIRE(selector);
+    CHECK(selector->property("currentIndex").toInt() == 0);
+    CHECK(selector->property("displayText").toString() == QStringLiteral("Автоматически (системный язык)"));
+    CHECK(selector->property("text").toString() == QStringLiteral("Язык"));
+    CHECK(selector->property("description").toString() == russianDescription);
+
+    QVariantList modules = window->property("modules").toList();
+    auto generalModule = std::find_if(modules.cbegin(), modules.cend(), [](const QVariant &module) {
+        return module.toMap().value(QStringLiteral("moduleId")).toString() == QLatin1String("general");
+    });
+    REQUIRE(generalModule != modules.cend());
+    CHECK(generalModule->toMap().value(QStringLiteral("text")).toString() == QStringLiteral("Общие"));
+
+    // Open the actual FormCard ComboBox popup and inspect its three rendered
+    // delegate labels instead of setting currentIndex directly.
+    QObject *comboBox = nullptr;
+    for (QObject *child : selector->findChildren<QObject *>()) {
+        if (child->property("popup").isValid()) {
+            comboBox = child;
+            break;
+        }
+    }
+    REQUIRE(comboBox);
+    QObject *popup = comboBox->property("popup").value<QObject *>();
+    REQUIRE(popup);
+    REQUIRE(QMetaObject::invokeMethod(selector, "clicked"));
+    QCoreApplication::processEvents();
+    CHECK(popup->property("visible").toBool());
+    QObject *popupList = nullptr;
+    for (QObject *child : popup->findChildren<QObject *>()) {
+        if (child->property("count").toInt() == 3 && QByteArray(child->metaObject()->className()).contains("ListView")) {
+            popupList = child;
+            break;
+        }
+    }
+    REQUIRE(popupList);
+
+    QStringList optionLabels;
+    QList<QQuickItem *> optionItems;
+    for (int i = 0; i < 3; ++i) {
+        QQuickItem *item = nullptr;
+        REQUIRE(QMetaObject::invokeMethod(popupList, "itemAtIndex", Q_RETURN_ARG(QQuickItem *, item), Q_ARG(int, i)));
+        REQUIRE(item);
+        optionItems.append(item);
+        optionLabels.append(item->property("text").toString());
+        CHECK(item->isVisible());
+    }
+    CHECK(optionLabels.contains(QStringLiteral("Автоматически (системный язык)")));
+    CHECK(optionLabels.contains(QStringLiteral("Русский")));
+    CHECK(optionLabels.contains(QStringLiteral("English")));
+
+    // Invoke the actual rendered option delegate's clicked signal.
+    QObject *englishOption = nullptr;
+    for (QQuickItem *item : std::as_const(optionItems)) {
+        if (item->property("text").toString() == QLatin1String("English") && item->isVisible()) {
+            englishOption = item;
+            break;
+        }
+    }
+    REQUIRE(englishOption);
+    REQUIRE(QMetaObject::invokeMethod(englishOption, "clicked"));
+    QCoreApplication::processEvents();
+
+    CHECK(settings.language() == QLatin1String("en"));
+    CHECK(selector->property("displayText").toString() == QLatin1String("English"));
+    CHECK(page->property("title").toString() == QLatin1String("General"));
+    CHECK(page->property("subtitle").toString() == QLatin1String("General settings and application language"));
+    CHECK(window->property("title").toString() == QLatin1String("Settings"));
+    CHECK(sectionHeader->property("title").toString() == QLatin1String("Language"));
+    CHECK(selector->property("text").toString() == QLatin1String("Language"));
+    CHECK(selector->property("description").toString() == englishDescription);
+    modules = window->property("modules").toList();
+    generalModule = std::find_if(modules.cbegin(), modules.cend(), [](const QVariant &module) {
+        return module.toMap().value(QStringLiteral("moduleId")).toString() == QLatin1String("general");
+    });
+    REQUIRE(generalModule != modules.cend());
+    CHECK(generalModule->toMap().value(QStringLiteral("text")).toString() == QLatin1String("General"));
+    CHECK(QLocale::system() == systemLocale);
+    CHECK(i18nc("@action global shortcut", "Toggle Dock") == QLatin1String("Toggle Dock"));
+
+    QProcess restartedProcess;
+    restartedProcess.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("en")});
+    REQUIRE(restartedProcess.waitForStarted());
+    REQUIRE(restartedProcess.waitForFinished());
+    CHECK(restartedProcess.exitStatus() == QProcess::NormalExit);
+    CHECK(restartedProcess.exitCode() == 0);
+
+    auto activateOption = [&](int index) {
+        REQUIRE(QMetaObject::invokeMethod(selector, "clicked"));
+        QCoreApplication::processEvents();
+        QObject *openPopup = comboBox->property("popup").value<QObject *>();
+        REQUIRE(openPopup);
+        REQUIRE(openPopup->property("visible").toBool());
+        QObject *openList = nullptr;
+        for (QObject *child : openPopup->findChildren<QObject *>()) {
+            if (child->property("count").toInt() == 3 && QByteArray(child->metaObject()->className()).contains("ListView")) {
+                openList = child;
+                break;
+            }
+        }
+        REQUIRE(openList);
+        QQuickItem *item = nullptr;
+        REQUIRE(QMetaObject::invokeMethod(openList, "itemAtIndex", Q_RETURN_ARG(QQuickItem *, item), Q_ARG(int, index)));
+        REQUIRE(item);
+        REQUIRE(QMetaObject::invokeMethod(item, "clicked"));
+        QCoreApplication::processEvents();
+    };
+
+    activateOption(1);
+    CHECK(settings.language() == QLatin1String("ru"));
+    CHECK(selector->property("displayText").toString() == QStringLiteral("Русский"));
+    CHECK(page->property("title").toString() == QStringLiteral("Общие"));
+    CHECK(page->property("subtitle").toString() == QStringLiteral("Основные настройки и язык приложения"));
+    CHECK(window->property("title").toString() == QStringLiteral("Параметры"));
+    CHECK(sectionHeader->property("title").toString() == QStringLiteral("Язык"));
+    CHECK(selector->property("text").toString() == QStringLiteral("Язык"));
+    CHECK(selector->property("description").toString() == russianDescription);
+    modules = window->property("modules").toList();
+    generalModule = std::find_if(modules.cbegin(), modules.cend(), [](const QVariant &module) {
+        return module.toMap().value(QStringLiteral("moduleId")).toString() == QLatin1String("general");
+    });
+    REQUIRE(generalModule != modules.cend());
+    CHECK(generalModule->toMap().value(QStringLiteral("text")).toString() == QStringLiteral("Общие"));
+    CHECK(i18nc("@action global shortcut", "Toggle Dock") == QStringLiteral("Показать или скрыть док"));
+
+    activateOption(0);
+    CHECK(settings.language() == QLatin1String("system"));
+    CHECK(selector->property("displayText").toString() == QLatin1String("System default"));
+    CHECK(page->property("title").toString() == QLatin1String("General"));
+    activateOption(2);
+    CHECK(settings.language() == QLatin1String("en"));
+    CHECK(page->property("title").toString() == QLatin1String("General"));
+
+    // Recreate the page after navigation and verify persistence and language
+    // state in the actual SettingsDialog rather than in an isolated control.
+    REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("about")))));
+    QCoreApplication::processEvents();
+    CHECK(window->property("currentModule").toString() == QLatin1String("about"));
+    REQUIRE(pageLoader->property("item").value<QObject *>());
+    REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("general")))));
+    QCoreApplication::processEvents();
+    CHECK(window->property("currentModule").toString() == QLatin1String("general"));
+    page = pageLoader->property("item").value<QObject *>();
+    REQUIRE(page);
+    selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
+    REQUIRE(selector);
+    CHECK(selector->property("currentIndex").toInt() == 2);
+    CHECK(selector->property("displayText").toString() == QLatin1String("English"));
+    CHECK(page->property("title").toString() == QLatin1String("General"));
+
+    KDockWSettings restarted;
+    restarted.load();
+    CHECK(restarted.language() == QLatin1String("en"));
+    CHECK(restarted.iconSize() == 64);
+
+    window->close();
+    delete window;
+    dialogObject = component.createWithInitialProperties({{QStringLiteral("defaultModule"), QStringLiteral("general")}});
+    REQUIRE(dialogObject);
+    window = qobject_cast<QQuickWindow *>(dialogObject);
+    REQUIRE(window);
+    window->show();
+    QCoreApplication::processEvents();
+    pageLoader = window->findChild<QObject *>(QStringLiteral("settingsPageLoader"));
+    REQUIRE(pageLoader);
+    page = pageLoader->property("item").value<QObject *>();
+    REQUIRE(page);
+    selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
+    REQUIRE(selector);
+    CHECK(selector->property("currentIndex").toInt() == 2);
+    CHECK(selector->property("displayText").toString() == QLatin1String("English"));
+    CHECK(page->property("title").toString() == QLatin1String("General"));
+
+    kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
+    QCoreApplication::processEvents();
+    CHECK(page->property("title").toString() == QStringLiteral("Общие"));
+    CHECK(selector->property("text").toString() == QStringLiteral("Язык"));
+
+    kdockw::Application::applyLanguagePreference(QStringLiteral("system"));
+    QCoreApplication::processEvents();
+    CHECK(QLocale::system() == systemLocale);
+    window->close();
+    delete window;
 }
 
 TEST_CASE("KI18n falls back to the English source string when a translation is missing", "[i18n]")

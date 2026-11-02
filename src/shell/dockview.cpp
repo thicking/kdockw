@@ -3,8 +3,6 @@
 
 #include "dockview.h"
 
-#include "app/application.h"
-
 #include "config/screensettings.h"
 #include "dockvisibilitycontroller.h"
 #include "kdockw.h"
@@ -94,7 +92,6 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
 
     // Enable i18n() in QML (required for Accessible.name/description strings)
     KLocalization::setupLocalizedContext(engine());
-    Application::registerQmlEngine(engine());
 
     // Per-engine context property (supports multiple DockView instances for M8 multi-monitor)
     engine()->rootContext()->setContextProperty(QStringLiteral("DockVisibility"), m_visibilityController);
