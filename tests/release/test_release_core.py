@@ -215,21 +215,21 @@ class ContextFixture(TempDirTest):
         source = extract_archive(data, "1.2.3", work)
         banner = None
         if BANNER_PATH in files:
-            banner = f"https://media.githubusercontent.com/media/thicking/krema/v1.2.3/{BANNER_PATH}"
+            banner = f"https://media.githubusercontent.com/media/thicking/kdockw/v1.2.3/{BANNER_PATH}"
         notes = work / "notes.md"
         notes.write_text(
             release_notes(files["CHANGELOG.md"], "1.2.3", banner), encoding="utf-8"
         )
         context = {
             "schema_version": 1,
-            "repository": "thicking/krema",
+            "repository": "thicking/kdockw",
             "tag": "v1.2.3",
             "version": "1.2.3",
             "commit": COMMIT,
             "source_dir": str(source),
             "archive": str(archive),
             "sha256": sha256_bytes(data),
-            "source_url": "https://github.com/thicking/krema/releases/download/v1.2.3/kdockw-1.2.3.tar.gz",
+            "source_url": "https://github.com/thicking/kdockw/releases/download/v1.2.3/kdockw-1.2.3.tar.gz",
             "work_dir": str(work),
             "notes_path": str(notes),
             "debian_revision": "1",
@@ -697,7 +697,7 @@ def recompress(raw_tar: bytes, mtime: int) -> bytes:
 class PrepareArchiveSourceTests(TempDirTest):
     """Which source bytes ``prepare`` records for a real annotated tag."""
 
-    URL = "https://github.com/thicking/krema/releases/download/v1.2.3/kdockw-1.2.3.tar.gz"
+    URL = "https://github.com/thicking/kdockw/releases/download/v1.2.3/kdockw-1.2.3.tar.gz"
 
     def setUp(self) -> None:
         super().setUp()
@@ -733,7 +733,7 @@ class PrepareArchiveSourceTests(TempDirTest):
             mock.patch.object(release_github, "download_tag_archive", tag_dl),
         ):
             out = release.prepare(
-                "v1.2.3", output, self.repo, "thicking/krema", (PINNED,)
+                "v1.2.3", output, self.repo, "thicking/kdockw", (PINNED,)
             )
         return out, asset_dl, tag_dl
 
@@ -752,7 +752,7 @@ class PrepareArchiveSourceTests(TempDirTest):
         published = {"draft": False, "assets": [{"name": "unrelated.txt"}]}
         out, asset_dl, tag_dl = self.prepare([published], autoarchive=self.legacy)
         self.assert_recorded(out, self.legacy, "autoarchive")
-        tag_dl.assert_called_once_with("thicking/krema", "v1.2.3")
+        tag_dl.assert_called_once_with("thicking/kdockw", "v1.2.3")
         asset_dl.assert_not_called()
 
     def test_new_or_draft_only_tag_keeps_the_generated_archive(self) -> None:
@@ -804,15 +804,15 @@ class PrepareArchiveSourceTests(TempDirTest):
     def test_autoarchive_redirects_stay_on_github_archive_hosts(self) -> None:
         handler = release_github._ArchiveRedirect()
         request = urllib.request.Request(
-            release_github.tag_archive_url("thicking/krema", "v1.2.3")
+            release_github.tag_archive_url("thicking/kdockw", "v1.2.3")
         )
         for url in (
             "https://example.com/kdockw-1.2.3.tar.gz",
-            "http://codeload.github.com/thicking/krema/tar.gz/refs/tags/v1.2.3",
+            "http://codeload.github.com/thicking/kdockw/tar.gz/refs/tags/v1.2.3",
         ):
             with self.subTest(url=url), self.assertRaises(ReleaseError):
                 handler.redirect_request(request, None, 302, "Found", {}, url)
-        allowed = "https://codeload.github.com/thicking/krema/tar.gz/refs/tags/v1.2.3"
+        allowed = "https://codeload.github.com/thicking/kdockw/tar.gz/refs/tags/v1.2.3"
         followed = handler.redirect_request(request, None, 302, "Found", {}, allowed)
         self.assertEqual(followed.full_url, allowed)
 
@@ -880,7 +880,7 @@ class GithubPublishTests(ContextFixture):
                     "api",
                     "--method",
                     "PATCH",
-                    "repos/thicking/krema/releases/7",
+                    "repos/thicking/kdockw/releases/7",
                     "-F",
                     "draft=false",
                 ]

@@ -37,7 +37,7 @@ from typing import Any, Literal, overload
 
 SCHEMA_VERSION = 1
 PROJECT = "kdockw"
-USER_AGENT = "kdockw-release (https://github.com/thicking/krema)"
+USER_AGENT = "kdockw-release (https://github.com/thicking/kdockw)"
 
 BANNER_PATH = "branding/social/release-banner.png"
 

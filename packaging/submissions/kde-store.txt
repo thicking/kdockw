@@ -21,7 +21,7 @@ https://github.com/{{repository}}/blob/{{tag}}/README.md#contributing
 
 Project links:
 
-- Homepage: https://github.com/thicking/krema/
-- Issue tracker: https://github.com/thicking/krema/issues
-- Source repository: https://github.com/thicking/krema
+- Homepage: https://github.com/thicking/kdockw/
+- Issue tracker: https://github.com/thicking/kdockw/issues
+- Source repository: https://github.com/thicking/kdockw
 

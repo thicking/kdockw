@@ -111,14 +111,14 @@ class ReleaseFixture(unittest.TestCase):
         archive = self.tmp / f"kdockw-{version}.tar.gz"
         archive.write_bytes(payload)
         return ReleaseContext(
-            repository="thicking/krema",
+            repository="thicking/kdockw",
             tag=f"v{version}",
             version=version,
             commit=COMMIT,
             source_dir=source,
             archive=archive,
             sha256=sha256 or hashlib.sha256(payload).hexdigest(),
-            source_url=asset_url("thicking/krema", f"v{version}", version),
+            source_url=asset_url("thicking/kdockw", f"v{version}", version),
             work_dir=self.tmp / "work",
             notes_path=self.tmp / "notes.md",
             debian_revision="1",
@@ -172,7 +172,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
             encoding="utf-8"
         )
         self.assertIn(
-            "https://github.com/thicking/krema/blob/v9.8.7/README.md#build--run",
+            "https://github.com/thicking/kdockw/blob/v9.8.7/README.md#build--run",
             description,
         )
         self.assertNotIn("v0.10.0", description)
@@ -342,7 +342,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
     staging, and PNG validation run unchanged.
     """
 
-    MEDIA_URL = f"https://media.githubusercontent.com/media/thicking/krema/{COMMIT}/"
+    MEDIA_URL = f"https://media.githubusercontent.com/media/thicking/kdockw/{COMMIT}/"
 
     def pointerize(self, root: Path) -> dict[str, bytes]:
         """Replace every template media file under ``root`` with its LFS pointer."""

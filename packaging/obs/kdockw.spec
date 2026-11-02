@@ -7,7 +7,7 @@ Release:        1%{?dist}
 Summary:        A lightweight dock for KDE Plasma 6
 
 License:        GPL-3.0-or-later AND MIT-CMU
-URL:            https://github.com/thicking/krema/
+URL:            https://github.com/thicking/kdockw/
 Source0:        https://github.com/isac322/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:  cmake >= 3.22

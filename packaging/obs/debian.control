@@ -34,7 +34,7 @@ Build-Depends: debhelper-compat (= 13),
                libkpipewire-dev,
                libwayland-dev (>= 1.22)
 Standards-Version: 4.7.0
-Homepage: https://github.com/thicking/krema/
+Homepage: https://github.com/thicking/kdockw/
 
 Package: kdockw
 Architecture: any

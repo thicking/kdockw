@@ -105,7 +105,7 @@ Before any public announcement:
 - [x] Screenshots in metainfo.xml (for KDE Discover)
 
 ### Website & Social
-- [x] Dedicated website (https://github.com/thicking/krema/, deployed via GitHub Pages)
+- [x] Dedicated website (https://github.com/thicking/kdockw/, deployed via GitHub Pages)
 - [x] OpenGraph / social media preview images (`branding/social/`)
 
 ### Future

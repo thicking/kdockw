@@ -17,12 +17,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import release_rpm as rpm  # noqa: E402
 from release_common import ReleaseError  # noqa: E402
 
-CLONE = "https://github.com/thicking/krema.git"
+CLONE = "https://github.com/thicking/kdockw.git"
 
 SERVICE = """<services>
   <service name="tar_scm">
     <param name="scm">git</param>
-    <param name="url">https://github.com/thicking/krema.git</param>
+    <param name="url">https://github.com/thicking/kdockw.git</param>
     <param name="revision">master</param>
     <param name="versionformat">@PARENT_TAG@</param>
   </service>

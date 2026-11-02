@@ -75,7 +75,7 @@ LAUNCHPAD_BRANDING = (
     ("project-logo", "logo_link"),
     ("project-brand", "brand_link"),
 )
-EXPECTED_HOMEPAGE = "https://github.com/thicking/krema/"
+EXPECTED_HOMEPAGE = "https://github.com/thicking/kdockw/"
 CATALOG_PULLS = {
     "awesome-kde": ("francoism90/awesome-kde", 24),
     "awesome-wayland": ("rcalixte/awesome-wayland", 109),

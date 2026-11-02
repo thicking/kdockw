@@ -1,7 +1,7 @@
 <services>
   <service name="tar_scm">
     <param name="scm">git</param>
-    <param name="url">https://github.com/thicking/krema.git</param>
+    <param name="url">https://github.com/thicking/kdockw.git</param>
     <param name="revision">master</param>
     <param name="versionformat">@PARENT_TAG@</param>
     <param name="versionrewrite-pattern">v(.*)</param>

@@ -24,7 +24,7 @@ Read the current Flathub requirements before writing any packaging files:
 
 Those pages are the authority for current naming, licensing, account, review, namespace, metadata, and submission requirements. A human maintainer must author the manifest and any pull request text under the current Flathub policy. This packet deliberately stops before that work.
 
-The project homepage to review is `https://github.com/thicking/krema/`. Confirm its HTTPS reachability and the final app ID manually when the human-authored manifest is prepared. No DNS, website, or account change is part of this packet.
+The project homepage to review is `https://github.com/thicking/kdockw/`. Confirm its HTTPS reachability and the final app ID manually when the human-authored manifest is prepared. No DNS, website, or account change is part of this packet.
 
 ## Source and dependency guidance
 

@@ -93,7 +93,7 @@ concurrency:
 jobs:
   resolve:
     name: Resolve images
-    if: github.repository == 'thicking/krema'
+    if: github.repository == 'thicking/kdockw'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -315,7 +315,7 @@ jobs:
     # After the publish jobs, whatever their result: a failed rebuild keeps
     # the previous version tagged, and current refs are protected below.
     if: >-
-      always() && github.repository == 'thicking/krema'
+      always() && github.repository == 'thicking/kdockw'
       && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:

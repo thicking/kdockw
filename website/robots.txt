@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://thicking.github.io/krema/sitemap.xml
+Sitemap: https://thicking.github.io/kdockw/sitemap.xml

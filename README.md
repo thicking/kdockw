@@ -30,7 +30,7 @@ KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor
 
 | Area | KDockW behavior |
 |---|---|
-| Russian localization | KI18n catalog selected through the system locale. |
+| Interface language | KI18n language selector: follow the system locale, choose Russian, or choose English; changes apply immediately. |
 | Launch feedback | Launch-icon bounce ends after at most five complete cycles and can finish early after a window appears. |
 | Plasma task-manager drag and drop | Reads the task launch URL MIME type while keeping `.desktop` launcher drops supported. |
 | External file drag hover | Activates an existing app window after a configurable delay without consuming the file drag. |
@@ -111,7 +111,7 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 KDockW source builds are available; KDockW-specific binary packages have not yet been published. On TUXEDO OS, follow the [build guide](docs/building/tuxedo-os.md) for the current Qt/KDE package names and release build.
 
 ```bash
-git clone --branch main --single-branch https://github.com/thicking/krema.git kdockw
+git clone --branch main --single-branch https://github.com/thicking/kdockw.git kdockw
 cd kdockw
 cmake --preset release -DCMAKE_INSTALL_PREFIX=/usr/local
 cmake --build --preset release -j 4
@@ -120,11 +120,13 @@ sudo cmake --install build/release
 
 The executable is installed as `/usr/local/bin/kdockw`; its desktop ID declares the KWin Wayland interfaces required by previews and activation. For an existing installation, read the [manual migration and rollback guide](docs/migration/krema-to-kdockw.md) before switching autostart or a user service. Installing KDockW does not remove or alter Krema.
 
-To update the checkout after the repository is renamed, pull the project branch and rebuild. Before then, the existing URL above continues to reach the current repository. CMake's configured build provides an `uninstall` target; otherwise remove only paths listed in that build's `install_manifest.txt`.
+To update the checkout, pull from `https://github.com/thicking/kdockw` and rebuild. CMake's configured build provides an `uninstall` target; otherwise remove only paths listed in that build's `install_manifest.txt`.
+
+KDockW follows the system language by default. Open **Settings → General → Language** to choose **System default**, **Русский**, or **English**. The selected language is saved in `kdockwrc` and the KDockW interface updates immediately; this setting does not change Plasma's language or process-wide locale environment.
 
 ## Known Limitations
 
-- The Russian catalog builds with KI18n. A real Wayland-session check is still needed after the new desktop ID is installed to confirm KWin grants the declared interfaces.
+- The Russian catalog builds with KI18n. On systems without the Russian catalog, KI18n falls back to the English source strings. A real Wayland-session check is still needed after the new desktop ID is installed to confirm KWin grants the declared interfaces.
 - The no-first-frame CPU-buffer retry is experimental. It is not a confirmed general fix for black previews or cross-GPU DMA-BUF import.
 - File-drag activation was manually verified on Plasma 6.6.6 / Wayland with multiple files from Dolphin; the existing `.desktop` pinning path remains supported. Recheck after installing the renamed desktop entry.
 - TaskManager diagnostics add evidence about model rows and roles but do not change KDE's task filtering.

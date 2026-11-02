@@ -57,7 +57,7 @@ from release_common import (  # noqa: E402
     source_root_name,
 )
 
-DEFAULT_REPOSITORY = "thicking/krema"
+DEFAULT_REPOSITORY = "thicking/kdockw"
 PINNED_SIGNERS = ("AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9",)
 CHANNELS = ("github", "aur", "obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"

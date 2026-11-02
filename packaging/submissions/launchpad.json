@@ -10,7 +10,7 @@
     "display_name": "KDockW",
     "name": "kdockw",
     "summary": "A lightweight dock for KDE Plasma 6 and spiritual successor to Latte Dock.",
-    "home_page_url": "https://github.com/thicking/krema/",
+    "home_page_url": "https://github.com/thicking/kdockw/",
     "description": "KDockW is a lightweight, Wayland-only dock for KDE Plasma 6 and a spiritual successor to Latte Dock. It provides parabolic hover zoom with an optional in-place zoom mode, plus PipeWire window previews for running applications.\n\nThe dock supports primary-screen, all-screens, and follow-active-screen multi-monitor modes, with per-screen settings and virtual desktop filtering. KDockW also provides notification badges, task progress indicators, grouped-window cycling, and configurable dock behavior.\n\nKDockW integrates with Plasma through Qt 6, KDE Frameworks 6, and Kirigami. It includes keyboard navigation with AT-SPI screen reader support and is licensed under GPL-3.0-or-later.",
     "licenses": [
       "GNU GPL v3"
@@ -54,7 +54,7 @@
       "form_label": "Homepage URL",
       "form_field": "field.homepageurl",
       "api_key": "home_page_url",
-      "value": "https://github.com/thicking/krema/",
+      "value": "https://github.com/thicking/kdockw/",
       "verification_status": "historical live-observed read-only in the authenticated pre-registration form; optional"
     },
     "information_type": {
@@ -123,11 +123,11 @@
       "verification_status": "historical live-observed in the authenticated pre-registration form"
     },
     "code": {
-      "source_url": "https://github.com/thicking/krema",
+      "source_url": "https://github.com/thicking/kdockw",
       "mapping": "Upstream GitHub source repository; this packet makes no claim that a Launchpad code import is configured."
     },
     "bugtracker": {
-      "source_url": "https://github.com/thicking/krema/issues",
+      "source_url": "https://github.com/thicking/kdockw/issues",
       "mapping": "Upstream GitHub Issues tracker; this packet makes no claim that a separate Launchpad bugtracker configuration is enabled."
     }
   },
@@ -228,8 +228,8 @@
     "https://launchpad.net/projects/+new",
     "https://api.launchpad.net/1.0/~isac322/+archive/ubuntu/kdockw",
     "https://launchpad.net/~isac322/+archive/ubuntu/kdockw",
-    "https://github.com/thicking/krema/releases/tag/v0.10.0",
-    "https://github.com/thicking/krema/commit/a964a908ecb8904c079a8148403bebaaa427a821"
+    "https://github.com/thicking/kdockw/releases/tag/v0.10.0",
+    "https://github.com/thicking/kdockw/commit/a964a908ecb8904c079a8148403bebaaa427a821"
   ],
   "limitations": [
     "The upstream Launchpad project KDockW is now registered and publicly verified at https://launchpad.net/kdockw with owner isac322, Public information type, and GNU GPL v3.",

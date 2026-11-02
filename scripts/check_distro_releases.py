@@ -61,7 +61,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-USER_AGENT = "kdockw-distro-release-watch (https://github.com/thicking/krema)"
+USER_AGENT = "kdockw-distro-release-watch (https://github.com/thicking/kdockw)"
 HTTP_TIMEOUT = 20  # seconds
 
 EOL_API = "https://endoflife.date/api/{distro}.json"
@@ -86,7 +86,7 @@ LABEL_DESCRIPTION = (
 
 POLICY_LINK = (
     "See the [Distribution Support Policy]"
-    "(https://github.com/thicking/krema/blob/master/AGENTS.md"
+    "(https://github.com/thicking/kdockw/blob/master/AGENTS.md"
     "#distribution-support-policy) in AGENTS.md."
 )
 
@@ -174,7 +174,7 @@ def tracked_versions(repo_names: set[str], prefix: str) -> set[tuple[int, ...]]:
 
 
 def fetch_copr_tracked() -> set[tuple[int, ...]] | None:
-    """Fedora versions with a chroot enabled on the thicking/krema project."""
+    """Fedora versions with a chroot enabled on the thicking/krema COPR project."""
     data = fetch_json(COPR_PROJECT_API, "COPR project info")
     if data is None:
         return None

@@ -148,7 +148,7 @@
       else setState("pending");
       const abort = new AbortController();
       const timer = window.setTimeout(() => abort.abort(), 8000);
-      fetch("https://api.github.com/repos/thicking/krema", { signal: abort.signal })
+      fetch("https://api.github.com/repos/thicking/kdockw", { signal: abort.signal })
         .then((res) => {
           if (res.ok) return res.json();
           const reset = Number(res.headers.get("x-ratelimit-reset")) * 1000;

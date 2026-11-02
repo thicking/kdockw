@@ -6,7 +6,7 @@
 // Runs before pagedock.js so elements it creates with data-dodge are seen by the dock.
 (() => {
   "use strict";
-  const REPO = "thicking/krema";
+  const REPO = "thicking/kdockw";
   const SNOOZE_DAYS = 14;
 
   const reduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;

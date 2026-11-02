@@ -32,13 +32,13 @@ namespaces remain unchanged. They are protocol contracts, not product labels.
 
 The preceding implementation commits remain available in Git. For example:
 
-- [Russian catalog](https://github.com/thicking/krema/commit/732e57b)
-- [Bounded launch bounce](https://github.com/thicking/krema/commit/c804cf0)
-- [Plasma task-manager URL drops](https://github.com/thicking/krema/commit/9d61ea3)
-- [TaskManager diagnostics](https://github.com/thicking/krema/commit/0907fe7)
-- [PipeWire diagnostics](https://github.com/thicking/krema/commit/b463773)
-- [NVIDIA and TUXEDO OS guides](https://github.com/thicking/krema/commit/caa7ac1)
-- [Manual Wayland file-drag acceptance record](https://github.com/thicking/krema/commit/34d142d)
+- [Russian catalog](https://github.com/thicking/kdockw/commit/732e57b)
+- [Bounded launch bounce](https://github.com/thicking/kdockw/commit/c804cf0)
+- [Plasma task-manager URL drops](https://github.com/thicking/kdockw/commit/9d61ea3)
+- [TaskManager diagnostics](https://github.com/thicking/kdockw/commit/0907fe7)
+- [PipeWire diagnostics](https://github.com/thicking/kdockw/commit/b463773)
+- [NVIDIA and TUXEDO OS guides](https://github.com/thicking/kdockw/commit/caa7ac1)
+- [Manual Wayland file-drag acceptance record](https://github.com/thicking/kdockw/commit/34d142d)
 
 KDockW is based on the original project [Krema](https://github.com/isac322/krema),
 originally created by Byeonghoon Yoo. It develops independently; no automatic
