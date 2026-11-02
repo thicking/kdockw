@@ -108,8 +108,8 @@ modules:
       # The unchanged v0.9.0 release has no icon assets. Supply the official
       # post-release brand icon as separately pinned packaging metadata.
       - type: file
-        url: https://raw.githubusercontent.com/thicking/krema/84184ca07e226a96ef468d33d4a3afc16a1cc533/branding/logo/kdockw-icon.svg
-        sha256: 65f419d4d6ee5534a66ec141bf3810bf91ca3296db1ee5603164035735966782
+        url: https://raw.githubusercontent.com/thicking/krema/b82b89617c95a422613f3a4e56d5a657833f8d6a/branding/logo/kdockw-icon.svg
+        sha256: 373f6900ad15739fc4bc0961709e9e7617adb0e2695f4c5b81ff0924fe6f33fe
         dest-filename: kdockw.svg
       - type: patch
         path: metainfo.patch
