@@ -1,6 +1,8 @@
 # KDockW
 
-<p align="center"><img src="branding/logo/kdockw-icon.svg" alt="KDockW icon: a K-shaped mark over a zooming dock" width="128" height="128"></p>
+<p align="center"><img src="branding/logo/kdockw-logo.png" alt="KDockW logo with its app icon and dock illustration" width="768"></p>
+
+<p align="center"><strong>KDockW — KDE Dock for Wayland</strong></p>
 
 <p align="center"><strong>A native Wayland dock for KDE Plasma 6.</strong></p>
 
@@ -22,7 +24,7 @@
   <a href="docs/migration/krema-to-kdockw.md">Migration from Krema</a>
 </p>
 
-KDockW is an independent KDE Plasma 6 dock for Wayland, written in C++23 with Qt 6 and KDE Frameworks 6. It provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.
+KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor to Latte Dock. Written in C++23 with Qt 6 and KDE Frameworks 6, it provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.
 
 ## Project Highlights
 

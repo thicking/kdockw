@@ -117,8 +117,8 @@ brand:
     caramel: "#D69A5E"    # accent: tiles, indicator dot
     neutrals: ["#110C09", "#231A14", "#CDBFAE", "#A89684", "#A8682F"]  # night, ink-2, bone-dim, muted, deep caramel (website/css/site.css)
   assets:
-    icon: branding/logo/kdockw-icon.svg
-    icon_small: branding/logo/kdockw-icon-small.svg  # 16/22/24 px
+    icon: branding/logo/kdockw-icon-source.png
+    icon_small: branding/logo/kdockw-app-icons/16-apps-com.thicking.kdockw.png  # 16/22/24 px
     wordmark_light: branding/logo/kdockw-wordmark.svg
     wordmark_dark: branding/logo/kdockw-wordmark-dark.svg
     lockup_light: branding/logo/kdockw-lockup.svg

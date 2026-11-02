@@ -1,6 +1,8 @@
 # KDockW
 
-<p align="center"><img src="branding/logo/kdockw-icon.svg" alt="Значок KDockW: буква K над увеличивающимися значками дока" width="128" height="128"></p>
+<p align="center"><img src="branding/logo/kdockw-logo.png" alt="Логотип KDockW: значок приложения и док-панель" width="768"></p>
+
+<p align="center"><strong>KDockW — KDE Dock for Wayland</strong></p>
 
 <p align="center"><strong>Нативная док-панель для KDE Plasma 6 и Wayland.</strong></p>
 
@@ -23,7 +25,7 @@
   <a href="README.md">English</a>
 </p>
 
-KDockW — независимая док-панель для KDE Plasma 6 и Wayland. Проект написан на C++23 с использованием Qt 6 и KDE Frameworks 6. Он поддерживает параболическое увеличение значков, предпросмотр окон, группировку приложений, анимацию запуска и интеграцию с Plasma.
+KDockW — независимая док-панель для KDE Plasma 6 и Wayland, духовный преемник Latte Dock. Проект написан на C++23 с использованием Qt 6 и KDE Frameworks 6. Он поддерживает параболическое увеличение значков, предпросмотр окон, группировку приложений, анимацию запуска и интеграцию с Plasma.
 
 ## Возможности проекта
 

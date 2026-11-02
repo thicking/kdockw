@@ -154,15 +154,15 @@ install(
 include(ECMInstallIcons)
 ecm_install_icons(
     ICONS
-        icons/16-apps-com.thicking.kdockw.png
-        icons/22-apps-com.thicking.kdockw.png
-        icons/24-apps-com.thicking.kdockw.png
-        icons/32-apps-com.thicking.kdockw.png
-        icons/48-apps-com.thicking.kdockw.png
-        icons/64-apps-com.thicking.kdockw.png
-        icons/128-apps-com.thicking.kdockw.png
-        icons/256-apps-com.thicking.kdockw.png
-        icons/sc-apps-com.thicking.kdockw.svg
+        ../branding/logo/kdockw-app-icons/16-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/22-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/24-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/32-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/48-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/64-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/128-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/256-apps-com.thicking.kdockw.png
+        ../branding/logo/kdockw-app-icons/512-apps-com.thicking.kdockw.png
     DESTINATION ${KDE_INSTALL_ICONDIR}
     THEME hicolor
 )

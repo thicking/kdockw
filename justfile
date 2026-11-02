@@ -63,11 +63,10 @@ dev-desktop:
     sed -e 's|@KDE_INSTALL_FULL_BINDIR@/kdockw|'"$PWD"'/build/dev/bin/kdockw|' \
         -e '/^NoDisplay=/d' \
         src/com.thicking.kdockw.desktop.in > ~/.local/share/applications/com.thicking.kdockw.desktop
-    for png in src/icons/*-apps-com.thicking.kdockw.png; do
+    for png in branding/logo/kdockw-app-icons/*-apps-com.thicking.kdockw.png; do
         size=$(basename "$png" | cut -d- -f1)
         install -Dm644 "$png" ~/.local/share/icons/hicolor/${size}x${size}/apps/com.thicking.kdockw.png
     done
-    install -Dm644 src/icons/sc-apps-com.thicking.kdockw.svg ~/.local/share/icons/hicolor/scalable/apps/com.thicking.kdockw.svg
     kbuildsycoca6 --noincremental
     echo "Installed dev launcher and icons under ~/.local/share"
 
@@ -77,7 +76,7 @@ dev-desktop-clean:
     set -euo pipefail
     rm -f ~/.local/share/applications/com.thicking.kdockw.desktop \
         ~/.local/share/icons/hicolor/scalable/apps/com.thicking.kdockw.svg
-    for png in src/icons/*-apps-com.thicking.kdockw.png; do
+    for png in branding/logo/kdockw-app-icons/*-apps-com.thicking.kdockw.png; do
         size=$(basename "$png" | cut -d- -f1)
         rm -f ~/.local/share/icons/hicolor/${size}x${size}/apps/com.thicking.kdockw.png
     done

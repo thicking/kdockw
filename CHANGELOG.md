@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Updated the installed KDockW application icon to the supplied artwork at nine hicolor sizes, while retaining the earlier vector and PNG assets.
 - Rebranded the application as KDockW with its own executable, desktop ID, settings file, translation domain, QML namespace, app icon, and optional PRIME-clean systemd user service; existing Krema settings can be copied and rolled back with explicit migration scripts.
 
 ### Added
