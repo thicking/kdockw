@@ -9,35 +9,45 @@
 namespace kdockw
 {
 
-void applyBackgroundToWindow(QWindow *window, BackgroundStyleType type, const QRegion &region)
+BackgroundEffectPlan backgroundEffectPlan(BackgroundStyleType type, const QRegion &region)
+{
+    return {
+        .blurEnabled = type == BackgroundStyleType::PanelInherit || type == BackgroundStyleType::Acrylic,
+        .contrastEnabled = type == BackgroundStyleType::PanelInherit,
+        .region = region,
+    };
+}
+
+BackgroundEffectTransition backgroundEffectTransition(const BackgroundEffectPlan &plan, const BackgroundEffectPlan &previousPlan)
+{
+    return {
+        .setBlurRegion = plan.blurEnabled,
+        .disableBlur = !plan.blurEnabled && previousPlan.blurEnabled,
+        .setContrastRegion = plan.contrastEnabled,
+        .disableContrast = !plan.contrastEnabled && previousPlan.contrastEnabled,
+    };
+}
+
+void applyBackgroundToWindow(QWindow *window, const BackgroundEffectPlan &plan, const BackgroundEffectPlan &previousPlan)
 {
     if (!window) {
         return;
     }
 
-    // Always remove previous effects first
-    removeBackgroundFromWindow(window);
+    const BackgroundEffectTransition transition = backgroundEffectTransition(plan, previousPlan);
+    if (transition.setBlurRegion && KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind)) {
+        // KWindowEffects replaces the previous region when called enabled=true.
+        // Keep blur active while zoom changes the panel bounds; toggling it off
+        // first creates a visible unblurred frame on every geometry update.
+        KWindowEffects::enableBlurBehind(window, true, plan.region);
+    } else if (transition.disableBlur) {
+        KWindowEffects::enableBlurBehind(window, false);
+    }
 
-    // PanelInherit: compositor handles blur + contrast. QML provides Header color with opacity.
-    // All other styles: no compositor effects — QML handles the background directly.
-    switch (type) {
-    case BackgroundStyleType::PanelInherit:
-        if (KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind)) {
-            KWindowEffects::enableBlurBehind(window, true, region);
-            KWindowEffects::enableBackgroundContrast(window, true, 1.0, 1.0, 1.0, region);
-        }
-        break;
-
-    case BackgroundStyleType::Acrylic:
-        if (KWindowEffects::isEffectAvailable(KWindowEffects::BlurBehind)) {
-            KWindowEffects::enableBlurBehind(window, true, region);
-        }
-        break;
-
-    case BackgroundStyleType::Tinted:
-    case BackgroundStyleType::Transparent:
-        // No compositor effects — QML handles the background directly.
-        break;
+    if (transition.setContrastRegion && KWindowEffects::isEffectAvailable(KWindowEffects::BackgroundContrast)) {
+        KWindowEffects::enableBackgroundContrast(window, true, 1.0, 1.0, 1.0, plan.region);
+    } else if (transition.disableContrast) {
+        KWindowEffects::enableBackgroundContrast(window, false);
     }
 }
 

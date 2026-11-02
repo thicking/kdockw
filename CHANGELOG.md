@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Kept compositor blur enabled while the dock background region follows parabolic zoom, preventing a clear frame between repeated blur disable/enable requests.
 - External drag activation preferences now save immediately and remain in effect after restarting KDockW.
 
 - Stopped launch icons from bouncing after five cycles, while keeping launch tracking active until the app opened a window or the launch timed out.

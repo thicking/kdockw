@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QColor>
+#include <QRegion>
 #include <QWindow>
 
 namespace kdockw
@@ -16,10 +17,34 @@ enum class BackgroundStyleType : int {
     Acrylic = 3,
 };
 
-/// Apply compositor effects (blur, contrast) to @p window for the given style.
-/// Removes any previous effects first.
-/// @param region The region to apply blur/contrast to. Empty = whole window (avoid!).
-void applyBackgroundToWindow(QWindow *window, BackgroundStyleType type, const QRegion &region = QRegion());
+/// The compositor effects that must remain enabled while a style's region moves.
+struct BackgroundEffectPlan {
+    bool blurEnabled = false;
+    bool contrastEnabled = false;
+    QRegion region;
+};
+
+struct BackgroundEffectTransition {
+    bool setBlurRegion = false;
+    bool disableBlur = false;
+    bool setContrastRegion = false;
+    bool disableContrast = false;
+};
+
+/// Describe the compositor state for a style and its current visible region.
+BackgroundEffectPlan backgroundEffectPlan(BackgroundStyleType type, const QRegion &region);
+
+/// Describe the effect calls needed to transition from one plan to another.
+BackgroundEffectTransition backgroundEffectTransition(const BackgroundEffectPlan &plan,
+                                                       const BackgroundEffectPlan &previousPlan);
+
+/// Apply compositor effects (blur, contrast) to @p window for the current plan.
+/// Updates the current effects in place; an active effect is never disabled as
+/// an intermediate step when only its region changes.
+/// @param plan The desired effects and region. An empty region means whole window (avoid!).
+void applyBackgroundToWindow(QWindow *window,
+                             const BackgroundEffectPlan &plan,
+                             const BackgroundEffectPlan &previousPlan);
 
 /// Remove all compositor effects (blur, contrast) from @p window.
 void removeBackgroundFromWindow(QWindow *window);

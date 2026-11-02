@@ -9,6 +9,7 @@ add_executable(kdockw_unit_tests
     test_input_region.cpp
     test_output_order.cpp
     test_background_opacity.cpp
+    test_background_effects.cpp
     test_settings_autosave.cpp
     test_settings_migration.cpp
     test_taskiconprovider.cpp

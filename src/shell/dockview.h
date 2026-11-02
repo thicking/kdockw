@@ -147,6 +147,7 @@ private Q_SLOTS:
 private:
     std::unique_ptr<DockPlatform> m_platform;
     KDockWSettings *m_settings = nullptr;
+    BackgroundEffectPlan m_backgroundEffectPlan;
     ScreenSettings *m_screenSettings = nullptr;
     DockVisibilityController *m_visibilityController = nullptr;
     std::unique_ptr<PointerFocusTracker> m_pointerFocusTracker;

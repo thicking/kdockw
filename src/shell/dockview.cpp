@@ -329,6 +329,7 @@ void DockView::handleScreenChanged(QScreen *newScreen)
     // Force surface re-creation: the compositor destroys the layer-shell surface
     // when the associated output is removed. hide()+show() creates a fresh surface.
     hide();
+    m_backgroundEffectPlan = {};
     updateSize();
     applyBackgroundStyle();
     show();
@@ -367,6 +368,7 @@ void DockView::handleScreenLockChanged(bool active)
     // Surface may have been destroyed during DPMS-off while locked.
     // hide()+show() ensures a fresh surface on the current screen.
     hide();
+    m_backgroundEffectPlan = {};
     updateSize();
     applyBackgroundStyle();
     show();
@@ -384,6 +386,7 @@ void DockView::applyBackgroundStyle()
     // Otherwise KWindowEffects creates a visible frosted layer even with transparent QML color.
     if (styleUsesBlur(type) && qFuzzyIsNull(opacity)) {
         removeBackgroundFromWindow(this);
+        m_backgroundEffectPlan = {};
         Q_EMIT backgroundColorChanged();
         Q_EMIT backgroundStyleTypeChanged();
         return;
@@ -413,8 +416,11 @@ void DockView::applyBackgroundStyle()
     // keep compositor effects off; panelRectChanged re-applies them.
     if (region.isEmpty() && styleUsesBlur(type)) {
         removeBackgroundFromWindow(this);
+        m_backgroundEffectPlan = {};
     } else {
-        applyBackgroundToWindow(this, type, region);
+        const BackgroundEffectPlan plan = backgroundEffectPlan(type, region);
+        applyBackgroundToWindow(this, plan, m_backgroundEffectPlan);
+        m_backgroundEffectPlan = plan;
     }
     Q_EMIT backgroundColorChanged();
     Q_EMIT backgroundStyleTypeChanged();
