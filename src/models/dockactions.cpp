@@ -17,6 +17,11 @@ Q_DECLARE_LOGGING_CATEGORY(lcModel)
 namespace krema
 {
 
+namespace
+{
+int entryChild(TaskManager::TasksModel *tasksModel, int index, int childCount);
+}
+
 DockActions::DockActions(DockModel *model, QObject *parent)
     : QObject(parent)
     , m_model(model)
@@ -50,6 +55,46 @@ void DockActions::activate(int index)
     } else if (isLauncher) {
         tasksModel->requestNewInstance(idx);
         Q_EMIT taskLaunching(index);
+    }
+}
+
+void DockActions::activateWindowForExternalDrag(int index)
+{
+    auto *tasksModel = m_model->tasksModel();
+    const QModelIndex idx = tasksModel->index(index, 0);
+    if (!idx.isValid() || !idx.data(TaskManager::AbstractTasksModel::IsWindow).toBool()) {
+        return;
+    }
+
+    if (!idx.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
+        tasksModel->requestActivate(idx);
+        return;
+    }
+
+    const int childCount = tasksModel->rowCount(idx);
+    if (childCount <= 0) {
+        return;
+    }
+
+    // Drag hover raises the current/recent window without cycling the group
+    // or starting another instance.
+    int target = -1;
+    for (int child = 0; child < childCount; ++child) {
+        const QModelIndex childIndex = tasksModel->makeModelIndex(index, child);
+        if (childIndex.isValid() && childIndex.data(TaskManager::AbstractTasksModel::IsActive).toBool()) {
+            target = child;
+            break;
+        }
+    }
+    if (target < 0) {
+        target = entryChild(tasksModel, index, childCount);
+    }
+    if (target >= 0 && target < childCount) {
+        const QModelIndex childIndex = tasksModel->makeModelIndex(index, target);
+        if (childIndex.isValid() && childIndex.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
+            && !childIndex.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
+            tasksModel->requestActivate(childIndex);
+        }
     }
 }
 

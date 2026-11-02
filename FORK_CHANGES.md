@@ -16,7 +16,7 @@ listed below. Upstream `master` has advanced independently since that base.
   other locales on the existing English source strings.
 - **Components:** `src/po/ru/krema.po`, `src/CMakeLists.txt`, `src/main.cpp`,
   application metadata, and QML strings.
-- **Verification:** `msgfmt --check --statistics` reported 252 translated
+- **Verification:** `msgfmt --check --statistics` reported 256 translated
   messages; the catalog compiled to the release build tree. The Qt Quick test
   suites passed (216 tests in the recorded run).
 - **Limitations:** Locale selection in a live Plasma session was not repeated
@@ -51,6 +51,27 @@ listed below. Upstream `master` has advanced independently since that base.
   Wayland Plasma session during this audit; available MIME data depends on the
   drag source.
 - **Commit:** [`9d61ea3`](https://github.com/thicking/krema/commit/9d61ea3).
+
+### Activate running windows while hovering external file drags
+
+- **Change:** Added a default-on Behavior setting that requests activation of an
+  existing task after a configurable 300–1500 ms hover delay (700 ms default).
+  The timer is canceled on exit, target change, drop, or drag cancellation. The
+  hover path does not read or forward file URLs. Existing handling when files
+  are actually dropped on the dock is unchanged. Grouped tasks target the
+  active or most recently used child; a launcher with no window is ignored.
+- **Reason:** Let users carry a file drag across the dock to a window without
+  releasing it or making Krema open the file on hover.
+- **Components:** `src/config/krema.kcfg`, `src/models/dockactions.*`,
+  `src/qml/main.qml`, `src/qml/settings/BehaviorPage.qml`, KI18n catalog,
+  and QML/KWin regression tests.
+- **Verification:** The release build passed. All five QML test suites passed,
+  including delay, repeated hover, target change, cancellation, multi-file
+  payload, and no-file-data cases. The KWin TaskManager suite passed 12 test
+  cases (244 assertions), including single-window, grouped-window, and
+  launcher-only activation checks. KI18n compiled with 256 translated
+  messages. A real Dolphin-to-browser drag still requires acceptance in the
+  user's Wayland session; that live drag was not exercised here.
 
 ### TaskManager diagnostics
 

@@ -29,6 +29,9 @@ public:
     /// group of windows, cycle to the group's next window.
     Q_INVOKABLE void activate(int index);
 
+    /// Activate an existing window for external-drag hover; never launches a task.
+    Q_INVOKABLE void activateWindowForExternalDrag(int index);
+
     /// Activate or minimize the task at @p index based on its current state.
     Q_INVOKABLE void activateOrMinimize(int index);
 

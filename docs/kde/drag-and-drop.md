@@ -190,6 +190,34 @@ if (!appData.id.isEmpty()) {
 }
 ```
 
+## Activating a task during an external file drag
+
+Krema's dock-wide `DropArea` already accepts URL drags so existing drops onto
+an app can be delivered. The optional hover-activation path uses only
+`DragEvent.hasUrls` and the pointer position; it does not read `urls`, MIME
+payloads, or call `requestOpenUrls()`. A single-shot UI timer is restarted when
+the pointer enters a different icon, canceled when it leaves the dock or the
+drop/cancel event ends the drag, and requests `TasksModel::requestActivate()`
+only for an existing window task. Dropping files on the dock still follows the
+existing drop handler. While the file drag remains over Krema, its hover
+tooltip and window preview are suppressed so another popup cannot cover the
+drag target; normal hover feedback resumes if the drag ends over the dock.
+
+The setting defaults to enabled, with a 700 ms delay configurable from 300 to
+1500 ms. A pinned launcher without a window is ignored. For grouped windows,
+Krema activates the already active child when present or the child with the
+most recent `LastActivated` timestamp, matching the existing TaskManager
+entry-window selection. The hover handler does not choose an alternate file
+drop action or change the DnD source's payload.
+
+On Wayland, Plasma 6.6's `WaylandTasksModel::requestActivate()` uses the
+`org_kde_plasma_window` protocol to request the active state of the selected
+window. This is the same TaskManager API used by Krema's existing click and
+keyboard activation paths; KWin remains responsible for applying its
+activation policy. A QML timer test or a model-level activation test cannot
+prove that a file drag from Dolphin remains continuous through activation in a
+particular live KWin session, so that path still requires Wayland-session QA.
+
 ---
 
 ## Model Index Helpers

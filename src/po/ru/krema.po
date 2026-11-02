@@ -201,6 +201,22 @@ msgstr "Задержка скрытия (мс)"
 msgid "Separate pinned and running apps"
 msgstr "Отделять закреплённые приложения от запущенных"
 
+#: src/qml/settings/BehaviorPage.qml
+msgid "External drag and drop"
+msgstr "Внешнее перетаскивание"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Activate a window when dragging files over its app icon"
+msgstr "Активировать окно при наведении на значок приложения с перетаскиваемыми файлами"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Bring an already running window to the front while you keep dragging. Krema does not open or store the files unless you drop them on the dock."
+msgstr "Переключиться на уже запущенное окно, пока вы продолжаете перетаскивание. Krema не открывает и не сохраняет файлы, если вы не отпустите их на доке."
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Activation delay (ms)"
+msgstr "Задержка активации (мс)"
+
 #: src/qml/SettingsDialog.qml:88 src/qml/settings/BehaviorPage.qml:652
 msgid "Single window click action"
 msgstr "Действие при щелчке по одному окну"

@@ -326,6 +326,7 @@ TEST_CASE("Wheel over a non-running pinned launcher does not launch it", "[group
     REQUIRE_FALSE(idx.data(AbstractTasksModel::IsWindow).toBool());
 
     krema::DockActions actions(&model());
+    actions.activateWindowForExternalDrag(launcherRow(url));
     for (int tick = 0; tick < 3; ++tick) {
         actions.cycleWindows(launcherRow(url), tick % 2 == 0);
     }
@@ -341,6 +342,40 @@ TEST_CASE("Wheel over a non-running pinned launcher does not launch it", "[group
             return QFile::exists(marker);
         },
         kTimeoutMs));
+}
+
+TEST_CASE("External drag hover activates a single existing task", "[grouped-activation]")
+{
+    REQUIRE(noStaleTestWindows());
+    QProcess other;
+    const auto stopOther = startChild(other, QStringLiteral("--other"));
+    REQUIRE(other.waitForStarted(kTimeoutMs));
+    REQUIRE(QTest::qWaitFor(
+        [] {
+            return otherWindowIndex().isValid();
+        },
+        kTimeoutMs));
+
+    QProcess group;
+    const auto stopGroup = startChild(group, QStringLiteral("--child"));
+    REQUIRE(group.waitForStarted(kTimeoutMs));
+    REQUIRE(QTest::qWaitFor(
+        [] {
+            return groupRow() >= 0 && !activeGroupWindow().isEmpty();
+        },
+        kTimeoutMs));
+
+    krema::DockActions actions(&model());
+    QSignalSpy launching(&actions, &krema::DockActions::taskLaunching);
+    const int targetRow = otherWindowIndex().row();
+    REQUIRE(targetRow >= 0);
+    actions.activateWindowForExternalDrag(targetRow);
+    CHECK(QTest::qWaitFor(
+        [] {
+            return otherWindowIndex().data(AbstractTasksModel::IsActive).toBool();
+        },
+        kTimeoutMs));
+    CHECK(launching.isEmpty());
 }
 
 TEST_CASE("A launcher pinned by file URL counts as pinned and toggles off", "[grouped-activation]")
@@ -382,7 +417,7 @@ TEST_CASE("A launcher pinned by file URL counts as pinned and toggles off", "[gr
         kTimeoutMs));
 }
 
-TEST_CASE("Clicking a group returns to its most recently used window", "[grouped-activation]")
+TEST_CASE("Entering an inactive group returns to its most recently used window", "[grouped-activation]")
 {
     REQUIRE(noStaleTestWindows());
     QProcess group;
@@ -449,6 +484,10 @@ TEST_CASE("Clicking a group returns to its most recently used window", "[grouped
     SECTION("wheel down (forward) enters at the same window")
     {
         actions.cycleWindows(groupRow(), true);
+    }
+    SECTION("external drag hover enters at the most recently used window")
+    {
+        actions.activateWindowForExternalDrag(groupRow());
     }
 
     REQUIRE(QTest::qWaitFor(

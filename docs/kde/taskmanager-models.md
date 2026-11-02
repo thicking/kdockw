@@ -341,6 +341,14 @@ and [`TaskGroupingProxyModel`](https://invent.kde.org/plasma/plasma-workspace/-/
 
 `DockActions::activate(int)` remains the default left-click action and the activation path for keyboard and accessibility input. Grouped activation still enters through the existing most-recently-used child and cycles in model order when a child is active. Mouse-wheel cycling remains unchanged.
 
+`DockActions::activateWindowForExternalDrag(int)` is intentionally separate:
+it only accepts rows whose `IsWindow` role is true, requests activation for a
+single window, and selects an active or most-recently-used child in a group.
+It never calls `requestNewInstance()` or `requestOpenUrls()`. It uses this same
+`TasksModel::requestActivate()` API, including for Wayland, where Plasma 6.6's
+`WaylandTasksModel` requests the active state through
+`org_kde_plasma_window`. KWin may still apply its Wayland activation policy.
+
 ---
 
 ## TaskFilterProxyModel Q_PROPERTIES

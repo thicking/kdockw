@@ -249,6 +249,18 @@
       <default>500</default>
     </entry>
 
+    <entry name="ActivateWindowOnExternalDrag" type="Bool">
+      <label>Activate a running window when an external drag hovers over its task</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="ExternalDragActivationDelay" type="Int">
+      <label>Delay before activating a window during an external drag (ms)</label>
+      <default>700</default>
+      <min>300</min>
+      <max>1500</max>
+    </entry>
+
     <entry name="PreviewHideDelay" type="Int">
       <label>Delay before hiding preview (ms)</label>
       <default>200</default>

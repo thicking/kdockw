@@ -1593,6 +1593,99 @@ Item {
             compare(dock.launcherUrlFromTaskMime(
                         ["application/x-orgkdeplasmataskmanager_taskbuttonitem"], ""), "")
         }
+
+        function test_externalMultiFileHoverActivatesWithoutForwardingFiles() {
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            verify(area)
+            const position = items(dock)[0].itemCenterX
+            const files = ["file:///tmp/one.txt", "file:///tmp/two.txt"]
+            area.updateActivationTarget({ hasUrls: true, urls: files, x: position, y: position })
+            compare(area.activationTargetIndex, 0)
+            wait(150)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+            wait(220)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 1)
+            compare(DockActions.callsTo("activateWindowForExternalDrag")[0].args[0], 0)
+            compare(DockActions.callsTo("openUrlsWithTask").length, 0)
+            verify(!PreviewController.visible, "external drag hover must not open the window preview")
+
+            // Additional motion over the same icon cannot activate it again.
+            area.updateActivationTarget({ hasUrls: true, x: position, y: position })
+            wait(350)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 1)
+        }
+
+        function test_externalDragLeavingIconCancelsPendingActivation() {
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const position = items(dock)[0].itemCenterX
+            area.updateActivationTarget({ hasUrls: true, x: position, y: position })
+            wait(100)
+            area.clearActivationTarget()
+            wait(350)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+        }
+
+        function test_externalDragWithoutFileUrlsDoesNotActivate() {
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const position = items(dock)[0].itemCenterX
+            area.updateActivationTarget({ hasUrls: false, x: position, y: position })
+            wait(350)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+        }
+
+        function test_externalDragEscapeCancellationStopsPendingActivation() {
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const position = items(dock)[0].itemCenterX
+            area.updateActivationTarget({ hasUrls: true, x: position, y: position })
+            wait(100)
+            // Qt delivers cancellation as DropArea.onExited; this is the same
+            // cleanup path used when Escape cancels an external drag.
+            area.clearActivationTarget()
+            wait(350)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+        }
+
+        function test_externalDragMovingBetweenIconsRestartsDelayForFinalTarget() {
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser", "Mail"])
+            let dock = makeDock(2)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const first = items(dock)[0].itemCenterX
+            const second = items(dock)[1].itemCenterX
+            area.updateActivationTarget({ hasUrls: true, x: first, y: first })
+            wait(180)
+            area.updateActivationTarget({ hasUrls: true, x: second, y: second })
+            compare(area.activationTargetIndex, 1)
+            wait(180)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+            wait(180)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 1)
+            compare(DockActions.callsTo("activateWindowForExternalDrag")[0].args[0], 1)
+        }
+
+        function test_externalDragActivationCanBeDisabled() {
+            DockSettings.activateWindowOnExternalDrag = false
+            DockSettings.externalDragActivationDelay = 300
+            addTasks(["Browser"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const position = items(dock)[0].itemCenterX
+            area.updateActivationTarget({ hasUrls: true, x: position, y: position })
+            wait(350)
+            compare(DockActions.callsTo("activateWindowForExternalDrag").length, 0)
+        }
         function test_separatedDragIndicatorUsesRunningRestSlots_data() {
             return dockEdges()
         }

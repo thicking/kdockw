@@ -677,4 +677,30 @@ SettingsPage {
             }
         }
     }
+
+    FormCard.FormHeader {
+        title: i18n("External drag and drop")
+    }
+
+    FormCard.FormCard {
+        FormCard.FormSwitchDelegate {
+            text: i18n("Activate a window when dragging files over its app icon")
+            description: i18n("Bring an already running window to the front while you keep dragging. Krema does not open or store the files unless you drop them on the dock.")
+            checked: DockSettings.activateWindowOnExternalDrag
+            onToggled: DockSettings.activateWindowOnExternalDrag = checked
+        }
+
+        FormCard.FormDelegateSeparator {
+            visible: DockSettings.activateWindowOnExternalDrag
+        }
+
+        SliderDelegate {
+            visible: DockSettings.activateWindowOnExternalDrag
+            text: i18n("Activation delay (ms)")
+            from: 300; to: 1500; stepSize: 100
+            value: DockSettings.externalDragActivationDelay
+            valueText: i18nc("@label milliseconds", "%1 ms", value)
+            onMoved: (value) => DockSettings.externalDragActivationDelay = value
+        }
+    }
 }

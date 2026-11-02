@@ -466,13 +466,13 @@ Item {
     }
 
     // Compute which icon is under an external drop cursor (unscaled hit test).
-    function computeExternalDropIndex(dropX) {
+    function computeExternalDropIndex(primaryPosition) {
         for (let i = 0; i < dockRepeater.count; i++) {
             let item = dockRepeater.itemAt(i)
             if (!item) continue
             let itemLeft = _primaryRestSlotStart(item)
             let itemRight = itemLeft + item.width
-            if (dropX >= itemLeft && dropX <= itemRight) return i
+            if (primaryPosition >= itemLeft && primaryPosition <= itemRight) return i
         }
         return -1
     }
@@ -484,6 +484,7 @@ Item {
 
     function _tryAutoPreview() {
         if (_hoverHeld) return
+        if (externalDropArea.externalFileDragActive) return
         if (!DockSettings.previewEnabled) return
         if (hoveredIndex < 0 || PreviewController.visible) return
         let idx = DockModel.tasksModel.index(hoveredIndex, 0)
@@ -640,7 +641,8 @@ Item {
                 if (hoveredIndex !== slot) {
                     hoveredIndex = slot
                     hoveredName = slotItem.displayName
-                    tooltipTimer.restart()
+                    if (!externalDropArea.externalFileDragActive)
+                        tooltipTimer.restart()
                 }
             } else {
                 // _zoomActive kept, same hysteresis as in-place mode below.
@@ -691,7 +693,8 @@ Item {
             if (hoveredIndex !== bestIndex) {
                 hoveredIndex = bestIndex
                 hoveredName = dockRepeater.itemAt(bestIndex).displayName
-                tooltipTimer.restart()
+                if (!externalDropArea.externalFileDragActive)
+                    tooltipTimer.restart()
             }
         } else {
             hoveredIndex = -1
@@ -1430,21 +1433,114 @@ Item {
         // External drag and drop (files, .desktop, URLs from other apps)
         DropArea {
             id: externalDropArea
+            objectName: "externalDropArea"
             anchors.fill: parent
             property int dropTargetIndex: -1
+            property int activationTargetIndex: -1
+            property bool activationRequested: false
+            property bool externalFileDragActive: false
+            property real externalDragPrimaryPosition: -1
+
+            function updateActivationTarget(drag) {
+                if (!DockSettings.activateWindowOnExternalDrag || !drag.hasUrls || root._dragActive) {
+                    const wasActive = externalFileDragActive
+                    externalFileDragActive = false
+                    externalDragPrimaryPosition = -1
+                    activationTimer.stop()
+                    activationTargetIndex = -1
+                    activationRequested = false
+                    if (wasActive)
+                        resumeHoverAfterDrag()
+                    return
+                }
+
+                const primaryPosition = DockView.isVertical ? drag.y : drag.x
+                const wasActive = externalFileDragActive
+                externalFileDragActive = true
+                if (!wasActive) {
+                    tooltipTimer.stop()
+                    tooltipItem.show = false
+                    PreviewController.hidePreview()
+                }
+                externalDragPrimaryPosition = primaryPosition
+                const target = root.computeExternalDropIndex(primaryPosition)
+                if (target === activationTargetIndex) return
+
+                activationTimer.stop()
+                activationTargetIndex = target
+                activationRequested = false
+                if (target >= 0) {
+                    activationTimer.interval = DockSettings.externalDragActivationDelay
+                    activationTimer.start()
+                }
+            }
+
+            function clearActivationTarget() {
+                const wasActive = externalFileDragActive
+                externalFileDragActive = false
+                externalDragPrimaryPosition = -1
+                activationTimer.stop()
+                activationTargetIndex = -1
+                activationRequested = false
+                if (wasActive)
+                    resumeHoverAfterDrag()
+            }
+
+            function resumeHoverAfterDrag() {
+                if (root.hoveredIndex >= 0
+                        && (root._pointerOnDock || DockView.pointerInside)
+                        && !root.keyboardNavigating
+                        && !root._hoverHeld) {
+                    tooltipTimer.restart()
+                }
+            }
+
+            function activatePendingTarget() {
+                if (!DockSettings.activateWindowOnExternalDrag
+                        || !externalFileDragActive
+                        || root._dragActive
+                        || activationRequested) {
+                    return
+                }
+                const currentTarget = root.computeExternalDropIndex(externalDragPrimaryPosition)
+                if (currentTarget < 0 || currentTarget !== activationTargetIndex) {
+                    clearActivationTarget()
+                    return
+                }
+                activationRequested = true
+                DockActions.activateWindowForExternalDrag(currentTarget)
+            }
+
+            Timer {
+                id: activationTimer
+                repeat: false
+                onTriggered: externalDropArea.activatePendingTarget()
+            }
+
+            Connections {
+                target: DockSettings
+                function onActivateWindowOnExternalDragChanged() {
+                    if (!DockSettings.activateWindowOnExternalDrag)
+                        externalDropArea.clearActivationTarget()
+                }
+            }
 
             onEntered: function(drag) {
                 const hasTaskLauncherUrl = drag.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
                         && root.launcherUrlFromTaskMime(drag.formats,
                             drag.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl")) !== ""
                 drag.accepted = drag.hasUrls || hasTaskLauncherUrl
+                updateActivationTarget(drag)
             }
 
             onPositionChanged: function(drag) {
-                dropTargetIndex = root.computeExternalDropIndex(drag.x)
+                const primaryPosition = DockView.isVertical ? drag.y : drag.x
+                dropTargetIndex = root.computeExternalDropIndex(primaryPosition)
+                updateActivationTarget(drag)
             }
 
             onDropped: function(drop) {
+                clearActivationTarget()
                 let urls = []
                 if (drop.hasUrls) {
                     for (let i = 0; i < drop.urls.length; i++) {
@@ -1486,6 +1582,7 @@ Item {
 
             onExited: {
                 dropTargetIndex = -1
+                clearActivationTarget()
             }
         }
     }
@@ -1579,6 +1676,7 @@ Item {
         interval: 200
         repeat: true
         running: tooltipItem.visible && !PreviewController.visible && !root._hoverHeld
+                 && !externalDropArea.externalFileDragActive
         onTriggered: root._tryAutoPreview()
     }
 
@@ -1590,6 +1688,7 @@ Item {
         function onVisibleChanged() {
             // The menu hold hides the preview; hover is reconciled on close.
             if (root._hoverHeld) return
+            if (externalDropArea.externalFileDragActive) return
             if (!PreviewController.visible && !root._pointerOnDock) {
                 // Preview closed and mouse not on dock → release zoom smoothly
                 dockPanel.mouseX = -1
@@ -1611,7 +1710,8 @@ Item {
         id: tooltipTimer
         interval: DockSettings.previewHoverDelay
         onTriggered: {
-            if (root.hoveredIndex < 0 || root._hoverHeld) return
+            if (root.hoveredIndex < 0 || root._hoverHeld
+                    || externalDropArea.externalFileDragActive) return
             // Row removed under the hover before the re-hit-test ran.
             if (root.hoveredIndex >= dockRepeater.count
                     || !dockRepeater.itemAt(root.hoveredIndex)) return
@@ -1701,6 +1801,7 @@ Item {
                 tooltipItem.show = false
                 tooltipTimer.stop()
                 if (root._hoverHeld) return
+                if (externalDropArea.externalFileDragActive) return
                 if (root.hoveredIndex < 0) {
                     // Mouse left dock: start delayed preview hide
                     PreviewController.hidePreviewDelayed()

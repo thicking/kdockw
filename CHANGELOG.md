@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Added a Russian translation for the dock, settings, menus, accessibility labels, and notifications, selected from the system language.
 - Added TUXEDO OS build and NVIDIA PRIME on Wayland troubleshooting guides.
 - Added PipeWire capture diagnostics and one experimental CPU-buffer retry when streaming produces no first frame; the retry is not a confirmed general fix for DMA-BUF import failures.
+- Added an option to activate a running app window after hovering an external file drag over its dock icon, with an adjustable delay.
 
 ### Fixed
 

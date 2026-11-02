@@ -34,9 +34,10 @@
 
 | Area | What this fork adds |
 |---|---|
-| Russian localization | 252 translated KI18n messages for the UI, settings, context menus, tooltips, accessibility text, and notifications. |
+| Russian localization | 256 translated KI18n messages for the UI, settings, context menus, tooltips, accessibility text, and notifications. |
 | Launch feedback | Launch-icon bounce stops after at most five complete cycles and finishes after the current cycle when a new window appears. This is separate from configurable attention animations. |
 | Plasma task-manager drag and drop | Reads the launch URL from `text/x-orgkdeplasmataskmanager_taskurl`; existing URL and desktop-file drops remain supported. |
+| External file drag hover | After a configurable delay, activates an existing window under a dragged file without consuming the drag. Launcher-only tasks are ignored; grouped tasks raise their active or most recently used window. |
 | TaskManager diagnostics | Debug logs describe task insertion, removal, and role changes without logging window titles. They aid diagnosis and do not change TaskManager filtering. |
 | PipeWire preview diagnostics | Logs stream state and retries once with CPU-readable buffers if streaming produces no first frame. This fallback is experimental and is not a confirmed general DMA-BUF fix. |
 | NVIDIA PRIME guidance | Documents the observed hybrid-GPU behavior and a per-user service setup for one TUXEDO OS / Wayland configuration. |
@@ -118,7 +119,7 @@ In `kremarc`, `MonitorMode=3` means `SelectedScreens`; `SelectedOutputs` is a st
 - **KDE Native Integration** — Kirigami UI, KDE color schemes, Plasma theme colors
 - **Wayland Native** — Built on Layer Shell protocol for proper dock behavior
 - **Smart Visibility** — Always visible, auto-hide, or dodge windows modes
-- **Drag & Drop** — Reorder dock items, drop files onto apps, add launchers by dragging .desktop files
+- **Drag & Drop** — Reorder dock items, drop files onto apps, add launchers by dragging .desktop files, and optionally activate a running app after hovering dragged files over its icon
 - **Settings UI** — Kirigami-based settings dialog (FormCard) for easy customization
 - **Keyboard Accessibility** — Full keyboard navigation with AT-SPI screen reader support
 
@@ -203,7 +204,7 @@ substitute for building this fork.
 
 ## Known Limitations
 
-- The Russian catalog compiles and contains 252 translated messages. Automatic
+- The Russian catalog compiles and contains 256 translated messages. Automatic
   language selection was not revalidated in a live Plasma session during this
   documentation audit.
 - The no-first-frame CPU-buffer retry is experimental. It is covered by a QML
