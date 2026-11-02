@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Kept the selected application language synchronized with the settings control and persisted it when the language selector index changes.
 - Kept compositor blur enabled while the dock background region follows parabolic zoom, preventing a clear frame between repeated blur disable/enable requests.
 - External drag activation preferences now save immediately and remain in effect after restarting KDockW.
 

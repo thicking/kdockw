@@ -403,3 +403,25 @@ fresh opens, 500 ms hold, 2 motion points, 5 ms step.
   fixed 5 ms server/Qt dwell.
 - Batching to the chain barrier preserves request ordering without paying
   a blocking roundtrip per point.
+
+## 21. Keep translated combo labels separate from setting identity (2026-11, language setting)
+
+**Symptom:** A language choice could appear in the selector without being
+retained after navigating away or rebuilding the settings page; changing the
+language could also reset the selected index.
+
+**Cause:** The combo model itself was an array of `i18n()` labels. Calling
+`QQmlEngine::retranslate()` reevaluates that binding and replaces the array,
+which can reset the ComboBox's index independently of the persisted setting.
+The visible index and `KDockWSettings.language` could therefore diverge.
+
+**Fix:** Keep a stable `system`/`ru`/`en` model and translate its display text
+separately. Synchronize valid `currentIndex` changes with the KConfigXT
+setting; its existing change signal saves immediately and applies KI18n. A
+regression test loads the real General page and FormCard delegate, changes its
+index, recreates the page, reloads `KDockWSettings`, and verifies that multiple
+QML strings follow English, Russian, and system mode.
+
+**Key lesson:** Keep option identity independent of translated labels. Test
+the actual QML control, language retranslation, and KConfig round-trip;
+testing only a setter or a displayed index can miss state divergence.

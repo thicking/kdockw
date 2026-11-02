@@ -3,15 +3,26 @@
 
 #include <catch2/catch_session.hpp>
 
+#include "kdockw.h"
+
 #include <KLocalizedString>
 
 #include <QApplication>
 #include <QByteArray>
+#include <QCoreApplication>
 #include <QDir>
+#include <QProcess>
 #include <QString>
 
 int main(int argc, char *argv[])
 {
+    if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-language-preference")) {
+        QCoreApplication app(argc, argv);
+        KDockWSettings settings;
+        settings.load();
+        return settings.language() == QString::fromLocal8Bit(argv[2]) ? 0 : 1;
+    }
+
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
     // Catch2 discovery launches each case as its own process. Set locale before
     // QApplication caches QLocale so the desktop-action locale test is stable.

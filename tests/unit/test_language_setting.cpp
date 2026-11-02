@@ -11,8 +11,10 @@
 
 #include <QDir>
 #include <QQmlComponent>
+#include <QQmlContext>
 #include <QQmlEngine>
 #include <QLocale>
+#include <QProcess>
 #include <QTemporaryDir>
 
 #include <memory>
@@ -89,19 +91,93 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     KLocalization::setupLocalizedContext(&engine);
     kdockw::Application::registerQmlEngine(&engine);
     QQmlComponent component(&engine);
-    component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string label: i18n(\"Settings\") }"), QUrl());
+    component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\"); property string generalLabel: i18n(\"General\") }"), QUrl());
     REQUIRE(component.isReady());
     std::unique_ptr<QObject> object(component.create());
     REQUIRE(object);
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("en"));
-    CHECK(object->property("label").toString() == QLatin1String("Settings"));
+    CHECK(object->property("settingsLabel").toString() == QLatin1String("Settings"));
+    CHECK(object->property("previewLabel").toString() == QLatin1String("Window Preview"));
+    CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
+    CHECK(i18nc("@action global shortcut", "Toggle Dock") == QLatin1String("Toggle Dock"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
-    CHECK(object->property("label").toString() == QStringLiteral("Параметры"));
+    CHECK(object->property("settingsLabel").toString() == QStringLiteral("Параметры"));
+    CHECK(object->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
+    CHECK(object->property("generalLabel").toString() == QStringLiteral("Общие"));
+    CHECK(i18nc("@action global shortcut", "Toggle Dock") == QStringLiteral("Показать или скрыть док"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("system"));
-    CHECK(object->property("label").toString() == QLatin1String("Settings"));
+    CHECK(object->property("settingsLabel").toString() == QLatin1String("Settings"));
+    CHECK(object->property("previewLabel").toString() == QLatin1String("Window Preview"));
+    CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
+}
+
+TEST_CASE("The General page saves the selected language when its index changes", "[settings][language][qml]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+    QObject saveContext;
+    kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
+
+    // Load the actual General page, including its FormCard combo delegate,
+    // rather than simulating a settings setter or using a mock ComboBox.
+    Q_INIT_RESOURCE(qml);
+    QQmlEngine engine;
+    KLocalization::setupLocalizedContext(&engine);
+    kdockw::Application::registerQmlEngine(&engine);
+    engine.rootContext()->setContextProperty(QStringLiteral("DockSettings"), &settings);
+    QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/settings/GeneralPage.qml")));
+    REQUIRE(component.isReady());
+    std::unique_ptr<QObject> page(component.create());
+    REQUIRE(page);
+
+    QQmlComponent labelsComponent(&engine);
+    labelsComponent.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\") }"), QUrl());
+    REQUIRE(labelsComponent.isReady());
+    std::unique_ptr<QObject> labels(labelsComponent.create());
+    REQUIRE(labels);
+
+    QObject *selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
+    REQUIRE(selector);
+    CHECK(selector->property("currentIndex").toInt() == 0);
+
+    // FormComboBoxDelegate changes currentIndex before emitting activated.
+    // The setting must follow that actual UI property change and be flushed.
+    REQUIRE(selector->setProperty("currentIndex", 2));
+    CHECK(settings.language() == QLatin1String("en"));
+    CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
+    CHECK(labels->property("previewLabel").toString() == QLatin1String("Window Preview"));
+
+    // Page navigation destroys the loaded page; reopening it must read the
+    // committed KConfig value instead of returning to its default index.
+    page.reset();
+    std::unique_ptr<QObject> reopenedPage(component.create());
+    REQUIRE(reopenedPage);
+    QObject *reopenedSelector = reopenedPage->findChild<QObject *>(QStringLiteral("languageSelector"));
+    REQUIRE(reopenedSelector);
+    CHECK(reopenedSelector->property("currentIndex").toInt() == 2);
+
+    KDockWSettings restarted;
+    restarted.load();
+    CHECK(restarted.language() == QLatin1String("en"));
+
+    QProcess restartedProcess;
+    restartedProcess.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("en")});
+    REQUIRE(restartedProcess.waitForStarted());
+    REQUIRE(restartedProcess.waitForFinished());
+    CHECK(restartedProcess.exitStatus() == QProcess::NormalExit);
+    CHECK(restartedProcess.exitCode() == 0);
+
+    REQUIRE(reopenedSelector->setProperty("currentIndex", 1));
+    CHECK(settings.language() == QLatin1String("ru"));
+    CHECK(labels->property("settingsLabel").toString() == QStringLiteral("Параметры"));
+    CHECK(labels->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
+    REQUIRE(reopenedSelector->setProperty("currentIndex", 0));
+    CHECK(settings.language() == QLatin1String("system"));
+    CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
 }
 
 TEST_CASE("KI18n falls back to the English source string when a translation is missing", "[i18n]")
