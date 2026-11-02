@@ -12,9 +12,9 @@ carried forward from the Krema-based development period.
 ### Fixed
 
 - Fixed the language selector popup so all three options are visible, and
-  applied language changes across the open settings sidebar and page. The
-  selected language continues to save immediately and is applied before QML
-  is loaded on the next launch.
+  saved the selected language only after a user selection. Language choices now
+  persist across page navigation and launches, and changes are applied across
+  the open settings sidebar and page.
 
 ### Changed
 

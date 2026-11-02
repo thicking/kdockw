@@ -8,6 +8,8 @@ import org.kde.kirigamiaddons.formcard as FormCard
 SettingsPage {
     id: rootPage
 
+    readonly property var languageIds: ["system", "ru", "en"]
+
     title: i18n("General")
     subtitle: i18n("General settings and application language")
 
@@ -18,6 +20,11 @@ SettingsPage {
         case 2: return i18n("English")
         default: return ""
         }
+    }
+
+    function languageIndex(language) {
+        const index = languageIds.indexOf(language)
+        return index >= 0 ? index : 0
     }
 
     FormCard.FormHeader {
@@ -40,26 +47,16 @@ SettingsPage {
             // Keep option identity stable across KI18n retranslation. If
             // translated labels are the model itself, replacing that array
             // can reset ComboBox.currentIndex and overwrite the preference.
-            model: ["system", "ru", "en"]
-            displayText: languageLabel(currentIndex)
-            dialogDelegate: Delegates.RoundedItemDelegate {
-                required property int index
-                text: languageSelector.languageLabel(index)
-                highlighted: languageSelector.highlightedIndex === index
-
-                onClicked: {
-                    languageSelector.currentIndex = index
-                    languageSelector.activated(index)
-                    languageSelector.closeDialog()
+            model: rootPage.languageIds
+            displayText: rootPage.languageLabel(rootPage.languageIndex(DockSettings.language))
+            currentIndex: rootPage.languageIndex(DockSettings.language)
+            onActivated: index => {
+                if (index < 0 || index >= rootPage.languageIds.length) {
+                    return
                 }
-            }
-            currentIndex: DockSettings.language === "ru" ? 1 : DockSettings.language === "en" ? 2 : 0
-            onCurrentIndexChanged: {
-                const languages = ["system", "ru", "en"]
-                if (currentIndex >= 0 && currentIndex < languages.length
-                        && DockSettings.language !== languages[currentIndex]) {
-                    DockSettings.language = languages[currentIndex]
-                }
+                const language = rootPage.languageIds[index]
+                console.info("kdockw.settings.languageSelector: user activated", language)
+                DockSettings.language = language
             }
         }
     }

@@ -10,6 +10,7 @@
 #include <KLocalizedQmlContext>
 
 #include <QDir>
+#include <QFile>
 #include <QQmlComponent>
 #include <QQmlContext>
 #include <QQmlEngine>
@@ -46,11 +47,25 @@ public:
     ScopedConfigHome(const ScopedConfigHome &) = delete;
     ScopedConfigHome &operator=(const ScopedConfigHome &) = delete;
 
+    QString configFilePath() const
+    {
+        return QDir(m_dir.path()).filePath(QStringLiteral("kdockwrc"));
+    }
+
 private:
     QTemporaryDir m_dir;
     QByteArray m_previous;
     bool m_hadPrevious;
 };
+
+QByteArray readConfigFile(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return {};
+    }
+    return file.readAll();
+}
 
 } // namespace
 
@@ -120,7 +135,7 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
 }
 
-TEST_CASE("The General page saves the selected language when its index changes", "[settings][language][qml]")
+TEST_CASE("The General page saves the selected language on user activation", "[settings][language][qml]")
 {
     const ScopedConfigHome home;
     KDockWSettings settings;
@@ -148,12 +163,32 @@ TEST_CASE("The General page saves the selected language when its index changes",
     QObject *selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
     REQUIRE(selector);
     CHECK(selector->property("currentIndex").toInt() == 0);
+    int languageChangedCount = 0;
+    QObject::connect(&settings, &KDockWSettings::LanguageChanged, &saveContext, [&languageChangedCount]() {
+        ++languageChangedCount;
+    });
 
-    // FormComboBoxDelegate changes currentIndex before emitting activated.
-    // The setting must follow that actual UI property change and be flushed.
+    // A visual/index change by itself is not a user preference. The setting is
+    // committed only by the control's user activation signal.
     REQUIRE(selector->setProperty("currentIndex", 2));
     QCoreApplication::processEvents();
+    CHECK(settings.language() == QLatin1String("system"));
+    CHECK(languageChangedCount == 0);
+    QFile configFile(home.configFilePath());
+    if (configFile.exists()) {
+        REQUIRE(configFile.open(QIODevice::ReadOnly));
+        CHECK_FALSE(configFile.readAll().contains("Language="));
+        configFile.close();
+    }
+
+    REQUIRE(QMetaObject::invokeMethod(selector, "activated", Q_ARG(int, 2)));
+    QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("en"));
+    CHECK(languageChangedCount == 1);
+    REQUIRE(configFile.open(QIODevice::ReadOnly));
+    CHECK(configFile.readAll().contains("[General]"));
+    configFile.close();
+    CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
     CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
     CHECK(labels->property("previewLabel").toString() == QLatin1String("Window Preview"));
 
@@ -177,15 +212,33 @@ TEST_CASE("The General page saves the selected language when its index changes",
     CHECK(restartedProcess.exitStatus() == QProcess::NormalExit);
     CHECK(restartedProcess.exitCode() == 0);
 
-    REQUIRE(reopenedSelector->setProperty("currentIndex", 1));
+    REQUIRE(QMetaObject::invokeMethod(reopenedSelector, "activated", Q_ARG(int, 1)));
     QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("ru"));
+    CHECK(readConfigFile(home.configFilePath()).contains("Language=ru"));
     CHECK(labels->property("settingsLabel").toString() == QStringLiteral("Параметры"));
     CHECK(labels->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
-    REQUIRE(reopenedSelector->setProperty("currentIndex", 0));
+    QProcess russianRestartedProcess;
+    russianRestartedProcess.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("ru")});
+    REQUIRE(russianRestartedProcess.waitForStarted());
+    REQUIRE(russianRestartedProcess.waitForFinished());
+    CHECK(russianRestartedProcess.exitStatus() == QProcess::NormalExit);
+    CHECK(russianRestartedProcess.exitCode() == 0);
+    REQUIRE(QMetaObject::invokeMethod(reopenedSelector, "activated", Q_ARG(int, 0)));
     QCoreApplication::processEvents();
     CHECK(settings.language() == QLatin1String("system"));
+    const QByteArray systemConfig = readConfigFile(home.configFilePath());
+    CHECK((systemConfig.contains("Language=system") || !systemConfig.contains("Language=")));
+    KDockWSettings systemReloaded;
+    systemReloaded.load();
+    CHECK(systemReloaded.language() == QLatin1String("system"));
     CHECK(labels->property("settingsLabel").toString() == QLatin1String("Settings"));
+    QProcess systemRestartedProcess;
+    systemRestartedProcess.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("system")});
+    REQUIRE(systemRestartedProcess.waitForStarted());
+    REQUIRE(systemRestartedProcess.waitForFinished());
+    CHECK(systemRestartedProcess.exitStatus() == QProcess::NormalExit);
+    CHECK(systemRestartedProcess.exitCode() == 0);
 }
 
 TEST_CASE("The settings window language selector shows real options and retranslates the settings UI", "[settings][language][qml][regression]")
@@ -293,6 +346,9 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QCoreApplication::processEvents();
 
     CHECK(settings.language() == QLatin1String("en"));
+    CHECK(readConfigFile(home.configFilePath()).contains("[General]"));
+    CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
+    CHECK(readConfigFile(home.configFilePath()).contains("IconSize=64"));
     CHECK(selector->property("displayText").toString() == QLatin1String("English"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
     CHECK(page->property("subtitle").toString() == QLatin1String("General settings and application language"));
@@ -339,6 +395,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
 
     activateOption(1);
     CHECK(settings.language() == QLatin1String("ru"));
+    CHECK(readConfigFile(home.configFilePath()).contains("Language=ru"));
     CHECK(selector->property("displayText").toString() == QStringLiteral("Русский"));
     CHECK(page->property("title").toString() == QStringLiteral("Общие"));
     CHECK(page->property("subtitle").toString() == QStringLiteral("Основные настройки и язык приложения"));
@@ -356,10 +413,16 @@ TEST_CASE("The settings window language selector shows real options and retransl
 
     activateOption(0);
     CHECK(settings.language() == QLatin1String("system"));
+    const QByteArray systemConfig = readConfigFile(home.configFilePath());
+    CHECK((systemConfig.contains("Language=system") || !systemConfig.contains("Language=")));
+    KDockWSettings systemReloaded;
+    systemReloaded.load();
+    CHECK(systemReloaded.language() == QLatin1String("system"));
     CHECK(selector->property("displayText").toString() == QLatin1String("System default"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
     activateOption(2);
     CHECK(settings.language() == QLatin1String("en"));
+    CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
 
     // Recreate the page after navigation and verify persistence and language
