@@ -70,8 +70,10 @@ listed below. Upstream `master` has advanced independently since that base.
   payload, and no-file-data cases. The KWin TaskManager suite passed 12 test
   cases (244 assertions), including single-window, grouped-window, and
   launcher-only activation checks. KI18n compiled with 256 translated
-  messages. A real Dolphin-to-browser drag still requires acceptance in the
-  user's Wayland session; that live drag was not exercised here.
+  messages. The user manually confirmed on KDE Plasma 6.6.6 / Wayland that
+  dragging multiple files from Dolphin over Krema activates the browser, keeps
+  the drag usable, and allows dropping into the target app. The user also
+  confirmed that pinning `.desktop` launchers still works.
 
 ### TaskManager diagnostics
 
