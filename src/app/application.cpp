@@ -60,15 +60,24 @@ Application::~Application()
 KAboutData Application::makeAboutData(bool localized)
 {
     const QString displayName = localized ? i18n("KDockW") : QStringLiteral("KDockW");
-    const QString description = localized ? i18n("A dock for KDE Plasma 6")
-                                          : QStringLiteral("A dock for KDE Plasma 6");
-    KAboutData aboutData(QStringLiteral("kdockw"), displayName, QStringLiteral(KDOCKW_VERSION_STRING), description, KAboutLicense::GPL_V3);
-    const QString author = localized ? i18n("Byeonghoon Yoo") : QStringLiteral("Byeonghoon Yoo");
-    aboutData.addAuthor(author, {}, QStringLiteral("bhyoo@bhyoo.com"));
+    const QString description = localized ? i18n("KDE Dock for Wayland") : QStringLiteral("KDE Dock for Wayland");
+    const QString copyright = localized ? i18n("(C) 2026 Krema Contributors") : QStringLiteral("(C) 2026 Krema Contributors");
+    KAboutData aboutData(QStringLiteral("kdockw"), displayName, QStringLiteral(KDOCKW_VERSION_STRING), description, KAboutLicense::GPL_V3, copyright);
+    aboutData.setLicense(KAboutLicense::GPL_V3, KAboutLicense::OrLaterVersions);
+    const QString maintainer = localized ? i18n("thicking") : QStringLiteral("thicking");
+    const QString maintainerTask = localized ? i18nc("@info:credit", "Developer and maintainer; author of KDockW's independent direction")
+                                             : QStringLiteral("Developer and maintainer; author of KDockW's independent direction");
+    aboutData.addAuthor(maintainer, maintainerTask, {}, QStringLiteral("https://github.com/thicking"));
+
+    const QString originalAuthor = localized ? i18n("Byeonghoon Yoo") : QStringLiteral("Byeonghoon Yoo");
+    const QString originalAuthorTask = localized ? i18nc("@info:credit", "Original author of Krema, the project KDockW is based on")
+                                                 : QStringLiteral("Original author of Krema, the project KDockW is based on");
+    aboutData.addAuthor(originalAuthor, originalAuthorTask, QStringLiteral("bhyoo@bhyoo.com"), QStringLiteral("https://github.com/isac322/krema"));
     aboutData.setOrganizationDomain(QByteArrayLiteral("thicking.com"));
     aboutData.setHomepage(QStringLiteral("https://github.com/thicking/kdockw"));
     aboutData.setBugAddress(QByteArrayLiteral("https://github.com/thicking/kdockw/issues"));
     aboutData.setDesktopFileName(QStringLiteral("com.thicking.kdockw"));
+    aboutData.setProgramLogo(QIcon::fromTheme(QStringLiteral("com.thicking.kdockw")));
     return aboutData;
 }
 

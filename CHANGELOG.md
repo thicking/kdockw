@@ -9,6 +9,12 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the About page with KDockW's independent maintainer, Krema's original
+  author, the Wayland-focused product description, and the current application
+  icon.
+
 ### Fixed
 
 - Fixed the language selector popup so all three options are visible, and

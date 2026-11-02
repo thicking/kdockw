@@ -1108,12 +1108,30 @@ msgid "KDockW"
 msgstr "KDockW"
 
 #: src/app/application.cpp:59
-msgid "A dock for KDE Plasma 6"
-msgstr "Док для KDE Plasma 6"
+msgid "KDE Dock for Wayland"
+msgstr "Док-панель KDE для Wayland"
 
 #: src/app/application.cpp:60
+msgid "(C) 2026 Krema Contributors"
+msgstr "© 2026 участники проекта Krema"
+
+#: src/app/application.cpp:61
+msgid "thicking"
+msgstr "thicking"
+
+#: src/app/application.cpp:62
+msgctxt "@info:credit"
+msgid "Developer and maintainer; author of KDockW's independent direction"
+msgstr "Разработчик и сопровождающий; автор самостоятельного направления KDockW"
+
+#: src/app/application.cpp:66
 msgid "Byeonghoon Yoo"
 msgstr "Byeonghoon Yoo"
+
+#: src/app/application.cpp:67
+msgctxt "@info:credit"
+msgid "Original author of Krema, the project KDockW is based on"
+msgstr "Первоначальный автор Krema, проекта, на котором основан KDockW"
 
 #: src/app/application.cpp:281
 msgctxt "@action global shortcut"
