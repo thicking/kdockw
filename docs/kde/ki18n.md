@@ -24,6 +24,17 @@ KLocalizedString::setLanguages({"ko", "en"});
 KLocalizedString::clearLanguages();  // Reset to system locale
 ```
 
+For an application language switch, `setLanguages()` selects the KI18n
+catalog, and `QQmlEngine::retranslate()` re-evaluates already-loaded QML
+bindings. Notify Qt widgets with a `QEvent::LanguageChange` event as well.
+Because gettext ignores `LANGUAGE` while `LC_MESSAGES` is the C/POSIX locale,
+an explicit application-only language choice should also set the process's
+`LC_MESSAGES` category with `setlocale()` when that locale is installed. This
+does not change the user's environment or Plasma locale. Restore the system
+category with `setlocale(LC_MESSAGES, "")` when returning to automatic mode.
+`QLocale::setDefault()` controls Qt-side formatting for that process; restore
+`QLocale::system()` in automatic mode.
+
 ---
 
 ## i18n Macros

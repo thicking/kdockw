@@ -49,7 +49,10 @@ KDockW uses KI18n catalogs. The Russian catalog is built from
 `kdockw.mo`. The application also adds the build-tree catalog directory when
 run directly from `build/release/bin/kdockw`, so translations work both before
 and after installation. The desktop file contains the translated static
-metadata; runtime UI strings come from KI18n.
+metadata; runtime UI strings come from KI18n. KDockW follows the KDE/Qt system
+locale on first start. The **Settings → General → Language** page can instead
+select Russian or English; the choice is stored in `kdockwrc` and applies to
+KDockW immediately without changing Plasma's locale or the user's environment.
 
 After installation, retain the installed desktop ID
 `com.thicking.kdockw.desktop` and its `X-KDE-Wayland-Interfaces` entry. That entry

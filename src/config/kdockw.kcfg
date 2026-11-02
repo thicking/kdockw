@@ -6,6 +6,11 @@
   <kcfgfile name="kdockwrc"/>
 
   <group name="General">
+    <entry name="Language" type="String">
+      <label>Interface language</label>
+      <default>system</default>
+    </entry>
+
     <entry name="IconSize" type="Int">
       <label>Icon size in pixels</label>
       <default>48</default>

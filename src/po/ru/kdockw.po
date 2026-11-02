@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: KDockW 0.12.0\n"
-"Report-Msgid-Bugs-To: https://github.com/thicking/krema/issues\n"
+"Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-01 20:00+0500\n"
 "Language-Team: Russian\n"
@@ -13,6 +13,38 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/qml/SettingsDialog.qml
+msgid "General"
+msgstr "Общие"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "General settings and application language"
+msgstr "Основные настройки и язык приложения"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/GeneralPage.qml
+msgid "Language"
+msgstr "Язык"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Choose the language used by KDockW. System default follows the KDE and Qt locale settings."
+msgstr "Выберите язык KDockW. Системный режим использует настройки локали KDE и Qt."
+
+#: src/qml/SettingsDialog.qml src/qml/settings/GeneralPage.qml
+msgid "System default"
+msgstr "Автоматически (системный язык)"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Русский"
+msgstr "Русский"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "English"
+msgstr "English"
+
+#: src/qml/SettingsDialog.qml
+msgid "Russian"
+msgstr "Русский"
 
 #: src/qml/SettingsDialog.qml:24 src/qml/settings/PreviewPage.qml:428
 msgid "Settings"

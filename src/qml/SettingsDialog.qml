@@ -40,6 +40,13 @@ Kirigami.AbstractApplicationWindow {
     // the page so the search field also finds pages by their settings.
     readonly property var modules: [
         {
+            moduleId: "general",
+            text: i18n("General"),
+            iconName: "preferences-system",
+            group: "",
+            keywords: [i18n("Language"), i18n("System default"), i18n("Russian"), i18n("English")]
+        },
+        {
             moduleId: "icons",
             text: i18n("Icons"),
             iconName: "preferences-desktop-icons",
@@ -120,6 +127,7 @@ Kirigami.AbstractApplicationWindow {
     ]
 
     readonly property var pageUrls: ({
+        "general": "settings/GeneralPage.qml",
         "icons": "settings/IconsPage.qml",
         "layout": "settings/LayoutPage.qml",
         "panelstyle": "settings/PanelStylePage.qml",

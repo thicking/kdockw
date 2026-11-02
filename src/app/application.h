@@ -4,12 +4,15 @@
 #pragma once
 
 #include <QApplication>
+#include <QList>
 
 #include <memory>
 
 class KAboutData;
 class KActionCollection;
 class KDockWSettings;
+class QAction;
+class QQmlEngine;
 
 namespace kdockw
 {
@@ -35,6 +38,14 @@ public:
     /// exists.
     static KAboutData makeAboutData(bool localized = true);
 
+    /// Apply a persisted interface language preference. An empty or unknown
+    /// value restores KI18n's system-locale selection.
+    static void applyLanguagePreference(const QString &language);
+
+    /// Register a live QML engine so language changes re-evaluate its
+    /// translation bindings.
+    static void registerQmlEngine(QQmlEngine *engine);
+
     /// Saves @p settings to disk whenever one of its user-facing entries
     /// changes. PinnedLaunchers is saved by its own handler in run().
     static void connectSettingsAutoSave(KDockWSettings *settings, QObject *context);
@@ -48,6 +59,7 @@ public:
 
 private:
     void registerGlobalShortcuts();
+    void retranslateGlobalShortcuts();
 
     std::unique_ptr<KDockWSettings> m_settings;
     std::unique_ptr<DockModel> m_dockModel;
@@ -55,6 +67,7 @@ private:
     std::unique_ptr<LauncherEntryTracker> m_launcherEntryTracker;
     std::unique_ptr<MultiDockManager> m_dockManager;
     KActionCollection *m_actionCollection = nullptr;
+    QList<QAction *> m_globalShortcutActions;
 };
 
 } // namespace kdockw

@@ -3,12 +3,16 @@
 
 #include <catch2/catch_session.hpp>
 
+#include <KLocalizedString>
+
 #include <QApplication>
 #include <QByteArray>
+#include <QDir>
 #include <QString>
 
 int main(int argc, char *argv[])
 {
+    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
     // Catch2 discovery launches each case as its own process. Set locale before
     // QApplication caches QLocale so the desktop-action locale test is stable.
     bool germanDesktopActionCase = false;
@@ -21,5 +25,9 @@ int main(int argc, char *argv[])
 
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("kdockw-unit-tests"));
+    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
+    if (QDir(QStringLiteral(KDOCKW_TEST_LOCALE_DIR)).exists()) {
+        KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), QStringLiteral(KDOCKW_TEST_LOCALE_DIR));
+    }
     return Catch::Session().run(argc, argv);
 }

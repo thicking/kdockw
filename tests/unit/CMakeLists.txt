@@ -12,8 +12,13 @@ add_executable(kdockw_unit_tests
     test_background_effects.cpp
     test_settings_autosave.cpp
     test_settings_migration.cpp
+    test_language_setting.cpp
     test_taskiconprovider.cpp
     test_desktop_actions.cpp
+)
+
+target_compile_definitions(kdockw_unit_tests PRIVATE
+    KDOCKW_TEST_LOCALE_DIR="${CMAKE_BINARY_DIR}/src/locale"
 )
 
 target_link_libraries(kdockw_unit_tests PRIVATE

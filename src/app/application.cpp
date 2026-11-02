@@ -25,14 +25,25 @@
 #include <KSharedConfig>
 
 #include <QAction>
+#include <QEvent>
 #include <QIcon>
 #include <QLoggingCategory>
+#include <QLocale>
+#include <QQmlEngine>
+#include <QPointer>
 #include <QQuickStyle>
 #include <QtQml>
 
 #include <algorithm>
+#include <clocale>
+#include <utility>
 
 Q_LOGGING_CATEGORY(lcApp, "kdockw.app")
+
+namespace
+{
+QList<QPointer<QQmlEngine>> s_localizedEngines;
+}
 
 // Static library resources must be explicitly initialized.
 // Must be called from global namespace, not inside kdockw namespace.
@@ -63,10 +74,52 @@ KAboutData Application::makeAboutData(bool localized)
     const QString author = localized ? i18n("Byeonghoon Yoo") : QStringLiteral("Byeonghoon Yoo");
     aboutData.addAuthor(author, {}, QStringLiteral("bhyoo@bhyoo.com"));
     aboutData.setOrganizationDomain(QByteArrayLiteral("thicking.com"));
-    aboutData.setHomepage(QStringLiteral("https://github.com/thicking/krema"));
-    aboutData.setBugAddress(QByteArrayLiteral("https://github.com/thicking/krema/issues"));
+    aboutData.setHomepage(QStringLiteral("https://github.com/thicking/kdockw"));
+    aboutData.setBugAddress(QByteArrayLiteral("https://github.com/thicking/kdockw/issues"));
     aboutData.setDesktopFileName(QStringLiteral("com.thicking.kdockw"));
     return aboutData;
+}
+
+void Application::applyLanguagePreference(const QString &language)
+{
+    if (language == QLatin1String("ru")) {
+        KLocalizedString::setLanguages({QStringLiteral("ru")});
+        if (!std::setlocale(LC_MESSAGES, "ru_RU.UTF-8")) {
+            qCWarning(lcApp) << "Russian locale ru_RU.UTF-8 is unavailable; KI18n will use its English source strings where needed";
+        }
+        QLocale::setDefault(QLocale(QLocale::Russian, QLocale::Russia));
+    } else if (language == QLatin1String("en")) {
+        KLocalizedString::setLanguages({QStringLiteral("en")});
+        if (!std::setlocale(LC_MESSAGES, "en_US.UTF-8")) {
+            std::setlocale(LC_MESSAGES, "C.UTF-8");
+        }
+        QLocale::setDefault(QLocale(QLocale::English, QLocale::UnitedStates));
+    } else {
+        KLocalizedString::clearLanguages();
+        std::setlocale(LC_MESSAGES, "");
+        QLocale::setDefault(QLocale::system());
+    }
+
+    // KLocalizedQmlContext re-evaluates i18n() bindings after a language
+    // change event. This also notifies existing Qt/KDE widgets without
+    // changing the process environment.
+    QEvent event(QEvent::LanguageChange);
+    QCoreApplication::sendEvent(QCoreApplication::instance(), &event);
+    s_localizedEngines.removeIf([](const QPointer<QQmlEngine> &engine) {
+        return engine.isNull();
+    });
+    for (const QPointer<QQmlEngine> &engine : std::as_const(s_localizedEngines)) {
+        engine->retranslate();
+    }
+}
+
+void Application::registerQmlEngine(QQmlEngine *engine)
+{
+    if (engine && std::ranges::none_of(s_localizedEngines, [engine](const QPointer<QQmlEngine> &entry) {
+            return entry == engine;
+        })) {
+        s_localizedEngines.append(engine);
+    }
 }
 
 void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *context)
@@ -128,6 +181,10 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::DodgeActiveOnlyChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ReserveScreenSpaceChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SeparateLaunchersChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::LanguageChanged, context, [settings, saveSettings]() {
+        Application::applyLanguagePreference(settings->language());
+        saveSettings();
+    });
 }
 
 void Application::migrateLegacySettings(KDockWSettings *settings)
@@ -190,6 +247,7 @@ int Application::run(const KAboutData &aboutData)
     // Load settings from KConfig (~/.config/kdockwrc)
     m_settings = std::make_unique<KDockWSettings>();
     m_settings->load();
+    applyLanguagePreference(m_settings->language());
     migrateLegacySettings(m_settings.get());
 
     // Create data model
@@ -273,6 +331,10 @@ int Application::run(const KAboutData &aboutData)
 
     // Register global shortcuts (KGlobalAccel)
     registerGlobalShortcuts();
+    connect(s, &KDockWSettings::LanguageChanged, this, [this]() {
+        retranslateGlobalShortcuts();
+        KAboutData::setApplicationData(makeAboutData());
+    });
 
     return exec();
 }
@@ -284,6 +346,7 @@ void Application::registerGlobalShortcuts()
 
     // Toggle dock visibility: Meta+`
     auto *toggleAction = m_actionCollection->addAction(QStringLiteral("toggle-dock"));
+    m_globalShortcutActions.append(toggleAction);
     toggleAction->setText(i18nc("@action global shortcut", "Toggle Dock"));
     kga->setDefaultShortcut(toggleAction, {QKeySequence(Qt::META | Qt::Key_QuoteLeft)});
     kga->setShortcut(toggleAction, {QKeySequence(Qt::META | Qt::Key_QuoteLeft)});
@@ -300,6 +363,7 @@ void Application::registerGlobalShortcuts()
     // In multi-monitor mode, focuses the dock on the screen containing the cursor;
     // in Follow Active mode, the dock on the active screen.
     auto *focusDockAction = m_actionCollection->addAction(QStringLiteral("focus-dock"));
+    m_globalShortcutActions.append(focusDockAction);
     focusDockAction->setText(i18nc("@action global shortcut", "Focus Dock"));
     const QList<QKeySequence> focusDockShortcut{QKeySequence(Qt::META | Qt::ALT | Qt::Key_D)};
     kga->setDefaultShortcut(focusDockAction, focusDockShortcut);
@@ -318,6 +382,7 @@ void Application::registerGlobalShortcuts()
     // Meta+1..9: Activate N-th app (targets primary dock)
     for (int i = 1; i <= 9; ++i) {
         auto *activateAction = m_actionCollection->addAction(QStringLiteral("activate-entry-%1").arg(i));
+        m_globalShortcutActions.append(activateAction);
         activateAction->setText(i18nc("@action global shortcut", "Activate Entry %1", i));
         const auto seq = QKeySequence(Qt::META | static_cast<Qt::Key>(Qt::Key_1 + i - 1));
         kga->setDefaultShortcut(activateAction, {seq});
@@ -332,6 +397,7 @@ void Application::registerGlobalShortcuts()
     // Meta+Shift+1..9: New instance of N-th app (targets primary dock)
     for (int i = 1; i <= 9; ++i) {
         auto *newInstanceAction = m_actionCollection->addAction(QStringLiteral("new-instance-entry-%1").arg(i));
+        m_globalShortcutActions.append(newInstanceAction);
         newInstanceAction->setText(i18nc("@action global shortcut", "New Instance of Entry %1", i));
         const auto seq = QKeySequence(Qt::META | Qt::SHIFT | static_cast<Qt::Key>(Qt::Key_1 + i - 1));
         kga->setDefaultShortcut(newInstanceAction, {seq});
@@ -344,6 +410,19 @@ void Application::registerGlobalShortcuts()
     }
 
     qCDebug(lcApp) << "Global shortcuts registered";
+}
+
+void Application::retranslateGlobalShortcuts()
+{
+    if (m_globalShortcutActions.size() != 20) {
+        return;
+    }
+    m_globalShortcutActions[0]->setText(i18nc("@action global shortcut", "Toggle Dock"));
+    m_globalShortcutActions[1]->setText(i18nc("@action global shortcut", "Focus Dock"));
+    for (int i = 1; i <= 9; ++i) {
+        m_globalShortcutActions[i + 1]->setText(i18nc("@action global shortcut", "Activate Entry %1", i));
+        m_globalShortcutActions[i + 10]->setText(i18nc("@action global shortcut", "New Instance of Entry %1", i));
+    }
 }
 
 } // namespace kdockw

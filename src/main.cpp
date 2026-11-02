@@ -4,7 +4,9 @@
 #include "app/application.h"
 
 #include <KAboutData>
+#include <KConfigGroup>
 #include <KLocalizedString>
+#include <KSharedConfig>
 
 #include <QCommandLineOption>
 #include <QCommandLineParser>
@@ -56,6 +58,9 @@ int main(int argc, char *argv[])
     }
 
     kdockw::Application app(argc, argv);
+    // Let KI18n hook the Q*Application instance for runtime language-change
+    // notifications; the earlier call also supports headless metadata setup.
+    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
     // Now KI18n has a Q*Application instance and can load catalogs reliably.
     // KI18n installs catalogs under the system locale directory. Also expose
     // the build-tree catalog so `build/release/bin/kdockw` can run directly.
@@ -64,6 +69,8 @@ int main(int argc, char *argv[])
     if (QDir(buildLocaleDir).exists()) {
         KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), buildLocaleDir);
     }
+    const KConfigGroup general(KSharedConfig::openConfig(QStringLiteral("kdockwrc"), KSharedConfig::NoGlobals), QStringLiteral("General"));
+    kdockw::Application::applyLanguagePreference(general.readEntry(QStringLiteral("Language"), QStringLiteral("system")));
     aboutData = kdockw::Application::makeAboutData();
     // Pass 2: QApplication has removed its own options; anything left that
     // the parser does not know is an error.

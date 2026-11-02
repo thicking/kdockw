@@ -9,12 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Updated current repository, application metadata, packaging, and website links to the standalone KDockW repository while retaining historical Krema attribution and migration identifiers.
 - Updated the installed KDockW application icon to the supplied artwork at nine hicolor sizes, while retaining the earlier vector and PNG assets.
 - Rebranded the application as KDockW with its own executable, desktop ID, settings file, translation domain, QML namespace, app icon, and optional PRIME-clean systemd user service; existing Krema settings can be copied and rolled back with explicit migration scripts.
 
 ### Added
 
-- Added a Russian translation for the dock, settings, menus, accessibility labels, and notifications, selected from the system language.
+- Added a Russian translation for the dock, settings, menus, accessibility labels, and notifications, with the system language selected by default.
+- Added a General settings page where users can follow the system locale or select Russian or English; the choice is saved and applied immediately within KDockW.
 - Added TUXEDO OS build and NVIDIA PRIME on Wayland troubleshooting guides.
 - Added PipeWire capture diagnostics and one experimental CPU-buffer retry when streaming produces no first frame; the retry is not a confirmed general fix for DMA-BUF import failures.
 - Added an option to activate a running app window after hovering an external file drag over its dock icon, with an adjustable delay.

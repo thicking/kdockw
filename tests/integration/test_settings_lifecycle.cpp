@@ -892,7 +892,7 @@ TEST_CASE("Every settings page loads without QML warnings", "[settings][pages]")
     REQUIRE(loader);
 
     const auto modules = dialog->property("modules").toList();
-    REQUIRE(modules.size() == 10);
+    REQUIRE(modules.size() == 11);
     for (const auto &entry : modules) {
         const QString moduleId = entry.toMap().value(QStringLiteral("moduleId")).toString();
         INFO("module " << moduleId.toStdString());
