@@ -20,8 +20,10 @@
 <p align="center">
   <a href="#installation">Build and install</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
+  <a href="ROADMAP.ru.md">Русский</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="docs/migration/krema-to-kdockw.md">Migration from Krema</a>
+  <a href="docs/migration/krema-to-kdockw.md">Migration from Krema</a> ·
+  <a href="docs/migration/krema-to-kdockw.ru.md">на русском</a>
 </p>
 
 KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor to Latte Dock. Written in C++23 with Qt 6 and KDE Frameworks 6, it provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.
@@ -118,7 +120,7 @@ cmake --build --preset release -j 4
 sudo cmake --install build/release
 ```
 
-The executable is installed as `/usr/local/bin/kdockw`; its desktop ID declares the KWin Wayland interfaces required by previews and activation. For an existing installation, read the [manual migration and rollback guide](docs/migration/krema-to-kdockw.md) before switching autostart or a user service. Installing KDockW does not remove or alter Krema.
+The executable is installed as `/usr/local/bin/kdockw`; its desktop ID declares the KWin Wayland interfaces required by previews and activation. For an existing installation, read the [manual migration and rollback guide](docs/migration/krema-to-kdockw.md) ([на русском](docs/migration/krema-to-kdockw.ru.md)) before switching autostart or a user service. Installing KDockW does not remove or alter Krema.
 
 To update the checkout, pull from `https://github.com/thicking/kdockw` and rebuild. CMake's configured build provides an `uninstall` target; otherwise remove only paths listed in that build's `install_manifest.txt`.
 
@@ -133,7 +135,7 @@ KDockW follows the system language by default. Open **Settings → General → L
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md) for the current development roadmap.
+See the current development roadmap in [English](ROADMAP.md) or [Russian](ROADMAP.ru.md).
 
 ## Origins and Credits
 

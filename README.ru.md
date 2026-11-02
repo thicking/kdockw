@@ -19,9 +19,11 @@
 
 <p align="center">
   <a href="#установка">Сборка и установка</a> ·
-  <a href="ROADMAP.md">План разработки</a> ·
+  <a href="ROADMAP.ru.md">План разработки</a> ·
+  <a href="ROADMAP.md">English</a> ·
   <a href="CHANGELOG.md">История изменений</a> ·
-  <a href="docs/migration/krema-to-kdockw.md">Переход с Krema</a> ·
+  <a href="docs/migration/krema-to-kdockw.ru.md">Переход с Krema</a> ·
+  <a href="docs/migration/krema-to-kdockw.md">English</a> ·
   <a href="README.md">English</a>
 </p>
 
@@ -125,7 +127,7 @@ cmake --build --preset release -j 4
 sudo cmake --install build/release
 ```
 
-Исполняемый файл устанавливается как `/usr/local/bin/kdockw`; desktop ID объявляет интерфейсы KWin Wayland, нужные для предпросмотра и активации окон. Перед переключением автозапуска или пользовательского сервиса изучите [инструкцию по ручной миграции и откату](docs/migration/krema-to-kdockw.md). Установка KDockW не удаляет и не изменяет Krema.
+Исполняемый файл устанавливается как `/usr/local/bin/kdockw`; desktop ID объявляет интерфейсы KWin Wayland, нужные для предпросмотра и активации окон. Перед переключением автозапуска или пользовательского сервиса изучите [инструкцию по ручной миграции и откату](docs/migration/krema-to-kdockw.ru.md) ([English](docs/migration/krema-to-kdockw.md)). Установка KDockW не удаляет и не изменяет Krema.
 
 Для обновления checkout получайте изменения из `https://github.com/thicking/kdockw` и пересоберите проект. Настроенная сборка CMake предоставляет цель `uninstall`; иначе удаляйте только файлы из `install_manifest.txt` этой сборки.
 
@@ -140,7 +142,7 @@ sudo cmake --install build/release
 
 ## План разработки
 
-Актуальный план доступен в [ROADMAP.md](ROADMAP.md).
+Актуальный план доступен на [русском](ROADMAP.ru.md) и [английском](ROADMAP.md).
 
 ## Происхождение и благодарности
 
