@@ -71,6 +71,11 @@ int main(int argc, char *argv[])
     qputenv("LC_ALL", germanDesktopActionCase ? QByteArrayLiteral("de_DE.UTF-8") : QByteArrayLiteral("C"));
     qputenv("LANG", germanDesktopActionCase ? QByteArrayLiteral("de_DE.UTF-8") : QByteArrayLiteral("C"));
 
+    // Catch2's CMake discovery runs this executable during the build, before
+    // CTest can apply the per-test QT_QPA_PLATFORM property. Keep that
+    // discovery headless on CI machines without a display server.
+    qputenv("QT_QPA_PLATFORM", QByteArrayLiteral("offscreen"));
+
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("kdockw-unit-tests"));
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
