@@ -43,8 +43,9 @@ Old repository paths, package-channel identifiers, app IDs, and configuration
 names belong in migration instructions and historical records where they
 identify the exact legacy resource. Do not globally replace those identifiers.
 The former repository path thicking/krema is historical; current KDockW URLs
-use thicking/kdockw. Existing COPR, OBS, or PPA project names are distribution
-channel identifiers and must only change after that channel itself is renamed.
+use thicking/kdockw. For publishing targets, use a public/API-verified KDockW
+owner and project; never infer a third-party owner's identity from an old
+resource or from the GitHub login.
 
 ## GitHub About proposal
 

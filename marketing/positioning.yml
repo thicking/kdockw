@@ -109,25 +109,22 @@ search_intents:
 brand:
   website: "https://github.com/thicking/kdockw/"
   guide: branding/README.md
-  icon_concept: "Zoom K — bone stem is the dock panel; caramel tiles along the K arms shrink with parabolic zoom falloff"
-  wordmark_concept: "Monoline lowercase 'kdockw' scaled like a zooming dock (0.72, 0.87, 1.16, 0.87, 0.72); accent indicator dot under the hovered 'e'"
+  icon_concept: "Blue-to-violet rounded square with a dark K glyph and a small dock motif"
+  wordmark_concept: "KDockW wordmark set beside the blue-violet application mark in existing website artwork"
   palette:
-    ink: "#18110D"        # icon tile, ink on light backgrounds
-    bone: "#F4ECE0"       # icon stem (dock panel), ink on dark backgrounds
-    caramel: "#D69A5E"    # accent: tiles, indicator dot
-    neutrals: ["#110C09", "#231A14", "#CDBFAE", "#A89684", "#A8682F"]  # night, ink-2, bone-dim, muted, deep caramel (website/css/site.css)
+    background: "#0e1630"
+    surface: "#17264e"
+    text: "#f3f7ff"
+    muted: "#b8c5e6"
+    blue: "#68a8ff"
+    cyan: "#8ce7f5"
+    violet: "#b7a1ff"
   assets:
     icon: branding/logo/kdockw-icon-source.png
-    icon_small: branding/logo/kdockw-app-icons/16-apps-com.thicking.kdockw.png  # 16/22/24 px
-    wordmark_light: branding/logo/kdockw-wordmark.svg
-    wordmark_dark: branding/logo/kdockw-wordmark-dark.svg
-    lockup_light: branding/logo/kdockw-lockup.svg
-    lockup_dark: branding/logo/kdockw-lockup-dark.svg
-    lockup_stacked_light: branding/logo/kdockw-lockup-stacked.svg
-    lockup_stacked_dark: branding/logo/kdockw-lockup-stacked-dark.svg
-    generator: branding/logo/generate.ts
-  palette_tokens: branding/palette/  # palette.svg swatch sheet + palette.json/css
-  social_preview: branding/social/github-social-preview.png
+    app_icon_exports: branding/logo/kdockw-app-icons/
+    README_lockup: branding/logo/kdockw-logo.png
+    social_preview: website/og-image.png
+    generator: branding/logo/export-app-icons.sh
 
 target_audience:
   primary: "Former Latte Dock users who lost their dock when upgrading to KDE Plasma 6"

@@ -39,7 +39,9 @@ SCHEMA_VERSION = 1
 PROJECT = "kdockw"
 USER_AGENT = "kdockw-release (https://github.com/thicking/kdockw)"
 
-BANNER_PATH = "branding/social/release-banner.png"
+# Reuse existing KDockW website artwork; the old Krema-branded banner is not
+# suitable for current release notes.
+BANNER_PATH = "website/og-image.png"
 
 STATUSES = frozenset(
     {

@@ -67,9 +67,9 @@
 Before any public announcement:
 
 - [x] All M7 and M8 items complete (attention animations, icon normalization, multi-monitor)
-- [x] Screenshots added to README and metainfo.xml
-- [x] Demo videos recorded (website feature clips)
-- [x] OBS packages building and installable for all target distros
+- [ ] Current KDockW screenshots captured in a verified Plasma session and added to README/metainfo
+- [ ] Current KDockW screenshots and demo videos recorded in a verified Plasma session
+- [ ] OBS package builds and installation verified under the current KDockW account
 - [x] Positioning manifest current (`marketing/positioning.yml`)
 - [ ] Blog post drafted (origin story + features)
 - [ ] Reddit posts drafted for r/kde, r/linux, r/unixporn
@@ -106,7 +106,8 @@ Before any public announcement:
 
 ### Website & Social
 - [x] Dedicated website (https://github.com/thicking/kdockw/, deployed via GitHub Pages)
-- [x] OpenGraph / social media preview images (`branding/social/`)
+- [x] Current KDockW OpenGraph preview (`website/og-image.png`)
+- [ ] Separate current KDockW screenshots or feature clips (not present in the deployed site)
 
 ### Future
 - [ ] Blog with SEO-optimized articles

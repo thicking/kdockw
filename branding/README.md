@@ -1,21 +1,20 @@
 # KDockW brand assets
 
-The current application icon is based on the supplied raster master
-`logo/kdockw-icon-source.png`. Its hicolor exports (16, 22, 24, 32, 48, 64,
-128, 256, and 512 px) live in `logo/kdockw-app-icons/` and are installed by
-CMake under the existing `com.thicking.kdockw` icon name. Regenerate them with
-`branding/logo/export-app-icons.sh` (ImageMagick's `magick` command is needed).
-The original master is kept byte-for-byte; the README lockup is
-`logo/kdockw-logo.png`.
+The installed application icon is derived from `logo/kdockw-icon-source.png`.
+Its hicolor exports (16, 22, 24, 32, 48, 64, 128, 256, and 512 px) are in
+`logo/kdockw-app-icons/` and installed under the `com.thicking.kdockw` icon
+name. Regenerate them with `logo/export-app-icons.sh` (ImageMagick's `magick`
+command is required). The current README lockup is `logo/kdockw-logo.png`.
 
-The existing `logo/kdockw-icon.svg` and `logo/kdockw-icon-small.svg` are genuine
-vector assets from the earlier KDockW identity. They remain unchanged and are
-not raster images renamed with an `.svg` extension. The new app icon has a
-different visual design, so the old scalable SVG is retained as historical
-branding and is not installed as the current application icon. Existing PNG
-icons under `src/icons/` are also retained unchanged.
+`logo/kdockw-icon.svg` and `logo/kdockw-icon-small.svg` are earlier KDockW
+vector identities and remain genuine SVG source files; they are not raster
+images renamed with an `.svg` extension. The current installed application
+icon uses the supplied raster master instead. PNG icons under `src/icons/`
+are the application resources.
 
-The repository also retains inherited assets named `krema-*` and upstream
-screenshots/social cards. They document the project's origin; they are not the
-current KDockW app icon. Do not alter source-file copyright notices, the GPL
-license, or original Git authorship as part of branding work.
+The current website social preview is `../website/og-image.png`; release notes
+reuse that existing KDockW artwork. The repository does not currently ship a
+KDockW screenshot gallery or a separate vector wordmark. Historic Krema assets
+were removed from active branding directories. Krema's origin, original author
+Byeonghoon Yoo, source history, copyright notices, and GPL license remain
+preserved in the project history and legal files.

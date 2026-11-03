@@ -1,3 +1,5 @@
+> Historical note: this research file describes packaging considered during the Krema-derived development period and references a Krema v0.10.0 archive. It is not a current KDockW packaging source, release channel, or manifest. KDockW currently has no Flatpak package in its release tooling.
+
 # Flathub research notes
 
 ## Status
