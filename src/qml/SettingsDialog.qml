@@ -189,7 +189,10 @@ Kirigami.AbstractApplicationWindow {
 
     Component {
         id: aboutPageComponent
-        FormCard.AboutPage {}
+        FormCard.AboutPage {
+            objectName: "aboutPage"
+            aboutData: SettingsWindow.aboutData
+        }
     }
     Component {
         id: aboutKdeComponent
@@ -213,12 +216,14 @@ Kirigami.AbstractApplicationWindow {
 
                 Kirigami.SearchField {
                     id: searchField
+                    objectName: "settingsSearchField"
                     Layout.fillWidth: true
                     Layout.topMargin: Kirigami.Units.largeSpacing
                     Layout.leftMargin: Kirigami.Units.largeSpacing
                     Layout.rightMargin: Kirigami.Units.largeSpacing
                     Layout.bottomMargin: Kirigami.Units.smallSpacing
                     Accessible.name: i18n("Search settings")
+                    placeholderText: i18n("Search…")
                     // Filtering follows `text` live; only Return opens a
                     // match (the default auto-accept would switch pages
                     // while the user is still typing).

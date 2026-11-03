@@ -469,3 +469,24 @@ warnings, `LanguageChanged`, and the temporary KConfig file.
 **Key lesson:** Module imports belong to the QML component that uses a module
 singleton. A root context property in a test can hide a missing import and
 produce a false pass.
+
+## 24. Refresh KAboutData snapshots shown by an existing QML page (2026-11)
+
+**Symptom:** QML `i18n()` bindings changed language at runtime, but an already
+created Kirigami AboutPage kept the previous description, copyright, and author
+role strings.
+
+**Cause:** `org.kde.coreaddons.AboutData` is a QML singleton created from
+`KAboutData::applicationData()` and exposes that value as a snapshot. Updating
+the global KAboutData does not update the singleton value already held by an
+engine or the AboutPage.
+
+**Fix:** Expose the current KAboutData fields through the settings window's
+notifying `aboutData` property. Queue its change notification from the language
+setting signal so it runs after the application has installed the translated
+KAboutData. Bind AboutPage to that property. Translate Kirigami SearchField's
+`qsTr()`-owned placeholder through the application's existing KI18n domain.
+
+**Key lesson:** A QML singleton that returns a value snapshot is not a live
+binding to its C++ source. Test both an already open consumer and a recreated
+page, and trace framework-default strings to their actual translation domain.

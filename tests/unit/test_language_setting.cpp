@@ -3,11 +3,13 @@
 
 #include "app/application.h"
 #include "kdockw.h"
+#include "shell/settingswindow.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <KLocalizedString>
 #include <KLocalizedQmlContext>
+#include <KAboutData>
 
 #include <QDir>
 #include <QFile>
@@ -17,6 +19,7 @@
 #include <QQmlEngine>
 #include <QLocale>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QTemporaryDir>
@@ -310,10 +313,16 @@ TEST_CASE("The settings window language selector shows real options and retransl
     const QString englishDescription = QStringLiteral(
         "Choose the language used by KDockW. System default follows the KDE and Qt locale settings.");
     kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
+    KAboutData::setApplicationData(kdockw::Application::makeAboutData());
+    kdockw::SettingsWindow settingsWindow(&settings);
+    QObject::connect(&settings, &KDockWSettings::LanguageChanged, &saveContext, [] {
+        KAboutData::setApplicationData(kdockw::Application::makeAboutData());
+    });
 
     Q_INIT_RESOURCE(qml);
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
+    engine.rootContext()->setContextProperty(QStringLiteral("SettingsWindow"), &settingsWindow);
     QStringList qmlWarnings;
     QObject::connect(&engine, &QQmlEngine::warnings, &saveContext, [&qmlWarnings](const QList<QQmlError> &warnings) {
         for (const QQmlError &warning : warnings) {
@@ -349,6 +358,9 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(selector->property("displayText").toString() == QStringLiteral("Автоматически (системный язык)"));
     CHECK(selector->property("text").toString() == QStringLiteral("Язык"));
     CHECK(selector->property("description").toString() == russianDescription);
+    QObject *searchField = window->findChild<QObject *>(QStringLiteral("settingsSearchField"));
+    REQUIRE(searchField);
+    CHECK(searchField->property("placeholderText").toString() == QStringLiteral("Поиск…"));
 
     QVariantList modules = window->property("modules").toList();
     auto generalModule = std::find_if(modules.cbegin(), modules.cend(), [](const QVariant &module) {
@@ -425,6 +437,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(sectionHeader->property("title").toString() == QLatin1String("Language"));
     CHECK(selector->property("text").toString() == QLatin1String("Language"));
     CHECK(selector->property("description").toString() == englishDescription);
+    CHECK(searchField->property("placeholderText").toString() == QStringLiteral("Search…"));
     modules = window->property("modules").toList();
     generalModule = std::find_if(modules.cbegin(), modules.cend(), [](const QVariant &module) {
         return module.toMap().value(QStringLiteral("moduleId")).toString() == QLatin1String("general");
@@ -487,6 +500,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
 
     activateOption(0);
     CHECK(settings.language() == QLatin1String("system"));
+    CHECK(searchField->property("placeholderText").toString() == QStringLiteral("Search…"));
     CHECK(languageChangedCount == 3);
     const QByteArray systemConfig = readConfigFile(home.configFilePath());
     CHECK((systemConfig.contains("Language=system") || !systemConfig.contains("Language=")));
@@ -500,13 +514,48 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(languageChangedCount == 4);
     CHECK(readConfigFile(home.configFilePath()).contains("Language=en"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
+    CHECK(searchField->property("placeholderText").toString() == QStringLiteral("Search…"));
 
     // Recreate the page after navigation and verify persistence and language
     // state in the actual SettingsDialog rather than in an isolated control.
     REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("about")))));
     QCoreApplication::processEvents();
     CHECK(window->property("currentModule").toString() == QLatin1String("about"));
-    REQUIRE(pageLoader->property("item").value<QObject *>());
+    QObject *aboutPage = pageLoader->property("item").value<QObject *>();
+    REQUIRE(aboutPage);
+    CHECK(aboutPage->objectName() == QLatin1String("aboutPage"));
+    QVariantMap aboutData = aboutPage->property("aboutData").toMap();
+    CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema Contributors"));
+    QVariantList authors = aboutData.value(QStringLiteral("authors")).toList();
+    REQUIRE(authors.size() == 2);
+    CHECK(authors.at(0).toMap().value(QStringLiteral("name")).toString() == QLatin1String("thicking"));
+    CHECK(authors.at(0).toMap().value(QStringLiteral("task")).toString() == QLatin1String("Developer and maintainer; author of KDockW's independent direction"));
+    CHECK(authors.at(1).toMap().value(QStringLiteral("name")).toString() == QLatin1String("Byeonghoon Yoo"));
+    CHECK(authors.at(1).toMap().value(QStringLiteral("webAddress")).toString() == QLatin1String("https://github.com/isac322/krema"));
+    CHECK(aboutData.value(QStringLiteral("homepage")).toString() == QLatin1String("https://github.com/thicking/kdockw"));
+    CHECK(aboutData.value(QStringLiteral("bugAddress")).toString() == QLatin1String("https://github.com/thicking/kdockw/issues"));
+    CHECK(aboutData.value(QStringLiteral("programLogo")).isValid());
+    CHECK(std::none_of(qmlWarnings.cbegin(), qmlWarnings.cend(), [](const QString &warning) {
+        return warning.contains(QStringLiteral("ReferenceError")) || warning.contains(QStringLiteral("TypeError"));
+    }));
+
+    // Rebuild metadata while this AboutPage instance remains open. The queued
+    // SettingsWindow notification refreshes the copy bound into Kirigami.
+    settings.setLanguage(QStringLiteral("ru"));
+    QCoreApplication::processEvents();
+    aboutData = aboutPage->property("aboutData").toMap();
+    CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QStringLiteral("Док-панель KDE для Wayland"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QStringLiteral("© 2026 участники проекта Krema"));
+    authors = aboutData.value(QStringLiteral("authors")).toList();
+    REQUIRE(authors.size() == 2);
+    CHECK(authors.at(0).toMap().value(QStringLiteral("task")).toString() == QStringLiteral("Разработчик и сопровождающий; автор самостоятельного направления KDockW"));
+    CHECK(authors.at(1).toMap().value(QStringLiteral("task")).toString() == QStringLiteral("Первоначальный автор Krema, проекта, на котором основан KDockW"));
+    settings.setLanguage(QStringLiteral("en"));
+    QCoreApplication::processEvents();
+    aboutData = aboutPage->property("aboutData").toMap();
+    CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
+
     REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("general")))));
     QCoreApplication::processEvents();
     CHECK(window->property("currentModule").toString() == QLatin1String("general"));
@@ -517,6 +566,16 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(selector->property("currentIndex").toInt() == 2);
     CHECK(selector->property("displayText").toString() == QLatin1String("English"));
     CHECK(page->property("title").toString() == QLatin1String("General"));
+
+    REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("about")))));
+    QCoreApplication::processEvents();
+    aboutPage = pageLoader->property("item").value<QObject *>();
+    REQUIRE(aboutPage);
+    aboutData = aboutPage->property("aboutData").toMap();
+    CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema Contributors"));
+    REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("general")))));
+    QCoreApplication::processEvents();
 
     KDockWSettings restarted;
     restarted.load();
@@ -559,4 +618,50 @@ TEST_CASE("KI18n falls back to the English source string when a translation is m
                               .withLanguages({QStringLiteral("ru")})
                               .toString();
     CHECK(fallback == QLatin1String("A source string without a catalog entry"));
+}
+
+TEST_CASE("An explicit English preference overrides a Russian system locale", "[i18n][settings]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+    settings.setLanguage(QStringLiteral("en"));
+    settings.save();
+
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("XDG_CONFIG_HOME"), QFileInfo(home.configFilePath()).absolutePath());
+    environment.insert(QStringLiteral("LANG"), QStringLiteral("ru_RU.UTF-8"));
+    environment.insert(QStringLiteral("LC_ALL"), QStringLiteral("ru_RU.UTF-8"));
+    environment.insert(QStringLiteral("LANGUAGE"), QStringLiteral("ru"));
+
+    QProcess process;
+    process.setProcessEnvironment(environment);
+    process.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("en")});
+    REQUIRE(process.waitForStarted());
+    REQUIRE(process.waitForFinished());
+    CHECK(process.exitStatus() == QProcess::NormalExit);
+    CHECK(process.exitCode() == 0);
+}
+
+TEST_CASE("System default follows a Russian locale in Settings and About metadata", "[i18n][settings]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+    settings.setLanguage(QStringLiteral("system"));
+    settings.save();
+
+    QProcessEnvironment environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QStringLiteral("XDG_CONFIG_HOME"), QFileInfo(home.configFilePath()).absolutePath());
+    environment.insert(QStringLiteral("LANG"), QStringLiteral("ru_RU.UTF-8"));
+    environment.insert(QStringLiteral("LC_ALL"), QStringLiteral("ru_RU.UTF-8"));
+    environment.insert(QStringLiteral("LANGUAGE"), QStringLiteral("ru"));
+
+    QProcess process;
+    process.setProcessEnvironment(environment);
+    process.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--verify-language-preference"), QStringLiteral("system")});
+    REQUIRE(process.waitForStarted());
+    REQUIRE(process.waitForFinished());
+    CHECK(process.exitStatus() == QProcess::NormalExit);
+    CHECK(process.exitCode() == 0);
 }

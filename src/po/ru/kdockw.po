@@ -343,6 +343,10 @@ msgstr "KDE"
 msgid "Search settings"
 msgstr "Поиск параметров"
 
+#: src/qml/SettingsDialog.qml
+msgid "Search…"
+msgstr "Поиск…"
+
 #: src/qml/SettingsDialog.qml:258
 msgid "Settings pages"
 msgstr "Страницы параметров"

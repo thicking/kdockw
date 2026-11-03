@@ -9,6 +9,7 @@
 #include "style/backgroundstyle.h"
 #include "utils/zoomlayoutvariant.h"
 
+#include <KAboutData>
 #include <KConfigGroup>
 #include <KLocalizedQmlContext>
 #include <KSharedConfig>
@@ -146,6 +147,55 @@ QString plasmaWallpaperEntry()
     return anyImage;
 }
 
+QVariantList aboutPeople(const QList<KAboutPerson> &people)
+{
+    QVariantList result;
+    result.reserve(people.size());
+    for (const KAboutPerson &person : people) {
+        result.append(QVariantMap{
+            {QStringLiteral("name"), person.name()},
+            {QStringLiteral("task"), person.task()},
+            {QStringLiteral("emailAddress"), person.emailAddress()},
+            {QStringLiteral("webAddress"), person.webAddress()},
+            {QStringLiteral("avatarUrl"), person.avatarUrl()},
+            {QStringLiteral("ocsUsername"), QString()},
+        });
+    }
+    return result;
+}
+
+QVariantMap aboutDataMap(const KAboutData &aboutData)
+{
+    QVariantList licenses;
+    const auto aboutLicenses = aboutData.licenses();
+    licenses.reserve(aboutLicenses.size());
+    for (const KAboutLicense &license : aboutLicenses) {
+        licenses.append(QVariantMap{
+            {QStringLiteral("name"), license.name()},
+            {QStringLiteral("text"), license.text()},
+            {QStringLiteral("spdx"), license.spdx()},
+        });
+    }
+
+    return {
+        {QStringLiteral("displayName"), aboutData.displayName()},
+        {QStringLiteral("productName"), aboutData.productName()},
+        {QStringLiteral("componentName"), aboutData.componentName()},
+        {QStringLiteral("programLogo"), aboutData.programLogo()},
+        {QStringLiteral("shortDescription"), aboutData.shortDescription()},
+        {QStringLiteral("homepage"), aboutData.homepage()},
+        {QStringLiteral("bugAddress"), aboutData.bugAddress()},
+        {QStringLiteral("version"), aboutData.version()},
+        {QStringLiteral("otherText"), aboutData.otherText()},
+        {QStringLiteral("authors"), aboutPeople(aboutData.authors())},
+        {QStringLiteral("credits"), aboutPeople(aboutData.credits())},
+        {QStringLiteral("translators"), aboutPeople(aboutData.translators())},
+        {QStringLiteral("licenses"), licenses},
+        {QStringLiteral("copyrightStatement"), aboutData.copyrightStatement()},
+        {QStringLiteral("desktopFileName"), aboutData.desktopFileName()},
+    };
+}
+
 } // namespace
 
 namespace kdockw
@@ -155,6 +205,13 @@ SettingsWindow::SettingsWindow(KDockWSettings *settings, QObject *parent)
     : QObject(parent)
     , m_settings(settings)
 {
+    // KCoreAddons' QML Core.AboutData singleton snapshots applicationData()
+    // when the QML engine first requests it. Queue a notification for the
+    // settings UI after Application has rebuilt and installed localized data.
+    connect(m_settings, &KDockWSettings::LanguageChanged, this, [this] {
+        Q_EMIT aboutDataChanged();
+    }, Qt::QueuedConnection);
+
     auto *outputOrder = OutputOrderMonitor::instance();
     connect(outputOrder, &OutputOrderMonitor::primaryOutputChanged, this, &SettingsWindow::updateAvailableScreens);
     connect(m_settings, &KDockWSettings::SelectedOutputsChanged, this, &SettingsWindow::updateAvailableScreens);
@@ -208,6 +265,11 @@ bool SettingsWindow::isVisible() const
 QVariantList SettingsWindow::availableScreens() const
 {
     return m_availableScreens;
+}
+
+QVariantMap SettingsWindow::aboutData() const
+{
+    return aboutDataMap(KAboutData::applicationData());
 }
 
 bool SettingsWindow::hasSelectedMonitorFallback() const

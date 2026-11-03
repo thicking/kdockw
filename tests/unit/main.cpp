@@ -6,6 +6,7 @@
 #include "app/application.h"
 #include "kdockw.h"
 
+#include <KAboutData>
 #include <KLocalizedString>
 #include <KLocalizedQmlContext>
 
@@ -37,6 +38,13 @@ int main(int argc, char *argv[])
         }
         kdockw::Application::applyLanguagePreference(settings.language());
 
+        const bool russian = expectedLanguage == QLatin1String("ru")
+            || (expectedLanguage == QLatin1String("system") && QLocale::system().language() == QLocale::Russian);
+        const KAboutData aboutData = kdockw::Application::makeAboutData();
+        if (aboutData.shortDescription() != (russian ? QStringLiteral("Док-панель KDE для Wayland") : QStringLiteral("KDE Dock for Wayland"))) {
+            return 5;
+        }
+
         QQmlEngine engine;
         KLocalization::setupLocalizedContext(&engine);
         QQmlComponent component(&engine);
@@ -48,7 +56,7 @@ int main(int argc, char *argv[])
         if (!object) {
             return 3;
         }
-        const QString expectedLabel = expectedLanguage == QLatin1String("ru") ? QStringLiteral("Общие") : QStringLiteral("General");
+        const QString expectedLabel = russian ? QStringLiteral("Общие") : QStringLiteral("General");
         return object->property("general").toString() == expectedLabel ? 0 : 4;
     }
 
