@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import release_ppa as ppa  # noqa: E402
-from release_common import ReleaseError  # noqa: E402
+from release_common import HttpError, ReleaseContext, ReleaseError  # noqa: E402
 
 
 class DebianVersionTest(unittest.TestCase):
@@ -39,6 +39,26 @@ class DebianVersionTest(unittest.TestCase):
             with self.subTest(left=left, right=right):
                 self.assertEqual(ppa.compare_versions(left, right), expected)
                 self.assertEqual(ppa.compare_versions(right, left), -expected)
+
+    def test_targets_independent_kdockw_ppa_and_blocks_missing_project(self) -> None:
+        self.assertEqual(ppa.PPA_OWNER, "thicking")
+        self.assertEqual(ppa.PPA_NAME, "kdockw")
+        context = ReleaseContext(
+            repository="thicking/kdockw", tag="v0.1.0", version="0.1.0",
+            commit="0" * 40, source_dir=Path("/missing"), archive=Path("/missing.tar.gz"),
+            sha256="0" * 64, source_url="https://example.invalid/source.tar.gz",
+            work_dir=Path("/tmp"), notes_path=Path("/missing-notes"), debian_revision="1",
+        )
+        original = ppa.http_json
+        try:
+            def missing(url: str, **kwargs: object) -> object:
+                raise HttpError("missing", status=404)
+            ppa.http_json = missing
+            report = ppa.status(context)
+        finally:
+            ppa.http_json = original
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("ppa:thicking/kdockw", report["detail"])
 
     def test_package_version_format(self) -> None:
         self.assertEqual(
@@ -313,7 +333,7 @@ def pub(status: str, source_id: str = "1", version: str = TARGET) -> dict:
     return {
         "status": status,
         "source_package_version": version,
-        "self_link": f"https://api.launchpad.net/devel/~isac322/+archive/ubuntu/kdockw/+sourcepub/{source_id}",
+        "self_link": f"https://api.launchpad.net/devel/~thicking/+archive/ubuntu/kdockw/+sourcepub/{source_id}",
     }
 
 

@@ -189,6 +189,31 @@ class ClassifyRemoteTest(unittest.TestCase):
         self.assertIsNone(extra["aur_version"])
 
 
+class MissingPackageGuardTest(unittest.TestCase):
+    def test_status_reports_absent_aur_package_without_git_clone(self) -> None:
+        context = make_context()
+        with (
+            mock.patch.object(release_aur, "_aur_package_exists", return_value=False),
+            mock.patch.object(release_aur, "clone_remote") as clone,
+        ):
+            report = release_aur.status(context)
+        clone.assert_not_called()
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("does not exist yet", report["detail"])
+
+    def test_publish_does_not_clone_or_push_when_package_is_absent(self) -> None:
+        context = make_context()
+        context = ReleaseContext(**{**context.__dict__, "source_dir": ROOT})
+        with (
+            mock.patch.object(release_aur, "_aur_package_exists", return_value=False),
+            mock.patch.object(release_aur, "clone_remote") as clone,
+        ):
+            report = release_aur.publish(context)
+        clone.assert_not_called()
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("no clone or push was attempted", report["detail"])
+
+
 class GeneratedSrcinfoTest(unittest.TestCase):
     def test_accepts_matching_srcinfo(self) -> None:
         release_aur.validate_generated_srcinfo(srcinfo("1.2.3"), make_context())

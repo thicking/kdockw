@@ -177,7 +177,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
         kit = built["output"]
 
         sums = (kit / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
-        self.assertEqual(len(sums), 26)
+        self.assertEqual(len(sums), 20)
         for line in sums:
             digest, name = line.split("  ", 1)
             self.assertEqual(
@@ -185,7 +185,7 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
             )
         with zipfile.ZipFile(built["zip"]) as archive:
             self.assertIsNone(archive.testzip())
-            self.assertEqual(len(archive.namelist()), 27)
+            self.assertEqual(len(archive.namelist()), 21)
 
         info = json.loads((kit / "kit.json").read_text(encoding="utf-8"))
         self.assertEqual(info["release"]["tag"], "v9.8.7")
@@ -218,14 +218,11 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
         launchpad = json.loads(
             (kit / "launchpad" / "submission.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(
-            [item["uploaded_url"] for item in launchpad["media"]],
-            [
-                "https://launchpadlibrarian.net/878876949/launchpad-icon-14.png",
-                "https://launchpadlibrarian.net/878876950/launchpad-logo-64.png",
-                "https://launchpadlibrarian.net/878876951/launchpad-brand-192.png",
-            ],
+        self.assertTrue(
+            all(item["source"].startswith("src/icons/") for item in launchpad["media"])
         )
+        self.assertEqual(launchpad["submission"]["target_status"], "proposed-project")
+        self.assertFalse(launchpad["published_project"])
         self.assertEqual(launchpad["observed_release"]["tag"], "v0.10.0")
         self.assertEqual(launchpad["release"]["tag"], "v9.8.7")
 
@@ -382,21 +379,22 @@ class TaggedLfsMediaTest(ReleaseFixture):
     MEDIA_URL = f"https://media.githubusercontent.com/media/thicking/kdockw/{COMMIT}/"
 
     def pointerize(self, root: Path) -> dict[str, bytes]:
-        """Pointerize only paths that are LFS objects in the checked-in tree."""
+        """Create synthetic LFS pointers for staged KDockW media in this fixture."""
         payloads: dict[str, bytes] = {}
         for channel in CHANNELS:
-            data = json.loads(
-                (root / SCHEMA_DIR / f"{channel}.json").read_text(encoding="utf-8")
-            )
+            schema_path = root / SCHEMA_DIR / f"{channel}.json"
+            data = json.loads(schema_path.read_text(encoding="utf-8"))
             for item in data["media"]:
-                if item["source"] in payloads:
-                    continue
-                checked_in = (REPO / item["source"]).read_bytes()
-                if not checked_in.startswith(prepare_submission_kit.LFS_PREFIX):
-                    continue
                 payload = (root / item["source"]).read_bytes()
-                payloads[item["source"]] = payload
-                (root / item["source"]).write_bytes(lfs_pointer_bytes(payload))
+                synthetic = f"branding/test-lfs/{channel}/{item['filename']}"
+                destination = root / synthetic
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(lfs_pointer_bytes(payload))
+                payloads[synthetic] = payload
+                item["source"] = synthetic
+            schema_path.write_text(
+                json.dumps(data, indent=2) + "\n", encoding="utf-8"
+            )
         return payloads
 
     def serve(
@@ -486,21 +484,21 @@ class TaggedLfsMediaTest(ReleaseFixture):
         # A corrupted staged object is refetched, never trusted.
         corrupted = (
             stage
-            / hashlib.sha256(payloads["branding/social/kde-store-logo.png"]).hexdigest()
+            / hashlib.sha256(payloads["branding/test-lfs/kde-store/kdockw-icon-256.png"]).hexdigest()
         )
         corrupted.write_bytes(b"\x89PNG corrupted")
         load_submissions(context)
         self.assertEqual(
-            requested, [self.MEDIA_URL + "branding/social/kde-store-logo.png"]
+            requested, [self.MEDIA_URL + "branding/test-lfs/kde-store/kdockw-icon-256.png"]
         )
         self.assertEqual(
-            corrupted.read_bytes(), payloads["branding/social/kde-store-logo.png"]
+            corrupted.read_bytes(), payloads["branding/test-lfs/kde-store/kdockw-icon-256.png"]
         )
 
     def test_pointer_object_hash_mismatch_is_refused(self) -> None:
         source = self.tagged_source()
         payloads = self.pointerize(source)
-        rel = "branding/social/launchpad-icon-14.png"
+        rel = "branding/test-lfs/launchpad/kdockw-launchpad-icon-16.png"
         tampered = bytearray(payloads[rel])
         tampered[-1] ^= 0xFF
         self.serve(payloads, {rel: bytes(tampered)})
@@ -514,7 +512,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
         self.assertFalse(staged.exists())
 
     def test_pointer_object_size_mismatch_is_refused(self) -> None:
-        rel = "branding/social/launchpad-logo-64.png"
+        rel = "branding/test-lfs/launchpad/kdockw-launchpad-logo-64.png"
         for label, change in (
             ("short", lambda body: body[:-1]),
             ("long", lambda body: body + b"\x00"),
@@ -531,7 +529,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
     def test_malformed_pointer_is_refused_without_download(self) -> None:
         source = self.tagged_source()
         payloads = self.pointerize(source)
-        rel = "branding/social/avatar-400.png"
+        rel = "branding/test-lfs/alternativeto/kdockw-icon-256.png"
         (source / rel).write_bytes(lfs_pointer_bytes(payloads[rel]) + b"ext x\n")
         requested = self.serve(payloads)
         self.assert_refused(self.context("9.8.7", make_archive("9.8.7"), source))
@@ -540,7 +538,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
     def test_pointer_resolving_to_non_png_is_refused(self) -> None:
         source = self.tagged_source()
         payloads = self.pointerize(source)
-        rel = "branding/social/launchpad-brand-192.png"
+        rel = "branding/test-lfs/launchpad/kdockw-launchpad-brand-128.png"
         not_png = b"<html>not an image</html>\n"
         (source / rel).write_bytes(lfs_pointer_bytes(not_png))
         self.serve({**payloads, rel: not_png})
@@ -598,34 +596,12 @@ class TaggedLfsMediaTest(ReleaseFixture):
         self.assertEqual(requested, [])
 
     def test_launchpad_status_compares_resolved_pointer_media(self) -> None:
-        source = self.tagged_source()
-        payloads = self.pointerize(source)
-        self.serve(payloads)
-        context = self.context("9.8.7", make_archive("9.8.7"), source)
-        schema = json.loads(
-            (source / SCHEMA_DIR / "launchpad.json").read_text(encoding="utf-8")
-        )
-        media = {item["role"]: item for item in schema["media"]}
-        project = {
-            "name": "kdockw",
-            "owner_link": release_stores.LAUNCHPAD_OWNER,
-            "information_type": "Public",
-        }
-        live: dict[str, bytes] = {}
-        for role, link_key in release_stores.LAUNCHPAD_BRANDING:
-            link = f"https://api.launchpad.net/1.0/kdockw/{link_key}"
-            project[link_key] = link
-            live[link] = payloads[media[role]["source"]]
-        with (
-            mock.patch.object(release_stores, "http_json", return_value=project),
-            mock.patch.object(
-                release_stores,
-                "http_bytes",
-                side_effect=lambda url, **_: (200, live[url]),
-            ),
-        ):
+        context = self.context("9.8.7", make_archive("9.8.7"), self.tagged_source())
+        with mock.patch.object(release_stores, "http_json") as request:
             status = release_stores.launchpad_status(context)
-        self.assertEqual(status["status"], "already_published", status)
+        request.assert_not_called()
+        self.assertEqual(status["status"], "blocked")
+        self.assertIn("No KDockW Launchpad project", status["detail"])
 
 
 @unittest.skipUnless(
@@ -745,112 +721,43 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
     def ocs(self, version: str, filename: str | None = None, md5: str | None = None):
         record = {
             "id": release_stores.KDE_RECORD,
+            "name": "Krema",
             "version": version,
             "downloadname1": filename or f"kdockw-{version}.tar.gz",
             "downloadmd5sum1": md5 or (self.md5 if version == "9.8.7" else "0" * 32),
         }
         return mock.patch.object(release_stores, "ocs_record", return_value=record)
 
-    # AlternativeTo: lock precedence and content-bound publication
+    # AlternativeTo: do not assume listing identity after HTTP 403.
 
-    def test_alternativeto_lock_precedes_matching_public_page(self) -> None:
-        self.record("alternativeto", "start")
-        with self.alternativeto_pages():
-            self.assertEqual(self.status("alternativeto")["status"], "pending")
-
-    def test_alternativeto_matching_public_page_is_published(self) -> None:
-        with self.alternativeto_pages():
-            self.assertEqual(
-                self.status("alternativeto")["status"], "already_published"
-            )
-
-    def test_alternativeto_existing_listing_with_other_description_is_not_published(
+    def test_unverified_alternativeto_listing_is_blocked_without_requests_or_receipts(
         self,
     ) -> None:
-        stale = ["KDockW is a dock.", *self.paragraphs[1:]]
-        with self.alternativeto_pages(paragraphs=stale):
-            self.assertEqual(self.status("alternativeto")["status"], "browser_required")
+        with mock.patch.object(release_stores, "http_bytes") as request:
+            self.assertEqual(self.status("alternativeto")["status"], "blocked")
+        request.assert_not_called()
+        with self.assertRaisesRegex(ReleaseError, "identity and owner are unverified"):
             self.record("alternativeto", "start")
-            with self.assertRaises(ReleaseError):
-                self.record("alternativeto", "published")
-        self.assertFalse((self.receipts / "alternativeto.json").exists())
-        self.assertTrue((self.receipts / "alternativeto.lock").exists())
-
-    def test_alternativeto_missing_relationship_is_not_published(self) -> None:
-        with self.alternativeto_pages(relation=False):
-            self.assertEqual(self.status("alternativeto")["status"], "browser_required")
-
-    def test_alternativeto_blocked_read_never_records_published(self) -> None:
-        self.record("alternativeto", "start")
-        with self.alternativeto_pages(listing_status=403):
-            with self.assertRaises(ReleaseError):
-                self.record("alternativeto", "published")
-            self.assertTrue((self.receipts / "alternativeto.lock").exists())
-            self.assertEqual(
-                self.record(
-                    "alternativeto",
-                    "pending",
-                    "moderation queue, saved 2026-10-07T00:00Z",
-                )["status"],
-                "pending",
-            )
-            self.assertFalse((self.receipts / "alternativeto.lock").exists())
-            self.assertEqual(self.status("alternativeto")["status"], "pending")
-        with self.alternativeto_pages():
-            self.assertEqual(self.status("alternativeto")["status"], "pending")
-            self.assertEqual(
-                self.record("alternativeto", "published")["status"], "already_published"
-            )
-        receipt = self.receipt("alternativeto")
-        self.assertEqual(
-            (receipt["state"], receipt["reference"]),
-            ("published", release_stores.ALTERNATIVETO_URL),
-        )
-        self.assertEqual(receipt["verification"]["method"], "public-read")
-        with self.alternativeto_pages(listing_status=403):
-            self.assertEqual(
-                self.status("alternativeto")["status"], "already_published"
-            )
-        with self.alternativeto_pages(listing_status=404):
-            self.assertEqual(self.status("alternativeto")["status"], "browser_required")
-        with self.alternativeto_pages(paragraphs=["KDockW is a dock."]):
-            self.assertEqual(self.status("alternativeto")["status"], "browser_required")
-
-    def test_alternativeto_published_reference_must_be_canonical_listing(self) -> None:
-        self.record("alternativeto", "start")
-        with self.alternativeto_pages(), self.assertRaises(ReleaseError):
-            self.record(
-                "alternativeto", "published", "https://example.com/screenshot.png"
-            )
+        self.assertFalse((self.receipts / "alternativeto.lock").exists())
         self.assertFalse((self.receipts / "alternativeto.json").exists())
 
     # Pending recovery and abort
 
     def test_pending_receipt_recovers_without_a_second_upload_session(self) -> None:
-        self.record("kde-store", "start")
-        self.record("kde-store", "pending", "saved 01:00, awaiting refresh")
-        with self.assertRaises(ReleaseError):
+        with self.assertRaisesRegex(ReleaseError, "belongs to Krema"):
             self.record("kde-store", "start")
-        self.record("kde-store", "pending", "moderation ticket 42")
-        receipt = self.receipt("kde-store")
-        self.assertEqual(
-            (receipt["state"], receipt["reference"]),
-            ("pending", "moderation ticket 42"),
-        )
-        self.assertEqual(
-            receipt["history"][-1]["reference"], "saved 01:00, awaiting refresh"
-        )
         self.assertFalse((self.receipts / "kde-store.lock").exists())
-        with self.assertRaises(ReleaseError):
-            self.record("kde-store", "abort")
-        self.record("kde-store", "abort", "moderator rejected the upload")
-        self.assertEqual(self.receipt("kde-store")["state"], "withdrawn")
-        self.record("kde-store", "start")
-        self.assertTrue((self.receipts / "kde-store.lock").exists())
+        self.assertFalse((self.receipts / "kde-store.json").exists())
 
     def test_abort_releases_lock_without_a_readable_packet(self) -> None:
-        self.record("kde-store", "start")
-        shutil.rmtree(self.packet)
+        self.receipts.mkdir(parents=True, exist_ok=True)
+        (self.receipts / "kde-store.lock").write_text(
+            json.dumps({"store": "kde-store", "tag": self.ctx.tag,
+                        "commit": self.ctx.commit, "source_sha256": self.ctx.sha256}),
+            encoding="utf-8",
+        )
+        if self.packet.exists():
+            shutil.rmtree(self.packet)
         release_stores.record(self.ctx, None, "kde-store", "abort", None)
         self.assertFalse((self.receipts / "kde-store.lock").exists())
         with self.assertRaises(ReleaseError):
@@ -874,49 +781,10 @@ class StoreReceiptLifecycleTest(ReleaseFixture):
             release_stores.record(self.ctx, None, "kde-store", "abort", None)
         self.assertTrue(lock.exists())
 
-    def test_record_requires_a_lock_or_pending_receipt(self) -> None:
-        with self.assertRaises(ReleaseError):
-            self.record("kde-store", "pending", "ticket")
-        with self.ocs("9.8.7"), self.assertRaises(ReleaseError):
+    def test_kde_store_record_is_blocked_and_cannot_claim_krema_listing(self) -> None:
+        self.assertEqual(self.status("kde-store")["status"], "blocked")
+        with self.assertRaisesRegex(ReleaseError, "belongs to Krema"):
             self.record("kde-store", "published")
-        self.record("kde-store", "start")
-        with self.assertRaises(ReleaseError):
-            self.record("kde-store", "start")
-
-    # KDE Store: receipt survives OCS lag, never a contradiction
-
-    def test_kde_published_receipt_survives_ocs_lag_but_not_contradiction(self) -> None:
-        self.record("kde-store", "start")
-        with self.ocs("9.8.7"):
-            self.assertEqual(self.status("kde-store")["status"], "pending")
-            self.record("kde-store", "published")
-            self.assertEqual(self.status("kde-store")["status"], "already_published")
-        with self.ocs("0.10.0"):
-            self.assertEqual(self.status("kde-store")["status"], "already_published")
-        with self.ocs("9.8.7", md5="f" * 32):
-            self.assertEqual(self.status("kde-store")["status"], "browser_required")
-        with self.assertRaises(ReleaseError):
-            self.record("kde-store", "start")
-
-    def test_kde_published_requires_the_live_archive(self) -> None:
-        self.record("kde-store", "start")
-        for live in (self.ocs("0.10.0"), self.ocs("9.8.7", md5="f" * 32)):
-            with live, self.assertRaises(ReleaseError):
-                self.record("kde-store", "published")
-        self.assertTrue((self.receipts / "kde-store.lock").exists())
-        self.assertFalse((self.receipts / "kde-store.json").exists())
-
-    def test_kde_pending_receipt_states(self) -> None:
-        self.record("kde-store", "start")
-        self.record("kde-store", "pending", "saved, awaiting refresh")
-        with self.ocs("0.10.0"):
-            self.assertEqual(self.status("kde-store")["status"], "pending")
-        with self.ocs("9.8.7", md5="f" * 32):
-            self.assertEqual(self.status("kde-store")["status"], "browser_required")
-        with self.ocs("9.8.7"):
-            self.assertEqual(self.status("kde-store")["status"], "pending")
-            self.record("kde-store", "published")
-            self.assertEqual(self.status("kde-store")["status"], "already_published")
 
     # Packet corruption
 

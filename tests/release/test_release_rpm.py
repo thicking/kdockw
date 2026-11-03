@@ -9,13 +9,14 @@ import hashlib
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import release_rpm as rpm  # noqa: E402
-from release_common import ReleaseError  # noqa: E402
+from release_common import HttpError, ReleaseContext, ReleaseError  # noqa: E402
 
 CLONE = "https://github.com/thicking/kdockw.git"
 
@@ -78,10 +79,10 @@ def directory(
 
 
 RESULTS_PUBLISHED = """<resultlist state="x">
-  <result project="home:isac322" repository="Fedora_44" arch="x86_64" code="published" state="published">
+  <result project="home:thicking" repository="Fedora_44" arch="x86_64" code="published" state="published">
     <status package="kdockw" code="succeeded"/>
   </result>
-  <result project="home:isac322" repository="openSUSE_Slowroll" arch="aarch64" code="published" state="published">
+  <result project="home:thicking" repository="openSUSE_Slowroll" arch="aarch64" code="published" state="published">
     <status package="kdockw" code="excluded"/>
   </result>
 </resultlist>"""
@@ -140,6 +141,41 @@ class ObsInputs(unittest.TestCase):
         spec.symlink_to(target)
         with self.assertRaises(ReleaseError):
             inputs(self.root)
+
+
+class ChannelOwnership(unittest.TestCase):
+    def test_copr_uses_repository_owner_and_blocks_missing_project(self) -> None:
+        context = ReleaseContext(
+            repository="thicking/kdockw", tag="v0.1.0", version="0.1.0",
+            commit="0" * 40, source_dir=Path("/missing"), archive=Path("/missing.tar.gz"),
+            sha256="0" * 64, source_url="https://example.invalid/source.tar.gz",
+            work_dir=Path("/tmp"), notes_path=Path("/missing-notes"), debian_revision="1",
+        )
+        self.assertEqual(rpm._copr_names(context), ("thicking", "kdockw"))
+        original = rpm.http_json
+        try:
+            rpm.http_json = lambda url, **kwargs: (_ for _ in ()).throw(
+                HttpError("missing", status=404)
+            )
+            report = rpm.status_copr(context)
+        finally:
+            rpm.http_json = original
+        self.assertEqual(report["status"], "blocked")
+        self.assertIn("thicking/kdockw does not exist yet", report["detail"])
+
+    def test_copr_auth_account_must_match_project_owner(self) -> None:
+        context = ReleaseContext(
+            repository="thicking/kdockw", tag="v0.1.0", version="0.1.0",
+            commit="0" * 40, source_dir=Path("/missing"), archive=Path("/missing.tar.gz"),
+            sha256="0" * 64, source_url="https://example.invalid/source.tar.gz",
+            work_dir=Path("/tmp"), notes_path=Path("/missing-notes"), debian_revision="1",
+        )
+        with (
+            mock.patch.object(rpm.shutil, "which", return_value="copr-cli"),
+            mock.patch.object(rpm, "command", return_value="another-fas-user"),
+            self.assertRaisesRegex(rpm._Blocked, "configured project owner"),
+        ):
+            rpm._copr_dispatch(context, {}, rpm.CoprPlan("planned", "test"))
 
 
 class ObsDecision(unittest.TestCase):
