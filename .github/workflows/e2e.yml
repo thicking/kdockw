@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
+# Build, CTest and release-tool unit tests. The C++/QML CTest suite runs inside
+# the ctest-image stage of tests/appium/Dockerfile; release Python tests run
+# independently on the GitHub runner and require no external services.
+#
 # Build & tests: inside the ctest-image stage of tests/appium/Dockerfile
 # (Fedora, KWin, Qt/KF6 + ccache; no AT-SPI stack), build every target with
 # BUILD_TESTING=ON and run the whole CTest suite except the Docker-based
@@ -21,7 +25,7 @@
 #
 # ccache: persisted with actions/cache, keyed on the image ref and the
 # sources. Caches saved by a pull request are visible only to that pull
-# request, so pushes to master and a daily schedule (after ci-images.yml's
+# request, so pushes to main and a daily schedule (after ci-images.yml's
 # daily rebuild of the image, whose updated toolchain/headers miss the old
 # cache) run this job on the default branch to seed
 # the cache every pull request restores from.
@@ -33,6 +37,10 @@
 # image) is used; tests/distro contributes the two image scripts; tests/e2e
 # holds scenario docs. packaging/ is not built here.
 #
+# Release unit tests: five deterministic Python unittest modules under
+# tests/release. Their network-facing LFS download test is opt-in and skipped
+# by default; its controlled mocks still verify digest and size checks.
+#
 # Pull requests run this workflow through ci.yml (workflow_call), whose
 # required `CI gate` check reports even when this suite does not apply.
 
@@ -41,10 +49,13 @@ name: Build & tests
 on:
   workflow_call:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "src/**"
       - "CMakeLists.txt"
+      - "scripts/release.py"
+      - "scripts/release_*.py"
+      - "scripts/prepare_submission_kit.py"
       - "tests/**"
       - "!tests/appium/**"
       - "tests/appium/Dockerfile"
@@ -66,6 +77,20 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  release-tests:
+    name: Release tooling tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          lfs: false
+      - name: Run release tooling unit tests
+        run: python3 -m unittest discover -s tests/release -p 'test_*.py' -v
+
   build-and-test:
     name: Build & tests
     runs-on: ubuntu-latest

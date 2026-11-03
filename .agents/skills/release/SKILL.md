@@ -32,7 +32,7 @@ All tools are Python standard-library scripts in `scripts/`. The agent runs them
 | `python3 scripts/release_stores.py status --context DIR/context.json [--store S]` | Read-only status; `S` is `kde-store`, `alternativeto`, `launchpad`, `github`, `awesome-kde`, `awesome-wayland`, `nixpkgs` or `linuxlinks` | No |
 | `python3 scripts/release_stores.py record --context DIR/context.json [--packet DIR2] --store kde-store\|alternativeto --state start\|pending\|published\|abort [--reference R]` | Take or release the local lock for one browser task and write its receipt in `work_dir/store-receipts/`. `--packet` is required except for `abort` | No |
 
-`--repository` defaults to `isac322/kdockw`; `--repo-root` defaults to the current checkout. `prepare`, `gate` and `publish` accept `--signer FINGERPRINT` (repeatable) for the allowed tag signers; always pass the pinned `AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9`. `context.json` (schema version 1) holds `repository`, `tag`, `version`, `commit`, `source_dir`, `archive`, `sha256`, `source_url`, `work_dir`, `notes_path` and `debian_revision`. It never contains credentials. Every later command re-validates it against the tag, commit and archive hash, so a stale or edited context fails instead of publishing the wrong bytes. `notes.md` is checked the same way: it must equal the text generated from the tagged CHANGELOG section byte for byte, so an edited `notes.md` fails with `notes_path does not match` or `notes changed after context validation`.
+`--repository` defaults to `thicking/kdockw`; `--repo-root` defaults to the current checkout. `prepare`, `gate` and `publish` accept `--signer FINGERPRINT` (repeatable) for the allowed tag signers; always pass the pinned `AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9`. `context.json` (schema version 1) holds `repository`, `tag`, `version`, `commit`, `source_dir`, `archive`, `sha256`, `source_url`, `work_dir`, `notes_path` and `debian_revision`. It never contains credentials. Every later command re-validates it against the tag, commit and archive hash, so a stale or edited context fails instead of publishing the wrong bytes. `notes.md` is checked the same way: it must equal the text generated from the tagged CHANGELOG section byte for byte, so an edited `notes.md` fails with `notes_path does not match` or `notes changed after context validation`.
 
 The archive recorded in a context is the byte sequence every channel later checks against `source_url`. For a tag with no published GitHub release (none, or only a draft), `prepare` builds it deterministically from the signed tag and reports `archive_origin` `generated`. For a tag whose release is already published, `prepare` reuses the source bytes GitHub already serves for that tag: the uploaded `kdockw-X.Y.Z.tar.gz` asset when the release carries one (`published`; the named asset always wins), otherwise the tag's automatic source archive from `https://github.com/OWNER/REPO/archive/refs/tags/vX.Y.Z.tar.gz` (`autoarchive`), downloaded anonymously over HTTPS. Reused bytes are trusted only when the archive's recorded commit equals the signed tag commit, it has a single safe `kdockw-X.Y.Z/` root, and its full file manifest (paths, SHA-256, executable bits, symlinks) equals the deterministic archive of that commit; any mismatch fails `prepare` with no fallback. Reuse keeps an already published version's checksums identical across reruns instead of recompressing to different bytes, which is what lets the AUR, OBS, PPA and KDE Store compare the context against what they already hold. `source_url` stays the named release asset URL in every case. A new or draft-only tag always gets the generated archive; this tooling never substitutes other bytes for a genuinely new release.
 
@@ -56,7 +56,7 @@ Every channel result uses one status:
 
 Abort with a clear message if any of these fail:
 
-- The working tree has no uncommitted tracked changes, and the current branch is `master`, up to date with `origin/master`.
+- The working tree has no uncommitted tracked changes, and the current branch is `main`, up to date with `origin/main`.
 - `## [Unreleased]` in `CHANGELOG.md` has at least one entry.
 
 Then check the local credentials the release CLI uses; there are no CI secrets. Report every channel's state. If all are ready, continue without asking. If any is not, name the missing credential or tool and ask the user to restore it; never substitute another account, key or token. Leaving a channel out of the release is a scope change that needs the user's explicit go-ahead. A channel that is not ready ends up `blocked`, not skipped silently.
@@ -64,7 +64,7 @@ Then check the local credentials the release CLI uses; there are no CI secrets. 
 | Channel | Ready when |
 |---|---|
 | Tag signing | `gpg --batch --pinentry-mode error --list-secret-keys AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9` lists the key, and a test signature succeeds without a prompt (below) |
-| GitHub | `gh auth status` shows `isac322` |
+| GitHub | `gh auth status` shows `thicking` |
 | AUR | `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes aur@aur.archlinux.org help` succeeds |
 | OBS | `osc api /about` succeeds (`osc` may run as `uvx --from osc osc`) |
 | COPR | `copr-cli whoami` prints `isac322` |
@@ -135,17 +135,20 @@ git push
 
 ## 4. Distro E2E gate, then the signed tag
 
-The distro E2E matrix does not run on master pushes. Run the full matrix on the pushed release commit and tag only if every job passes:
+The distro E2E matrix is available for manual dispatch. Run the full matrix for the pushed candidate commit and tag only if every job passes. `expected_sha` is checked against `github.sha`, so the selected ref must resolve to the exact candidate SHA:
 
 ```bash
-gh workflow run distro-e2e.yml --ref master -f targets=all
+candidate_sha=$(git rev-parse HEAD)
+gh workflow run distro-e2e.yml --repo thicking/kdockw --ref main \
+  -f targets=all -f expected_sha="$candidate_sha"
 sleep 5
-run_id=$(gh run list --workflow distro-e2e.yml --branch master --event workflow_dispatch \
-  --commit "$(git rev-parse HEAD)" --limit 1 --json databaseId --jq '.[0].databaseId')
+run_id=$(gh run list --repo thicking/kdockw --workflow distro-e2e.yml --branch main \
+  --event workflow_dispatch --commit "$candidate_sha" --limit 1 \
+  --json databaseId --jq '.[0].databaseId')
 gh run watch "$run_id" --exit-status
 ```
 
-Always dispatch `targets=all`. `release.py gate` derives the expected job set from the tagged `tests/distro/targets.tsv` plus `arch` and requires every one of those jobs to have succeeded on the exact commit; a subset run, a skipped or cancelled job, or a run on another SHA does not count. If it fails, fix it on master with a new commit, redo the release commit checks if versions moved, and rerun the gate. Never tag a commit whose distro E2E is red.
+Always dispatch `targets=all`. `release.py gate` derives the expected job set from the tagged `tests/distro/targets.tsv` plus `arch` and requires every one of those jobs to have succeeded on the exact commit; a subset run, a skipped or cancelled job, or a run on another SHA does not count. If it fails, fix it on `main` with a new commit, redo the release commit checks if versions moved, and rerun the gate. Never tag a commit whose distro E2E is red.
 
 Then create a signed, annotated tag with the pinned key. `prepare`, `gate` and `publish` refuse unsigned tags and tags signed by any key other than the `--signer` fingerprints, even one the local keyring trusts.
 
@@ -257,7 +260,7 @@ These are enforced by the adapters; know them when reading a `blocked` or `faile
 
 - **GitHub** (`scripts/release_github.py`): creates the release for the existing tag as a draft, uploads `kdockw-X.Y.Z.tar.gz` plus `SHA256SUMS` to it, and publishes it after re-checking that the remote tag still points at the context commit. A retry resumes a draft whose notes and target commit match the context exactly (reported as `planned` before `--execute`); any other draft for the tag is `blocked` and is never edited or deleted, so publish or delete it by hand. If the published release or an asset already exists, its hash must match the context or the channel fails; when only assets are missing, `--execute` uploads them from the context without editing the release title, body or existing assets. GitHub has no compare-and-swap for tags, so a tag moved after the last check is detected only by the post-publication check, which fails the channel with `remote tag vX.Y.Z moved during publication`; stop and report it to the user as an integrity problem. The context's `source_url` is this asset (`https://github.com/thicking/krema/releases/download/vX.Y.Z/kdockw-X.Y.Z.tar.gz`), so `release.py` refuses `--execute` for any other channel until the asset exists with the matching hash.
 - **AUR** (`scripts/release_aur.py`): stages the tagged `packaging/arch/PKGBUILD` in scratch, sets `pkgver`, the source URL and `sha256sums` from the context, regenerates `.SRCINFO` with `makepkg --printsrcinfo` (in an `archlinux` container on the Mac), and pushes to `ssh://aur@aur.archlinux.org/kdockw.git` over BatchMode SSH with strict host keys. It never edits the checkout and no longer uses `git subtree`. An identical remote state means `already_published`.
-- **OBS** (`scripts/release_rpm.py`, `home:isac322/kdockw`): uploads only `_service`, `kdockw.spec`, `kdockw.dsc`, `debian.changelog`, `debian.control`, `debian.rules` and `debian.copyright` from the tag, with `_service`'s `revision` pinned to the tag instead of `master`. `project.config`, `project.meta.xml` and `apply-project-config.sh` configure the OBS project and are never uploaded, and no repository is removed. Uses the existing `osc` configuration through `uvx --from osc osc`.
+- **OBS** (`scripts/release_rpm.py`, `home:isac322/kdockw`): uploads only `_service`, `kdockw.spec`, `kdockw.dsc`, `debian.changelog`, `debian.control`, `debian.rules` and `debian.copyright` from the tag, with `_service`'s `revision` pinned to the tag instead of `main`. `project.config`, `project.meta.xml` and `apply-project-config.sh` configure the OBS project and are never uploaded, and no repository is removed. Uses the existing `osc` configuration through `uvx --from osc osc`.
 - **COPR** (`scripts/release_rpm.py`, `isac322/kdockw`): points the SCM package `kdockw` at the tag (`packaging/obs/kdockw.spec`) and starts a build unless one for that version and tag already succeeded or is running. Never changes chroots or webhooks. COPR deletes EOL Fedora chroots on its own. Those releases keep building on OBS; don't remove their OBS target or README row.
 - **Launchpad PPA** (`scripts/release_ppa.py`, `ppa:isac322/kdockw`): uploads one source package per active Ubuntu series that ships Qt ≥ 6.8 (25.10 or later), queried from Launchpad rather than hardcoded, because Launchpad rejects uploads to Obsolete series. The version is `x.y.z-<debrev>~ppa1~<series>1`, with `<debrev>` taken from the top `debian.changelog` entry. Sources are built in an Ubuntu container, signed with the pinned key (the private key never leaves the local keyring), and uploaded. A series that already has that exact version, pending or published, is skipped; the revision is never bumped automatically. A packaging-only respin needs a new `debian.changelog` revision and therefore a new release commit and tag.
 

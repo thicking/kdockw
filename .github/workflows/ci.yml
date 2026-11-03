@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 #
 # Pull request CI with one always-present result, `CI gate`, which the
-# master ruleset requires. Path filters on a pull_request trigger skip the
+# main ruleset requires. Path filters on a pull_request trigger skip the
 # whole workflow, so a check behind one never reports on unrelated pull
 # requests and cannot be required. This workflow starts on every pull
 # request instead, decides from the changed files which suites apply, and
@@ -10,7 +10,7 @@
 # `CI gate` succeeds when every applicable suite succeeded; a suite skipped
 # as not applicable counts as passed, a failed or cancelled one fails it.
 #
-# Pushes to master, schedules and manual dispatch still start e2e.yml and
+# Pushes to main, schedules and manual dispatch still start e2e.yml and
 # distro-e2e.yml directly, unchanged.
 #
 # Path rules use the semantics of `on.<event>.paths`: patterns are applied
@@ -58,6 +58,9 @@ jobs:
           BUILD_PATHS: |
             src/**
             CMakeLists.txt
+            scripts/release.py
+            scripts/release_*.py
+            scripts/prepare_submission_kit.py
             tests/**
             !tests/appium/**
             tests/appium/Dockerfile

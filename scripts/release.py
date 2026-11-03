@@ -531,6 +531,8 @@ def gate(
                 context.tag,
                 "-f",
                 "targets=all",
+                "-f",
+                f"expected_sha={context.commit}",
             ],
             timeout=60,
         )

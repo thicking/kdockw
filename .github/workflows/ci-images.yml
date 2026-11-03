@@ -16,7 +16,7 @@
 # tests/distro/build-ci-image.sh. Publishing only saves them that time.
 #
 # When a ref is (re)built and pushed:
-#   * missing in ghcr.io (a push to master changed an image input: new hash);
+#   * missing in ghcr.io (a push to main changed an image input: new hash);
 #   * every daily schedule run, for every distro target and the ctest image.
 #     Stable distros pin their base digest but still ship Qt/KF/Plasma
 #     updates, and the package installed at test time resolves kdockw's
@@ -35,9 +35,9 @@
 # pull request are visible only to that pull request; these runs on the
 # default branch are what every pull request's distro-e2e.yml job restores
 # from. Doing it here costs one ~1-2 min package build per target per day;
-# seeding from distro-e2e.yml on every push to master would run all twelve
+# seeding from distro-e2e.yml on every push to main would run all twelve
 # ~8 min suites per merge. Build & tests seeds its own ccache (e2e.yml runs
-# on pushes to master), since that job is the build.
+# on pushes to main), since that job is the build.
 #
 # Retention (job `prune`, schedule and dispatch only): daily rebuilds move
 # tags and leave the previous versions untagged, and a changed image input
@@ -52,23 +52,22 @@
 # Only this workflow has `packages: write`. It publishes to the upstream
 # package, so it does nothing in forks.
 #
-# Bootstrapping before this file is on master: add a temporary
+# Bootstrapping before this file is on main: add a temporary
 # `push: branches: [<branch>]` trigger; nothing below depends on the ref
-# being master (caches seeded from another branch are just not visible to
-# pull requests against master).
+# being main (caches seeded from another branch are just not visible to
+# pull requests against main).
 
 name: CI images
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "tests/distro/**"
       - "!tests/distro/**/*.md"
       - "tests/appium/Dockerfile"
       - "tests/appium/tools/**"
       - "tests/appium/setup-vgem.sh"
-      - ".github/workflows/ci-images.yml"
   schedule:
     - cron: "17 3 * * *"
   workflow_dispatch:

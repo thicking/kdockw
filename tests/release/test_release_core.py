@@ -683,6 +683,22 @@ class GateDispatchTests(ContextFixture):
         self.assertEqual(out["status"], "pending")
         self.assertEqual(json.loads(marker.read_text())["commit"], COMMIT)
 
+    def test_dispatch_binds_run_to_exact_candidate_sha(self) -> None:
+        context = load_context(self.write_context())
+        captured: list[list[str]] = []
+        out = self.gate(context, lambda argv, **_: captured.append(argv) or "")
+        self.assertEqual(out["status"], "pending")
+        argv = captured[0]
+        self.assertIn("--ref", argv)
+        self.assertEqual(argv[argv.index("--ref") + 1], context.tag)
+        self.assertIn(f"expected_sha={context.commit}", argv)
+        self.assertIn("targets=all", argv)
+
+
+class ReleaseCliDefaultsTest(unittest.TestCase):
+    def test_default_repository_is_the_kdockw_fork(self) -> None:
+        self.assertEqual(release.DEFAULT_REPOSITORY, "thicking/kdockw")
+
 
 def recompress(raw_tar: bytes, mtime: int) -> bytes:
     """The same tar stream with other gzip framing, like GitHub's autoarchive."""

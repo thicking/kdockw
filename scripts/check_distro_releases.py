@@ -86,7 +86,7 @@ LABEL_DESCRIPTION = (
 
 POLICY_LINK = (
     "See the [Distribution Support Policy]"
-    "(https://github.com/thicking/kdockw/blob/master/AGENTS.md"
+    "(https://github.com/thicking/kdockw/blob/main/AGENTS.md"
     "#distribution-support-policy) in AGENTS.md."
 )
 

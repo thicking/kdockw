@@ -33,7 +33,7 @@
 # below and its required `CI gate` check reports even when this suite does
 # not apply), a weekly schedule to catch rolling-distro drift (arch,
 # opensuse-tumbleweed/slowroll, ...), and manual dispatch, which the release
-# procedure (.agents/skills/release/SKILL.md) runs on master before tagging.
+# procedure (.agents/skills/release/SKILL.md) runs against the candidate commit before tagging.
 # Path filter: the package is built with BUILD_TESTING=OFF from src/,
 # CMakeLists.txt and packaging/ (plus LICENSES/, which the packages ship);
 # the suite is tests/appium (not its Dockerfile, which only e2e.yml
@@ -72,6 +72,11 @@ on:
         description: "Targets (comma/space separated ids from tests/distro/targets.tsv or 'arch'), or 'all'"
         required: false
         default: all
+      expected_sha:
+        description: "Expected 40-character commit SHA; the selected ref must resolve to this commit"
+        required: false
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -95,6 +100,21 @@ jobs:
           lfs: false
           sparse-checkout: tests/distro/targets.tsv
           sparse-checkout-cone-mode: false
+
+      - name: Verify requested candidate commit
+        if: github.event_name == 'workflow_dispatch' && inputs.expected_sha != ''
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          ACTUAL_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::expected_sha must be a 40-character lowercase commit SHA"
+            exit 1
+          fi
+          if [[ "$EXPECTED_SHA" != "$ACTUAL_SHA" ]]; then
+            echo "::error::selected ref resolved to $ACTUAL_SHA, expected $EXPECTED_SHA"
+            exit 1
+          fi
 
       - name: Resolve target list
         id: resolve
