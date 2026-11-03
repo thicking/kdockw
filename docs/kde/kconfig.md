@@ -208,7 +208,7 @@ class DockSettings : public QObject {
     }
 
     int iconSize() const {
-        return m_group.readEntry("IconSize", 48);
+        return m_group.readEntry("IconSize", 40);
     }
 
     void setIconSize(int size) {
@@ -222,38 +222,50 @@ class DockSettings : public QObject {
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `PinnedLaunchers` | QStringList | `{}` | Pinned launcher URLs |
-| `IconSize` | int | 48 | Icon size in pixels |
-| `IconSpacing` | int | 8 | Spacing between icons |
+| `PinnedLaunchers` | QStringList | KConfigXT starter list | Pinned launcher URLs; each user's saved list takes precedence |
+| `IconSize` | int | 40 | Icon size in pixels |
+| `IconSpacing` | int | 13 | Spacing between icons |
 | `ContentPaddingLeft` | int | 8 | Left inset between the dock background and its content (0–64 Qt logical pixels) |
 | `ContentPaddingRight` | int | 8 | Right inset between the dock background and its content (0–64 Qt logical pixels) |
 | `ContentPaddingTop` | int | 8 | Top inset between the dock background and its content (0–64 Qt logical pixels) |
-| `ContentPaddingBottom` | int | 8 | Bottom inset between the dock background and its content (0–64 Qt logical pixels) |
+| `ContentPaddingBottom` | int | 0 | Bottom inset between the dock background and its content (0–64 Qt logical pixels) |
 | `ContentAlignment` | int | 1 | Content alignment along the dock (0 = start, 1 = center, 2 = end) |
 | `IconOpacityActive` | qreal | 1.0 | Icon opacity for the active window (0.1 to 1.0) |
-| `IconOpacityInactive` | qreal | 0.8 | Icon opacity for inactive windows and launchers (0.1 to 1.0) |
-| `IconOpacityMinimized` | qreal | 0.5 | Icon opacity for minimized windows (0.1 to 1.0) |
-| `MaxZoomFactor` | qreal | 2.0 | Maximum zoom magnification |
+| `IconOpacityInactive` | qreal | 0.9 | Icon opacity for inactive windows and launchers (0.1 to 1.0) |
+| `IconOpacityMinimized` | qreal | 1.0 | Icon opacity for minimized windows (0.1 to 1.0) |
+| `MaxZoomFactor` | qreal | 1.7 | Maximum zoom magnification |
 | `ZoomStyle` | int | `0` | How magnified icons make room: 0 = Parabolic (neighbours pushed aside, background grows), 1 = InPlace (icons overlap) |
 | `ZoomAnimationPreset` | int | 0 | Hover zoom animation preset (0 to 4): 0 = Natural (180 ms in, 240 ms out, ease in and out), 1 = Quick (100 ms ease out both ways), 2 = Relaxed (300 ms in, 400 ms out, gentle ease in and out), 3 = Instant (no transition), 4 = Custom (uses the four entries below). Durations are unscaled baselines; Plasma animation scaling still applies |
 | `ZoomInDuration` | int | 180 | Custom preset: zoom-in duration in milliseconds at normal animation speed (0 to 1000; 0 = snap) |
 | `ZoomOutDuration` | int | 240 | Custom preset: zoom-out duration in milliseconds at normal animation speed (0 to 1000; 0 = snap) |
 | `ZoomInEasing` | int | 3 | Custom preset: zoom-in easing (0 to 4): 0 = Linear, 1 = Ease in (`InCubic`), 2 = Ease out (`OutCubic`), 3 = Ease in and out (`InOutCubic`), 4 = Gentle ease in and out (`InOutSine`) |
 | `ZoomOutEasing` | int | 3 | Custom preset: zoom-out easing, same values as `ZoomInEasing` |
-| `CornerRadius` | int | 12 | Panel corner radius |
+| `CornerRadius` | int | 17 | Panel corner radius |
 | `Floating` | bool | true | Floating panel mode |
+| `FloatingMargin` | int | 3 | Gap between the dock and the screen edge or adjacent panel (1–32 px) |
 | `VisibilityMode` | int | 0 | Dock visibility behavior |
-| `Edge` | int | 0 | Screen edge (0=Bottom, 1=Top, 2=Left, 3=Right) |
+| `Edge` | int | 1 | Screen edge (0=Top, 1=Bottom, 2=Left, 3=Right) |
 | `ShowDelay` | int | 200 | Show delay in ms |
+| `HideDelay` | int | 400 | Hide delay in ms |
+| `DodgeActiveOnly` | bool | true | In Dodge mode, hide only for the active window |
 | `ReserveScreenSpace` | bool | true | In Always visible mode, reserve the dock's panel-bar height as the exclusive screen zone so maximized windows avoid the dock; when false, do not reserve that zone |
-| `SeparateLaunchers` | bool | false | Keep pinned applications, including running pinned applications, before unpinned running tasks in the dock |
-| `HideDelay` | int | 500 | Hide delay in ms |
+| `BackgroundStyle` | int | 2 | Background style (0 = Panel Inherit, 1 = Transparent, 2 = Tinted, 3 = Acrylic) |
+| `BackgroundOpacity` | qreal | 0.9 | Background opacity |
+| `UseAccentColor` | bool | false | Use the system accent color for the dock background |
+| `UseSystemColor` | bool | false | Use the system header color instead of the custom tint |
+| `TintColor` | QString | `#4b4144` | Custom tint used by the default Tinted background |
+| `ShadowEnabled` | bool | true | Enable the panel shadow |
+| `ShadowLightX` / `ShadowLightY` | int | `-26` / `-82` | Shadow light position relative to the panel center |
+| `ShadowLightRadius` | qreal | 5.5 | Shadow softness |
+| `ShadowIntensity` | qreal | 0.6 | Shadow opacity |
+| `CpuOnlyPreviewCapture` | bool | false | Use CPU-compatible preview capture; kept off by default because the need is hardware-specific |
+| `SeparateLaunchers` | bool | true | Keep pinned applications, including running pinned applications, before unpinned running tasks in the dock |
 | `SingleWindowClickAction` | int | `0` | Left-click action (0 to 1): 0 = Activate window; 1 = Minimize active window (restore a minimized window or focus a background window) |
 | `GroupedWindowClickAction` | int | `0` | Grouped left-click action (0 to 2): 0 = Cycle through windows; 1 = Show window previews; 2 = Minimize only the currently active child (activate or restore the most recently used child when none is active) |
 | `RunningIndicatorStyle` | int | `0` | Running marker style (0 = Dot, 1 = Line, 2 = Pill, 3 = Glow, 4 = Bar) |
 | `RunningIndicatorPosition` | int | `0` | Marker placement (0 = screen edge, 1 = dock interior) |
-| `RunningIndicatorSize` | int | `4` | Marker size in Qt logical pixels (2–12); the dock reserves twice this value across its cross-axis for the marker band |
-| `RunningIndicatorColorMode` | int | `0` | Marker color source (0 = current Kirigami theme text color, 1 = custom color) |
+| `RunningIndicatorSize` | int | `5` | Marker size in Qt logical pixels (2–12); the dock reserves twice this value across its cross-axis for the marker band |
+| `RunningIndicatorColorMode` | int | `1` | Marker color source (0 = current Kirigami theme text color, 1 = custom color) |
 | `RunningIndicatorColor` | QString | `#ffffffff` | Custom marker color; used when `RunningIndicatorColorMode=1` |
 
 `ReserveScreenSpace` is a global `[General]` setting. The Behavior switch is shown only when `VisibilityMode=0` (Always visible). The dock applies a changed value while running and persists it for the next start. Auto hide and Dodge modes keep their existing platform behavior rather than using this reservation setting.
@@ -265,3 +277,16 @@ The corresponding FormCard switches are labeled **Reserve screen space** (shown 
 Both click-action keys are global values in the `[General]` group of `~/.config/kdockwrc`, shared by every monitor's dock through the application's `DockSettings` singleton. Each choice saves independently when changed and loads on startup. Their default value of `0` preserves single-window activation and grouped-window cycling on upgrade.
 
 These choices apply only to mouse left clicks. Hover previews remain independent: `GroupedWindowClickAction=1` opens the grouped preview even when `PreviewEnabled=false`.
+
+## KDockW 0.1.0 first-run appearance
+
+The defaults for the first standalone KDockW release are based on the
+maintainer's configured appearance: 40 px icons with 13 px spacing, centered
+content with 8/8/8/0 px left/right/top/bottom padding, 1.7 parabolic zoom,
+Tinted background at 90% opacity using `#4b4144`, 17 px corners, a 3 px
+floating margin, enabled shadow, and 5 px white running markers at the screen
+edge. The defaults live in `src/config/kdockw.kcfg`; explicit values already
+stored in `[General]` or a `Screen-*` group continue to override them. The
+CPU-only preview option remains off because it was enabled for one hybrid-GPU
+configuration. User launcher lists and monitor selections are not used as
+release defaults.

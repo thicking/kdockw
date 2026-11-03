@@ -11,6 +11,9 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <KConfig>
+#include <KConfigGroup>
+
 #include <QMetaProperty>
 #include <QTemporaryDir>
 
@@ -84,6 +87,11 @@ public:
     ScopedConfigHome(const ScopedConfigHome &) = delete;
     ScopedConfigHome &operator=(const ScopedConfigHome &) = delete;
 
+    [[nodiscard]] QString configFilePath() const
+    {
+        return m_dir.filePath(QStringLiteral("kdockwrc"));
+    }
+
 private:
     QTemporaryDir m_dir;
     QByteArray m_previous;
@@ -152,7 +160,7 @@ TEST_CASE("Content padding and alignment persist independently", "[settings][con
     REQUIRE(settings.contentPaddingLeft() == 8);
     REQUIRE(settings.contentPaddingRight() == 8);
     REQUIRE(settings.contentPaddingTop() == 8);
-    REQUIRE(settings.contentPaddingBottom() == 8);
+    REQUIRE(settings.contentPaddingBottom() == 0);
     REQUIRE(settings.contentAlignment() == 1);
 
     QObject context;
@@ -182,8 +190,8 @@ TEST_CASE("Running indicator preferences persist independently", "[settings][run
 
     REQUIRE(settings.runningIndicatorStyle() == 0);
     REQUIRE(settings.runningIndicatorPosition() == 0);
-    REQUIRE(settings.runningIndicatorSize() == 4);
-    REQUIRE(settings.runningIndicatorColorMode() == 0);
+    REQUIRE(settings.runningIndicatorSize() == 5);
+    REQUIRE(settings.runningIndicatorColorMode() == 1);
 
     QObject context;
     kdockw::Application::connectSettingsAutoSave(&settings, &context);
@@ -202,4 +210,73 @@ TEST_CASE("Running indicator preferences persist independently", "[settings][run
     CHECK(restarted.runningIndicatorColor() == QStringLiteral("#ff336699"));
     CHECK(restarted.iconSize() == settings.iconSize());
     CHECK(restarted.contentPaddingLeft() == settings.contentPaddingLeft());
+}
+
+TEST_CASE("First-run settings match the validated KDockW appearance", "[settings][defaults]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+
+    CHECK(settings.language() == QStringLiteral("system"));
+    CHECK(settings.iconSize() == 40);
+    CHECK(settings.iconSpacing() == 13);
+    CHECK(settings.contentPaddingLeft() == 8);
+    CHECK(settings.contentPaddingRight() == 8);
+    CHECK(settings.contentPaddingTop() == 8);
+    CHECK(settings.contentPaddingBottom() == 0);
+    CHECK(settings.contentAlignment() == 1);
+    CHECK(settings.iconOpacityActive() == 1.0);
+    CHECK(settings.iconOpacityInactive() == 0.9);
+    CHECK(settings.iconOpacityMinimized() == 1.0);
+    CHECK(settings.maxZoomFactor() == 1.7);
+    CHECK(settings.zoomStyle() == 0);
+    CHECK(settings.cornerRadius() == 17);
+    CHECK(settings.floating());
+    CHECK(settings.floatingMargin() == 3);
+    CHECK(settings.visibilityMode() == 0);
+    CHECK(settings.dodgeActiveOnly());
+    CHECK(settings.reserveScreenSpace());
+    CHECK(settings.edge() == 1);
+    CHECK(settings.backgroundStyle() == 2);
+    CHECK(settings.backgroundOpacity() == 0.9);
+    CHECK_FALSE(settings.useSystemColor());
+    CHECK_FALSE(settings.useAccentColor());
+    CHECK(settings.tintColor() == QStringLiteral("#4b4144"));
+    CHECK(settings.shadowEnabled());
+    CHECK(settings.shadowLightX() == -26);
+    CHECK(settings.shadowLightY() == -82);
+    CHECK(settings.shadowLightZ() == 500);
+    CHECK(settings.shadowLightRadius() == 5.5);
+    CHECK(settings.shadowIntensity() == 0.6);
+    CHECK(settings.previewEnabled());
+    CHECK_FALSE(settings.cpuOnlyPreviewCapture());
+    CHECK(settings.attentionAnimation() == 2);
+    CHECK(settings.runningIndicatorStyle() == 0);
+    CHECK(settings.runningIndicatorPosition() == 0);
+    CHECK(settings.runningIndicatorSize() == 5);
+    CHECK(settings.runningIndicatorColorMode() == 1);
+    CHECK(settings.runningIndicatorColor() == QStringLiteral("#ffffffff"));
+    CHECK(settings.separateLaunchers());
+}
+
+TEST_CASE("Explicit user preferences override the new factory defaults", "[settings][defaults]")
+{
+    const ScopedConfigHome home;
+    {
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        auto general = config.group(QStringLiteral("General"));
+        general.writeEntry(QStringLiteral("IconSize"), 72);
+        general.writeEntry(QStringLiteral("BackgroundStyle"), 3);
+        general.writeEntry(QStringLiteral("RunningIndicatorSize"), 9);
+        config.sync();
+    }
+
+    KDockWSettings settings;
+    settings.load();
+    CHECK(settings.iconSize() == 72);
+    CHECK(settings.backgroundStyle() == 3);
+    CHECK(settings.runningIndicatorSize() == 9);
+    CHECK(settings.iconSpacing() == 13);
+    CHECK(settings.contentPaddingBottom() == 0);
 }

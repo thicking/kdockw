@@ -76,9 +76,9 @@ Item {
         function test_activeWindowHasLargerDot() {
             let item = makeItem({ IsWindow: true, IsActive: false })
             let dot = T.indicatorDots(item)[0]
-            compare(dot.width, 3)
+            compare(dot.width, 4)
             DockModel.tasksModel.setTaskData(0, "IsActive", true)
-            tryCompare(T.indicatorDots(item)[0], "width", 4)
+            tryCompare(T.indicatorDots(item)[0], "width", 5)
         }
 
         function test_minimizedWindowDimsDot() {
@@ -92,6 +92,7 @@ Item {
             DockView.edge = 1
             DockSettings.runningIndicatorPosition = 0
             DockSettings.runningIndicatorStyle = 0
+            DockSettings.iconSize = 48
             DockSettings.runningIndicatorSize = 8
             let item = makeItem({ IsWindow: true, IsActive: false, ChildCount: 2 })
             const marker = T.indicatorDots(item)[0]

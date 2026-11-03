@@ -175,7 +175,7 @@ Item {
             return [
                 { tag: "off", factor: 1.0 },
                 { tag: "1.3", factor: 1.3 },
-                { tag: "default", factor: 1.6 },
+                { tag: "default", factor: 1.7 },
                 { tag: "max", factor: 2.0 },
             ]
         }
@@ -196,7 +196,7 @@ Item {
         function test_changingMaxZoomWhileHoveredUpdatesLive() {
             let row = makeRow(3)
             hover(row, row.itemAt(1).itemCenterX)
-            tryCompare(row.itemAt(1), "currentScale", 1.6)
+            tryCompare(row.itemAt(1), "currentScale", 1.7)
             DockSettings.maxZoomFactor = 2.0
             tryCompare(row.itemAt(1), "currentScale", 2.0)
         }

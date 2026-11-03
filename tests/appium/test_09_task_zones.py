@@ -370,7 +370,7 @@ def _drag_from_rest(
     assert dock is not None and not dock.contains(*park)
     inp.move(*park)
     settings = kdockw.read_config().get("General", {})
-    icon_size = int(settings.get("IconSize", "48"))
+    icon_size = int(settings.get("IconSize", "40"))
     edge = int(settings.get("Edge", config.EDGE_BOTTOM))
     vertical = edge in (config.EDGE_LEFT, config.EDGE_RIGHT)
     wait_until(
@@ -464,11 +464,11 @@ def test_tzone006_off_allows_real_cross_zone_reorder_without_auto_pin(
     assert set(_launcher_ids(kdockw)) == original_membership
 
 
-def test_tzone007_fresh_default_separation_is_off(kdockw: KDockW, apps: TestWindows) -> None:
-    """A fresh config keeps the new preference at its documented false default."""
+def test_tzone007_fresh_default_separation_is_on(kdockw: KDockW, apps: TestWindows) -> None:
+    """A fresh config uses the configured pinned/running separation default."""
     apps.open("Default", app_id=env.TEST_APP_ID)
     kdockw.wait_for_item("Default")
     switch = _open_behavior_switch(kdockw, pinned=False)
-    assert not has_state(switch, "checked")
-    assert not config.as_bool(kdockw.read_config().get("General", {}).get("SeparateLaunchers", "false"))
+    assert has_state(switch, "checked")
+    assert config.as_bool(kdockw.read_config().get("General", {}).get("SeparateLaunchers", "true"))
     close_settings(kdockw)

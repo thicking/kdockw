@@ -22,6 +22,12 @@ carried forward from the Krema-based development period.
 
 ### Changed
 
+- Adopted the configured KDockW appearance as the planned 0.1.0 first-run
+  defaults: 40 px icons, 13 px spacing, asymmetric content padding, 1.7 zoom,
+  a tinted panel and shadow, matching opacity and indicator settings, and
+  separated pinned and running applications.
+  Saved user values continue to override these defaults; CPU-only preview and
+  personal launcher/monitor data remain excluded.
 - Established `0.1.0-dev` as KDockW's independent development version and updated
   About copyright attribution to retain Krema's contributor attribution and
   identify Byeonghoon Yoo as its original author. No standalone release has

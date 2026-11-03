@@ -51,7 +51,8 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 - **Zoom Animation** — Pick a hover zoom preset: Natural (default, eases in and out like the macOS Dock), Quick, Relaxed, or Instant; or switch to Custom to set zoom-in and zoom-out duration and easing separately
 - **Icon Size Normalization** — Auto-detects icon padding and scales for uniform appearance
 - **Content Padding and Alignment** — Set independent 0–64 px insets on all four sides of the dock and align its icons to the start, center, or end; changes apply immediately and are saved
-- **Indicator Dots** — Visual markers for running applications
+- **Running App Indicators** — Configure Dot, Line, Pill, Glow, or Bar markers, their placement, size, and color
+- **First-Run Appearance** — The planned 0.1.0 defaults use 40 px icons, 13 px spacing, 8/8/8/0 px insets, 1.7 zoom, and a tinted `#4b4144` panel with shadow
 - **Pin/Unpin** — Keep favorite apps in the dock
 - **Context Menu** — Right-click for pin, close, new instance, and the app's own actions like "New Private Window" (KDE Breeze native)
 - **Mouse Wheel Cycling** — Scroll to switch between windows of the same app

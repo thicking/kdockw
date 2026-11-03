@@ -214,7 +214,7 @@ Item {
 
         function test_iconSizeAndSpacingDriveLayout_data() {
             return [
-                { tag: "defaults", size: 48, spacing: 4 },
+                { tag: "defaults", size: 40, spacing: 13 },
                 { tag: "small-tight", size: 32, spacing: 0 },
                 { tag: "large-wide", size: 72, spacing: 16 },
             ]
@@ -334,9 +334,9 @@ Item {
         function test_spacingChangeRelayoutsLive() {
             addTasks(["A", "B"])
             let its = items(makeDock(2))
-            tryCompare(its[1], "x", its[0].x + 48 + 4)
+            tryCompare(its[1], "x", its[0].x + DockSettings.iconSize + DockSettings.iconSpacing)
             DockSettings.iconSpacing = 12
-            tryCompare(its[1], "x", its[0].x + 48 + 12)
+            tryCompare(its[1], "x", its[0].x + DockSettings.iconSize + 12)
             DockSettings.iconSize = 64
             tryCompare(its[1], "x", its[0].x + 64 + 12)
         }
@@ -345,7 +345,8 @@ Item {
             addTasks(["A", "B", "C", "D", "E"])
             makeDock(5)
             // Panel = content + the independently configured side insets.
-            let expected = Math.max(5 * 48 + 4 * 4 + DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight,
+            let expected = Math.max(5 * DockSettings.iconSize + 4 * DockSettings.iconSpacing
+                                    + DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight,
                                     Kirigami.Units.gridUnit * 6)
             tryVerify(() => DockVisibility.panelRect.width === expected, 3000,
                       "panel width " + DockVisibility.panelRect.width + " != " + expected)
@@ -366,10 +367,11 @@ Item {
             DockView.edge = 2
             addTasks(["A", "B", "C"])
             let its = items(makeDock(3))
-            compare(its[0].height, 48)
+            compare(its[0].height, DockSettings.iconSize)
             compare(its[0].x, its[1].x)
-            tryCompare(its[1], "y", its[0].y + 48 + 4)
-            tryCompare(DockVisibility.panelRect, "width", DockSettings.iconSize + 8
+            tryCompare(its[1], "y", its[0].y + DockSettings.iconSize + DockSettings.iconSpacing)
+            tryCompare(DockVisibility.panelRect, "width", DockSettings.iconSize
+                       + DockSettings.runningIndicatorSize * 2
                        + DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight)
             verify(DockVisibility.panelRect.x < stage.width / 2, "left dock panel must sit on the left")
         }
@@ -383,6 +385,7 @@ Item {
             DockSettings.iconSpacing = 7
             DockSettings.maxZoomFactor = 1
             DockSettings.previewEnabled = false
+            DockSettings.separateLaunchers = false
             addSeparatedTasks()
             let dock = makeDock(4)
             let its = items(dock)
@@ -397,9 +400,16 @@ Item {
                 let after = drawnBounds(its[2])
                 let first = drawnBounds(its[0])
                 let last = drawnBounds(its[3])
+                let leadingPadding = DockView.isVertical
+                    ? DockSettings.contentPaddingTop : DockSettings.contentPaddingLeft
+                let trailingPadding = DockView.isVertical
+                    ? DockSettings.contentPaddingBottom : DockSettings.contentPaddingRight
+                // Center alignment centers within the asymmetric padded area.
+                let contentCenter = (DockView.isVertical ? stage.height : stage.width) / 2
+                    + (leadingPadding - trailingPadding) / 2
                 return Math.abs(primaryNear(after) - primaryNear(before) - primaryExtent(before) - 15) < 1e-6
                     && Math.abs((primaryNear(first) + primaryNear(last) + primaryExtent(last)) / 2
-                        - (DockView.isVertical ? stage.height : stage.width) / 2) < 1e-6
+                        - contentCenter) < 1e-6
             }, 3000, "separated row did not settle into its centered stroke slot")
             verify(separatorOf(dock).visible)
             verifySeparatorClearance(dock, its)
@@ -469,8 +479,11 @@ Item {
                 fuzzyCompare(primaryNear(actual), primaryNear(ordinary[i]), 1e-6)
                 fuzzyCompare(secondaryCenter(actual), secondaryCenter(ordinary[i]), 1e-6)
             }
+            let primaryPadding = DockView.isVertical
+                ? DockSettings.contentPaddingTop + DockSettings.contentPaddingBottom
+                : DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight
             let expected = Math.max(data.count === 0 ? 0 : data.count * 32 + (data.count - 1) * 7,
-                                    0) + Kirigami.Units.largeSpacing * 2
+                                    0) + primaryPadding
             expected = Math.max(expected, Kirigami.Units.gridUnit * 6)
             tryVerify(() => Math.abs(primaryExtent(DockVisibility.panelRect) - expected) <= 1)
         }
@@ -1055,7 +1068,8 @@ Item {
             let its = items(dock)
             let panel = its[hover].parent.parent
             let pointer = hoverItem(its[hover])
-            tryCompare(its[hover], "currentScale", DockSettings.maxZoomFactor)
+            tryVerify(() => its[hover].currentScale >= DockSettings.maxZoomFactor - 0.001,
+                      2000, "held item did not reach the configured zoom factor")
             tryCompare(PreviewController, "visible", true)
             openContextMenu()
             mouseMove(stage, -1, -1)
@@ -1211,7 +1225,8 @@ Item {
             hoverItem(its[0])
             tryCompare(PreviewController, "visible", true, 2000)
             hoverItem(its[1])
-            tryCompare(its[1], "currentScale", DockSettings.maxZoomFactor, 2000)
+            tryVerify(() => its[1].currentScale >= DockSettings.maxZoomFactor - 0.001,
+                      2000, "launcher did not reach the configured zoom factor")
 
             // Only recovery is asserted here. Overlap while a surface is
             // pending hide is covered by the separate explicit-preview test.

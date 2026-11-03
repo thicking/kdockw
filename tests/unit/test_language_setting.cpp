@@ -123,7 +123,7 @@ TEST_CASE("Language preference defaults to the system and persists without reset
     settings.load();
 
     CHECK(settings.language() == QLatin1String("system"));
-    CHECK(settings.iconSize() == 48);
+    CHECK(settings.iconSize() == 40);
 
     QObject saveContext;
     kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);

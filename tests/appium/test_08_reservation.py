@@ -358,7 +358,7 @@ FLOATING_MARGIN_SLIDER = f"{SETTINGS}//slider[@name='Floating margin']"
 
 
 def _floating_margin_cases():
-    # No FloatingMargin key: the slider must start from the 8 px default.
+    # No FloatingMargin key: the slider must start from the 3 px default.
     return [
         pytest.param(
             edge,
@@ -406,13 +406,13 @@ def test_vis009_live_floating_margin_update_maximized_consumer(kdockw: KDockW, a
     _behavior(kdockw, edge=edge)
     open_page(kdockw, "Layout & Position")
     slider = focus_slider(kdockw, FLOATING_MARGIN_SLIDER, 1, 32)
-    assert slider_value(slider) == 8, "a fresh configuration uses the 8 px default margin"
+    assert slider_value(slider) == 3, "a fresh configuration uses the 3 px default margin"
     assert has_state(slider, "enabled"), "the margin is adjustable while the dock floats"
     inp.key("pageup")  # ten 1 px steps, as a user would press it
-    wait_until(lambda: slider_value(kdockw.wait_for(FLOATING_MARGIN_SLIDER)) == 18, message="floating margin raised to 18 px")
-    wait_until(lambda: config_value(kdockw, "FloatingMargin") == "18", message="floating margin autosaved")
+    wait_until(lambda: slider_value(kdockw.wait_for(FLOATING_MARGIN_SLIDER)) == 13, message="floating margin raised to 13 px")
+    wait_until(lambda: config_value(kdockw, "FloatingMargin") == "13", message="floating margin autosaved")
     _park()
-    wider = _geometry(kdockw, win, edge, True, "margin-18")
+    wider = _geometry(kdockw, win, edge, True, "margin-13")
     assert _reserved_depth(wider, edge) - _reserved_depth(default, edge) == 10, (default, wider)
     assert wider["window"] == default["window"]
 
@@ -422,12 +422,12 @@ def test_vis009_live_floating_margin_update_maximized_consumer(kdockw: KDockW, a
         lambda: not has_state(kdockw.wait_for(FLOATING_MARGIN_SLIDER), "enabled"),
         message="floating margin disabled while the dock is not floating",
     )
-    flat = _geometry(kdockw, win, edge, True, "margin-18-floating-off")
-    assert _reserved_depth(default, edge) - _reserved_depth(flat, edge) == 8, (default, flat)
-    assert config_value(kdockw, "FloatingMargin") == "18", "turning Floating off keeps the saved margin"
+    flat = _geometry(kdockw, win, edge, True, "margin-13-floating-off")
+    assert _reserved_depth(default, edge) - _reserved_depth(flat, edge) == 3, (default, flat)
+    assert config_value(kdockw, "FloatingMargin") == "13", "turning Floating off keeps the saved margin"
 
     _set_floating(kdockw, True)
-    restored = _geometry(kdockw, win, edge, True, "margin-18-floating-on")
+    restored = _geometry(kdockw, win, edge, True, "margin-13-floating-on")
     assert _reserved_depth(restored, edge) == _reserved_depth(wider, edge), (wider, restored)
     assert restored["window"] == default["window"]
     assert kdockw.pid == pid, "floating margin changes must apply live"
@@ -438,7 +438,7 @@ def test_vis009_live_floating_margin_update_maximized_consumer(kdockw: KDockW, a
     assert kdockw.pid != pid
     kdockw.wait_for_item("Alpha")
     _park()
-    restarted = _geometry(kdockw, win, edge, True, "margin-18-restarted")
+    restarted = _geometry(kdockw, win, edge, True, "margin-13-restarted")
     assert _reserved_depth(restarted, edge) == _reserved_depth(wider, edge), (wider, restarted)
     assert restarted["window"] == default["window"], "consumer window must survive dock restart unchanged"
 

@@ -342,7 +342,7 @@ def hover_ready(k: KDockW, name: str = "Alpha") -> None:
     through ``root.hoveredIndex`` (main.qml onClicked), so a click that
     arrives before the hover was processed is ignored; a real user always
     hovers first."""
-    icon = int(k.read_config().get("General", {}).get("IconSize", 48))
+    icon = int(k.read_config().get("General", {}).get("IconSize", 40))
     # wait_for_item: while kdockw builds a Settings window (Settings... then
     # straight to another menu, SET-009) an AT-SPI query of the dock can
     # briefly return no items at all.
@@ -444,7 +444,7 @@ def test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown(
     assert kdockw.find(f"{SETTINGS}//{PAGE_ROLE}[@name='Icons']") is not None
     # FormCard widgets exposed with labels.
     size = kdockw.find(ICON_SIZE_SLIDER)
-    assert size is not None and slider_value(size) == 48.0
+    assert size is not None and slider_value(size) == 40.0
     # Zoom style picker: Parabolic by default.
     assert card_names(kdockw, ZOOM_STYLE) == [PARABOLIC, IN_PLACE]
     assert current_card(kdockw, ZOOM_STYLE) == PARABOLIC

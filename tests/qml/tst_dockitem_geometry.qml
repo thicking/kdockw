@@ -105,7 +105,7 @@ Item {
 
         function test_iconSizeChangeResizesLiveItems() {
             let item = makeRow([{ display: "Dolphin", IsWindow: true }]).itemAt(0)
-            compare(item.width, 48)
+            compare(item.width, DockSettings.iconSize)
             DockSettings.iconSize = 72
             compare(item.width, 72)
             compare(item.height, 72 + indicatorSpace())
@@ -163,8 +163,8 @@ Item {
         function test_iconOpacityReflectsWindowState_data() {
             return [
                 { tag: "active", roles: { IsActive: true }, opacity: 1.0 },
-                { tag: "minimized", roles: { IsMinimized: true }, opacity: 0.5 },
-                { tag: "background", roles: {}, opacity: 0.8 },
+                { tag: "minimized", roles: { IsMinimized: true }, opacity: 1.0 },
+                { tag: "background", roles: {}, opacity: 0.9 },
             ]
         }
 

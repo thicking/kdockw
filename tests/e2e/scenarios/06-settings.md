@@ -469,10 +469,10 @@ two unpinned running fixture apps. At least one pinned app is running.
 Open Settings → Behavior.
 
 **Steps:**
-1. Find `Separate pinned and running apps`. Verify the switch is off by
+1. Find `Separate pinned and running apps`. Verify the switch is checked by
    default and its description states that pinned apps, including running
    ones, stay together, with unpinned running apps after the divider.
-2. Turn it on using the actual switch. Close Settings and read dock items
+2. Close Settings and read dock items
    in visual order from AT-SPI item centres.
 3. Verify pinned apps form the leading section and unpinned running apps
    follow. Verify each running pinned app has one icon in its pinned slot.
@@ -483,8 +483,8 @@ Open Settings → Behavior.
    verify the switch is checked, `[General]` saves `SeparateLaunchers=true`,
    and the real dock restores its two sections.
 6. Turn it off and restart again. Verify the switch is unchecked and the
-   ordinary free-reorder behavior returns. An absent key is valid for the
-   default false value.
+   ordinary free-reorder behavior returns with `SeparateLaunchers=false`
+   saved in the configuration.
 7. Run the pin/unpin, launch/close/group, empty-section, and drag-boundary
    checks linked from the context-menu, mouse, and drag scenarios.
 
@@ -507,7 +507,7 @@ on top, bottom, left, and right edges.
 `test_tzone003_grouped_instances_keep_one_pinned_slot_and_close_differently`,
 and `test_tzone004_pin_and_unpin_use_real_context_menu_and_preserve_membership`
 map the separator and app lifecycle checks.
-`test_tzone007_fresh_default_separation_is_off` checks the unchecked native
+`test_tzone007_fresh_default_separation_is_on` checks the checked native
 switch with a fresh configuration.
 The task-section checks remain geometry- and AT-SPI-focused; divider paint,
 hover movement, hit-testing, preview image/RHI content, installed-package Tier
@@ -649,31 +649,31 @@ window's identity and frame geometry.
 
 **Steps:**
 1. Find the "Floating margin" slider under the "Floating" switch. Verify it
-   is an AT-SPI slider named "Floating margin", enabled, with value 8 and a
-   "8 px" value text.
-2. Focus it and press Page Up (ten 1 px steps). Verify the value reads 18,
-   `FloatingMargin=18` is saved in `[General]` in `kdockwrc`, the gap between
+   is an AT-SPI slider named "Floating margin", enabled, with value 3 and a
+   "3 px" value text.
+2. Focus it and press Page Up (ten 1 px steps). Verify the value reads 13,
+   `FloatingMargin=13` is saved in `[General]` in `kdockwrc`, the gap between
    the dock panel and the screen edge widens, and the already-maximized
    fixture's frame moves inward by exactly 10 px at the dock edge (the
    reserved strip is the panel bar plus the margin). Do not
    restore/remaximize the fixture or restart KDockW.
 3. Press Home and End. Verify the slider stops at 1 and 32 px and the
-   reserved strip follows; return to 18.
+   reserved strip follows; return to 13.
 4. Repeat steps 2–3 on the top, left, and right edges using the "Screen
-   edge" picker. Before each repetition, press Home and then Right seven
-   times to restore 8 px, and record the new edge's fixture frame as the
-   baseline, so step 2 again measures 8 → 18 px.
+   edge" picker. Before each repetition, press Home and then Right two
+   times to restore 3 px, and record the new edge's fixture frame as the
+   baseline, so step 2 again measures 3 → 13 px.
 5. Turn "Floating" off. Verify the slider becomes disabled, the dock sits
    flush against the screen edge (gap 0), the reserved strip shrinks by the
-   full margin, and `FloatingMargin` stays 18. Turn "Floating" on again and
-   verify the 18 px gap and reserved strip return.
+   full margin, and `FloatingMargin` stays 13. Turn "Floating" on again and
+   verify the 13 px gap and reserved strip return.
 6. Select `Auto hide`, then `Dodge windows`, close Settings, and move the
    pointer away. Verify the dock hides fully past the screen edge; reveal it
-   from the edge and verify it rests at the 18 px gap. Hovering inside the
+   from the edge and verify it rests at the 13 px gap. Hovering inside the
    gap and over the panel hits the dock; the input region matches the
    visible panel and the margin, not the empty space beside the panel.
 7. Return to `Always visible`, close Settings, and restart KDockW. Verify the
-   slider shows 18 px and the maximized fixture keeps the 18 px reserved
+   slider shows 13 px and the maximized fixture keeps the 13 px reserved
    strip.
 8. With a Plasma panel already reserving the dock's edge, verify the dock
    rests next to that panel and the margin is the distance from the panel,
@@ -681,7 +681,7 @@ window's identity and frame geometry.
 
 **Expected:**
 - The gap follows the slider immediately on all four edges, from 1 to 32 px
-  (default 8, the previous fixed gap); no restart is needed.
+  (default 3, updated from the previous fixed gap); no restart is needed.
 - With reservation on, the reserved strip is the panel bar plus the margin,
   and existing maximized windows reflow live.
 - With "Floating" off the gap is 0 whatever the saved margin; the slider is
@@ -696,8 +696,8 @@ KWin (maximized frame and work area against the full output), `kdockwrc`
 capture is available.
 **Automated (Tier 2):**
 `tests/appium/test_08_reservation.py::test_vis009_live_floating_margin_update_maximized_consumer`
-covers steps 1, 2, 4, 5, and 7 on all four edges: the fresh 8 px default,
-a keyboard Page Up to 18 px with autosave, the maximized fixture's reserved
+covers steps 1, 2, 4, 5, and 7 on all four edges: the fresh 3 px default,
+a keyboard Page Up to 13 px with autosave, the maximized fixture's reserved
 strip growing by exactly 10 px, the disabled slider and full-margin
 shrink with Floating off, the retained value, live application, and the
 restored reserved strip after restart.

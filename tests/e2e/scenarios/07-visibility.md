@@ -231,7 +231,7 @@ same maximized window alive throughout each toggle.
    maximized state.
 2. With reservation off, verify the frame reaches the output's bottom edge.
    With it on, verify the frame ends before the resting panel bar, including
-   the floating gap (the configured Floating margin, default 8 px) when
+   the floating gap (the configured Floating margin, default 3 px) when
    enabled. Verify the dock remains visible in both
    states; do not accept a maximize-command echo as the result.
 3. Repeat on the top, left, and right edges using the real `Screen edge`

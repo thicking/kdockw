@@ -36,7 +36,7 @@ from kdockw_e2e.kdockw import KDockW, Rect, painted_rect
 from kdockw_e2e.waits import wait_stable, wait_until
 from kdockw_e2e.windows import TestWindow, TestWindows
 
-ICON = 48  # kdockw.kcfg IconSize default; IconSpacing default is 4
+ICON = 40  # kdockw.kcfg IconSize default; IconSpacing default is 13
 HOLD_MS = 450  # > main.qml dragHoldTimer (300 ms)
 STEP_MS = 40
 PAUSE_MS = 8000  # upper bound of the mid-drag pause; the body's end cuts it short
