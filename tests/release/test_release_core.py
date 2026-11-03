@@ -54,7 +54,7 @@ def source_files(
     version: str = "1.2.3", revision: str = "1", **overrides: str
 ) -> dict[str, str]:
     files = {
-        "CMakeLists.txt": f"cmake_minimum_required(VERSION 3.22)\nproject(kdockw VERSION {version} LANGUAGES C CXX)\n",
+        "CMakeLists.txt": f'set(KDOCKW_VERSION "{version}")\nproject(kdockw VERSION {version} LANGUAGES C CXX)\n',
         "CHANGELOG.md": f"# Changelog\n\n## [Unreleased]\n\n## [{version}] - 2026-10-05\n\n### Fixed\n\n- Something\n\n## [0.1.0] - 2026-01-01\n",
         "src/com.thicking.kdockw.metainfo.xml": (
             '<?xml version="1.0"?>\n<component><releases>'
@@ -143,7 +143,7 @@ class VersionTests(TempDirTest):
 
     def test_each_disagreeing_field_is_rejected(self) -> None:
         cases = {
-            "CMakeLists.txt": "project(kdockw VERSION 1.2.2 LANGUAGES C CXX)\n",
+            "CMakeLists.txt": 'set(KDOCKW_VERSION "1.2.2")\nproject(kdockw VERSION 1.2.3 LANGUAGES C CXX)\n',
             "CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n",
             "src/com.thicking.kdockw.metainfo.xml": '<component><releases><release version="1.2.2"/></releases></component>',
             "packaging/obs/kdockw.spec": "Version: 1.2.2\n",
@@ -780,7 +780,7 @@ class PrepareArchiveSourceTests(TempDirTest):
         tag_dl.assert_not_called()
 
     def test_autoarchive_of_another_commit_tree_or_root_fails_closed(self) -> None:
-        changed = source_files(**{"CMakeLists.txt": "project(kdockw VERSION 1.2.3)\n"})
+        changed = source_files(**{"CMakeLists.txt": 'set(KDOCKW_VERSION "1.2.2")\nproject(kdockw VERSION 1.2.3)\n'})
         cases = {
             "commit": (
                 make_archive(source_files(), commit="b" * 40),

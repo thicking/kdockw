@@ -526,7 +526,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     CHECK(aboutPage->objectName() == QLatin1String("aboutPage"));
     QVariantMap aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
-    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema Contributors"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."));
     QVariantList authors = aboutData.value(QStringLiteral("authors")).toList();
     REQUIRE(authors.size() == 2);
     CHECK(authors.at(0).toMap().value(QStringLiteral("name")).toString() == QLatin1String("thicking"));
@@ -546,7 +546,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QCoreApplication::processEvents();
     aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QStringLiteral("Док-панель KDE для Wayland"));
-    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QStringLiteral("© 2026 участники проекта Krema"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QStringLiteral("© 2026 участники Krema и KDockW. KDockW основан на Krema, первоначально созданной Byeonghoon Yoo."));
     authors = aboutData.value(QStringLiteral("authors")).toList();
     REQUIRE(authors.size() == 2);
     CHECK(authors.at(0).toMap().value(QStringLiteral("task")).toString() == QStringLiteral("Разработчик и сопровождающий; автор самостоятельного направления KDockW"));
@@ -573,7 +573,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     REQUIRE(aboutPage);
     aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
-    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema Contributors"));
+    CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."));
     REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("general")))));
     QCoreApplication::processEvents();
 

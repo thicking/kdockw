@@ -2,13 +2,14 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 Name:           kdockw
-Version:        0.12.0
-Release:        1%{?dist}
+Version:        0.1.0
+Release:        0.dev%{?dist}
 Summary:        A lightweight dock for KDE Plasma 6
 
 License:        GPL-3.0-or-later AND MIT-CMU
 URL:            https://github.com/thicking/kdockw/
-Source0:        https://github.com/isac322/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
+%global upstream_version 0.1.0-dev
+Source0:        https://github.com/thicking/%{name}/archive/refs/tags/v%{upstream_version}.tar.gz
 
 BuildRequires:  cmake >= 3.22
 %if 0%{?suse_version}
@@ -90,7 +91,7 @@ successor to Latte Dock. It features parabolic zoom animations, window
 previews via PipeWire, and deep integration with KDE Plasma desktop.
 
 %prep
-%autosetup -p1
+%autosetup -n %{name}-%{upstream_version} -p1
 
 %build
 %if 0%{?suse_version}

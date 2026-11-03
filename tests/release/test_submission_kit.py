@@ -54,7 +54,7 @@ def make_archive(
     """Return a gzip tarball in the release layout produced by ``git archive``."""
     root = f"kdockw-{version}"
     files = {
-        f"{root}/CMakeLists.txt": f"cmake_minimum_required(VERSION 3.25)\nproject(kdockw VERSION {cmake_version or version} LANGUAGES CXX)\n".encode(),
+        f"{root}/CMakeLists.txt": f'set(KDOCKW_VERSION "{cmake_version or version}")\nproject(kdockw VERSION {version} LANGUAGES CXX)\n'.encode(),
         f"{root}/LICENSES/GPL-3.0-or-later.txt": b"GNU GENERAL PUBLIC LICENSE\n",
         f"{root}/src/main.cpp": b"int main() { return 0; }\n",
         **(extra or {}),

@@ -22,7 +22,7 @@ TEST_CASE("KAboutData presents KDockW identity, attribution, and installed icon 
     CHECK(aboutData.homepage() == QLatin1String("https://github.com/thicking/kdockw"));
     CHECK(aboutData.bugAddress() == QLatin1String("https://github.com/thicking/kdockw/issues"));
     CHECK(aboutData.desktopFileName() == QLatin1String("com.thicking.kdockw"));
-    CHECK(aboutData.copyrightStatement() == QLatin1String("(C) 2026 Krema Contributors"));
+    CHECK(aboutData.copyrightStatement() == QLatin1String("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."));
     REQUIRE(aboutData.licenses().size() == 1);
     CHECK(aboutData.licenses().constFirst().key() == KAboutLicense::GPL_V3);
     CHECK(aboutData.licenses().constFirst().spdx().startsWith(QLatin1String("GPL-3.0")));
@@ -48,12 +48,14 @@ TEST_CASE("KAboutData identity strings follow KI18n without translating KDE-owne
     const KAboutData english = kdockw::Application::makeAboutData();
     REQUIRE(english.authors().size() == 2);
     CHECK(english.shortDescription() == QLatin1String("KDE Dock for Wayland"));
+    CHECK(english.copyrightStatement() == QLatin1String("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."));
     CHECK(english.authors().at(0).task() == QLatin1String("Developer and maintainer; author of KDockW's independent direction"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
     const KAboutData russian = kdockw::Application::makeAboutData();
     REQUIRE(russian.authors().size() == 2);
     CHECK(russian.shortDescription() == QStringLiteral("Док-панель KDE для Wayland"));
+    CHECK(russian.copyrightStatement() == QStringLiteral("© 2026 участники Krema и KDockW. KDockW основан на Krema, первоначально созданной Byeonghoon Yoo."));
     CHECK(russian.authors().at(0).task() == QStringLiteral("Разработчик и сопровождающий; автор самостоятельного направления KDockW"));
     CHECK(russian.authors().at(1).task() == QStringLiteral("Первоначальный автор Krema, проекта, на котором основан KDockW"));
 

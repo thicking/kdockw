@@ -61,7 +61,8 @@ KAboutData Application::makeAboutData(bool localized)
 {
     const QString displayName = localized ? i18n("KDockW") : QStringLiteral("KDockW");
     const QString description = localized ? i18n("KDE Dock for Wayland") : QStringLiteral("KDE Dock for Wayland");
-    const QString copyright = localized ? i18n("(C) 2026 Krema Contributors") : QStringLiteral("(C) 2026 Krema Contributors");
+    const QString copyright = localized ? i18n("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo.")
+                                         : QStringLiteral("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo.");
     KAboutData aboutData(QStringLiteral("kdockw"), displayName, QStringLiteral(KDOCKW_VERSION_STRING), description, KAboutLicense::GPL_V3, copyright);
     aboutData.setLicense(KAboutLicense::GPL_V3, KAboutLicense::OrLaterVersions);
     const QString maintainer = localized ? i18n("thicking") : QStringLiteral("thicking");

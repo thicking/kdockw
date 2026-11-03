@@ -117,7 +117,7 @@ KDockW — независимая док-панель для KDE Plasma 6 и Way
 
 ## Установка
 
-Доступна сборка KDockW из исходников; отдельные бинарные пакеты KDockW пока не опубликованы. Для TUXEDO OS используйте [инструкцию по сборке](docs/building/tuxedo-os.md) с актуальными названиями пакетов Qt/KDE и командами release-сборки.
+KDockW можно собрать из исходников; отдельные бинарные пакеты и первый самостоятельный выпуск пока не опубликованы. Текущая версия исходников — `0.1.0-dev`. Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
 
 ```bash
 git clone --branch main --single-branch https://github.com/thicking/kdockw.git kdockw

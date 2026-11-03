@@ -110,7 +110,7 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW source builds are available; KDockW-specific binary packages have not yet been published. On TUXEDO OS, follow the [build guide](docs/building/tuxedo-os.md) for the current Qt/KDE package names and release build.
+KDockW source builds are available; KDockW-specific binary packages and its first standalone release have not yet been published. The current source identifies itself as `0.1.0-dev`. See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ```bash
 git clone --branch main --single-branch https://github.com/thicking/kdockw.git kdockw

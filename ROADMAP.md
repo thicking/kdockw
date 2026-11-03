@@ -21,8 +21,10 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
 - [ ] Validate the documented `kdockw.service` PRIME environment handling on
   the target hybrid-GPU setups. The current NVIDIA observations are specific
   to the tested TUXEDO configuration.
-- [ ] Set KDockW's independent versioning policy and publish its first
-  standalone release; the existing `v0.x` tags belong to Krema history.
+- [x] Establish KDockW's independent versioning policy; current development
+  builds use `0.1.0-dev`.
+- [ ] Publish the first standalone KDockW release; the existing `v0.x` tags
+  belong to Krema history.
 - [ ] Complete release automation and package smoke checks before publishing
   KDockW-specific binary packages.
 

@@ -63,6 +63,9 @@ PLACEHOLDER_RE = re.compile(
 )
 TOKEN_RE = re.compile(r"\{\{([a-z_][a-z0-9_]*)\}\}")
 CMAKE_VERSION_RE = re.compile(
+    r"^\s*set\(\s*KDOCKW_VERSION\s+\"([^\"]+)\"\s*\)", re.IGNORECASE | re.MULTILINE
+)
+CMAKE_LEGACY_VERSION_RE = re.compile(
     r"project\s*\(\s*kdockw\b[^)]*?\bVERSION\s+([0-9]+\.[0-9]+\.[0-9]+)",
     re.IGNORECASE | re.DOTALL,
 )
@@ -587,9 +590,9 @@ def validate_source_archive(payload: bytes, version: str, commit: str) -> None:
             )
     except (tarfile.TarError, OSError, KeyError, UnicodeError) as exc:
         fail(f"source archive license or CMakeLists.txt is not readable: {exc}")
-    match = CMAKE_VERSION_RE.search(cmake)
+    match = CMAKE_VERSION_RE.search(cmake) or CMAKE_LEGACY_VERSION_RE.search(cmake)
     if not match:
-        fail("source archive CMakeLists.txt has no project(kdockw VERSION x.y.z)")
+        fail("source archive CMakeLists.txt has no KDOCKW_VERSION or legacy project version")
     if match.group(1) != version:
         fail(
             f"source archive CMakeLists.txt declares version {match.group(1)}; context is {version}"

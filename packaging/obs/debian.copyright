@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: krema
+Upstream-Name: KDockW
 Upstream-Contact: Byeonghoon Yoo <bhyoo@bhyoo.com>
-Source: https://github.com/isac322/krema
+Source: https://github.com/thicking/kdockw
 
 Files: *
 Copyright: 2026 Krema Contributors

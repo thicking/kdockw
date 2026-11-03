@@ -11,6 +11,10 @@ carried forward from the Krema-based development period.
 
 ### Changed
 
+- Established `0.1.0-dev` as KDockW's independent development version and updated
+  About copyright attribution to retain Krema's contributor attribution and
+  identify Byeonghoon Yoo as its original author. No standalone release has
+  been published.
 - Updated the About page with KDockW's independent maintainer, Krema's original
   author, the Wayland-focused product description, and the current application
   icon.

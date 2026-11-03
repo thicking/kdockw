@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.12.0\n"
+"Project-Id-Version: KDockW 0.1.0-dev\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-01 20:00+0500\n"
@@ -1116,8 +1116,8 @@ msgid "KDE Dock for Wayland"
 msgstr "Док-панель KDE для Wayland"
 
 #: src/app/application.cpp:60
-msgid "(C) 2026 Krema Contributors"
-msgstr "© 2026 участники проекта Krema"
+msgid "(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."
+msgstr "© 2026 участники Krema и KDockW. KDockW основан на Krema, первоначально созданной Byeonghoon Yoo."
 
 #: src/app/application.cpp:61
 msgid "thicking"

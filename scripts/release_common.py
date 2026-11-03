@@ -499,9 +499,11 @@ def source_versions(source_dir: Path) -> dict[str, str | None]:
     found: dict[str, str | None] = {}
 
     cmake = _read_text(source_dir, "CMakeLists.txt")
-    m = re.search(
-        r"^\s*project\(\s*kdockw\s+VERSION\s+([0-9][0-9.]*)\b", cmake, re.M | re.I
-    )
+    m = re.search(r"^\s*set\(\s*KDOCKW_VERSION\s+\"([^\"]+)\"\s*\)", cmake, re.M | re.I)
+    if not m:
+        m = re.search(
+            r"^\s*project\(\s*kdockw\s+VERSION\s+([0-9][0-9.]*)\b", cmake, re.M | re.I
+        )
     found["CMakeLists.txt"] = m.group(1) if m else None
 
     try:

@@ -85,7 +85,7 @@ No passwords, tokens or private keys are stored in this skill, the scripts or th
 
 ## 2. Version
 
-Read the current version from `project(kdockw VERSION x.y.z ...)` in `CMakeLists.txt`. Unless the user gave one, derive the bump from the `[Unreleased]` categories:
+Read the canonical version from `set(KDOCKW_VERSION "x.y.z")` in `CMakeLists.txt`. `project(kdockw VERSION ...)` is only the numeric CMake compatibility version; do not use it as the product version. Unless the user gave one, derive the bump from the `[Unreleased]` categories:
 
 | `[Unreleased]` contains | Bump |
 |---|---|
@@ -99,7 +99,7 @@ If the user named the version, use it. Otherwise show the category counts and th
 
 Version bumps stay manual: the tooling only reads them, and `prepare` rejects a tag whose files disagree. Read each file before editing it.
 
-- `CMakeLists.txt`: `project(kdockw VERSION x.y.z ...)`.
+- `CMakeLists.txt`: `KDOCKW_VERSION` is the canonical app version; keep the derived numeric `project(kdockw VERSION ...)` core in sync.
 - `packaging/obs/kdockw.spec`: `Version:`.
 - `packaging/obs/kdockw.dsc`: `Version:`, `DEBTRANSFORM-TAR:` and `Files:`. The tarball is `kdockw-x.y.z.tar.gz`.
 - `packaging/obs/debian.changelog`: prepend an entry. Copy the maintainer line from the existing entries. Its Debian revision (`-1` for a new upstream version) becomes `debian_revision` in the context and the PPA version.

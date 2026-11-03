@@ -16,6 +16,13 @@ add_test(NAME kdockw_config_migration
 )
 set_tests_properties(kdockw_config_migration PROPERTIES LABELS "migration" TIMEOUT 30)
 
+add_test(NAME kdockw_version_metadata
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DKDOCKW_VERSION=${KDOCKW_VERSION}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_version_metadata.cmake
+)
+
 # CLI contract (issue #59): `kdockw --version` prints "kdockw <version>" and
 # `kdockw --help`/`--author`/`--license` their text, exiting 0 without a
 # display or a running instance. These run headless (display env unset), like
@@ -43,7 +50,7 @@ set_tests_properties(kdockw_cli_version kdockw_cli_help kdockw_cli_author kdockw
         TIMEOUT 60
 )
 set_tests_properties(kdockw_cli_version PROPERTIES
-    PASS_REGULAR_EXPRESSION "^kdockw ${PROJECT_VERSION}"
+    PASS_REGULAR_EXPRESSION "^kdockw ${KDOCKW_VERSION}"
 )
 set_tests_properties(kdockw_cli_help PROPERTIES
     PASS_REGULAR_EXPRESSION "KDE Dock for Wayland"
@@ -70,7 +77,7 @@ find_program(DBUS_RUN_SESSION_EXECUTABLE dbus-run-session)
 if(KWIN_WAYLAND_EXECUTABLE AND DBUS_RUN_SESSION_EXECUTABLE)
     add_test(NAME kdockw_cli_version_while_running
         COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh
-            ${CMAKE_CURRENT_SOURCE_DIR}/version-while-running.sh $<TARGET_FILE:kdockw> "kdockw ${PROJECT_VERSION}"
+            ${CMAKE_CURRENT_SOURCE_DIR}/version-while-running.sh $<TARGET_FILE:kdockw> "kdockw ${KDOCKW_VERSION}"
     )
     add_test(NAME kdockw_cli_unknown_option
         COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh

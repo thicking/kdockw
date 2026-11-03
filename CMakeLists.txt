@@ -3,7 +3,14 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(kdockw VERSION 0.12.0 LANGUAGES C CXX)
+# This is the canonical product version. CMake's project VERSION only accepts
+# numeric components, so derive its compatibility value from this string.
+set(KDOCKW_VERSION "0.1.0-dev")
+string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
+if(NOT KDOCKW_CMAKE_VERSION)
+    message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
+endif()
+project(kdockw VERSION "${KDOCKW_CMAKE_VERSION}" LANGUAGES C CXX)
 
 set(QT_MIN_VERSION "6.8.0")
 set(KF6_MIN_VERSION "6.0.0")
@@ -84,7 +91,7 @@ check_cxx_source_compiles("
 int main() { static_cast<LayerShellQt::Window*>(nullptr)->setScreen(static_cast<QScreen*>(nullptr)); }
 " _HAVE_LAYERSHELLQT_SET_SCREEN)
 
-add_compile_definitions(KDOCKW_VERSION_STRING="${PROJECT_VERSION}")
+add_compile_definitions(KDOCKW_VERSION_STRING="${KDOCKW_VERSION}")
 if(NOT _HAVE_LAYERSHELLQT_DESIRED_SIZE)
     add_compile_definitions(KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE)
 endif()
