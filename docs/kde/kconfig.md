@@ -250,6 +250,11 @@ class DockSettings : public QObject {
 | `HideDelay` | int | 500 | Hide delay in ms |
 | `SingleWindowClickAction` | int | `0` | Left-click action (0 to 1): 0 = Activate window; 1 = Minimize active window (restore a minimized window or focus a background window) |
 | `GroupedWindowClickAction` | int | `0` | Grouped left-click action (0 to 2): 0 = Cycle through windows; 1 = Show window previews; 2 = Minimize only the currently active child (activate or restore the most recently used child when none is active) |
+| `RunningIndicatorStyle` | int | `0` | Running marker style (0 = Dot, 1 = Line, 2 = Pill, 3 = Glow, 4 = Bar) |
+| `RunningIndicatorPosition` | int | `0` | Marker placement (0 = screen edge, 1 = dock interior) |
+| `RunningIndicatorSize` | int | `4` | Marker size in Qt logical pixels (2–12); the dock reserves twice this value across its cross-axis for the marker band |
+| `RunningIndicatorColorMode` | int | `0` | Marker color source (0 = current Kirigami theme text color, 1 = custom color) |
+| `RunningIndicatorColor` | QString | `#ffffffff` | Custom marker color; used when `RunningIndicatorColorMode=1` |
 
 `ReserveScreenSpace` is a global `[General]` setting. The Behavior switch is shown only when `VisibilityMode=0` (Always visible). The dock applies a changed value while running and persists it for the next start. Auto hide and Dodge modes keep their existing platform behavior rather than using this reservation setting.
 

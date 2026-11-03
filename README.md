@@ -74,6 +74,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 ### Notifications & Attention
 - **Notification Badges** — Badge count on dock icons via D-Bus and SmartLauncher Unity API
 - **Badge Display Modes** — Choose between Number, Dot, or Off
+- **Running App Indicators** — Choose Dot, Line, Pill, Glow, or Bar, place markers at the screen edge or dock interior, and set their size and color
 - **6 Attention Animations** — Bounce, Wiggle, Pulse, Glow, Dot Color, and Blink
 - **Task Progress Bar** — Progress indicator on dock icons (e.g. file copy in Dolphin)
 - **Do Not Disturb** — Attention animations suppressed when system DND is active

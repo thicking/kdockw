@@ -11,6 +11,9 @@ carried forward from the Krema-based development period.
 
 ### Added
 
+- Added configurable running-app indicators: Dot, Line, Pill, Glow, and Bar
+  styles, screen-edge or dock-interior placement, adjustable size and color,
+  with a live preview and saved preferences.
 - Added independently adjustable 0–64 logical-pixel content padding for all four
   dock edges, plus start/center/end alignment. Changes apply immediately and are
   saved; the Icons page includes a reset-to-defaults action.
@@ -29,6 +32,9 @@ carried forward from the Krema-based development period.
 
 ### Fixed
 
+- Kept running-app indicators within the dock panel and Wayland surface on all
+  four screen edges, including with small content padding, without letting the
+  decorative marker band enlarge the transparent input region.
 - Kept each dock and its window previews tied to the selected monitor when
   Wayland recalculates a layer surface's Qt screen during output geometry
   changes.

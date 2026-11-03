@@ -85,7 +85,9 @@ Kirigami.AbstractApplicationWindow {
             text: i18n("Animations & Badges"),
             iconName: "preferences-desktop-notification",
             group: "",
-            keywords: [i18n("Attention animation"), i18n("Badge display")]
+            keywords: [i18n("Attention animation"), i18n("Badge display"), i18n("Running indicators"),
+                i18n("Indicator style"), i18n("Indicator position"), i18n("Indicator size (logical px)"),
+                i18n("Indicator color"), i18n("Screen edge"), i18n("Dock interior"), i18n("Automatic (theme)"), i18n("Custom")]
         },
         {
             moduleId: "behavior",

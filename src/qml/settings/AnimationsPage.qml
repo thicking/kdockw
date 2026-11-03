@@ -33,6 +33,12 @@ SettingsPage {
         i18n("Off")
     ]
 
+    readonly property var indicatorStyleOptions: [
+        i18n("Dot"), i18n("Line"), i18n("Pill"), i18n("Glow"), i18n("Bar")
+    ]
+    readonly property var indicatorPositionOptions: [i18n("Screen edge"), i18n("Dock interior")]
+    readonly property var indicatorColorOptions: [i18n("Automatic (theme)"), i18n("Custom")]
+
     readonly property int pickerColumnWidth: Kirigami.Units.gridUnit * 7
 
     // Icon used by every sample on this page; mail naturally carries badges.
@@ -634,6 +640,108 @@ SettingsPage {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Running indicators ---
+    FormCard.FormHeader {
+        title: i18n("Running indicators")
+    }
+
+    FormCard.FormCard {
+        FormCard.AbstractFormDelegate {
+            background: null
+            contentItem: QQC2.Label {
+                text: i18n("Choose how running applications are marked. The position follows the screen edge or the dock interior on every side.")
+                font: Kirigami.Theme.smallFont
+                color: page.secondaryTextColor
+                wrapMode: Text.Wrap
+            }
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormComboBoxDelegate {
+            text: i18n("Indicator style")
+            displayMode: FormCard.FormComboBoxDelegate.Dialog
+            model: page.indicatorStyleOptions
+            currentIndex: DockSettings.runningIndicatorStyle
+            onActivated: index => DockSettings.runningIndicatorStyle = index
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormComboBoxDelegate {
+            text: i18n("Indicator position")
+            displayMode: FormCard.FormComboBoxDelegate.Dialog
+            model: page.indicatorPositionOptions
+            currentIndex: DockSettings.runningIndicatorPosition
+            onActivated: index => DockSettings.runningIndicatorPosition = index
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSpinBoxDelegate {
+            label: i18n("Indicator size (logical px)")
+            from: 2
+            to: 12
+            value: DockSettings.runningIndicatorSize
+            onValueChanged: DockSettings.runningIndicatorSize = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormComboBoxDelegate {
+            text: i18n("Indicator color")
+            displayMode: FormCard.FormComboBoxDelegate.Dialog
+            model: page.indicatorColorOptions
+            currentIndex: DockSettings.runningIndicatorColorMode
+            onActivated: index => DockSettings.runningIndicatorColorMode = index
+        }
+
+        FormCard.AbstractFormDelegate {
+            visible: DockSettings.runningIndicatorColorMode === 1
+            id: indicatorColorDelegate
+            background: null
+            focusPolicy: Qt.NoFocus
+            Accessible.ignored: true
+            onClicked: indicatorColorSwatch.clicked()
+            contentItem: RowLayout {
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Custom indicator color")
+                    color: Kirigami.Theme.textColor
+                }
+                ColorSwatchButton {
+                    id: indicatorColorSwatch
+                    accessibleName: i18n("Custom indicator color")
+                    dialogTitle: i18n("Choose indicator color")
+                    color: DockSettings.runningIndicatorColor
+                    onPicked: color => DockSettings.runningIndicatorColor = color.toString()
+                }
+            }
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.AbstractFormDelegate {
+            background: null
+            contentItem: RowLayout {
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Restore indicator defaults")
+                }
+                QQC2.Button {
+                    text: i18n("Restore defaults")
+                    onClicked: {
+                        DockSettings.runningIndicatorStyle = 0
+                        DockSettings.runningIndicatorPosition = 0
+                        DockSettings.runningIndicatorSize = 4
+                        DockSettings.runningIndicatorColorMode = 0
+                        DockSettings.runningIndicatorColor = "#ffffffff"
                     }
                 }
             }

@@ -1212,3 +1212,59 @@ msgstr "Активировать элемент %1"
 msgctxt "@action global shortcut"
 msgid "New Instance of Entry %1"
 msgstr "Запустить новый экземпляр элемента %1"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Running indicators"
+msgstr "Индикаторы запущенных приложений"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Choose how running applications are marked. The position follows the screen edge or the dock interior on every side."
+msgstr "Выберите оформление индикаторов запущенных приложений. Их положение можно задать у края экрана или внутри дока для любой стороны."
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Indicator style"
+msgstr "Стиль индикатора"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Line"
+msgstr "Линия"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Pill"
+msgstr "Капсула"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Bar"
+msgstr "Полоска"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Indicator position"
+msgstr "Положение индикатора"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Dock interior"
+msgstr "Внутри дока"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Indicator size (logical px)"
+msgstr "Размер индикатора (логические пиксели)"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Indicator color"
+msgstr "Цвет индикатора"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Automatic (theme)"
+msgstr "Автоматически (цвет темы)"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Custom indicator color"
+msgstr "Пользовательский цвет индикатора"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Choose indicator color"
+msgstr "Выберите цвет индикатора"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Restore indicator defaults"
+msgstr "Вернуть параметры индикаторов по умолчанию"

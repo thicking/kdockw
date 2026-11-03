@@ -124,6 +124,10 @@ camera within limits; double-click resets the view.
 | 22 | **Attention Duration** (0-60s) | SpinBox | Spin box below the cards (hidden for None). 0 shows "Infinite". |
 | 23 | **Badge Display** (3 modes) | ComboBox | **3-card picker**. Each card shows a sample icon with that badge style: Number ("8"), Dot, Off. |
 
+The page also includes live settings for running-app indicators: five marker
+styles (Dot, Line, Pill, Glow, Bar), screen-edge or dock-interior placement,
+logical-pixel size, theme or custom color, and a reset-to-defaults action.
+
 ### Page 6: Behavior
 
 | # | Setting | Previous UI | Visual UX |

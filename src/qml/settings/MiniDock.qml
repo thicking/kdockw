@@ -63,6 +63,12 @@ Item {
     property real opacityMinimized: DockSettings.iconOpacityMinimized
     /// 0 Number, 1 Dot, 2 Off.
     property int badgeDisplayMode: DockSettings.badgeDisplayMode
+    property int runningIndicatorStyle: DockSettings.runningIndicatorStyle
+    /// 0 Screen edge, 1 Dock interior.
+    property int runningIndicatorPosition: DockSettings.runningIndicatorPosition
+    property int runningIndicatorSize: DockSettings.runningIndicatorSize
+    property int runningIndicatorColorMode: DockSettings.runningIndicatorColorMode
+    property color runningIndicatorColor: DockSettings.runningIndicatorColor
 
     /// Dock entries: icon name, fallback icon, window state ("active",
     /// "inactive", "minimized" or "launcher"), badge count and the simulated
@@ -136,12 +142,14 @@ Item {
     readonly property real iconPx: iconSize * unit
     readonly property real gapPx: iconSpacing * unit
     readonly property real padPx: crossPaddingTotal * unit
-    readonly property real edgePaddingPx: (vertical
-        ? (edge === 2 ? contentPaddingLeft : contentPaddingRight)
-        : (edge === 0 ? contentPaddingTop : contentPaddingBottom)) * unit
+    readonly property real indicatorReservePx: runningIndicatorSize * 2 * unit
+    readonly property bool indicatorAfterIcon: {
+        const screenSideAfter = edge === 1 || edge === 3
+        return runningIndicatorPosition === 0 ? screenSideAfter : !screenSideAfter
+    }
     readonly property real floatPx: floating ? floatingMargin * unit : 0
     readonly property real pitch: iconPx + gapPx
-    readonly property real thickness: iconPx + padPx
+    readonly property real thickness: iconPx + padPx + indicatorReservePx
     readonly property real length: restLengthReal * unit
     readonly property real restContentLength: count * iconPx + Math.max(0, count - 1) * gapPx
     readonly property real restStart: {
@@ -325,11 +333,13 @@ Item {
     Item {
         id: row
         x: dock.vertical
-            ? dock.contentPaddingLeft * dock.unit + Math.max(0, (dock.width - dock.padPx - dock.iconPx) / 2)
+            ? dock.contentPaddingLeft * dock.unit + Math.max(0, (dock.width - dock.padPx - dock.iconPx - dock.indicatorReservePx) / 2)
+                + (!dock.indicatorAfterIcon ? dock.indicatorReservePx : 0)
             : dock.restStart
         y: dock.vertical
             ? dock.restStart
-            : dock.contentPaddingTop * dock.unit + Math.max(0, (dock.height - dock.padPx - dock.iconPx) / 2)
+            : dock.contentPaddingTop * dock.unit + Math.max(0, (dock.height - dock.padPx - dock.iconPx - dock.indicatorReservePx) / 2)
+                + (!dock.indicatorAfterIcon ? dock.indicatorReservePx : 0)
 
         Repeater {
             id: repeater
@@ -365,8 +375,8 @@ Item {
                     id: box
                     width: dock.iconPx * slot.zoomScale
                     height: width
-                    x: dock.vertical ? (dock.edge === 3 ? slot.width - width : 0) : (slot.width - width) / 2
-                    y: dock.vertical ? (slot.height - height) / 2 : (dock.edge === 1 ? slot.height - height : 0)
+                    x: dock.vertical ? (!dock.indicatorAfterIcon ? slot.width - width : 0) : (slot.width - width) / 2
+                    y: dock.vertical ? (slot.height - height) / 2 : (!dock.indicatorAfterIcon ? slot.height - height : 0)
                 }
 
                 // Cell rendered at the maximum zoom size and scaled down to
@@ -395,18 +405,42 @@ Item {
                     }
                 }
 
-                // Running indicator between the icon and the screen edge
-                // (launchers have none).
+                // Running indicator; the configured position selects the
+                // screen-edge or interior side of the icon.
                 Rectangle {
-                    readonly property real gap: (dock.edgePaddingPx - width) / 2
+                    readonly property int indicatorStyle: dock.runningIndicatorStyle
+                    readonly property real markerSize: dock.runningIndicatorSize * dock.unit
+                    readonly property real markerThickness: indicatorStyle === 0 ? markerSize
+                        : indicatorStyle === 1 ? Math.max(2 * dock.unit, Math.round(markerSize / 3))
+                        : indicatorStyle === 2 || indicatorStyle === 3 ? markerSize
+                        : Math.max(2 * dock.unit, Math.round(markerSize / 2))
+                    readonly property real markerLength: indicatorStyle === 0 ? markerThickness
+                        : markerSize * (indicatorStyle === 4 ? 3 : 2)
+                    readonly property real gap: Math.max(0, (dock.indicatorReservePx - markerThickness) / 2)
                     visible: slot.windowState !== "launcher"
-                    width: Math.max(2, Math.round(dock.iconPx / 10))
-                    height: width
-                    radius: width / 2
-                    x: dock.vertical ? (dock.edge === 2 ? -dock.edgePaddingPx + gap : slot.width + gap) : (slot.width - width) / 2
-                    y: dock.vertical ? (slot.height - height) / 2 : (dock.edge === 0 ? -dock.edgePaddingPx + gap : slot.height + gap)
-                    color: slot.windowState === "active" ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
+                    width: dock.vertical ? markerThickness : markerLength
+                    height: dock.vertical ? markerLength : markerThickness
+                    radius: indicatorStyle === 0 || indicatorStyle === 3 ? Math.max(width, height) / 2
+                        : indicatorStyle === 2 ? markerThickness / 2 : Math.min(width, height) / 3
+                    x: dock.vertical
+                        ? (dock.indicatorAfterIcon ? slot.width + gap : -width - gap)
+                        : (slot.width - width) / 2
+                    y: dock.vertical
+                        ? (slot.height - height) / 2
+                        : (dock.indicatorAfterIcon ? slot.height + gap : -height - gap)
+                    color: dock.runningIndicatorColorMode === 1 ? dock.runningIndicatorColor : Kirigami.Theme.textColor
                     opacity: slot.windowState === "active" ? 1.0 : slot.windowState === "minimized" ? 0.35 : 0.6
+
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: parent.width + Math.max(2, parent.markerSize / 2)
+                        height: parent.height + Math.max(2, parent.markerSize / 2)
+                        radius: Math.max(width, height) / 2
+                        color: parent.color
+                        opacity: 0.28
+                        visible: parent.indicatorStyle === 3
+                        z: -1
+                    }
                 }
 
                 // Badge (DockItem.qml): number or dot at the icon's corner.
