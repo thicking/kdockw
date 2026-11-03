@@ -32,9 +32,10 @@ run_as_config_user() {
     if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
         chown -R nobody:nobody "$temp_root"
         runuser -u nobody -- env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" \
-            PATH="$bin_dir:$PATH" "$@"
+            PATH="$bin_dir:/usr/local/bin:/usr/bin:/bin" "$@"
     else
-        env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" PATH="$bin_dir:$PATH" "$@"
+        env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" \
+            PATH="$bin_dir:/usr/local/bin:/usr/bin:/bin" "$@"
     fi
 }
 
