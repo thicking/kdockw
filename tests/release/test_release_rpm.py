@@ -55,9 +55,17 @@ def write_obs_tree(root: Path, version: str = "1.2.3", debrev: str = "1") -> Pat
     return root
 
 
-def inputs(root: Path, version: str = "1.2.3", tag: str = "v1.2.3") -> dict[str, bytes]:
+def inputs(
+    root: Path,
+    version: str = "1.2.3",
+    tag: str = "v1.2.3",
+) -> dict[str, bytes]:
     return rpm.build_obs_inputs(
-        root, tag=tag, version=version, debian_revision="1", clone_url=CLONE
+        root,
+        tag=tag,
+        version=version,
+        debian_revision="1",
+        clone_url=CLONE,
     )
 
 

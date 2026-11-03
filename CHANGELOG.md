@@ -1,13 +1,19 @@
 # KDockW changelog
 
-This file records KDockW's independent project history. No standalone KDockW
-release has been tagged yet, so the entries below do not assign KDockW version
-numbers. The original Krema releases and their notes are preserved in the
+This file records KDockW's independent project history. The original Krema
+releases and their notes are preserved in the
 [archived Krema changelog](docs/history/krema-changelog.md). See
 [FORK_CHANGES.md](FORK_CHANGES.md) for a behavior-focused summary of changes
 carried forward from the Krema-based development period.
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-03
+
+KDockW 0.1.0 is the first stable standalone release of this KDE Plasma 6 dock
+for Wayland. It brings configurable dock layout and running-app indicators,
+saved CPU-compatible window previews, and reliability improvements carried
+forward from the Krema-based development period.
 
 ### Added
 
@@ -28,10 +34,9 @@ carried forward from the Krema-based development period.
   separated pinned and running applications.
   Saved user values continue to override these defaults; CPU-only preview and
   personal launcher/monitor data remain excluded.
-- Established `0.1.0-dev` as KDockW's independent development version and updated
-  About copyright attribution to retain Krema's contributor attribution and
-  identify Byeonghoon Yoo as its original author. No standalone release has
-  been published.
+- Established KDockW's independent versioning and updated About copyright
+  attribution to retain Krema's contributor attribution and identify Byeonghoon
+  Yoo as its original author.
 - Updated the About page with KDockW's independent maintainer, Krema's original
   author, the Wayland-focused product description, and the current application
   icon.
@@ -58,11 +63,6 @@ carried forward from the Krema-based development period.
 - Removed the project-provided `kdockw.service` template. XDG autostart is now
   the only supported automatic login startup path; existing user units are
   left untouched and have a separate manual migration guide.
-
-### Changed
-
-- Replaced the inherited Krema roadmap and release history with an independent,
-  evidence-based English/Russian KDockW roadmap and dated project changelog.
 
 ## 2026-11-02 — Independent KDockW project
 

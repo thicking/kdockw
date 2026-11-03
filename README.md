@@ -118,7 +118,29 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW source builds are available; KDockW-specific binary packages and its first standalone release have not yet been published. The current source identifies itself as `0.1.0-dev`. See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW source builds are available. The `0.1.0` release candidate is being checked against the full distro package matrix; binaries become downloadable from [GitHub Releases](https://github.com/thicking/kdockw/releases) after the signed release passes that gate. See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+
+### Linux package targets
+
+The release workflow builds one package for each target below, installs it in
+that distribution's test image, and runs the dock E2E suite. Release assets are
+named `kdockw-0.1.0-<target>.<format>` and are attached only when the full
+matrix succeeds for the signed release commit.
+
+| Package | Distribution targets |
+| --- | --- |
+| `.deb` | Debian 13; Ubuntu 25.04, 25.10, 26.04 |
+| `.rpm` | Fedora 42, 43, 44, Rawhide; openSUSE Tumbleweed, Slowroll, Leap 16.0 |
+| `.pkg.tar.zst` | Arch Linux x86_64 |
+
+Install a downloaded local package with the system package manager:
+
+```bash
+sudo apt install ./kdockw-0.1.0-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.1.0-fedora-44.rpm
+sudo zypper install ./kdockw-0.1.0-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.1.0-arch.pkg.tar.zst
+```
 
 ```bash
 git clone --branch main --single-branch https://github.com/thicking/kdockw.git kdockw

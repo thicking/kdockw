@@ -29,6 +29,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+import shutil
 import tempfile
 import urllib.error
 import urllib.parse
@@ -48,7 +50,6 @@ from release_common import (
     result,
     sha256_bytes,
     sha256_file,
-    sha256sums_text,
 )
 
 CHANNEL = "github"
@@ -60,6 +61,29 @@ ARCHIVE_TIMEOUT = 120
 MAX_ARCHIVE_BYTES = 50 * 1024 * 1024
 # Redirects may only stay on GitHub's own archive hosts; anything else fails.
 _ARCHIVE_HOSTS = frozenset({"github.com", "codeload.github.com"})
+PACKAGE_ARTIFACT_PREFIX = "kdockw-package-"
+
+
+def _target_formats(context: ReleaseContext) -> dict[str, str]:
+    path = context.source_dir / "tests/distro/targets.tsv"
+    if path.is_symlink() or not path.is_file():
+        raise ReleaseError("tagged source lacks tests/distro/targets.tsv")
+    targets: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        fields = line.split("\t")
+        if len(fields) < 4:
+            continue
+        extension = fields[-1]
+        package_format = {"*.deb": "deb", "*.rpm": "rpm", "*.pkg.tar.zst": "arch"}.get(extension)
+        if not package_format:
+            raise ReleaseError(f"unsupported package format in target matrix: {extension}")
+        if fields[0] in targets:
+            raise ReleaseError(f"duplicate package target in matrix: {fields[0]}")
+        targets[fields[0]] = package_format
+    targets["arch"] = "arch"
+    return targets
 
 
 def _gh_json(args: list[str], *, timeout: int = API_TIMEOUT) -> Any:
@@ -193,9 +217,152 @@ def classify_asset(
     return "match" if remote_sha256 == expected_sha256 else "mismatch"
 
 
+def _package_manifest(context: ReleaseContext) -> tuple[Path, list[dict]] | None:
+    directory = context.work_dir / "github-packages" / "verified"
+    manifest_path = directory / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise ReleaseError("package manifest is not a regular file")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise ReleaseError("package manifest is invalid") from None
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("commit") != context.commit
+        or manifest.get("version") != context.version
+        or not isinstance(manifest.get("packages"), list)
+    ):
+        raise ReleaseError("package manifest does not match the release context")
+    packages = manifest["packages"]
+    targets = _target_formats(context)
+    if sorted(item.get("target", "") for item in packages) != sorted(targets):
+        raise ReleaseError("package manifest does not contain exactly the release target matrix")
+    names: set[str] = set()
+    for item in packages:
+        if not isinstance(item, dict):
+            raise ReleaseError("package manifest entry is invalid")
+        target = item.get("target", "")
+        package_format = item.get("format")
+        suffix = {"deb": ".deb", "rpm": ".rpm", "arch": ".pkg.tar.zst"}.get(package_format)
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", target) or not suffix or targets[target] != package_format:
+            raise ReleaseError("package manifest contains an invalid target or format")
+        name = item.get("asset_filename")
+        if name != f"kdockw-{context.version}-{target}{suffix}" or name in names:
+            raise ReleaseError("package manifest contains an invalid or duplicate asset filename")
+        names.add(name)
+        path = directory / name
+        if path.is_symlink() or not path.is_file() or sha256_file(path) != item.get("sha256"):
+            raise ReleaseError(f"verified package bytes are missing or changed for {target}")
+    return directory, packages
+
+
 def expected_assets(context: ReleaseContext) -> dict[str, str]:
-    sums = sha256sums_text(context.sha256, context.version).encode()
-    return {asset_name(context.version): context.sha256, SUMS_NAME: sha256_bytes(sums)}
+    assets = {asset_name(context.version): context.sha256}
+    package_data = _package_manifest(context)
+    if package_data:
+        directory, packages = package_data
+        for item in packages:
+            assets[item["asset_filename"]] = item["sha256"]
+    sums_text = "".join(f"{digest}  {name}\n" for name, digest in sorted(assets.items()))
+    assets[SUMS_NAME] = sha256_bytes(sums_text.encode())
+    return assets
+
+
+def download_verified_packages(context: ReleaseContext) -> dict:
+    """Download and validate all package artifacts from the exact green matrix run."""
+    existing = _package_manifest(context)
+    if existing:
+        return {"targets": len(existing[1]), "source": "cached"}
+
+    # Import at call time to avoid a module cycle: release.py owns the gate
+    # decision and this function runs only after its context is established.
+    import release
+
+    decision = release.evaluate_gate(context)
+    if decision.get("status") != "ready" or not decision.get("run_id"):
+        raise ReleaseError("verified package artifacts require a full green Distro E2E run")
+    run_id = str(decision["run_id"])
+    targets = _target_formats(context)
+    parent = context.work_dir / "github-packages"
+    if parent.is_symlink():
+        raise ReleaseError("package output directory is a symlink")
+    parent.mkdir(mode=0o755, parents=True, exist_ok=True)
+    stage_root = Path(tempfile.mkdtemp(prefix=".packages-", dir=parent))
+    packages: list[dict] = []
+    try:
+        for target in targets:
+            if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", target):
+                raise ReleaseError(f"invalid package target id {target!r}")
+            artifact = f"{PACKAGE_ARTIFACT_PREFIX}{target}"
+            target_dir = stage_root / target
+            target_dir.mkdir()
+            command(
+                ["gh", "run", "download", run_id, "--repo", context.repository,
+                 "--name", artifact, "--dir", str(target_dir)],
+                timeout=UPLOAD_TIMEOUT,
+            )
+            manifest_path = target_dir / "manifest.json"
+            if manifest_path.is_symlink() or not manifest_path.is_file():
+                raise ReleaseError(f"package artifact {artifact} has no regular manifest")
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                raise ReleaseError(f"package artifact {artifact} has no valid manifest") from None
+            package_files = [
+                path for path in target_dir.iterdir()
+                if path.name != "manifest.json" and path.is_file() and not path.is_symlink()
+            ]
+            if len(package_files) != 1 or any(
+                path.is_symlink() or path.is_dir()
+                for path in target_dir.iterdir()
+            ):
+                raise ReleaseError(f"package artifact {artifact} has an unexpected file layout")
+            package = package_files[0]
+            actual_hash = sha256_file(package)
+            if (
+                not isinstance(manifest, dict)
+                or manifest.get("target") != target
+                or manifest.get("commit") != context.commit
+                or manifest.get("version") != context.version
+                or manifest.get("filename") != package.name
+                or manifest.get("sha256") != actual_hash
+            ):
+                raise ReleaseError(f"package artifact {artifact} does not match the release commit")
+            package_format = manifest.get("format")
+            extension = {"deb": ".deb", "rpm": ".rpm", "arch": ".pkg.tar.zst"}.get(package_format)
+            if not extension or targets[target] != package_format or not package.name.endswith(extension):
+                raise ReleaseError(f"package artifact {artifact} has an unsupported package format")
+            asset_filename = f"kdockw-{context.version}-{target}{extension}"
+            shutil.copyfile(package, stage_root / asset_filename)
+            packages.append({
+                "target": target,
+                "format": package_format,
+                "source_filename": package.name,
+                "asset_filename": asset_filename,
+                "sha256": actual_hash,
+            })
+        aggregate = {
+            "run_id": run_id,
+            "commit": context.commit,
+            "version": context.version,
+            "packages": packages,
+        }
+        (stage_root / "manifest.json").write_text(
+            json.dumps(aggregate, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+        )
+        # Publish the complete directory atomically and refuse replacing any
+        # pre-existing result, even if a previous attempt was interrupted.
+        final = parent / "verified"
+        if os.path.lexists(final):
+            raise ReleaseError("verified package directory already exists without a matching manifest")
+        os.replace(stage_root, final)
+        return {"targets": len(packages), "run_id": run_id, "source": "distro-e2e"}
+    except BaseException:
+        if stage_root.exists():
+            shutil.rmtree(stage_root, ignore_errors=True)
+        raise
 
 
 def remote_tag_object(context: ReleaseContext) -> str:
@@ -314,7 +481,11 @@ def _sums_file(context: ReleaseContext) -> Path:
         raise ReleaseError(f"{upload_dir} is a symlink")
     upload_dir.mkdir(mode=0o755, exist_ok=True)
     path = upload_dir / SUMS_NAME
-    content = sha256sums_text(context.sha256, context.version).encode()
+    sums = expected_assets(context)
+    sums.pop(SUMS_NAME, None)
+    content = "".join(
+        f"{digest}  {name}\n" for name, digest in sorted(sums.items())
+    ).encode()
     if not os.path.lexists(path):
         fd, tmp = tempfile.mkstemp(prefix=f".{SUMS_NAME}.", dir=upload_dir)
         try:
@@ -358,6 +529,11 @@ def publish(context: ReleaseContext, *, execute: bool = False) -> dict:
             asset_name(context.version): context.archive,
             SUMS_NAME: _sums_file(context),
         }
+        package_data = _package_manifest(context)
+        if package_data:
+            package_dir, packages = package_data
+            for item in packages:
+                files[item["asset_filename"]] = package_dir / item["asset_filename"]
 
         if found["state"] == "present":
             todo = [

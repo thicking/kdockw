@@ -10,6 +10,7 @@ Runs offline with the standard library:
 from __future__ import annotations
 
 import gzip
+import hashlib
 import io
 import json
 import os
@@ -47,7 +48,7 @@ from release_common import (  # noqa: E402
 )
 
 COMMIT = "a964a908ecb8904c079a8148403bebaaa427a821"
-PINNED = "AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9"
+PINNED = "90798370719E91DDE1D5028AAA660B7C5AB258E7"
 
 
 def source_files(
@@ -943,6 +944,76 @@ class GithubPublishTests(ContextFixture):
         path.write_text("truncated")
         with self.assertRaises(ReleaseError):
             release_github._sums_file(context)
+
+    def test_exact_matrix_package_artifacts_are_verified_and_added_to_checksums(self) -> None:
+        context = load_context(self.write_context())
+        payloads = {
+            "fedora-42": ("kdockw-1.2.3-1.x86_64.rpm", b"rpm package"),
+            "arch": ("kdockw-1.2.3-1-x86_64.pkg.tar.zst", b"arch package"),
+        }
+
+        def download(argv, **_):
+            target = argv[argv.index("--name") + 1].removeprefix("kdockw-package-")
+            directory = Path(argv[argv.index("--dir") + 1])
+            filename, content = payloads[target]
+            package = directory / filename
+            package.write_bytes(content)
+            package_format = "rpm" if target == "fedora-42" else "arch"
+            (directory / "manifest.json").write_text(
+                json.dumps({
+                    "target": target,
+                    "commit": COMMIT,
+                    "version": "1.2.3",
+                    "format": package_format,
+                    "filename": filename,
+                    "sha256": hashlib.sha256(content).hexdigest(),
+                }),
+                encoding="utf-8",
+            )
+            return ""
+
+        with (
+            mock.patch.object(release, "evaluate_gate", return_value={"status": "ready", "run_id": 12}),
+            mock.patch.object(release_github, "command", side_effect=download),
+        ):
+            result = release_github.download_verified_packages(context)
+
+        self.assertEqual(result["targets"], 2)
+        assets = release_github.expected_assets(context)
+        self.assertIn("kdockw-1.2.3-fedora-42.rpm", assets)
+        self.assertIn("kdockw-1.2.3-arch.pkg.tar.zst", assets)
+        sums = release_github._sums_file(context).read_text()
+        self.assertIn("kdockw-1.2.3-fedora-42.rpm", sums)
+        self.assertIn("kdockw-1.2.3-arch.pkg.tar.zst", sums)
+
+    def test_package_artifact_wrong_commit_is_rejected(self) -> None:
+        context = load_context(self.write_context())
+
+        def download(argv, **_):
+            target = argv[argv.index("--name") + 1].removeprefix("kdockw-package-")
+            directory = Path(argv[argv.index("--dir") + 1])
+            filename = f"kdockw-1.2.3-1.{ 'x86_64.rpm' if target == 'fedora-42' else 'x86_64.pkg.tar.zst' }"
+            payload = b"package"
+            (directory / filename).write_bytes(payload)
+            (directory / "manifest.json").write_text(
+                json.dumps({
+                    "target": target,
+                    "commit": "f" * 40,
+                    "version": "1.2.3",
+                    "format": "rpm" if target == "fedora-42" else "arch",
+                    "filename": filename,
+                    "sha256": hashlib.sha256(payload).hexdigest(),
+                }),
+                encoding="utf-8",
+            )
+            return ""
+
+        with (
+            mock.patch.object(release, "evaluate_gate", return_value={"status": "ready", "run_id": 12}),
+            mock.patch.object(release_github, "command", side_effect=download),
+        ):
+            with self.assertRaisesRegex(ReleaseError, "does not match the release commit"):
+                release_github.download_verified_packages(context)
 
 
 if __name__ == "__main__":

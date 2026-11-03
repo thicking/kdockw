@@ -20,8 +20,8 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
   existing configurations using the XDG-only startup path.
 - [ ] Manually verify one XDG autostart launch after login and upgrade for both
   `/usr` and `/usr/local` installations in a real Plasma session.
-- [x] Establish KDockW's independent versioning policy; current development
-  builds use `0.1.0-dev`.
+- [x] Establish KDockW's independent versioning policy and stable `0.1.0`
+  metadata; the release remains unpublished until signing and package gates pass.
 - [ ] Publish the first standalone KDockW release; the existing `v0.x` tags
   belong to Krema history.
 - [ ] Complete release automation and package smoke checks before publishing

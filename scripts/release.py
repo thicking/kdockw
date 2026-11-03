@@ -58,7 +58,7 @@ from release_common import (  # noqa: E402
 )
 
 DEFAULT_REPOSITORY = "thicking/kdockw"
-PINNED_SIGNERS = ("AC48F8F7708DDBA12D959C1FCF1251E9D42EF5B9",)
+PINNED_SIGNERS = ("90798370719E91DDE1D5028AAA660B7C5AB258E7",)
 CHANNELS = ("github", "aur", "obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"
 GATE_JOB_RE = re.compile(r"^Distro E2E \((?P<target>[^)]+)\)$")
@@ -721,6 +721,7 @@ def channel_status(channel: str, context: ReleaseContext) -> dict:
     if channel == "github":
         import release_github
 
+        release_github.download_verified_packages(context)
         return release_github.status(context)
     if channel == "aur":
         import release_aur
@@ -745,6 +746,10 @@ def channel_publish(channel: str, context: ReleaseContext, *, execute: bool) -> 
     if channel == "github":
         import release_github
 
+        # The full Distro E2E run builds and tests the exact package bytes.
+        # Download those artifacts before planning/uploading so the release
+        # cannot silently fall back to source-only assets.
+        release_github.download_verified_packages(context)
         return release_github.publish(context, execute=execute)
     if channel == "aur":
         import release_aur

@@ -1,3 +1,12 @@
+kdockw (0.1.0-1) unstable; urgency=medium
+
+  * Release the first stable standalone version of KDockW.
+  * Add adjustable dock content padding and running-app indicators.
+  * Add an optional CPU-compatible window-preview capture mode.
+  * Improve language switching, window previews, and dock reliability.
+
+ -- thicking <thicking@gmail.com>  Tue, 03 Nov 2026 14:47:00 +0500
+
 kdockw (0.1.0~dev-1) unstable; urgency=medium
 
   * Prepare the independent KDockW 0.1.0 development version.

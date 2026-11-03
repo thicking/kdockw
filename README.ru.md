@@ -124,7 +124,29 @@ KDockW — независимая док-панель для KDE Plasma 6 и Way
 
 ## Установка
 
-KDockW можно собрать из исходников; отдельные бинарные пакеты и первый самостоятельный выпуск пока не опубликованы. Текущая версия исходников — `0.1.0-dev`. Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
+KDockW можно собрать из исходников. Кандидат `0.1.0` проходит полную матрицу сборки и проверки пакетов; бинарные файлы станут доступны в разделе [GitHub Releases](https://github.com/thicking/kdockw/releases) после подписания и успешного прохождения релизных проверок. Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
+
+### Целевые Linux-дистрибутивы
+
+Релизный workflow собирает отдельный пакет для каждой цели ниже, устанавливает
+его в тестовый образ дистрибутива и запускает E2E-проверки дока. Файлы
+называются `kdockw-0.1.0-<цель>.<формат>` и попадут в GitHub Release только
+после успешного прохождения всей матрицы для подписанного релизного commit.
+
+| Формат | Целевые дистрибутивы |
+| --- | --- |
+| `.deb` | Debian 13; Ubuntu 25.04, 25.10, 26.04 |
+| `.rpm` | Fedora 42, 43, 44, Rawhide; openSUSE Tumbleweed, Slowroll, Leap 16.0 |
+| `.pkg.tar.zst` | Arch Linux x86_64 |
+
+Установите загруженный файл локального пакета штатным менеджером:
+
+```bash
+sudo apt install ./kdockw-0.1.0-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.1.0-fedora-44.rpm
+sudo zypper install ./kdockw-0.1.0-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.1.0-arch.pkg.tar.zst
+```
 
 ```bash
 git clone --branch main --single-branch https://github.com/thicking/kdockw.git kdockw
