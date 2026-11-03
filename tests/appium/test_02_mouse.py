@@ -1093,11 +1093,11 @@ def test_mouse016_nonleft_activation_paths_ignore_mouse_click_policies(
 
     # Real Meta+N uses the current visual entry index, not a fixed incidental
     # ordering of apps. Both group and singleton shortcuts restore activation.
-    for name, target in ((NAME1, beta), ("Solo", solo)):
+    for name, target, other in ((NAME1, beta, solo), ("Solo", solo, alpha)):
         kwin.activate(target.internal_id)
         wait_until(target.is_active, message=f"{target.title} to become the MRU target")
-        kwin.activate(solo.internal_id if target is beta else alpha.internal_id)
-        wait_until(lambda: not target.is_active(), message=f"{target.title} to become background")
+        kwin.activate(other.internal_id)
+        wait_until(other.is_active, message=f"{other.title} to become active before Meta+N")
         inp.key("Meta", str(names.index(name) + 1))
         wait_until(
             lambda: (w := target.refresh()) is not None and w.active and not w.minimized,
