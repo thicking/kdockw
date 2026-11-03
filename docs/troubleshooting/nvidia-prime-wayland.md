@@ -24,11 +24,11 @@ observed rendering error.
 
 An experiment that changed the original KDockW desktop entry to launch through
 a `kdockw-wrapper` coincided with missing unpinned tasks, launch animation, and
-window previews. The working arrangement keeps the original desktop ID and
-KWin interface declaration, runs the binary directly from a user service, and
-uses a separate `kdockw-service.desktop` shortcut that starts that service.
-These are observations from the stated configuration, not evidence that PRIME
-variables or desktop wrappers cause the same symptoms on every system.
+window previews. Keep the application desktop ID and KWin interface
+declaration intact, and use the project's XDG autostart entry or launch the
+binary directly. These are observations from the stated configuration, not
+evidence that PRIME variables or desktop wrappers cause the same symptoms on
+every system.
 
 KPipeWire reports stream state and first-frame readiness separately. A
 `ready=true` observation means KPipeWire received a first frame; it does not
@@ -58,107 +58,26 @@ one variable on a temporary command, then remove it. Changing the Qt Quick
 backend can affect the whole UI renderer and does not by itself prove or repair
 DMA-BUF import between GPUs.
 
-## Startup choice and optional user service
+## Login startup and application identity
 
-KDockW's installed XDG autostart entry is the recommended default; the
-systemd user service is optional and is not required for KWin screencasting.
+The installed `com.thicking.kdockw.autostart.desktop` is KDockW's only
+automatic login starter. It launches the configured `kdockw` binary directly.
+The regular application entry remains `com.thicking.kdockw.desktop` and must
+retain its `X-KDE-Wayland-Interfaces` declaration; do not rename it, replace
+its `Exec` with a wrapper, or add a second startup shortcut.
+
 On the reproduced setup, running KDockW with inherited PRIME and Qt backend
 overrides removed coincided with previews returning. Those variables were
 cleared together, so the observation neither identifies which value mattered
-nor proves a universal cause. The normal installed desktop entry remained
-`com.thicking.kdockw.desktop`, including its
-`X-KDE-Wayland-Interfaces` declaration. A separate menu shortcut can start the
-optional service; do not rename or replace the normal desktop ID.
+nor proves a universal cause. Keep GPU and Qt variables local to controlled
+diagnostic launches; do not change global Plasma environment, driver, KWin, or
+SDDM configuration. The `--desktopfile` option exists for KDE command-line
+compatibility but is not needed for the project's standard desktop entries.
 
-Create `~/.config/systemd/user/kdockw.service` (back up an existing file
-first):
-
-```ini
-[Unit]
-Description=KDockW Dock
-PartOf=graphical-session.target
-After=graphical-session.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/kdockw
-Restart=on-failure
-RestartSec=3
-UnsetEnvironment=DRI_PRIME __GLX_VENDOR_LIBRARY_NAME __NV_PRIME_RENDER_OFFLOAD __VK_LAYER_NV_optimus QSG_RHI_BACKEND
-
-[Install]
-WantedBy=graphical-session.target
-```
-
-`Application::makeAboutData()` sets the desktop ID to `com.thicking.kdockw` by
-default. The `--desktopfile` option is supported by KDE's `KAboutData` command
-line setup, but is not needed for this service. Keep the project's normal
-desktop file and its `X-KDE-Wayland-Interfaces` value intact.
-
-Before changing any original desktop entry's `Exec`, restore it to the direct
-KDockW binary (`/usr/local/bin/kdockw` for this installation). Do not put a
-wrapper in that desktop file. Create the separate service launcher as
-`~/.local/share/applications/kdockw-service.desktop`:
-
-```sh
-mkdir -p ~/.local/share/applications
-```
-
-```ini
-[Desktop Entry]
-Type=Application
-Name=KDockW (service)
-Comment=Start KDockW through the user service
-Exec=systemctl --user start kdockw.service
-Icon=com.thicking.kdockw
-Terminal=false
-Categories=Utility;
-StartupNotify=false
-```
-
-Use only one login starter. The KDockW autostart entry installed by this CMake
-project is named `com.thicking.kdockw.autostart.desktop`; to use the service,
-override that entry for this user with
-`~/.config/autostart/com.thicking.kdockw.autostart.desktop`:
-
-```ini
-[Desktop Entry]
-Hidden=true
-```
-
-Save any existing user override before replacing it.
-
-Before adapting an existing unit, save it. For example:
-
-```sh
-mkdir -p ~/.config/systemd/user
-test ! -e ~/.config/systemd/user/kdockw.service || \
-  cp -a ~/.config/systemd/user/kdockw.service ~/.config/systemd/user/kdockw.service.before-prime
-```
-
-After creating or editing the unit:
-
-```sh
-systemctl --user daemon-reload
-systemctl --user enable --now kdockw.service
-```
-
-To restore the saved unit, copy it back, reload systemd, and restart KDockW.
-Restore any previous user autostart override. If there was no unit or override
-before this change, disable the service and remove only the user-created unit,
-mask, and shortcut:
-
-```sh
-systemctl --user disable --now kdockw.service
-rm ~/.config/systemd/user/kdockw.service
-rm ~/.config/autostart/com.thicking.kdockw.autostart.desktop
-rm ~/.local/share/applications/kdockw-service.desktop
-systemctl --user daemon-reload
-```
-
-Restore the user's previous autostart choice separately. Do not remove
-`/usr/local/share/applications/com.thicking.kdockw.desktop` or change system GPU,
-driver, KWin, or SDDM configuration as part of this workaround.
+Users with an existing `kdockw.service`, a custom unit override, or a
+`Hidden=true` XDG override can follow the separate
+[systemd-to-XDG migration guide](../migration/systemd-to-xdg-autostart.md).
+That procedure is manual and backs up user files before changes.
 
 ## Choosing and comparing preview capture paths
 
@@ -210,8 +129,8 @@ env -u DRI_PRIME \
 ```
 
 Substitute `build/release/bin/kdockw` for a source build. Direct launches may
-not have the exact environment of a desktop-file or user-service launch, so
-record the launch method. `QSG_INFO=1` enables Qt Quick scene-graph startup
+not have the exact environment of a desktop-file launch, so record the launch
+method. `QSG_INFO=1` enables Qt Quick scene-graph startup
 diagnostics; depending on the backend and driver these report the selected
 graphics API and may identify its device. It does not force a backend or GPU.
 
@@ -231,27 +150,20 @@ For the full protocol and confirmation criteria, see
 
 ## Logs
 
-Inspect only the relevant environment variables for the running service:
+Inspect only the relevant environment variables for the running KDockW process:
 
 ```sh
-pid=$(systemctl --user show kdockw.service --property=MainPID --value)
+pid=$(pgrep -n -x kdockw) || { echo 'KDockW process not found'; exit 1; }
 tr '\0' '\n' <"/proc/$pid/environ" |
   grep -E '^(DRI_PRIME|__GLX_VENDOR_LIBRARY_NAME|__NV_PRIME_RENDER_OFFLOAD|__VK_LAYER_NV_optimus|QSG_RHI_BACKEND)='
 ```
 
-With `UnsetEnvironment`, this command should print no matching lines unless
-the process sets one itself. Avoid dumping the complete process environment:
-it may contain unrelated private values.
+This prints only the listed variables. Avoid dumping the complete process
+environment: it may contain unrelated private values.
 
 KDockW logs capture mode, preview transitions, readiness, stream size, actual
 DMA-BUF selection, and KPipeWire's error string with the `[kdockw.preview]`
-prefix. For the optional service:
-
-```sh
-journalctl --user -b -u kdockw.service -o cat | grep '\[kdockw.preview\]'
-```
-
-For a directly launched process, query its PID:
+prefix. Query the running process by PID:
 
 ```sh
 pid=$(pgrep -n -x kdockw) || { echo 'KDockW process not found'; exit 1; }

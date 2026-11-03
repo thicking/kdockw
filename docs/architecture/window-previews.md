@@ -101,10 +101,10 @@ frame that KPipeWire has already received, and is not a general hybrid-GPU fix.
 ## Safe A/B procedure on Wayland
 
 Do not run two KDockW instances at once. Close the current instance through its
-normal quit action and verify it exited before each diagnostic launch. Do not
-stop or edit a user service as part of this test; if a service owns the instance,
-use its existing normal stop procedure and restore its prior running state
-afterward. Use the same windows and repeat the same sequence for each launch.
+normal quit action and verify it exited before each diagnostic launch. Use the
+same windows and repeat the same sequence for each launch. For ordinary use,
+prefer the saved Compatibility mode setting in KDockW rather than a diagnostic
+environment override.
 
 Start with the current process environment:
 
@@ -134,8 +134,7 @@ env -u DRI_PRIME \
 These commands assume the installed binary path shown. For a source build,
 substitute `build/release/bin/kdockw`. A process started this way is not a
 desktop-file launch; record that difference. Do not change the desktop file,
-systemd unit, global variables, driver settings, or KWin configuration for the
-comparison.
+global variables, driver settings, or KWin configuration for the comparison.
 
 Qt documents `QSG_INFO=1` as enabling Qt Quick scene-graph initialization
 information, useful for identifying the selected graphics API and renderer.
@@ -174,8 +173,9 @@ renderers cannot validate cross-GPU DMA-BUF import.
 
 ## Startup method
 
-KDockW's installed XDG autostart entry is the normal recommended startup path.
-A systemd user service is optional: it can control per-process environment,
-restart policy, or explicit start/stop, but it is not required for previews.
-Choose only one login starter. When evaluating an optional service, keep the
-standard desktop ID and KWin Wayland-interface declaration intact.
+KDockW's installed XDG autostart entry is its only supported automatic login
+startup path. The normal application desktop file and manual invocation remain
+available and launch the same executable. The standard desktop ID and
+KWin Wayland-interface declaration must remain intact. Earlier user-created
+`kdockw.service` units can be migrated using
+[`../migration/systemd-to-xdg-autostart.md`](../migration/systemd-to-xdg-autostart.md).

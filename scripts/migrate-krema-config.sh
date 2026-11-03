@@ -68,4 +68,4 @@ EOF
 
 printf 'Copied settings and pinned launchers to %s\n' "$target_config"
 printf 'Backup: %s\n' "$backup_dir"
-printf 'Original Krema settings were left in place. No service or autostart was changed.\n'
+printf 'Original Krema settings were left in place. No startup entries were changed.\n'

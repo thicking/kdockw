@@ -18,13 +18,13 @@ history; the old Krema release notes remain in the
 | Parabolic-zoom background geometry | Keeps the blur effect enabled while replacing its region as the dock background changes size. | Geometry and effect-state tests pass. The absence of visual flicker still needs checking in a real Wayland session. |
 | TaskManager diagnostics | Logs task rows and role changes without recording window titles. | Logging does not change KDE filtering and cannot prove every launcher/KWin setup. |
 | PipeWire diagnostics | Logs capture state and retains one experimental CPU-readable-buffer retry when the stream has no first frame. | This is not a confirmed general fix for black previews or cross-GPU DMA-BUF import. |
-| NVIDIA PRIME guidance | Records the observed hybrid-GPU symptoms and a user-service workaround that clears selected environment overrides. | The observations apply to one TUXEDO OS / Intel + NVIDIA configuration. |
+| NVIDIA PRIME guidance | Records observed hybrid-GPU symptoms, the saved CPU preview compatibility setting, and process-local diagnostic overrides. | The A/B result applies to one TUXEDO OS / Intel + NVIDIA configuration; the exact DMA-BUF failure is unknown. |
 
 ## Independent KDockW identity
 
 The GitHub repository is now standalone (`isFork: false`, no parent). The
 executable, KConfig file, KI18n domain, QML import URI, private KWin callback,
-desktop ID, app icon, AppStream ID, and optional user service use KDockW
+desktop ID, XDG autostart entry, app icon, and AppStream ID use KDockW
 identifiers. The English and Russian migration guides document the old names
 and the explicit backup, copy, verification, and rollback path. Migration is
 never run automatically. The independent roadmap is available in

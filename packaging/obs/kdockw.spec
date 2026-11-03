@@ -109,11 +109,7 @@ previews via PipeWire, and deep integration with KDE Plasma desktop.
 %license LICENSES/MIT-CMU.txt
 %{_bindir}/kdockw
 %{_datadir}/applications/com.thicking.kdockw.desktop
-%if 0%{?suse_version}
-%{_prefix}/etc/xdg/autostart/com.thicking.kdockw.autostart.desktop
-%else
 %{_sysconfdir}/xdg/autostart/com.thicking.kdockw.autostart.desktop
-%endif
 %{_datadir}/metainfo/com.thicking.kdockw.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/com.thicking.kdockw.*
 %{_datadir}/locale/*/LC_MESSAGES/kdockw.mo

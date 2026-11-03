@@ -31,6 +31,16 @@ include(KDEGitCommitHooks)
 include(ECMDeprecationSettings)
 include(FeatureSummary)
 
+# XDG Autostart's system-wide directory is in XDG_CONFIG_DIRS (normally
+# /etc/xdg), not below CMAKE_INSTALL_PREFIX. Keep this absolute by default so
+# both /usr and /usr/local installs are discoverable by Plasma. Packaging
+# formats such as Flatpak can still pass their own explicit directory.
+get_property(_kdockw_autostart_override CACHE KDE_INSTALL_AUTOSTARTDIR PROPERTY VALUE)
+if(NOT _kdockw_autostart_override)
+    set(KDE_INSTALL_AUTOSTARTDIR "/etc/xdg/autostart")
+endif()
+unset(_kdockw_autostart_override)
+
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Core
     Gui

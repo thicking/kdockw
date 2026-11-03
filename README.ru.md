@@ -131,7 +131,7 @@ cmake --build --preset release -j 4
 sudo cmake --install build/release
 ```
 
-Исполняемый файл устанавливается как `/usr/local/bin/kdockw`; desktop ID объявляет интерфейсы KWin Wayland, нужные для предпросмотра и активации окон. Перед переключением автозапуска или пользовательского сервиса изучите [инструкцию по ручной миграции и откату](docs/migration/krema-to-kdockw.ru.md) ([English](docs/migration/krema-to-kdockw.md)). Установка KDockW не удаляет и не изменяет Krema.
+С командами выше исполняемый файл устанавливается как `/usr/local/bin/kdockw`; пакетные сборки обычно используют `/usr/bin/kdockw`. Соответствующая запись XDG autostart запускает этот файл напрямую. Desktop ID приложения объявляет интерфейсы KWin Wayland, нужные для предпросмотра и активации окон. Для переноса настроек Krema изучите [инструкцию по миграции и откату](docs/migration/krema-to-kdockw.ru.md) ([English](docs/migration/krema-to-kdockw.md)). Если старый checkout создал `kdockw.service`, используйте [инструкцию перехода на XDG autostart](docs/migration/systemd-to-xdg-autostart.ru.md) ([English](docs/migration/systemd-to-xdg-autostart.md)). Установка KDockW не удаляет Krema или пользовательские файлы автозапуска.
 
 Для обновления checkout получайте изменения из `https://github.com/thicking/kdockw` и пересоберите проект. Настроенная сборка CMake предоставляет цель `uninstall`; иначе удаляйте только файлы из `install_manifest.txt` этой сборки.
 

@@ -35,4 +35,4 @@ mv -f -- "$temp_config" "$current_config"
 temp_config=""
 cmp -s -- "$source_backup" "$current_config"
 printf 'Restored Krema settings to %s\n' "$current_config"
-printf 'KDockW config, desktop entry, service and autostart were not removed or changed.\n'
+printf 'KDockW config, desktop entry and user startup entries were not removed or changed.\n'

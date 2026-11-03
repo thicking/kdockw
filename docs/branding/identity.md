@@ -7,10 +7,11 @@ name expands to **KDE Dock for Wayland**. Use this exact expansion at the top
 of the README and on first mention in external descriptions. Keep the casing
 KDockW; do not write Kdockw, KDockw, or KREMA as the current product name.
 
-Use **KDockW** for the executable, service examples, and current product
+Use **KDockW** for the executable, XDG autostart examples, and current product
 references. Technical identifiers retain their defined lowercase or reverse
-DNS spelling, including kdockw, kdockwrc, kdockw.service,
-com.thicking.kdockw, and com.thicking.kdockw QML imports.
+DNS spelling, including kdockw, kdockwrc, com.thicking.kdockw, and
+com.thicking.kdockw QML imports. Legacy user-created unit names belong only in
+manual migration instructions or historical records.
 
 ## Repository and links
 

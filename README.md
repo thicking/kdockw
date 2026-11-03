@@ -36,6 +36,7 @@ KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor
 | Launch feedback | Launch-icon bounce ends after at most five complete cycles and can finish early after a window appears. |
 | Plasma task-manager drag and drop | Reads the task launch URL MIME type while keeping `.desktop` launcher drops supported. |
 | External file drag hover | Activates an existing app window after a configurable delay without consuming the file drag. |
+| Login startup | Installs one XDG autostart entry that launches the configured KDockW binary directly. |
 | TaskManager diagnostics | Logs task rows and role changes without logging window titles or changing filtering. |
 | PipeWire window previews | Auto (DMA-BUF preferred) is the default; a saved CPU compatibility mode can be selected in Preview settings and applies to existing streams. A process-local environment override remains available for diagnosis. |
 | NVIDIA PRIME guidance | Documents observed behavior on one hybrid-GPU TUXEDO OS / Wayland setup. |
@@ -124,7 +125,7 @@ cmake --build --preset release -j 4
 sudo cmake --install build/release
 ```
 
-The executable is installed as `/usr/local/bin/kdockw`; its desktop ID declares the KWin Wayland interfaces required by previews and activation. For an existing installation, read the [manual migration and rollback guide](docs/migration/krema-to-kdockw.md) ([на русском](docs/migration/krema-to-kdockw.ru.md)) before switching autostart or a user service. Installing KDockW does not remove or alter Krema.
+With the commands above, the executable is installed as `/usr/local/bin/kdockw`; distro builds commonly use `/usr/bin/kdockw`. The matching XDG autostart entry launches that binary directly. The application desktop ID declares the KWin Wayland interfaces required by previews and activation. For Krema settings migration, read the [manual migration and rollback guide](docs/migration/krema-to-kdockw.md) ([на русском](docs/migration/krema-to-kdockw.ru.md)). If an older checkout created `kdockw.service`, see the [systemd-to-XDG migration guide](docs/migration/systemd-to-xdg-autostart.md) ([на русском](docs/migration/systemd-to-xdg-autostart.ru.md)). Installing KDockW does not remove Krema or alter user startup files.
 
 To update the checkout, pull from `https://github.com/thicking/kdockw` and rebuild. CMake's configured build provides an `uninstall` target; otherwise remove only paths listed in that build's `install_manifest.txt`.
 

@@ -15,8 +15,8 @@ change NVIDIA, KWin, Plasma, or SDDM configuration.
 | KI18n domain `krema` | KI18n domain `kdockw` | New catalog name; Russian translations are retained. |
 | QML URI `com.bhyoo.krema` | `com.thicking.kdockw` | Private import used only by this application and its tests. |
 | KWin pointer watcher `com.bhyoo.krema.*` | `com.thicking.kdockw.*` | Private callback interface; updated at both ends. |
-| `krema.service` | `kdockw.service` | New optional user unit with PRIME and Qt override cleanup. |
-| Krema XDG autostart entry | KDockW XDG autostart entry | Choose only one login starter: XDG autostart or systemd user service. |
+| Legacy `krema.service` | No KDockW unit equivalent | KDockW uses its XDG autostart entry; an old Krema unit remains under the user's control. |
+| Krema XDG autostart entry | KDockW XDG autostart entry | KDockW installs `com.thicking.kdockw.autostart.desktop` and launches its binary directly. |
 
 The KWin permission metadata values
 `org_kde_plasma_window_management`, `org_kde_plasma_activation_feedback`,
@@ -38,8 +38,8 @@ grep '^X-KDE-Wayland-Interfaces=' /usr/local/share/applications/com.thicking.kdo
 ```
 
 The desktop file should list the three interfaces above. Keep this standard
-desktop entry and its direct `Exec=/usr/local/bin/kdockw` intact; a separate
-launcher will start the service.
+desktop entry and its direct `Exec=/usr/local/bin/kdockw` intact; the installed
+XDG autostart entry launches KDockW at login.
 
 ## 2. Copy the complete configuration
 
@@ -61,89 +61,43 @@ If you use a non-default `XDG_CONFIG_HOME` or `XDG_STATE_HOME`, the script
 honors those variables. Do not copy only the `[General]` group: per-screen
 settings are in the same file.
 
-## 3. Switch one login starter after testing
+## 3. Switch to KDockW XDG autostart after testing
 
-Keep the old service and autostart file until KDockW has been checked. If
-Krema currently starts through a user service, disable it first:
-
-```sh
-systemctl --user disable --now krema.service
-```
-
-If that unit did not exist, skip this command. Preserve any user override
-before masking the old XDG autostart entry. The old installed file was named
-`com.bhyoo.krema.autostart.desktop`; the same-name override hides it for this
-user:
+If Krema currently starts through a user service, inspect and disable it for
+future logins:
 
 ```sh
-mkdir -p ~/.config/autostart
-cat > ~/.config/autostart/com.bhyoo.krema.autostart.desktop <<'EOF'
-[Desktop Entry]
-Hidden=true
-EOF
+systemctl --user is-enabled krema.service || true
+systemctl --user is-active krema.service || true
+systemctl --user disable krema.service
 ```
 
-Choose one KDockW login mechanism:
+Skip the last command if that unit does not exist or was already disabled.
+Disabling it without `--now` does not stop a running Krema process; close Krema
+normally before launching KDockW in the same session. The old installed
+autostart file was named `com.bhyoo.krema.autostart.desktop`. If Krema also has
+an XDG entry, preserve any existing same-name user override before disabling
+that old entry.
 
-### Use the NVIDIA-clean systemd user service
-
-Install the checked-in unit template and start it:
+KDockW uses the installed `com.thicking.kdockw.autostart.desktop` as its only
+automatic login starter. Check whether a same-name user override hides it:
 
 ```sh
-install -D -m 644 packaging/systemd/kdockw.service \
-  ~/.config/systemd/user/kdockw.service
-systemctl --user daemon-reload
-systemctl --user enable --now kdockw.service
+grep -nE '^(Hidden|Exec|OnlyShowIn)=' \
+  "$HOME/.config/autostart/com.thicking.kdockw.autostart.desktop" 2>/dev/null || true
 ```
 
-The unit starts `/usr/local/bin/kdockw` directly and clears inherited
-`DRI_PRIME`, `__GLX_VENDOR_LIBRARY_NAME`, `__NV_PRIME_RENDER_OFFLOAD`,
-`__VK_LAYER_NV_optimus`, and `QSG_RHI_BACKEND` variables for this service only.
-It does not edit the global session environment or driver configuration.
-
-Hide the KDockW XDG autostart entry for this user so the service is the only
-login starter:
-
-```sh
-cat > ~/.config/autostart/com.thicking.kdockw.autostart.desktop <<'EOF'
-[Desktop Entry]
-Hidden=true
-EOF
-```
-
-Create an optional menu shortcut that requests service start:
-
-```sh
-mkdir -p ~/.local/share/applications
-cat > ~/.local/share/applications/kdockw-service.desktop <<'EOF'
-[Desktop Entry]
-Type=Application
-Name=KDockW (service)
-Comment=Start KDockW through the user service
-Exec=systemctl --user start kdockw.service
-Icon=com.thicking.kdockw
-Terminal=false
-Categories=Utility;
-StartupNotify=false
-EOF
-kbuildsycoca6
-```
-
-### Use XDG autostart
-
-Do not enable `kdockw.service`. Leave
-`com.thicking.kdockw.autostart.desktop` active and ensure no KDockW service is
-enabled. If you created a `Hidden=true` override while testing the service,
-restore its saved previous version or remove that override.
+Back up a `Hidden=true` override before editing or moving it. Do not create a
+wrapper or change the application desktop ID. If an older KDockW checkout
+created a `kdockw.service`, follow the separate
+[systemd-to-XDG migration guide](systemd-to-xdg-autostart.md).
 
 ## 4. Verify, then keep the rollback path
 
-After starting KDockW, verify the process, configuration, desktop registration,
-and service environment:
+After the next login, verify the process, configuration, and desktop registration:
 
 ```sh
-systemctl --user status kdockw.service
-systemctl --user show kdockw.service -p UnsetEnvironment
+pgrep -a -x kdockw || true
 grep -E '^(Exec|Icon|X-KDE-Wayland-Interfaces)=' \
   /usr/local/share/applications/com.thicking.kdockw.desktop
 cmp ~/.config/kdockwrc \
@@ -163,14 +117,8 @@ scripts/rollback-kdockw-config.sh \
 ```
 
 The rollback script saves the current Krema config before restoring it. It
-does not stop services, change autostart, or delete the KDockW config. To
-switch back from the service, disable it and restore your saved autostart
-override or original unit:
-
-```sh
-systemctl --user disable --now kdockw.service
-```
-
-Re-enable the old service only if it was enabled before migration. Keep the
-KDockW configuration and migration backup until you have confirmed the
-rollback. No migration or rollback command deletes the old application.
+does not stop applications, change autostart, or delete the KDockW config. If
+you disabled a legacy Krema service, re-enable it only if it was enabled before
+migration and after KDockW has exited. Keep the KDockW configuration and
+migration backup until rollback is no longer needed. No migration or rollback
+command deletes the old application.

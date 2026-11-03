@@ -17,10 +17,9 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
 - [ ] Stabilize the KWin integration and Appium E2E suites across the supported
   CI images; distinguish container limitations from application failures.
 - [ ] Verify the opt-in Krema settings migration and rollback with representative
-  existing configurations and both service and XDG-autostart setups.
-- [ ] Validate the documented `kdockw.service` PRIME environment handling on
-  the target hybrid-GPU setups. The current NVIDIA observations are specific
-  to the tested TUXEDO configuration.
+  existing configurations using the XDG-only startup path.
+- [ ] Manually verify one XDG autostart launch after login and upgrade for both
+  `/usr` and `/usr/local` installations in a real Plasma session.
 - [x] Establish KDockW's independent versioning policy; current development
   builds use `0.1.0-dev`.
 - [ ] Publish the first standalone KDockW release; the existing `v0.x` tags

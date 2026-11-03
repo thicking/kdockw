@@ -23,11 +23,10 @@ sudo apt install \
   liblayershellqtinterface-dev plasma-workspace-dev libkpipewire-dev
 ```
 
-The `libwayland-dev` entry is required once; it is listed with the Wayland
-development tools above. Install `catch2` as well if you will build the test
-suite. Use the versions from TUXEDO OS repositories together: mixing a newer
-Qt/KDE runtime with Noble's older development packages can produce ABI or
-configuration mismatches.
+`catch2` is required when building the test suite. Use Qt and KDE packages from
+the configured TUXEDO repositories together; mixing a newer runtime with
+Noble's older development packages can cause ABI or CMake configuration
+mismatches.
 
 ## Release build and installation
 
@@ -39,101 +38,67 @@ cmake --build --preset release -j 4
 sudo cmake --install build/release
 ```
 
-The `release` preset disables tests. To run the QML and other tests, configure
-the `dev` preset, build it, and use the repository's `dev` test preset instead.
-TUXEDO OS's `catch2` package provides Catch2 3, which the test configuration
-requires.
+The `release` preset disables tests. To run QML and other tests, configure and
+build the `dev` preset, then use CTest from `build/dev`.
 
 KDockW uses KI18n catalogs. The Russian catalog is built from
-`src/po/ru/kdockw.po` and installed under the locale directory as
-`kdockw.mo`. The application also adds the build-tree catalog directory when
-run directly from `build/release/bin/kdockw`, so translations work both before
-and after installation. The desktop file contains the translated static
-metadata; runtime UI strings come from KI18n. KDockW follows the KDE/Qt system
-locale on first start. The **Settings → General → Language** page can instead
-select Russian or English; the choice is stored in `kdockwrc` and applies to
-KDockW immediately without changing Plasma's locale or the user's environment.
+`src/po/ru/kdockw.po` and installed as `kdockw.mo`. The application also adds
+the build-tree catalog directory when run directly from
+`build/release/bin/kdockw`, so translations work before and after installation.
+The Settings → General → Language page can follow the system locale or select
+Russian or English without changing Plasma's locale or process environment.
 
-After installation, retain the installed desktop ID
-`com.thicking.kdockw.desktop` and its `X-KDE-Wayland-Interfaces` entry. That entry
-declares the KWin Wayland interfaces the application uses. Do not replace the
-standard desktop file with a custom service shortcut or change its ID. For
-PRIME-specific service setup and diagnostics, see
-[`../troubleshooting/nvidia-prime-wayland.md`](../troubleshooting/nvidia-prime-wayland.md).
+## XDG autostart and desktop identity
 
-## Recommended startup and optional systemd user service
+XDG autostart is KDockW's only supported automatic login startup mechanism.
+CMake installs `com.thicking.kdockw.autostart.desktop` under
+`KDE_INSTALL_AUTOSTARTDIR`; its `Exec` is generated from
+`KDE_INSTALL_FULL_BINDIR` and runs `kdockw` directly. With the TUXEDO guide's
+`/usr/local` prefix, the entry is installed at
+`/etc/xdg/autostart/com.thicking.kdockw.autostart.desktop` and runs
+`/usr/local/bin/kdockw`. A distro build using `/usr` installs the same entry
+under `/etc/xdg/autostart` and runs `/usr/bin/kdockw`. The XDG config location
+is independent of the application prefix so Plasma can discover it through
+the system's `XDG_CONFIG_DIRS`.
 
-The installed XDG autostart entry is the recommended default. Leave it enabled
-for normal use. A user systemd service is optional and is useful when you need
-an explicit restart policy or a controlled environment for KDockW. Do not
-enable both login starters: choose either XDG autostart or the service.
+The regular application entry remains
+`com.thicking.kdockw.desktop` under `share/applications`. Its ID and
+`X-KDE-Wayland-Interfaces` declaration must remain intact so KWin can associate
+the application with the required window-management, activation-feedback, and
+screencasting interfaces. The autostart entry and regular desktop entry both
+launch the configured binary directly; do not substitute a wrapper or service
+launcher. KDockW uses KDE's unique D-Bus application service to forward later
+launch requests to the existing instance rather than create a second dock.
 
-If you choose the service, first save any user override, then disable the XDG
-autostart entry for this user. The checked-in unit starts the installed binary
-directly and removes only the listed PRIME and Qt backend variables from that
-service:
-
-```sh
-install -D -m 644 packaging/systemd/kdockw.service \
-  ~/.config/systemd/user/kdockw.service
-systemctl --user daemon-reload
-systemctl --user enable --now kdockw.service
-```
-
-To return to XDG autostart, stop and disable the service, remove only the
-user-created override at
-`~/.config/autostart/com.thicking.kdockw.autostart.desktop`, reload the user
-manager, and let the installed XDG entry run at the next login. Restore any
-saved override rather than deleting it if it existed before the migration.
-
-For the full one-starter migration sequence and rollback, see
-[`../migration/krema-to-kdockw.md`](../migration/krema-to-kdockw.md).
-
-`Application::makeAboutData()` sets the desktop ID to `com.thicking.kdockw` by
-default, so this service does not need a wrapper or the optional
-`--desktopfile` override. KDockW accepts that KDE command-line option, but it
-is not needed for the standard installed desktop entry.
-
-To prevent duplicate instances, choose one login starter: either the installed
-XDG autostart entry or the systemd user service. When using the service, first
-save any existing user override, then mask the system autostart entry for this
-user with the same desktop-file name:
+Check an installation without changing it:
 
 ```sh
-mkdir -p ~/.config/autostart
-cat > ~/.config/autostart/com.thicking.kdockw.autostart.desktop <<'EOF'
-[Desktop Entry]
-Hidden=true
-EOF
+test -f /etc/xdg/autostart/com.thicking.kdockw.autostart.desktop
+grep '^Exec=' /etc/xdg/autostart/com.thicking.kdockw.autostart.desktop
+grep -E '^(Exec|OnlyShowIn|X-KDE-Wayland-Interfaces)=' \
+  /usr/local/share/applications/com.thicking.kdockw.desktop
 ```
 
-Keep `/usr/local/share/applications/com.thicking.kdockw.desktop` installed and
-unchanged, including its `X-KDE-Wayland-Interfaces` line. If desired, add a
-separate launcher at `~/.local/share/applications/kdockw-service.desktop`:
+If installing with prefix `/usr`, adjust the application-file path to
+`/usr/share/applications/com.thicking.kdockw.desktop`. A user override with
+the same autostart desktop ID in `~/.config/autostart/` takes precedence over
+the installed entry; check it if login startup is disabled or behaves
+unexpectedly. See the [systemd-to-XDG migration guide](../migration/systemd-to-xdg-autostart.md)
+if an older checkout or local setup created a `kdockw.service`.
 
-```ini
-[Desktop Entry]
-Type=Application
-Name=KDockW (service)
-Comment=Start KDockW through the user service
-Exec=systemctl --user start kdockw.service
-Icon=com.thicking.kdockw
-Terminal=false
-Categories=Utility;
-StartupNotify=false
+Manual launch remains available from the application menu or directly:
+
+```sh
+/usr/local/bin/kdockw
 ```
 
-Do not change the original KDockW desktop file's `Exec` to point to a wrapper.
-On the reproduced setup, a wrapper in that file coincided with missing
-unpinned tasks, launch feedback, and previews. Preserve the normal desktop ID
-so KWin can associate the application with its declared Wayland interfaces.
+Use `/usr/bin/kdockw` for a `/usr` installation.
 
-## Updating and removing
+## Update and remove
 
-Update the source tree, then repeat the configure/build/install commands. The
-install step replaces files under `/usr/local`; it does not manage a custom
-systemd user unit or user-created service shortcut. Review the changelog before
-restarting the dock.
+Update the checkout and repeat the configure/build/install commands. The
+install step refreshes the application and autostart entries. It does not
+rewrite user configuration or user-created autostart overrides.
 
 To remove a source installation, use the same configured build tree:
 
@@ -141,39 +106,31 @@ To remove a source installation, use the same configured build tree:
 sudo cmake --build build/release --target uninstall
 ```
 
-The release configuration in this repository exposes this target. If another
-build configuration does not provide it, remove only the files listed in that
-build's `install_manifest.txt`. Do not use a broad `rm -rf /usr/local` command.
-Disable and remove only a user-created KDockW service or launcher, and restore
-the user's prior autostart choice.
+The release configuration exposes this target. Otherwise remove only the
+files listed in that build's `install_manifest.txt`. Do not use a broad
+`rm -rf /usr/local` command. User settings remain in `kdockwrc` unless you
+remove them separately.
 
 ## Window-preview diagnostics
 
-The XDG autostart entry and the optional service are both suitable for normal
-use; neither is a requirement for KWin screencasting. For a controlled preview
-comparison, first close the current KDockW instance and ensure no other instance
-is running. Then launch one mode at a time:
+The supported setting is in **Settings → Window Preview → Compatibility mode
+(CPU)**. Auto is the default and allows DMA-BUF; CPU compatibility disables
+DMA-BUF only on KPipeWire `PipeWireSourceItem` streams. The choice is saved and
+recreates active preview streams. It does not change Qt Quick's rendering
+backend or GPU environment.
+
+For a process-only A/B experiment, first close the running instance normally
+and verify that it exited. Launch one mode at a time, using the installed path
+or `build/release/bin/kdockw`:
 
 ```sh
 QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
 QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=cpu-only /usr/local/bin/kdockw
 ```
 
-To compare Auto after clearing PRIME and Qt backend overrides for this process
-only:
-
-```sh
-env -u DRI_PRIME \
-    -u __GLX_VENDOR_LIBRARY_NAME \
-    -u __NV_PRIME_RENDER_OFFLOAD \
-    -u __VK_LAYER_NV_optimus \
-    -u QSG_RHI_BACKEND \
-    QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
-```
-
-These direct launches do not modify the user service or Plasma environment.
-Record the renderer/device information and preview state logs for the same
-Wayland-native and XWayland test windows. The CPU-only mode is diagnostic and
-does not imply that the general DMA-BUF path is defective. See
-[`../architecture/window-previews.md`](../architecture/window-previews.md) for
-the comparison protocol and interpretation.
+`KDOCKW_PREVIEW_CAPTURE_MODE` overrides the saved setting for that process; it
+does not write to `kdockwrc`. The CPU mode is a compatibility option for
+configurations where DMA-BUF previews are black, not a universal GPU fix. For
+the detailed A/B protocol and evidence limits, see
+[`../troubleshooting/nvidia-prime-wayland.md`](../troubleshooting/nvidia-prime-wayland.md)
+and [`../architecture/window-previews.md`](../architecture/window-previews.md).

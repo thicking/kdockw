@@ -18,8 +18,8 @@ KWin, Plasma или SDDM.
 | Домен KI18n `krema` | Домен KI18n `kdockw` | Новое имя каталога переводов; русский перевод сохранён. |
 | URI QML `com.bhyoo.krema` | `com.thicking.kdockw` | Приватный импорт, используемый только приложением и его тестами. |
 | KWin pointer watcher `com.bhyoo.krema.*` | `com.thicking.kdockw.*` | Приватный callback-интерфейс; имя обновлено на обеих сторонах. |
-| `krema.service` | `kdockw.service` | Новая необязательная пользовательская служба с очисткой PRIME и Qt-переменных. |
-| Запись автозапуска Krema в XDG | Запись автозапуска KDockW в XDG | При входе выбирайте только один механизм запуска: XDG autostart или systemd user service. |
+| Унаследованная `krema.service` | У KDockW нет эквивалентной службы | KDockW использует XDG autostart; старая служба Krema остаётся под контролем пользователя. |
+| Запись автозапуска Krema в XDG | Запись автозапуска KDockW в XDG | KDockW устанавливает `com.thicking.kdockw.autostart.desktop` и запускает бинарный файл напрямую. |
 
 Значения метаданных разрешений KWin
 `org_kde_plasma_window_management`,
@@ -44,7 +44,7 @@ grep '^X-KDE-Wayland-Interfaces=' /usr/local/share/applications/com.thicking.kdo
 
 В desktop-файле должны быть перечислены три интерфейса выше. Оставьте этот
 стандартный desktop entry и его прямой `Exec=/usr/local/bin/kdockw` без
-изменений; отдельный ярлык будет запускать службу.
+изменений; установленная запись XDG autostart запускает KDockW при входе.
 
 ## 2. Скопируйте всю конфигурацию
 
@@ -67,90 +67,44 @@ scripts/migrate-krema-config.sh
 учитывает эти переменные. Не копируйте только группу `[General]`: настройки
 отдельных экранов находятся в том же файле.
 
-## 3. После проверки переключите один способ запуска при входе
+## 3. Переключитесь на XDG autostart KDockW после проверки
 
-Оставьте старую службу и файл автозапуска до проверки KDockW. Если Krema
-сейчас запускается пользовательской службой, сначала отключите её:
-
-```sh
-systemctl --user disable --now krema.service
-```
-
-Если такой службы не было, пропустите эту команду. Перед маскировкой старой
-записи XDG autostart сохраните существующее пользовательское переопределение.
-Установленный старый файл назывался `com.bhyoo.krema.autostart.desktop`; файл
-переопределения с тем же именем скрывает его для этого пользователя:
+Если Krema запускается пользовательской службой, проверьте состояние и
+отключите её для последующих входов:
 
 ```sh
-mkdir -p ~/.config/autostart
-cat > ~/.config/autostart/com.bhyoo.krema.autostart.desktop <<'EOF'
-[Desktop Entry]
-Hidden=true
-EOF
+systemctl --user is-enabled krema.service || true
+systemctl --user is-active krema.service || true
+systemctl --user disable krema.service
 ```
 
-Выберите один механизм запуска KDockW при входе:
+Пропустите последнюю команду, если службы нет или она уже отключена.
+Отключение без `--now` не останавливает работающую Krema; штатно закройте её
+перед запуском KDockW в том же сеансе. Старая установленная запись
+автозапуска называлась `com.bhyoo.krema.autostart.desktop`. Если у Krema также
+есть запись XDG, сохраните существующее одноимённое пользовательское
+переопределение перед отключением старой записи.
 
-### Использовать systemd user service с очисткой NVIDIA
-
-Установите шаблон службы из checkout и запустите её:
+Единственная штатная запись автозапуска KDockW —
+`com.thicking.kdockw.autostart.desktop`. Проверьте, не скрывает ли её
+одноимённый пользовательский файл:
 
 ```sh
-install -D -m 644 packaging/systemd/kdockw.service \
-  ~/.config/systemd/user/kdockw.service
-systemctl --user daemon-reload
-systemctl --user enable --now kdockw.service
+grep -nE '^(Hidden|Exec|OnlyShowIn)=' \
+  "$HOME/.config/autostart/com.thicking.kdockw.autostart.desktop" 2>/dev/null || true
 ```
 
-Служба запускает `/usr/local/bin/kdockw` напрямую и очищает только в своём
-окружении переменные `DRI_PRIME`, `__GLX_VENDOR_LIBRARY_NAME`,
-`__NV_PRIME_RENDER_OFFLOAD`, `__VK_LAYER_NV_optimus` и `QSG_RHI_BACKEND`.
-Она не меняет глобальное окружение сеанса или настройки драйвера.
-
-Скройте XDG autostart KDockW для этого пользователя, чтобы служба была
-единственным способом запуска при входе:
-
-```sh
-cat > ~/.config/autostart/com.thicking.kdockw.autostart.desktop <<'EOF'
-[Desktop Entry]
-Hidden=true
-EOF
-```
-
-Создайте необязательный ярлык меню, который запрашивает запуск службы:
-
-```sh
-mkdir -p ~/.local/share/applications
-cat > ~/.local/share/applications/kdockw-service.desktop <<'EOF'
-[Desktop Entry]
-Type=Application
-Name=KDockW (service)
-Comment=Start KDockW through the user service
-Exec=systemctl --user start kdockw.service
-Icon=com.thicking.kdockw
-Terminal=false
-Categories=Utility;
-StartupNotify=false
-EOF
-kbuildsycoca6
-```
-
-### Использовать XDG autostart
-
-Не включайте `kdockw.service`. Оставьте
-`com.thicking.kdockw.autostart.desktop` активным и убедитесь, что служба
-KDockW не включена. Если при проверке службы вы создали переопределение
-`Hidden=true`, восстановите сохранённый предыдущий вариант или удалите это
-переопределение.
+Сохраните резервную копию переопределения `Hidden=true` до его изменения или
+перемещения. Не создавайте обёртку и не меняйте desktop ID. Если прежний
+checkout KDockW создал `kdockw.service`, следуйте отдельной
+[инструкции перехода со службы на XDG autostart](systemd-to-xdg-autostart.ru.md).
 
 ## 4. Проверьте результат и сохраните возможность отката
 
-После запуска KDockW проверьте процесс, конфигурацию, регистрацию desktop-файла
-и окружение службы:
+После следующего входа проверьте процесс, конфигурацию и регистрацию desktop-файла:
 
 ```sh
-systemctl --user status kdockw.service
-systemctl --user show kdockw.service -p UnsetEnvironment
+pgrep -a -x kdockw || true
 grep -E '^(Exec|Icon|X-KDE-Wayland-Interfaces)=' \
   /usr/local/share/applications/com.thicking.kdockw.desktop
 cmp ~/.config/kdockwrc \
@@ -171,14 +125,8 @@ scripts/rollback-kdockw-config.sh \
 ```
 
 Перед восстановлением скрипт сохраняет текущую конфигурацию Krema. Он не
-останавливает службы, не меняет автозапуск и не удаляет конфигурацию KDockW.
-Чтобы вернуться со службы, отключите её и восстановите сохранённое переопределение
-автозапуска или исходный unit-файл:
-
-```sh
-systemctl --user disable --now kdockw.service
-```
-
-Повторно включайте старую службу, только если она была включена до переноса.
-Храните конфигурацию KDockW и резервную копию переноса до подтверждения отката.
+останавливает приложения, не меняет автозапуск и не удаляет конфигурацию
+KDockW. Если вы отключили старую службу Krema, включайте её снова только если
+она была включена до миграции и после завершения процесса KDockW. Храните
+конфигурацию KDockW и резервную копию до тех пор, пока откат может понадобиться.
 Ни одна команда переноса или отката не удаляет старое приложение.

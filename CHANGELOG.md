@@ -35,6 +35,12 @@ carried forward from the Krema-based development period.
   choices now save after user selection, persist across page navigation and
   launches, and apply across the open settings sidebar and page.
 
+### Removed
+
+- Removed the project-provided `kdockw.service` template. XDG autostart is now
+  the only supported automatic login startup path; existing user units are
+  left untouched and have a separate manual migration guide.
+
 ### Changed
 
 - Replaced the inherited Krema roadmap and release history with an independent,
