@@ -242,6 +242,11 @@
       <default>true</default>
     </entry>
 
+    <entry name="CpuOnlyPreviewCapture" type="Bool">
+      <label>Use CPU-compatible window preview capture</label>
+      <default>false</default>
+    </entry>
+
     <entry name="PreviewThumbnailSize" type="Int">
       <label>Preview thumbnail width</label>
       <default>200</default>

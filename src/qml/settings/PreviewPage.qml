@@ -412,6 +412,16 @@ SettingsPage {
             onToggled: DockSettings.previewEnabled = checked
         }
 
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSwitchDelegate {
+            text: i18n("Compatibility mode (CPU)")
+            description: i18n("When off, KDockW uses Automatic (DMA-BUF).") + " "
+                + i18n("If window previews appear black, enable compatibility mode. It disables DMA-BUF and may increase CPU usage.")
+            checked: DockSettings.cpuOnlyPreviewCapture
+            onToggled: DockSettings.cpuOnlyPreviewCapture = checked
+        }
+
         FormCard.FormDelegateSeparator {
             visible: groupedClickNote.visible
         }

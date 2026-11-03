@@ -302,6 +302,18 @@ msgstr "Предпросмотр окон"
 msgid "Show window previews on hover"
 msgstr "Показывать предпросмотр окон при наведении"
 
+#: src/qml/settings/PreviewPage.qml
+msgid "Compatibility mode (CPU)"
+msgstr "Режим совместимости (CPU)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "When off, KDockW uses Automatic (DMA-BUF)."
+msgstr "Если режим выключен, KDockW использует автоматический захват (DMA-BUF)."
+
+#: src/qml/settings/PreviewPage.qml
+msgid "If window previews appear black, enable compatibility mode. It disables DMA-BUF and may increase CPU usage."
+msgstr "Если вместо миниатюр окон отображается чёрный прямоугольник, включите режим совместимости. Он отключает DMA-BUF и может увеличить нагрузку на процессор."
+
 #: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:434
 msgid "Thumbnail width (px)"
 msgstr "Ширина миниатюры (пикс.)"

@@ -21,6 +21,12 @@ QtObject {
     property bool previewKeyboardActive: false
     property int focusedThumbnailIndex: -1
     property bool cpuCaptureOnly: false
+    signal captureModeChanged()
+    function setCaptureMode(cpuOnly) {
+        if (cpuCaptureOnly === cpuOnly) return
+        cpuCaptureOnly = cpuOnly
+        captureModeChanged()
+    }
     function showPreview(i, pos, ext) { _record("showPreview", arguments); parentIndex = i; visible = true }
     function hidePreview() { _record("hidePreview", arguments); visible = false }
     function hidePreviewDelayed() { _record("hidePreviewDelayed", arguments) }

@@ -1,6 +1,6 @@
 # Phase 2: Real Plasma/Wayland findings
 
-**Status:** diagnostic capture control implemented; GPU root cause and real-session comparison remain unverified.
+**Status:** saved CPU compatibility mode implemented. A user-reported real-session A/B confirms it works on one hybrid-GPU laptop; the internal DMA-BUF failure remains unlocalized. The UI toggle's live effect is covered by automated lifecycle tests, not independently observed in this audit.
 
 This report supplements the Phase 1 audit. It does not replace or rewrite it.
 
@@ -36,15 +36,29 @@ There is no confirmed root cause and no renderer/import fix is justified yet.
 Do not treat the existing no-first-frame CPU retry as a fix for a black frame
 that has already made `ready` true.
 
-### Diagnostic code and tests
+### User-reported A/B result (subsequent manual test)
 
-`PreviewController` now reads the process-local
-`KDOCKW_PREVIEW_CAPTURE_MODE=auto|cpu-only` variable once during construction.
-In `cpu-only`, each `PipeWireSourceItem` starts with `allowDmaBuf=false`; the
-Auto no-first-frame retry is disabled. The mode is logged, and per-thumbnail
-diagnostics distinguish `auto`, `cpu-only`, and the one-shot `cpu-fallback`.
-This control makes the paths comparable; it does not claim to fix the black
-thumbnail.
+The user later compared Auto and CPU-only on TUXEDO OS 24.04.5, Plasma 6.6.6,
+Qt 6.10.2, Intel Iris Xe + NVIDIA RTX 4050 with driver 580.178.04. Qt Quick
+used OpenGL on the NVIDIA renderer. The same Wayland-native and XWayland
+windows were tested. Auto used DMA-BUF (`usingDmaBuf=true`), reached
+`ready=true`/Streaming without KPipeWire errors, and appeared black. CPU-only
+used no DMA-BUF (`usingDmaBuf=false`) and displayed correct thumbnails, also
+ready/Streaming without KPipeWire errors. This is a user-reported visual A/B,
+not an independently reproduced result in this checkout. It is evidence of a
+capture-path-specific compatibility problem on this setup; it does not identify
+the exact failing API/import operation or imply a general NVIDIA defect.
+
+### User setting, diagnostic override, and tests
+
+`PreviewController` uses the saved `CpuOnlyPreviewCapture` setting, with Auto
+as the default. It also accepts `KDOCKW_PREVIEW_CAPTURE_MODE=auto|cpu-only` as
+a process-only override without writing that value to the configuration.
+Changing the UI setting recreates active capture items; CPU-only starts each
+item with `allowDmaBuf=false`, while Auto alone retains the bounded
+no-first-frame retry. The setting provides the reported workaround without a
+systemd environment override. The underlying import/rendering defect is not
+fixed or automatically detected.
 
 The existing retry remains limited to Auto streams that reach Streaming but
 produce no first frame for 1.5 seconds. It is not triggered by `ready=true`. The
@@ -52,12 +66,11 @@ project's controlled E2E test retains its red/blue pixel oracle and one-time
 untyped-buffer renegotiation. There is no evidence yet to remove the retry, nor
 to generalize that fixture-specific race to the hybrid-GPU black frame.
 
-Automated checks for the diagnostic path passed: the unit test covers unset,
-`auto`, `cpu-only`, and invalid values; the QML preview test verifies that
-CPU-only disallows DMA-BUF at creation and that Auto alone performs its bounded
-no-first-frame retry. The real Wayland/GPU comparison has not been performed:
-the installed KDockW process was already active, and this phase did not stop it
-or create a second instance. Follow the A/B procedure in
+At the time of the original Phase 2 run, automated checks covered unset,
+`auto`, `cpu-only`, and invalid values, and the QML test verified CPU-only
+creation and Auto's bounded no-first-frame retry. That run did not perform a
+real Wayland/GPU comparison because an installed KDockW process was already
+active. The user's subsequent manual A/B is recorded above. Follow the A/B procedure in
 [`../../architecture/window-previews.md`](../../architecture/window-previews.md).
 
 To collect a bounded reproduction from the installed process, start this in a

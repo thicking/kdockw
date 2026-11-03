@@ -153,7 +153,7 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
     QQmlComponent component(&engine);
-    component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\"); property string generalLabel: i18n(\"General\") }"), QUrl());
+    component.setData(QByteArrayLiteral("import QtQml\nQtObject { property string settingsLabel: i18n(\"Settings\"); property string previewLabel: i18n(\"Window Preview\"); property string generalLabel: i18n(\"General\"); property string captureModeLabel: i18n(\"Compatibility mode (CPU)\"); property string captureModeDefault: i18n(\"When off, KDockW uses Automatic (DMA-BUF).\"); property string captureModeHelp: i18n(\"If window previews appear black, enable compatibility mode. It disables DMA-BUF and may increase CPU usage.\") }"), QUrl());
     REQUIRE(component.isReady());
     std::unique_ptr<QObject> object(component.create());
     REQUIRE(object);
@@ -162,6 +162,9 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     CHECK(object->property("settingsLabel").toString() == QLatin1String("Settings"));
     CHECK(object->property("previewLabel").toString() == QLatin1String("Window Preview"));
     CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
+    CHECK(object->property("captureModeLabel").toString() == QLatin1String("Compatibility mode (CPU)"));
+    CHECK(object->property("captureModeDefault").toString() == QLatin1String("When off, KDockW uses Automatic (DMA-BUF)."));
+    CHECK(object->property("captureModeHelp").toString() == QLatin1String("If window previews appear black, enable compatibility mode. It disables DMA-BUF and may increase CPU usage."));
     CHECK(i18nc("@action global shortcut", "Toggle Dock") == QLatin1String("Toggle Dock"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
@@ -169,6 +172,9 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     CHECK(object->property("settingsLabel").toString() == QStringLiteral("Параметры"));
     CHECK(object->property("previewLabel").toString() == QStringLiteral("Предпросмотр окон"));
     CHECK(object->property("generalLabel").toString() == QStringLiteral("Общие"));
+    CHECK(object->property("captureModeLabel").toString() == QStringLiteral("Режим совместимости (CPU)"));
+    CHECK(object->property("captureModeDefault").toString() == QStringLiteral("Если режим выключен, KDockW использует автоматический захват (DMA-BUF)."));
+    CHECK(object->property("captureModeHelp").toString() == QStringLiteral("Если вместо миниатюр окон отображается чёрный прямоугольник, включите режим совместимости. Он отключает DMA-BUF и может увеличить нагрузку на процессор."));
     CHECK(i18nc("@action global shortcut", "Toggle Dock") == QStringLiteral("Показать или скрыть док"));
 
     kdockw::Application::applyLanguagePreference(QStringLiteral("system"));
@@ -176,6 +182,9 @@ TEST_CASE("KI18n translations update existing QML bindings when the language cha
     CHECK(object->property("settingsLabel").toString() == QLatin1String("Settings"));
     CHECK(object->property("previewLabel").toString() == QLatin1String("Window Preview"));
     CHECK(object->property("generalLabel").toString() == QLatin1String("General"));
+    CHECK(object->property("captureModeLabel").toString() == QLatin1String("Compatibility mode (CPU)"));
+    CHECK(object->property("captureModeDefault").toString() == QLatin1String("When off, KDockW uses Automatic (DMA-BUF)."));
+    CHECK(object->property("captureModeHelp").toString() == QLatin1String("If window previews appear black, enable compatibility mode. It disables DMA-BUF and may increase CPU usage."));
 }
 
 TEST_CASE("The General page saves the selected language on user activation", "[settings][language][qml]")

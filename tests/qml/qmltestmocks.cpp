@@ -11,6 +11,35 @@
 namespace KDockWQmlTest
 {
 
+MockPipeWireTracker *MockPipeWireTracker::instance()
+{
+    static MockPipeWireTracker tracker;
+    return &tracker;
+}
+
+void MockPipeWireTracker::sourceCreated()
+{
+    ++m_activeCount;
+    Q_EMIT activeCountChanged();
+}
+
+void MockPipeWireTracker::sourceDestroyed()
+{
+    --m_activeCount;
+    Q_EMIT activeCountChanged();
+}
+
+MockPipeWireSourceItem::MockPipeWireSourceItem(QQuickItem *parent)
+    : QQuickItem(parent)
+{
+    MockPipeWireTracker::instance()->sourceCreated();
+}
+
+MockPipeWireSourceItem::~MockPipeWireSourceItem()
+{
+    MockPipeWireTracker::instance()->sourceDestroyed();
+}
+
 MockTasksModel::MockTasksModel(QObject *parent)
     : QStandardItemModel(parent)
 {
@@ -213,6 +242,7 @@ void registerMockTypes()
     qmlRegisterUncreatableType<MockAbstractTasksModel>("org.kde.taskmanager", 0, 1, "AbstractTasksModel", QStringLiteral("Role enum holder"));
     qmlRegisterType<MockScreencastingRequest>("org.kde.taskmanager", 0, 1, "ScreencastingRequest");
     qmlRegisterType<MockPipeWireSourceItem>("org.kde.pipewire", 0, 1, "PipeWireSourceItem");
+    qmlRegisterSingletonInstance("kdockw.test", 1, 0, "PipeWireTracker", MockPipeWireTracker::instance());
     qmlRegisterType<MockTasksModel>("kdockw.test", 1, 0, "MockTasksModel");
     qmlRegisterSingletonType<ZoomLayoutEngine>("kdockw.test", 1, 0, "ZoomLayoutEngine", [](QQmlEngine *, QJSEngine *) -> QObject * {
         return new ZoomLayoutEngine;

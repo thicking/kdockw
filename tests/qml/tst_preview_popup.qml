@@ -7,6 +7,7 @@
 import QtQuick
 import QtTest
 import com.thicking.kdockw 1.0
+import kdockw.test 1.0
 import "../../src/qml" as KDockW
 import "TestUtils.js" as T
 
@@ -133,6 +134,32 @@ Item {
             firstCapture.state = 4 // Streaming without a received frame.
             wait(1700)
             verify(t.captureItem === firstCapture, "cpu-only must not restart the source through Auto fallback")
+        }
+
+        function test_captureModeChangeRestartsExistingGroupedStreams() {
+            PreviewController.setCaptureMode(false)
+            let popup = makePopup()
+            show(1, "Konsole")
+            let ts = waitThumbs(popup, 3)
+            let originalItems = ts.map(t => t.captureItem)
+            tryVerify(() => originalItems.every(item => item !== null))
+            verify(originalItems.every(item => item.allowDmaBuf), "Auto should allow DMA-BUF")
+            let activeBeforeSwitch = PipeWireTracker.activeCount
+
+            PreviewController.setCaptureMode(true)
+            tryVerify(() => ts.every((t, i) => t.captureItem !== originalItems[i]))
+            tryVerify(() => ts.every(t => t.captureItem && !t.captureItem.allowDmaBuf))
+            tryCompare(PipeWireTracker, "activeCount", activeBeforeSwitch)
+            verify(ts.every(t => t.captureItem && !t.captureItem.allowDmaBuf),
+                   "CPU compatibility mode should disable DMA-BUF")
+
+            let cpuItems = ts.map(t => t.captureItem)
+            PreviewController.setCaptureMode(false)
+            tryVerify(() => ts.every((t, i) => t.captureItem !== cpuItems[i]))
+            tryVerify(() => ts.every(t => t.captureItem && t.captureItem.allowDmaBuf))
+            tryCompare(PipeWireTracker, "activeCount", activeBeforeSwitch)
+            verify(ts.every(t => t.captureItem && t.captureItem.allowDmaBuf),
+                   "switching back to Auto should restore DMA-BUF")
         }
 
         function test_groupedWindowsOneThumbnailEach() {

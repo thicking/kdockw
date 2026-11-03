@@ -160,17 +160,36 @@ Restore the user's previous autostart choice separately. Do not remove
 `/usr/local/share/applications/com.thicking.kdockw.desktop` or change system GPU,
 driver, KWin, or SDDM configuration as part of this workaround.
 
-## Comparing preview capture paths
+## Choosing and comparing preview capture paths
 
-The process-local `KDOCKW_PREVIEW_CAPTURE_MODE` variable selects:
+The normal UI setting is in **Settings → Window Preview → Compatibility mode
+(CPU)**. It is off by default, which means Automatic (DMA-BUF preferred). Turn
+it on when previews show a black rectangle. The setting is saved in
+`~/.config/kdockwrc` and changing it recreates existing preview streams. CPU
+mode may increase CPU usage. This is a supported workaround for the reported
+configuration, not a universal NVIDIA fix.
 
-- `auto` (default): normal DMA-BUF-preferred capture and the bounded retry if a
-  Streaming source does not provide a first frame.
-- `cpu-only`: disallow DMA-BUF when each `PipeWireSourceItem` is first created;
-  do not run the Auto no-first-frame retry.
+To check it in the running desktop session, keep the same Wayland-native or
+XWayland window open, open KDockW Settings → Window Preview, and switch
+Compatibility mode off and on. The preview stream should be recreated without
+restarting KDockW. In the journal, the per-thumbnail capture diagnostics should
+show `captureMode: auto` with DMA-BUF allowed when off and
+`captureMode: cpu-only` with DMA-BUF disabled when on. Confirm the visible
+thumbnail as well; these log fields report stream metadata, not pixel content.
+The saved option is `CpuOnlyPreviewCapture` in the `[General]` group of
+`~/.config/kdockwrc`.
 
-This is a diagnostic control, not a regular settings option. It only affects
-the process started with the variable. Do not run two KDockW instances at once.
+The process-local `KDOCKW_PREVIEW_CAPTURE_MODE` variable remains available for
+technical A/B experiments. A supported value overrides the saved value only
+for that process and is not written back to the configuration:
+
+| Value | Effect |
+|---|---|
+| unset | Use the saved UI setting |
+| `auto` | Force Auto (DMA-BUF preferred) and its bounded no-first-frame retry |
+| `cpu-only` | Force capture without DMA-BUF; no Auto retry |
+
+Do not run two KDockW instances at once.
 Close the existing instance normally and verify that it has exited before each
 launch. Use one launch at a time:
 

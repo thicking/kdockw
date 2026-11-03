@@ -37,7 +37,7 @@ KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor
 | Plasma task-manager drag and drop | Reads the task launch URL MIME type while keeping `.desktop` launcher drops supported. |
 | External file drag hover | Activates an existing app window after a configurable delay without consuming the file drag. |
 | TaskManager diagnostics | Logs task rows and role changes without logging window titles or changing filtering. |
-| PipeWire preview diagnostics | Logs capture state and offers process-local Auto and CPU-only comparison modes; the one-shot CPU retry only covers a missing first frame, not a confirmed black-frame fix. |
+| PipeWire window previews | Auto (DMA-BUF preferred) is the default; a saved CPU compatibility mode can be selected in Preview settings and applies to existing streams. A process-local environment override remains available for diagnosis. |
 | NVIDIA PRIME guidance | Documents observed behavior on one hybrid-GPU TUXEDO OS / Wayland setup. |
 
 See the [window-preview architecture and diagnostic procedure](docs/architecture/window-previews.md)
@@ -64,6 +64,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 
 ### Window Previews
 - **PipeWire Thumbnails** — Live GPU-efficient window previews on hover
+- **Capture Compatibility** — Keep Auto (DMA-BUF preferred) or enable saved CPU mode if previews appear black; CPU mode may increase processor usage
 - **Multi-Window List** — All windows of grouped apps shown together; the optional grouped click action opens this list even with hover previews off
 - **Click-to-Activate** — Click a preview to switch to that window
 - **Preview Close Button** — Close windows directly from the preview popup

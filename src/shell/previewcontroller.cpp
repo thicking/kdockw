@@ -38,11 +38,24 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
 {
     const QByteArray captureMode = qgetenv("KDOCKW_PREVIEW_CAPTURE_MODE").trimmed().toLower();
     if (captureMode == "cpu-only") {
-        m_cpuCaptureOnly = true;
-    } else if (!captureMode.isEmpty() && captureMode != "auto") {
-        qCWarning(lcPreview) << "Unsupported KDOCKW_PREVIEW_CAPTURE_MODE; using auto";
+        m_captureModeOverridden = true;
+        m_overrideCpuCaptureOnly = true;
+    } else if (captureMode == "auto") {
+        m_captureModeOverridden = true;
+    } else if (!captureMode.isEmpty()) {
+        qCWarning(lcPreview) << "Unsupported KDOCKW_PREVIEW_CAPTURE_MODE; using the saved setting";
     }
-    qCInfo(lcPreview) << "Capture diagnostic mode:" << (m_cpuCaptureOnly ? "cpu-only" : "auto");
+    qCInfo(lcPreview) << "Capture mode:" << (cpuCaptureOnly() ? "cpu-only" : "auto")
+                      << "source:" << (m_captureModeOverridden ? "environment" : "settings");
+
+    if (m_settings) {
+        connect(m_settings, &KDockWSettings::CpuOnlyPreviewCaptureChanged, this, [this]() {
+            if (!m_captureModeOverridden) {
+                qCInfo(lcPreview) << "Capture mode changed by settings:" << (cpuCaptureOnly() ? "cpu-only" : "auto");
+                Q_EMIT captureModeChanged();
+            }
+        });
+    }
 
     m_hideTimer.setSingleShot(true);
     m_hideTimer.setInterval(200);
@@ -198,7 +211,12 @@ qreal PreviewController::contentHeight() const
 
 bool PreviewController::cpuCaptureOnly() const
 {
-    return m_cpuCaptureOnly;
+    return m_captureModeOverridden ? m_overrideCpuCaptureOnly : (m_settings && m_settings->cpuOnlyPreviewCapture());
+}
+
+bool PreviewController::captureModeOverridden() const
+{
+    return m_captureModeOverridden;
 }
 
 void PreviewController::showPreview(int index, qreal itemGlobalPos, qreal itemExtent)

@@ -11,8 +11,8 @@ carried forward from the Krema-based development period.
 
 ### Added
 
-- Added a process-local CPU-only window-preview capture mode for comparing
-  PipeWire buffer paths without changing Plasma or system graphics settings.
+- Added a saved CPU-compatible window-preview capture option. Auto remains the
+  default, and changing the option recreates active preview streams.
 
 ### Changed
 

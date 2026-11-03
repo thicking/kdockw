@@ -23,6 +23,15 @@
 
 int main(int argc, char *argv[])
 {
+    if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-preview-capture-mode")) {
+        QCoreApplication app(argc, argv);
+        KDockWSettings settings;
+        settings.load();
+        const QString expectedMode = QString::fromLocal8Bit(argv[2]);
+        const bool expectedCpuOnly = expectedMode == QLatin1String("cpu-only");
+        return settings.cpuOnlyPreviewCapture() == expectedCpuOnly ? 0 : 1;
+    }
+
     if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-language-preference")) {
         KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
         QCoreApplication app(argc, argv);

@@ -43,18 +43,53 @@ Current KDockW logs report source state and transport metadata. They do not
 read, save, hash, or log screenshot pixels. Therefore `ready=true` alongside a
 black thumbnail leaves the import and presentation stages open.
 
-## Process-local capture diagnostic mode
+## User-selectable capture mode
 
-Set `KDOCKW_PREVIEW_CAPTURE_MODE` for the KDockW process only:
+Window Preview settings keeps **Automatic (DMA-BUF)** as the default. The
+**Compatibility mode (CPU)** option is saved in `kdockwrc` and creates each
+`PipeWireSourceItem` with `allowDmaBuf=false`. Toggling the option tears down
+and recreates active thumbnail streams so the new mode takes effect without
+restarting KDockW. The Loader owns each source item; deactivation destroys the
+old stream before the replacement is activated. Auto alone retains the
+bounded no-first-frame retry described below. CPU compatibility mode may use
+more CPU time.
+
+`KDOCKW_PREVIEW_CAPTURE_MODE=auto|cpu-only` remains available for technical
+experiments. When set to a supported value, it overrides the saved setting for
+the current process only; it is read when `PreviewController` is created and
+is never written back to `kdockwrc`. `auto` forces the normal DMA-BUF-preferred
+path and `cpu-only` forces CPU-readable buffers. An unset or unsupported value
+uses the saved setting (unsupported values are logged). The environment
+override is intentionally not a UI setting.
+
+## Process-local override and Auto retry
+
+Set `KDOCKW_PREVIEW_CAPTURE_MODE` for the KDockW process only to override the
+saved setting and select the retry behavior:
 
 | Value | Effect |
 |---|---|
-| unset or `auto` | Normal behavior: DMA-BUF is allowed; the bounded no-first-frame retry remains available |
-| `cpu-only` | Creates every `PipeWireSourceItem` with DMA-BUF disallowed from the start; the Auto retry is disabled |
+| unset / unsupported | Use the saved setting |
+| `auto` | Force normal DMA-BUF-preferred behavior; the bounded no-first-frame retry remains available |
+| `cpu-only` | Force every `PipeWireSourceItem` to start with DMA-BUF disallowed; the Auto retry is disabled |
 
-Values are read when `PreviewController` is created. Unknown values are logged
-as unsupported and use `auto`. This is a diagnostic switch, not a normal user
-setting, and it does not change Plasma or child processes' environment.
+An environment override is read when `PreviewController` is created. Unknown
+values are logged as unsupported and fall back to the saved setting. The
+setting and override affect only KDockW; they do not change Plasma or child
+processes' environment.
+
+## User-reported A/B result
+
+On TUXEDO OS 24.04.5 with Plasma 6.6.6, Qt 6.10.2, Intel Iris Xe and NVIDIA
+RTX 4050 (driver 580.178.04), the user compared the same Wayland and XWayland
+windows while Qt Quick used OpenGL on the NVIDIA renderer. In Auto,
+`usingDmaBuf=true`, `ready=true`, KPipeWire reported no error, but thumbnails
+were black. With CPU-only, `usingDmaBuf=false` and the thumbnails displayed
+correctly; KPipeWire was again Streaming and ready with no reported error.
+This user-reported A/B supports a path-specific DMA-BUF compatibility issue on
+that machine. It does not establish the internal failing import/API operation
+or a defect affecting all Intel/NVIDIA/AMD systems. KDockW does not inspect
+pixels or automatically switch modes based on black-frame detection.
 
 The Auto retry runs once per thumbnail only when the stream reaches Streaming
 but no first frame arrives within 1.5 seconds. It reconstructs the item without

@@ -135,7 +135,8 @@ class MockPipeWireSourceItem : public QQuickItem
     Q_PROPERTY(QSize streamSize MEMBER m_streamSize NOTIFY streamSizeChanged)
     Q_PROPERTY(bool usingDmaBuf READ usingDmaBuf NOTIFY usingDmaBufChanged)
 public:
-    using QQuickItem::QQuickItem;
+    explicit MockPipeWireSourceItem(QQuickItem *parent = nullptr);
+    ~MockPipeWireSourceItem() override;
     bool ready() const { return m_ready; }
     int state() const { return m_state; }
     QSize streamSize() const
@@ -164,6 +165,22 @@ private:
     bool m_ready = false;
     int m_state = 0;
     QSize m_streamSize;
+};
+
+class MockPipeWireTracker : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(int activeCount READ activeCount NOTIFY activeCountChanged)
+public:
+    using QObject::QObject;
+    static MockPipeWireTracker *instance();
+    int activeCount() const { return m_activeCount; }
+    void sourceCreated();
+    void sourceDestroyed();
+Q_SIGNALS:
+    void activeCountChanged();
+private:
+    int m_activeCount = 0;
 };
 
 // Production DockView::zoomLayout() without the window: same arguments, same

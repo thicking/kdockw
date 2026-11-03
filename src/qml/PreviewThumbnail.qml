@@ -76,6 +76,12 @@ Item {
         Qt.callLater(function() { captureLoader.active = true })
     }
 
+    function restartCapture() {
+        forceCpuCapture = false
+        captureLoader.active = false
+        Qt.callLater(function() { captureLoader.active = true })
+    }
+
     function logCaptureState(reason) {
         const capture = captureLoader.item
         if (!capture)
@@ -149,6 +155,11 @@ Item {
                 function onReadyChanged() { root.logCaptureState("ready-changed") }
                 function onStreamSizeChanged() { root.logCaptureState("stream-size-changed") }
                 function onUsingDmaBufChanged() { root.logCaptureState("dma-buf-changed") }
+            }
+
+            Connections {
+                target: PreviewController
+                function onCaptureModeChanged() { root.restartCapture() }
             }
 
             // KWin can briefly publish DMA-BUF buffers before PipeWire has

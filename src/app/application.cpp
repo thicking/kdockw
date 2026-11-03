@@ -138,6 +138,7 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::ShowDelayChanged, context, saveSettings);
     connect(settings, &KDockWSettings::HideDelayChanged, context, saveSettings);
     connect(settings, &KDockWSettings::PreviewEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::CpuOnlyPreviewCaptureChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SingleWindowClickActionChanged, context, saveSettings);
     connect(settings, &KDockWSettings::PreviewThumbnailSizeChanged, context, saveSettings);
     connect(settings, &KDockWSettings::PreviewHoverDelayChanged, context, saveSettings);
