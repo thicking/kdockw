@@ -101,6 +101,40 @@ Item {
             compare(t.parentIndex, 0)
         }
 
+        function test_cpuOnlyModeDisablesDmaBufFromCaptureCreation() {
+            PreviewController.cpuCaptureOnly = true
+            let popup = makePopup()
+            show(0, "Kate")
+            let t = waitThumbs(popup, 1)[0]
+            tryVerify(() => t.captureItem !== null)
+            compare(t.captureItem.allowDmaBuf, false)
+        }
+
+        function test_autoModeFallsBackToCpuWhenNoFirstFrameArrives() {
+            PreviewController.cpuCaptureOnly = false
+            let popup = makePopup()
+            show(0, "Kate")
+            let t = waitThumbs(popup, 1)[0]
+            tryVerify(() => t.captureItem !== null)
+            compare(t.captureItem.allowDmaBuf, true)
+            t.captureItem.state = 4 // Streaming without a received frame.
+            tryVerify(() => t.captureItem.allowDmaBuf === false, 2500,
+                     "auto mode should retry once without DMA-BUF after the first-frame timeout")
+        }
+
+        function test_cpuOnlyModeDoesNotTriggerTheAutoFallbackRetry() {
+            PreviewController.cpuCaptureOnly = true
+            let popup = makePopup()
+            show(0, "Kate")
+            let t = waitThumbs(popup, 1)[0]
+            tryVerify(() => t.captureItem !== null)
+            let firstCapture = t.captureItem
+            compare(firstCapture.allowDmaBuf, false)
+            firstCapture.state = 4 // Streaming without a received frame.
+            wait(1700)
+            verify(t.captureItem === firstCapture, "cpu-only must not restart the source through Auto fallback")
+        }
+
         function test_groupedWindowsOneThumbnailEach() {
             let popup = makePopup()
             show(1, "Konsole")

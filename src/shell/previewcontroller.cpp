@@ -36,6 +36,14 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
     , m_dockView(dockView)
     , m_settings(settings)
 {
+    const QByteArray captureMode = qgetenv("KDOCKW_PREVIEW_CAPTURE_MODE").trimmed().toLower();
+    if (captureMode == "cpu-only") {
+        m_cpuCaptureOnly = true;
+    } else if (!captureMode.isEmpty() && captureMode != "auto") {
+        qCWarning(lcPreview) << "Unsupported KDOCKW_PREVIEW_CAPTURE_MODE; using auto";
+    }
+    qCInfo(lcPreview) << "Capture diagnostic mode:" << (m_cpuCaptureOnly ? "cpu-only" : "auto");
+
     m_hideTimer.setSingleShot(true);
     m_hideTimer.setInterval(200);
     connect(&m_hideTimer, &QTimer::timeout, this, [this]() {
@@ -186,6 +194,11 @@ qreal PreviewController::contentWidth() const
 qreal PreviewController::contentHeight() const
 {
     return m_contentHeight;
+}
+
+bool PreviewController::cpuCaptureOnly() const
+{
+    return m_cpuCaptureOnly;
 }
 
 void PreviewController::showPreview(int index, qreal itemGlobalPos, qreal itemExtent)

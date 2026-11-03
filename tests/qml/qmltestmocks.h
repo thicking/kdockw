@@ -130,23 +130,17 @@ class MockPipeWireSourceItem : public QQuickItem
     Q_OBJECT
     Q_PROPERTY(quint32 nodeId MEMBER m_nodeId NOTIFY nodeIdChanged)
     Q_PROPERTY(bool allowDmaBuf MEMBER m_allowDmaBuf NOTIFY allowDmaBufChanged)
-    Q_PROPERTY(bool ready READ ready NOTIFY readyChanged)
-    Q_PROPERTY(int state READ state NOTIFY stateChanged)
-    Q_PROPERTY(QSize streamSize READ streamSize NOTIFY streamSizeChanged)
+    Q_PROPERTY(bool ready MEMBER m_ready NOTIFY readyChanged)
+    Q_PROPERTY(int state MEMBER m_state NOTIFY stateChanged)
+    Q_PROPERTY(QSize streamSize MEMBER m_streamSize NOTIFY streamSizeChanged)
     Q_PROPERTY(bool usingDmaBuf READ usingDmaBuf NOTIFY usingDmaBufChanged)
 public:
     using QQuickItem::QQuickItem;
-    bool ready() const
-    {
-        return false;
-    }
-    int state() const
-    {
-        return 0;
-    }
+    bool ready() const { return m_ready; }
+    int state() const { return m_state; }
     QSize streamSize() const
     {
-        return {};
+        return m_streamSize;
     }
     bool usingDmaBuf() const
     {
@@ -167,6 +161,9 @@ Q_SIGNALS:
 private:
     quint32 m_nodeId = 0;
     bool m_allowDmaBuf = false;
+    bool m_ready = false;
+    int m_state = 0;
+    QSize m_streamSize;
 };
 
 // Production DockView::zoomLayout() without the window: same arguments, same

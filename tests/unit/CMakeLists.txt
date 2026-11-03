@@ -18,6 +18,7 @@ add_executable(kdockw_unit_tests
     test_taskiconprovider.cpp
     test_desktop_actions.cpp
     test_about_data.cpp
+    test_preview_capture_mode.cpp
 )
 
 target_compile_definitions(kdockw_unit_tests PRIVATE

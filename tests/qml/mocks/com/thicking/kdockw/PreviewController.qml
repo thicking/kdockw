@@ -20,6 +20,7 @@ QtObject {
     property bool previewHovered: false
     property bool previewKeyboardActive: false
     property int focusedThumbnailIndex: -1
+    property bool cpuCaptureOnly: false
     function showPreview(i, pos, ext) { _record("showPreview", arguments); parentIndex = i; visible = true }
     function hidePreview() { _record("hidePreview", arguments); visible = false }
     function hidePreviewDelayed() { _record("hidePreviewDelayed", arguments) }
@@ -36,7 +37,7 @@ QtObject {
     function previewThumbnailCount() { return 0 }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex"]
+    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

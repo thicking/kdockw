@@ -83,6 +83,8 @@ Item {
         const error = capture.state === 0 ? capture.error() : ""
         console.log("[kdockw.preview] capture", reason,
             "nodeId:", capture.nodeId,
+            "captureMode:", root.forceCpuCapture ? "cpu-fallback"
+                : PreviewController.cpuCaptureOnly ? "cpu-only" : "auto",
             "state:", capture.state,
             "ready:", capture.ready,
             "streamSize:", capture.streamSize,
@@ -135,7 +137,7 @@ Item {
                 id: captureComponent
                 PipeWire.PipeWireSourceItem {
                     nodeId: screencastRequest.nodeId
-                    allowDmaBuf: !root.forceCpuCapture
+                    allowDmaBuf: !PreviewController.cpuCaptureOnly && !root.forceCpuCapture
                     visible: !root.isMinimized
                     Accessible.ignored: true
                 }
@@ -156,6 +158,7 @@ Item {
                 interval: 1500
                 repeat: false
                 running: !root.forceCpuCapture
+                    && !PreviewController.cpuCaptureOnly
                     && captureLoader.item !== null
                     && captureLoader.item.visible
                     && captureLoader.item.state === 4 // PipeWireSourceItem::Streaming

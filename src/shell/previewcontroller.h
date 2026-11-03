@@ -44,6 +44,7 @@ class PreviewController : public QObject
     Q_PROPERTY(qreal contentY READ contentY NOTIFY positionChanged)
     Q_PROPERTY(qreal contentWidth READ contentWidth NOTIFY contentSizeChanged)
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentSizeChanged)
+    Q_PROPERTY(bool cpuCaptureOnly READ cpuCaptureOnly CONSTANT)
 
     // Preview keyboard navigation state (driven from dock)
     Q_PROPERTY(bool previewKeyboardActive READ isPreviewKeyboardActive NOTIFY previewKeyboardActiveChanged)
@@ -66,6 +67,7 @@ public:
     [[nodiscard]] qreal contentY() const;
     [[nodiscard]] qreal contentWidth() const;
     [[nodiscard]] qreal contentHeight() const;
+    [[nodiscard]] bool cpuCaptureOnly() const;
 
     [[nodiscard]] bool isPreviewKeyboardActive() const;
     [[nodiscard]] int focusedThumbnailIndex() const;
@@ -153,6 +155,7 @@ private:
     DockModel *m_model;
     DockView *m_dockView;
     KDockWSettings *m_settings;
+    bool m_cpuCaptureOnly = false;
     std::unique_ptr<QQuickView> m_previewView;
     QRegion m_inputRegion;
 

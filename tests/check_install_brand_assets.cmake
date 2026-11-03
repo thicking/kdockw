@@ -3,7 +3,7 @@
 
 file(REMOVE_RECURSE "${STAGE_DIR}")
 execute_process(
-    COMMAND "${CMAKE_COMMAND}" --install "${BINARY_DIR}" --prefix "${STAGE_DIR}"
+    COMMAND "${CMAKE_COMMAND}" -E env "DESTDIR=${STAGE_DIR}" "${CMAKE_COMMAND}" --install "${BINARY_DIR}" --prefix "/"
     RESULT_VARIABLE install_result
     OUTPUT_VARIABLE install_output
     ERROR_VARIABLE install_error

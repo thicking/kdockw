@@ -9,6 +9,11 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Added
+
+- Added a process-local CPU-only window-preview capture mode for comparing
+  PipeWire buffer paths without changing Plasma or system graphics settings.
+
 ### Changed
 
 - Established `0.1.0-dev` as KDockW's independent development version and updated
