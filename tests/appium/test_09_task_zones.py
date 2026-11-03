@@ -33,7 +33,8 @@ PINNED_A, PINNED_B = "Pinned A", "Pinned B"
 UNPINNED_A, UNPINNED_B = "Unpinned A", "Unpinned B"
 PINNED_IDS = (env.TEST_APP_ID, env.TEST_APP2_ID)
 ALL_NAMES = (PINNED_A, PINNED_B, UNPINNED_A, UNPINNED_B)
-REST_ICON_SPACING = 4  # default DockSettings.iconSpacing in the fixture
+REST_ICON_SIZE = 48
+REST_ICON_SPACING = 4
 SEPARATE_SWITCH = "//frame[@name='Settings']//check_box[@name='Separate pinned and running apps']"
 SEPARATOR = "//separator[@name='Pinned and running apps separator']"
 
@@ -48,11 +49,19 @@ def _launcher_ids(kdockw: KDockW) -> list[str]:
     return config.as_list(kdockw.read_config().get("General", {}).get("PinnedLaunchers", ""))
 
 
+def _separate_launchers(kdockw: KDockW) -> bool:
+    """KConfigXT omits values equal to the true factory default on disk."""
+    value = kdockw.read_config().get("General", {}).get("SeparateLaunchers")
+    return True if value is None else config.as_bool(value)
+
+
 def _configure(kdockw: KDockW, *, edge: int, separate: bool, pinned: Iterable[str] = PINNED_IDS) -> None:
     kdockw.write_config(
         {
             "PinnedLaunchers": [config.launcher(app_id) for app_id in pinned],
             "SeparateLaunchers": separate,
+            "IconSize": REST_ICON_SIZE,
+            "IconSpacing": REST_ICON_SPACING,
             "Edge": edge,
             "VisibilityMode": config.ALWAYS_VISIBLE,
             "PreviewHoverDelay": 60000,
@@ -116,7 +125,7 @@ def _toggle_separation(kdockw: KDockW, expected: bool) -> None:
         message=f"separation switch to become {expected}",
     )
     wait_until(
-        lambda: config.as_bool(kdockw.read_config().get("General", {}).get("SeparateLaunchers", "false")) == expected,
+        lambda: _separate_launchers(kdockw) == expected,
         message=f"SeparateLaunchers autosaved as {expected}",
     )
 
@@ -183,7 +192,7 @@ def test_tzone001_live_toggle_orders_visible_tasks_and_persists(
     assert set(restarted_order[2:]) == {UNPINNED_A, UNPINNED_B}
     _wait_separator(kdockw)
     assert _launcher_ids(kdockw) == original_membership
-    assert config.as_bool(kdockw.read_config()["General"]["SeparateLaunchers"])
+    assert _separate_launchers(kdockw)
 
     _toggle_separation(kdockw, False)
     close_settings(kdockw)
@@ -235,7 +244,7 @@ def test_tzone002_separator_accessibility_geometry_and_single_zone_visibility(
     vertical = edge in (config.EDGE_LEFT, config.EDGE_RIGHT)
     wait_until(
         lambda: all(
-            (kdockw.screen_rect(item).height if vertical else kdockw.screen_rect(item).width) == 48
+            (kdockw.screen_rect(item).height if vertical else kdockw.screen_rect(item).width) == REST_ICON_SIZE
             for item in kdockw.items()
         ),
         message="all dock items to return to their unzoomed primary extent",
@@ -272,7 +281,7 @@ def test_tzone002_separator_accessibility_geometry_and_single_zone_visibility(
     # either is hovered.
     for name in (PINNED_B, UNPINNED_A):
         kdockw.hover_item(name)
-        wait_until(lambda: kdockw.screen_rect(kdockw.wait_for_item(name)).width >= 48, message=f"{name} hover target")
+        wait_until(lambda: kdockw.screen_rect(kdockw.wait_for_item(name)).width >= REST_ICON_SIZE, message=f"{name} hover target")
         assert _separator(kdockw) is not None
         # Older Qt reports unscaled AT-SPI extents during hover. Observe the
         # real consumer at the existing pointer instead of inferring a hit box.

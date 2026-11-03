@@ -486,7 +486,7 @@ def test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown(
 
 
 # ------------------------------------------------------------------- SET-002
-@pytest.mark.kdockwrc({"PinnedLaunchers": [], "MaxZoomFactor": 1.6})
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "IconSize": 48, "MaxZoomFactor": 1.6})
 def test_set002_icon_size_slider_resizes_dock_live_and_keeps_zoom_proportion(kdockw: KDockW, apps: TestWindows) -> None:
     max_zoom = 1.6
     apps.open("Alpha")
@@ -566,18 +566,28 @@ def test_set003_auto_hide_applies_immediately_and_persists(kdockw: KDockW, apps:
 
 
 # ------------------------------------------------------------------- SET-004
+@pytest.mark.kdockwrc({
+    "PinnedLaunchers": [],
+    "BackgroundStyle": 2,
+    "BackgroundOpacity": 0.9,
+    "UseSystemColor": False,
+    "TintColor": "#4b4144",
+})
 def test_set004_acrylic_background_applies_live(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
     kdockw.move_away()
-    before = panel_band(kdockw, "style-panel-inherit")
-    assert len(set(before)) <= 3, f"Panel Inherit background should be flat: {sorted(set(before))[:10]}"
-    assert min(sum(p) for p in before) > 300, "panel background should be opaque-looking over the black desktop"
+    before = panel_band(kdockw, "style-default-tint")
+    assert len(set(before)) <= 3, f"default tinted background should be flat: {sorted(set(before))[:10]}"
+    expected_tint = tuple(round(c * 0.9) for c in (0x4B, 0x41, 0x44))
+    assert max(abs(a - b) for a, b in zip(mean(before), expected_tint)) < 12, (
+        f"default panel tint should match #4b4144 at 0.9 opacity: {mean(before)} vs {expected_tint}"
+    )
 
     open_settings(kdockw)
     open_page(kdockw, "Panel Style")
     assert card_names(kdockw, "Style") == ["Panel Inherit", "Transparent", "Tinted", "Acrylic"]
-    assert current_card(kdockw, "Style") == "Panel Inherit"
+    assert current_card(kdockw, "Style") == "Tinted"
     pick(kdockw, "Style", "Acrylic")
     wait_until(lambda: config_value(kdockw, "BackgroundStyle") == "3", message="kdockwrc BackgroundStyle=3")
     inp.move(W - 20, H // 3)
@@ -598,6 +608,7 @@ def test_set004_acrylic_background_applies_live(kdockw: KDockW, apps: TestWindow
 
 
 # ------------------------------------------------------------------- SET-005
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "IconSize": 48})
 def test_set005_changed_settings_persist_across_restart(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
@@ -644,6 +655,7 @@ def test_set005_changed_settings_persist_across_restart(kdockw: KDockW, apps: Te
 
 
 # ------------------------------------------------------------------- SET-006
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "IconSize": 48})
 def test_set006_screen_edge_top_moves_dock_to_top(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
@@ -678,7 +690,7 @@ def test_set006_screen_edge_top_moves_dock_to_top(kdockw: KDockW, apps: TestWind
 
 
 # ------------------------------------------------------------------- SET-007
-@pytest.mark.kdockwrc({"PinnedLaunchers": [], "BackgroundStyle": 2})
+@pytest.mark.kdockwrc({"PinnedLaunchers": [], "BackgroundStyle": 2, "UseSystemColor": True})
 def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: TestWindows) -> None:
     requires_capture()
     apps.open("Alpha")
@@ -713,7 +725,7 @@ def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: Tes
     wait_until(lambda: not [w for w in kdockw.windows() if w.title.startswith("Choose tint color")], message="colour dialog closed")
 
     wait_until(lambda: (config_value(kdockw, "TintColor") or "").lower() == "#c81e1e", message="kdockwrc TintColor")
-    assert config_value(kdockw, "UseSystemColor") == "false"
+    assert not kcfg.as_bool(config_value(kdockw, "UseSystemColor") or "false")
     assert kdockw.find(f"{SETTINGS}//button[@name='Tint color: #c81e1e']") is not None
     inp.move(W - 20, H // 3)
     r1, g1, b1 = wait_until(

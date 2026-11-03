@@ -235,7 +235,9 @@ class Scene:
         """Columns of the insertion line: right after ``target`` when moving
         forward, right before it when moving backward (±1 px tolerance)."""
         r = self.rects[target]
-        x = r.x + ICON + 1 if after else r.x - 3  # itemX + width + spacing/2 - 1 | itemX - spacing/2 - 1
+        spacing = int(self.kdockw.read_config().get("General", {}).get("IconSpacing", "13"))
+        line_x = r.x + ICON + spacing / 2 - 1 if after else r.x - spacing / 2 - 1
+        x = round(line_x)
         return set(range(x - 1, x + 3))
 
     # -- opacity of the dimmed source and of the ghost
