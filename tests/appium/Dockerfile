@@ -22,6 +22,7 @@ ENV LANG=C.UTF-8 \
 RUN --mount=type=cache,target=/var/cache/libdnf5,sharing=locked \
     dnf -y --setopt=install_weak_deps=False --setopt=keepcache=True install \
         kwin-wayland kglobalacceld \
+        glibc-langpack-ru \
         mesa-dri-drivers mesa-libEGL mesa-libgbm \
         dbus-daemon dbus-tools wayland-utils qt6-qttools \
         at-spi2-core at-spi2-atk python3-pyatspi \
