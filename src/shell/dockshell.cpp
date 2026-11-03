@@ -142,6 +142,13 @@ void DockShell::connectSettingsSignals()
     connect(s, &KDockWSettings::ContentPaddingTopChanged, this, updateContentPadding);
     connect(s, &KDockWSettings::ContentPaddingBottomChanged, this, updateContentPadding);
 
+    const auto updateIndicatorSize = [this]() {
+        m_view->updateSize();
+        m_view->update();
+        m_previewController->updateEdge();
+    };
+    connect(s, &KDockWSettings::RunningIndicatorSizeChanged, this, updateIndicatorSize);
+
     // Screen-space reservation is global; reflow both the dock and open preview.
     connect(s, &KDockWSettings::ReserveScreenSpaceChanged, this, [this]() {
         m_view->updateSize();

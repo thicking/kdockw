@@ -173,3 +173,33 @@ TEST_CASE("Content padding and alignment persist independently", "[settings][con
     CHECK(restarted.iconSize() == settings.iconSize());
     CHECK(restarted.iconSpacing() == settings.iconSpacing());
 }
+
+TEST_CASE("Running indicator preferences persist independently", "[settings][running-indicator]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+
+    REQUIRE(settings.runningIndicatorStyle() == 0);
+    REQUIRE(settings.runningIndicatorPosition() == 0);
+    REQUIRE(settings.runningIndicatorSize() == 4);
+    REQUIRE(settings.runningIndicatorColorMode() == 0);
+
+    QObject context;
+    kdockw::Application::connectSettingsAutoSave(&settings, &context);
+    settings.setRunningIndicatorStyle(4);
+    settings.setRunningIndicatorPosition(1);
+    settings.setRunningIndicatorSize(12);
+    settings.setRunningIndicatorColorMode(1);
+    settings.setRunningIndicatorColor(QStringLiteral("#ff336699"));
+
+    KDockWSettings restarted;
+    restarted.load();
+    CHECK(restarted.runningIndicatorStyle() == 4);
+    CHECK(restarted.runningIndicatorPosition() == 1);
+    CHECK(restarted.runningIndicatorSize() == 12);
+    CHECK(restarted.runningIndicatorColorMode() == 1);
+    CHECK(restarted.runningIndicatorColor() == QStringLiteral("#ff336699"));
+    CHECK(restarted.iconSize() == settings.iconSize());
+    CHECK(restarted.contentPaddingLeft() == settings.contentPaddingLeft());
+}

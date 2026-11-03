@@ -88,6 +88,38 @@ Item {
             tryCompare(T.indicatorDots(item)[0], "opacity", 0.4)
         }
 
+        function test_configurableStylesAndPositionsStayInsideReservedCell() {
+            DockView.edge = 1
+            DockSettings.runningIndicatorPosition = 0
+            DockSettings.runningIndicatorStyle = 0
+            DockSettings.runningIndicatorSize = 8
+            let item = makeItem({ IsWindow: true, IsActive: false, ChildCount: 2 })
+            const marker = T.indicatorDots(item)[0]
+
+            const expected = [
+                { width: 7, height: 7 },
+                { width: 16, height: 3 },
+                { width: 16, height: 8 },
+                { width: 16, height: 8 },
+                { width: 22, height: 4 }
+            ]
+            for (let edge = 0; edge < 4; ++edge) {
+                DockView.edge = edge
+                for (let position = 0; position < 2; ++position) {
+                    DockSettings.runningIndicatorPosition = position
+                    for (let style = 0; style < expected.length; ++style) {
+                        DockSettings.runningIndicatorStyle = style
+                        tryCompare(marker, "width", DockView.isVertical ? expected[style].height : expected[style].width)
+                        tryCompare(marker, "height", DockView.isVertical ? expected[style].width : expected[style].height)
+                        verify(marker.x >= -0.5 && marker.y >= -0.5, `style ${style}, edge ${edge}, position ${position} starts outside its cell`)
+                        verify(marker.x + marker.width <= item.width + 0.5, `style ${style}, edge ${edge}, position ${position} exceeds cell width`)
+                        verify(marker.y + marker.height <= item.height + 0.5, `style ${style}, edge ${edge}, position ${position} exceeds cell height`)
+                    }
+                }
+            }
+            compare(T.indicatorDots(item).length, 2)
+        }
+
         // --- Badge ---
 
         function test_noBadgeWithoutNotifications() {

@@ -284,11 +284,18 @@ Item {
         }
 
         function test_transparentPaddingDoesNotExpandInteractionRegion_data() {
-            return dockEdges()
+            let rows = []
+            const edges = dockEdges()
+            for (let i = 0; i < edges.length; ++i) {
+                rows.push({ tag: `edge-${edges[i].edge}-screen`, edge: edges[i].edge, position: 0 })
+                rows.push({ tag: `edge-${edges[i].edge}-interior`, edge: edges[i].edge, position: 1 })
+            }
+            return rows
         }
 
         function test_transparentPaddingDoesNotExpandInteractionRegion(data) {
             DockView.edge = data.edge
+            DockSettings.runningIndicatorPosition = data.position
             DockView.backgroundStyleType = 1
             DockSettings.contentPaddingLeft = 32
             DockSettings.contentPaddingRight = 32
@@ -306,13 +313,20 @@ Item {
                 verify(interactive.width < background.width, "transparent horizontal padding intercepted input")
             else
                 verify(interactive.height < background.height, "transparent vertical padding intercepted input")
+            if (data.edge < 2)
+                compare(interactive.height, DockSettings.iconSize, "indicator reserve expanded the input region")
+            else
+                compare(interactive.width, DockSettings.iconSize, "indicator reserve expanded the input region")
 
             const row = items(dock)[0].parent
             DockSettings.contentAlignment = 0
             tryVerify(() => {
                 const updated = DockVisibility.interactionRect
-                const expectedX = row.parent.x + row.x
-                const expectedY = row.parent.y + row.y
+                const screenSideAfter = data.edge === 1 || data.edge === 3
+                const indicatorBeforeIcon = !(data.position === 0 ? screenSideAfter : !screenSideAfter)
+                const reserve = DockSettings.runningIndicatorSize * 2
+                const expectedX = row.parent.x + row.x + (data.edge >= 2 && indicatorBeforeIcon ? reserve : 0)
+                const expectedY = row.parent.y + row.y + (data.edge < 2 && indicatorBeforeIcon ? reserve : 0)
                 return Math.abs(updated.x - expectedX) <= 1 && Math.abs(updated.y - expectedY) <= 1
             }, 1000, "transparent interaction region did not follow the aligned icon row")
         }
@@ -355,6 +369,8 @@ Item {
             compare(its[0].height, 48)
             compare(its[0].x, its[1].x)
             tryCompare(its[1], "y", its[0].y + 48 + 4)
+            tryCompare(DockVisibility.panelRect, "width", DockSettings.iconSize + 8
+                       + DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight)
             verify(DockVisibility.panelRect.x < stage.width / 2, "left dock panel must sit on the left")
         }
         function test_separatedLayoutToggleKeepsSpacingAndSecondaryCenter_data() {

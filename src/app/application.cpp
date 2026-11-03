@@ -170,6 +170,11 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::IconScaleChanged, context, saveSettings);
     connect(settings, &KDockWSettings::AttentionAnimationDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BadgeDisplayModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::RunningIndicatorStyleChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::RunningIndicatorPositionChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::RunningIndicatorSizeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::RunningIndicatorColorModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::RunningIndicatorColorChanged, context, saveSettings);
     connect(settings, &KDockWSettings::UseSystemColorChanged, context, saveSettings);
     connect(settings, &KDockWSettings::UseAccentColorChanged, context, saveSettings);
     connect(settings, &KDockWSettings::DodgeActiveOnlyChanged, context, saveSettings);

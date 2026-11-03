@@ -9,6 +9,11 @@
 namespace kdockw
 {
 
+inline int runningIndicatorReserveForSize(int indicatorSize)
+{
+    return std::max(0, indicatorSize) * 2;
+}
+
 /// Extra height above the panel needed for zoomed icons.
 inline int zoomOverflowHeight(int iconSize, double maxZoomFactor)
 {
@@ -20,11 +25,12 @@ inline int zoomOverflowHeight(int iconSize, double maxZoomFactor)
 inline int surfaceHeight(int iconSize,
                          int crossPaddingLeading,
                          int crossPaddingTrailing,
+                         int indicatorReserve,
                          double maxZoomFactor,
                          int tooltipReserve,
                          int floatingPadding)
 {
-    const int dockHeight = iconSize + crossPaddingLeading + crossPaddingTrailing;
+    const int dockHeight = iconSize + crossPaddingLeading + crossPaddingTrailing + indicatorReserve;
     const int zoomOverflow = zoomOverflowHeight(iconSize, maxZoomFactor);
 
     const int topOverflow = std::max(zoomOverflow, tooltipReserve);
@@ -37,18 +43,43 @@ inline int surfaceHeight(int iconSize,
 /// not need independent edge values.
 inline int surfaceHeight(int iconSize, int padding, double maxZoomFactor, int tooltipReserve, int floatingPadding)
 {
-    return surfaceHeight(iconSize, padding, padding, maxZoomFactor, tooltipReserve, floatingPadding);
+    return surfaceHeight(iconSize, padding, padding, 0, maxZoomFactor, tooltipReserve, floatingPadding);
+}
+
+inline int surfaceHeight(int iconSize,
+                         int crossPaddingLeading,
+                         int crossPaddingTrailing,
+                         double maxZoomFactor,
+                         int tooltipReserve,
+                         int floatingPadding)
+{
+    return surfaceHeight(iconSize,
+                         crossPaddingLeading,
+                         crossPaddingTrailing,
+                         0,
+                         maxZoomFactor,
+                         tooltipReserve,
+                         floatingPadding);
 }
 
 /// Height of the visible panel bar (icon + padding + floating gap).
-inline int panelBarHeight(int iconSize, int crossPaddingLeading, int crossPaddingTrailing, int floatingPadding)
+inline int panelBarHeight(int iconSize,
+                          int crossPaddingLeading,
+                          int crossPaddingTrailing,
+                          int indicatorReserve,
+                          int floatingPadding)
 {
-    return iconSize + crossPaddingLeading + crossPaddingTrailing + floatingPadding;
+    return iconSize + crossPaddingLeading + crossPaddingTrailing + indicatorReserve + floatingPadding;
 }
 
 inline int panelBarHeight(int iconSize, int padding, int floatingPadding)
 {
-    return panelBarHeight(iconSize, padding, padding, floatingPadding);
+    return panelBarHeight(iconSize, padding, padding, 0, floatingPadding);
+}
+
+inline int panelBarHeight(int iconSize, int crossPaddingLeading, int crossPaddingTrailing, int floatingPadding)
+{
+    return panelBarHeight(iconSize, crossPaddingLeading, crossPaddingTrailing, 0, floatingPadding);
 }
 
 } // namespace kdockw

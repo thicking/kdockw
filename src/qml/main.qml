@@ -1012,6 +1012,7 @@ Item {
         readonly property real paddingRight: DockSettings.contentPaddingRight
         readonly property real paddingTop: DockSettings.contentPaddingTop
         readonly property real paddingBottom: DockSettings.contentPaddingBottom
+        readonly property int indicatorReserve: DockSettings.runningIndicatorSize * 2
 
         function alignedContentStart(available, contentExtent, leadingPadding, trailingPadding, alignment) {
             const freeSpace = Math.max(0, available - leadingPadding - trailingPadding - contentExtent)
@@ -1026,11 +1027,11 @@ Item {
         // alignment is applied separately below, so alignment does not alter
         // the stored inset values.
         width: DockView.isVertical
-            ? (DockSettings.iconSize + paddingLeft + paddingRight)
+            ? (DockSettings.iconSize + indicatorReserve + paddingLeft + paddingRight)
             : Math.max(dockRow.animatedContentWidth + paddingLeft + paddingRight, Kirigami.Units.gridUnit * 6)
         height: DockView.isVertical
             ? Math.max(dockRow.animatedContentHeight + paddingTop + paddingBottom, Kirigami.Units.gridUnit * 6)
-            : (DockSettings.iconSize + paddingTop + paddingBottom)
+            : (DockSettings.iconSize + indicatorReserve + paddingTop + paddingBottom)
         color: "transparent"
 
         // Rest slot coordinates stay at the visible panel position even
@@ -1286,10 +1287,17 @@ Item {
                 const trailingY = DockView.isVertical ? dockBackground.trailingGrowth : 0
                 hitLeft = Math.floor(x + dockRow.x - leading)
                 hitTop = Math.floor(y + dockRow.y - leadingY)
-                const contentWidth = DockView.isVertical ? dockRow.implicitWidth : dockRow.animatedContentWidth
-                const contentHeight = DockView.isVertical ? dockRow.animatedContentHeight : dockRow.implicitHeight
-                hitRight = Math.ceil(x + dockRow.x + contentWidth + trailing)
-                hitBottom = Math.ceil(y + dockRow.y + contentHeight + trailingY)
+                const screenSideAfter = DockView.edge === 1 || DockView.edge === 3
+                const indicatorAfterIcon = DockSettings.runningIndicatorPosition === 0 ? screenSideAfter : !screenSideAfter
+                const indicatorBeforeIcon = !indicatorAfterIcon
+                const contentX = dockRow.x + (DockView.isVertical && indicatorBeforeIcon ? dockPanel.indicatorReserve : 0)
+                const contentY = dockRow.y + (!DockView.isVertical && indicatorBeforeIcon ? dockPanel.indicatorReserve : 0)
+                const contentWidth = DockView.isVertical ? DockSettings.iconSize : dockRow.animatedContentWidth
+                const contentHeight = DockView.isVertical ? dockRow.animatedContentHeight : DockSettings.iconSize
+                hitLeft = Math.floor(x + contentX - leading)
+                hitTop = Math.floor(y + contentY - leadingY)
+                hitRight = Math.ceil(x + contentX + contentWidth + trailing)
+                hitBottom = Math.ceil(y + contentY + contentHeight + trailingY)
                 if (contentWidth <= 0 || contentHeight <= 0) {
                     // Never submit an empty QRegion: Wayland interprets it as
                     // accepting input everywhere on the surface.
@@ -1307,6 +1315,12 @@ Item {
                 }
             }
             DockVisibility.setInteractionRect(hitLeft, hitTop, hitRight - hitLeft, hitBottom - hitTop)
+        }
+
+        Connections {
+            target: DockSettings
+            function onRunningIndicatorPositionChanged() { dockPanel.reportPanelRect() }
+            function onRunningIndicatorSizeChanged() { dockPanel.reportPanelRect() }
         }
         onXChanged: {
             reportPanelRect()

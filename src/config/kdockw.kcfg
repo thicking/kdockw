@@ -339,6 +339,39 @@
       <max>60</max>
     </entry>
 
+    <entry name="RunningIndicatorStyle" type="Int">
+      <label>Running application indicator style (0=Dot, 1=Line, 2=Pill, 3=Glow, 4=Bar)</label>
+      <default>0</default>
+      <min>0</min>
+      <max>4</max>
+    </entry>
+
+    <entry name="RunningIndicatorPosition" type="Int">
+      <label>Running application indicator position (0=ScreenEdge, 1=DockInterior)</label>
+      <default>0</default>
+      <min>0</min>
+      <max>1</max>
+    </entry>
+
+    <entry name="RunningIndicatorSize" type="Int">
+      <label>Running application indicator size in logical pixels</label>
+      <default>4</default>
+      <min>2</min>
+      <max>12</max>
+    </entry>
+
+    <entry name="RunningIndicatorColorMode" type="Int">
+      <label>Running application indicator color mode (0=Theme, 1=Custom)</label>
+      <default>0</default>
+      <min>0</min>
+      <max>1</max>
+    </entry>
+
+    <entry name="RunningIndicatorColor" type="String">
+      <label>Custom running application indicator color</label>
+      <default>#ffffffff</default>
+    </entry>
+
     <entry name="BadgeDisplayMode" type="Int">
       <label>Badge display mode (0=Number, 1=Dot, 2=Off)</label>
       <default>0</default>

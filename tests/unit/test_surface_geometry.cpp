@@ -63,6 +63,17 @@ TEST_CASE("Surface geometry calculations", "[geometry]")
         REQUIRE(kdockw::surfaceHeight(48, 64, 0, 1.0, 36, 0) == 148);
     }
 
+    SECTION("Running-indicator reserve stays inside the panel bar and surface")
+    {
+        REQUIRE(kdockw::runningIndicatorReserveForSize(2) == 4);
+        REQUIRE(kdockw::runningIndicatorReserveForSize(4) == 8);
+        REQUIRE(kdockw::runningIndicatorReserveForSize(12) == 24);
+        REQUIRE(kdockw::panelBarHeight(48, 0, 0, kdockw::runningIndicatorReserveForSize(4), 0) == 56);
+        REQUIRE(kdockw::panelBarHeight(48, 8, 8, kdockw::runningIndicatorReserveForSize(4), 0) == 72);
+        REQUIRE(kdockw::surfaceHeight(48, 0, 0, kdockw::runningIndicatorReserveForSize(4), 1.6, 36, 0) == 92);
+        REQUIRE(kdockw::panelBarHeight(48, 0, 0, kdockw::runningIndicatorReserveForSize(12), 0) == 72);
+    }
+
     SECTION("Non-default floating margin is kept apart from padding")
     {
         // padding and the default margin are both 8; a custom margin must

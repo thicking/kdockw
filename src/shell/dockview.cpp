@@ -228,7 +228,11 @@ int DockView::panelBarHeight() const
     const int iconSize = m_screenSettings ? m_screenSettings->iconSize() : m_settings->iconSize();
     const int leadingPadding = isVertical() ? m_settings->contentPaddingLeft() : m_settings->contentPaddingTop();
     const int trailingPadding = isVertical() ? m_settings->contentPaddingRight() : m_settings->contentPaddingBottom();
-    return kdockw::panelBarHeight(iconSize, leadingPadding, trailingPadding, floatingPadding());
+    return kdockw::panelBarHeight(iconSize,
+                                  leadingPadding,
+                                  trailingPadding,
+                                  kdockw::runningIndicatorReserveForSize(m_settings->runningIndicatorSize()),
+                                  floatingPadding());
 }
 
 DockPlatform *DockView::platform() const
@@ -285,6 +289,7 @@ void DockView::updateSize()
     const int h = kdockw::surfaceHeight(iconSize,
                                         crossPaddingLeading,
                                         crossPaddingTrailing,
+                                        kdockw::runningIndicatorReserveForSize(m_settings->runningIndicatorSize()),
                                         maxZoom,
                                         tooltipReserve,
                                         floatingPadding());

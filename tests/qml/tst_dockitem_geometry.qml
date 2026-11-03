@@ -71,9 +71,9 @@ Item {
             return row
         }
 
-        // Space reserved toward the screen edge for the indicator dots.
+        // Space reserved for the configurable running-indicator band.
         function indicatorSpace() {
-            return 4 + Kirigami.Units.smallSpacing
+            return DockSettings.runningIndicatorSize * 2
         }
 
         function test_iconSizeSetsItemSize_data() {
@@ -110,6 +110,15 @@ Item {
             compare(item.width, 72)
             compare(item.height, 72 + indicatorSpace())
             compare(T.iconImage(item).width, 72)
+        }
+
+        function test_indicatorSizeReservesGeometryLive() {
+            DockView.edge = 3
+            DockSettings.runningIndicatorSize = 2
+            let item = makeRow([{ display: "Dolphin", IsWindow: true }]).itemAt(0)
+            compare(item.width, DockSettings.iconSize + 4)
+            DockSettings.runningIndicatorSize = 12
+            tryCompare(item, "width", DockSettings.iconSize + 24)
         }
 
         // The icon is rasterised at the maximum zoomed size so zoom never upscales a bitmap.

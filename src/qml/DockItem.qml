@@ -440,9 +440,15 @@ Item {
         })
     }
 
-    // Fixed space reserved for indicator dots (max dot size + spacing).
-    // Always reserve this space so icon position stays stable when dots appear/disappear.
-    readonly property int _indicatorSpace: 4 + Kirigami.Units.smallSpacing
+    // Reserve a stable band for running indicators. Keep the indicator away
+    // from the hit region and the icon row's zoom geometry.
+    readonly property int _indicatorSize: DockSettings.runningIndicatorSize
+    readonly property int _indicatorSpace: _indicatorSize * 2
+    readonly property int _visibleIndicatorCount: _isWindow ? Math.min(model.ChildCount || 1, 3) : 0
+    readonly property bool _indicatorAfterIcon: {
+        const screenSideAfter = DockView.edge === 1 || DockView.edge === 3
+        return DockSettings.runningIndicatorPosition === 0 ? screenSideAfter : !screenSideAfter
+    }
 
     // Size: base icon size + fixed indicator space (toward screen edge)
     width: DockView.isVertical
@@ -581,8 +587,8 @@ Item {
 
         states: [
             State {
-                name: "bottom"
-                when: DockView.edge === 1
+                name: "horizontal-indicator-after"
+                when: !DockView.isVertical && dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: iconImage
                     anchors.top: parent.top
@@ -594,8 +600,8 @@ Item {
                 }
             },
             State {
-                name: "top"
-                when: DockView.edge === 0
+                name: "horizontal-indicator-before"
+                when: !DockView.isVertical && !dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: iconImage
                     anchors.top: undefined
@@ -607,27 +613,27 @@ Item {
                 }
             },
             State {
-                name: "left"
-                when: DockView.edge === 2
-                AnchorChanges {
-                    target: iconImage
-                    anchors.top: undefined
-                    anchors.bottom: undefined
-                    anchors.left: undefined
-                    anchors.right: parent.right
-                    anchors.horizontalCenter: undefined
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            },
-            State {
-                name: "right"
-                when: DockView.edge === 3
+                name: "vertical-indicator-after"
+                when: DockView.isVertical && dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: iconImage
                     anchors.top: undefined
                     anchors.bottom: undefined
                     anchors.left: parent.left
                     anchors.right: undefined
+                    anchors.horizontalCenter: undefined
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            },
+            State {
+                name: "vertical-indicator-before"
+                when: DockView.isVertical && !dockItem._indicatorAfterIcon
+                AnchorChanges {
+                    target: iconImage
+                    anchors.top: undefined
+                    anchors.bottom: undefined
+                    anchors.left: undefined
+                    anchors.right: parent.right
                     anchors.horizontalCenter: undefined
                     anchors.verticalCenter: parent.verticalCenter
                 }
@@ -933,8 +939,8 @@ Item {
 
         states: [
             State {
-                name: "bottom"
-                when: DockView.edge === 1
+                name: "horizontal-indicator-after"
+                when: !DockView.isVertical && dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: indicatorRow
                     anchors.top: iconImage.bottom
@@ -946,12 +952,12 @@ Item {
                 }
                 PropertyChanges {
                     target: indicatorRow
-                    anchors.topMargin: Kirigami.Units.smallSpacing - indicatorRow._iconPaddingCompensation
+                    anchors.topMargin: (dockItem._indicatorSpace - indicatorRow.height) / 2 - indicatorRow._iconPaddingCompensation
                 }
             },
             State {
-                name: "top"
-                when: DockView.edge === 0
+                name: "horizontal-indicator-before"
+                when: !DockView.isVertical && !dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: indicatorRow
                     anchors.top: undefined
@@ -963,29 +969,12 @@ Item {
                 }
                 PropertyChanges {
                     target: indicatorRow
-                    anchors.bottomMargin: Kirigami.Units.smallSpacing - indicatorRow._iconPaddingCompensation
+                    anchors.bottomMargin: (dockItem._indicatorSpace - indicatorRow.height) / 2 - indicatorRow._iconPaddingCompensation
                 }
             },
             State {
-                name: "left"
-                when: DockView.edge === 2
-                AnchorChanges {
-                    target: indicatorRow
-                    anchors.top: undefined
-                    anchors.bottom: undefined
-                    anchors.left: undefined
-                    anchors.right: iconImage.left
-                    anchors.horizontalCenter: undefined
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-                PropertyChanges {
-                    target: indicatorRow
-                    anchors.rightMargin: Kirigami.Units.smallSpacing
-                }
-            },
-            State {
-                name: "right"
-                when: DockView.edge === 3
+                name: "vertical-indicator-after"
+                when: DockView.isVertical && dockItem._indicatorAfterIcon
                 AnchorChanges {
                     target: indicatorRow
                     anchors.top: undefined
@@ -997,7 +986,24 @@ Item {
                 }
                 PropertyChanges {
                     target: indicatorRow
-                    anchors.leftMargin: Kirigami.Units.smallSpacing
+                    anchors.leftMargin: (dockItem._indicatorSpace - indicatorRow.width) / 2
+                }
+            },
+            State {
+                name: "vertical-indicator-before"
+                when: DockView.isVertical && !dockItem._indicatorAfterIcon
+                AnchorChanges {
+                    target: indicatorRow
+                    anchors.top: undefined
+                    anchors.bottom: undefined
+                    anchors.left: undefined
+                    anchors.right: iconImage.left
+                    anchors.horizontalCenter: undefined
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+                PropertyChanges {
+                    target: indicatorRow
+                    anchors.rightMargin: (dockItem._indicatorSpace - indicatorRow.width) / 2
                 }
             }
         ]
@@ -1007,19 +1013,43 @@ Item {
             model: {
                 if (!dockItem.model.IsWindow) return 0
                 let count = dockItem.model.ChildCount || 1
-                return Math.min(count, 3)
+                return dockItem._visibleIndicatorCount
             }
 
             Rectangle {
-                width: dockItem.model.IsActive ? 4 : 3
-                height: width
-                radius: width / 2
+                readonly property int indicatorStyle: DockSettings.runningIndicatorStyle
+                readonly property int markerSize: dockItem._indicatorSize
+                readonly property int thickness: indicatorStyle === 0 ? (dockItem.model.IsActive ? markerSize : Math.max(2, markerSize - 1))
+                    : indicatorStyle === 1 ? Math.max(2, Math.round(markerSize / 3))
+                    : indicatorStyle === 2 ? markerSize
+                    : indicatorStyle === 3 ? markerSize
+                    : Math.max(2, Math.round(markerSize / 2))
+                readonly property int length: indicatorStyle === 0 ? thickness
+                    : Math.min(indicatorStyle === 4 ? markerSize * 3 : markerSize * 2,
+                               Math.max(thickness, Math.floor((dockItem.iconSize - indicatorRow.spacing * (dockItem._visibleIndicatorCount - 1))
+                                                              / Math.max(1, dockItem._visibleIndicatorCount))))
+                width: DockView.isVertical ? thickness : length
+                height: DockView.isVertical ? length : thickness
+                radius: indicatorStyle === 0 || indicatorStyle === 3 ? Math.max(width, height) / 2
+                    : indicatorStyle === 2 ? thickness / 2 : Math.min(width, height) / 3
                 color: (dockItem._showAttentionAnim && dockItem._attentionType === 5)
                        ? Kirigami.Theme.negativeTextColor
-                       : Kirigami.Theme.textColor
+                       : (DockSettings.runningIndicatorColorMode === 1
+                          ? DockSettings.runningIndicatorColor : Kirigami.Theme.textColor)
                 opacity: (dockItem._showAttentionAnim && dockItem._attentionType === 5)
                          ? dockItem._dotBlinkOpacity
                          : (dockItem.model.IsMinimized ? 0.4 : 0.8)
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: "transparent"
+                    border.color: parent.color
+                    border.width: Math.max(1, parent.markerSize / 5)
+                    opacity: 0.8
+                    visible: parent.indicatorStyle === 3
+                    z: -1
+                }
 
                 Behavior on color {
                     ColorAnimation { duration: Kirigami.Units.longDuration }
