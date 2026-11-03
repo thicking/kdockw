@@ -37,6 +37,14 @@ SettingsPage {
         DockSettings.zoomAnimationPreset = preset
     }
 
+    function restoreContentLayoutDefaults() {
+        DockSettings.contentPaddingLeft = 8
+        DockSettings.contentPaddingRight = 8
+        DockSettings.contentPaddingTop = 8
+        DockSettings.contentPaddingBottom = 8
+        DockSettings.contentAlignment = 1
+    }
+
     function zoomTimingSummary(preset) {
         const timing = zoomProfile.presets[preset]
         return i18n("Zoom in %1 ms, zoom out %2 ms", timing.inDuration, timing.outDuration)
@@ -328,6 +336,79 @@ SettingsPage {
             value: DockSettings.iconSpacing
             valueText: i18nc("@label pixels", "%1 px", value)
             onMoved: (value) => DockSettings.iconSpacing = value
+        }
+    }
+
+    // --- Content padding and alignment ---
+    FormCard.FormHeader {
+        title: i18n("Content layout")
+    }
+
+    FormCard.FormCard {
+        FormCard.AbstractFormDelegate {
+            background: null
+            contentItem: RowLayout {
+                spacing: Kirigami.Units.largeSpacing
+
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("These insets are measured from the dock background, separately from its gap to the screen edge.")
+                    wrapMode: Text.Wrap
+                    font: Kirigami.Theme.smallFont
+                    color: page.secondaryTextColor
+                }
+
+                QQC2.Button {
+                    text: i18n("Restore defaults")
+                    onClicked: page.restoreContentLayoutDefaults()
+                }
+            }
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormComboBoxDelegate {
+            text: i18n("Icon alignment")
+            Accessible.name: text
+            model: [i18n("Start"), i18n("Center"), i18n("End")]
+            currentIndex: DockSettings.contentAlignment
+            onActivated: function(index) { DockSettings.contentAlignment = index }
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSpinBoxDelegate {
+            label: i18n("Left padding (px)")
+            from: 0; to: 64; stepSize: 1
+            value: DockSettings.contentPaddingLeft
+            onValueChanged: DockSettings.contentPaddingLeft = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSpinBoxDelegate {
+            label: i18n("Right padding (px)")
+            from: 0; to: 64; stepSize: 1
+            value: DockSettings.contentPaddingRight
+            onValueChanged: DockSettings.contentPaddingRight = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSpinBoxDelegate {
+            label: i18n("Top padding (px)")
+            from: 0; to: 64; stepSize: 1
+            value: DockSettings.contentPaddingTop
+            onValueChanged: DockSettings.contentPaddingTop = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        FormCard.FormSpinBoxDelegate {
+            label: i18n("Bottom padding (px)")
+            from: 0; to: 64; stepSize: 1
+            value: DockSettings.contentPaddingBottom
+            onValueChanged: DockSettings.contentPaddingBottom = value
         }
     }
 

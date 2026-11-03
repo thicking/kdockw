@@ -56,6 +56,13 @@ TEST_CASE("Surface geometry calculations", "[geometry]")
         REQUIRE(kdockw::panelBarHeight(64, 8, 0) == 80); // larger icon
     }
 
+    SECTION("Independent cross-axis padding is summed without changing zoom reserve")
+    {
+        REQUIRE(kdockw::panelBarHeight(48, 3, 17, 8) == 76);
+        REQUIRE(kdockw::surfaceHeight(48, 3, 17, 1.6, 36, 8) == 112);
+        REQUIRE(kdockw::surfaceHeight(48, 64, 0, 1.0, 36, 0) == 148);
+    }
+
     SECTION("Non-default floating margin is kept apart from padding")
     {
         // padding and the default margin are both 8; a custom margin must

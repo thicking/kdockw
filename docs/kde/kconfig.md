@@ -225,6 +225,11 @@ class DockSettings : public QObject {
 | `PinnedLaunchers` | QStringList | `{}` | Pinned launcher URLs |
 | `IconSize` | int | 48 | Icon size in pixels |
 | `IconSpacing` | int | 8 | Spacing between icons |
+| `ContentPaddingLeft` | int | 8 | Left inset between the dock background and its content (0–64 Qt logical pixels) |
+| `ContentPaddingRight` | int | 8 | Right inset between the dock background and its content (0–64 Qt logical pixels) |
+| `ContentPaddingTop` | int | 8 | Top inset between the dock background and its content (0–64 Qt logical pixels) |
+| `ContentPaddingBottom` | int | 8 | Bottom inset between the dock background and its content (0–64 Qt logical pixels) |
+| `ContentAlignment` | int | 1 | Content alignment along the dock (0 = start, 1 = center, 2 = end) |
 | `IconOpacityActive` | qreal | 1.0 | Icon opacity for the active window (0.1 to 1.0) |
 | `IconOpacityInactive` | qreal | 0.8 | Icon opacity for inactive windows and launchers (0.1 to 1.0) |
 | `IconOpacityMinimized` | qreal | 0.5 | Icon opacity for minimized windows (0.1 to 1.0) |

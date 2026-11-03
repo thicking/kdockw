@@ -72,6 +72,9 @@ public:
     /// Called from QML when the panel geometry changes.
     /// Used to restrict the input region to the visible panel area.
     Q_INVOKABLE void setPanelRect(qreal x, qreal y, qreal width, qreal height);
+    /// Input and Dodge geometry can be smaller than the background when the
+    /// background is transparent and its padding has no visible pixels.
+    Q_INVOKABLE void setInteractionRect(qreal x, qreal y, qreal width, qreal height);
 
     /// Set the delay before the dock appears when the mouse enters the trigger area.
     void setShowDelay(int ms);
@@ -165,6 +168,14 @@ private:
     int m_panelY = 0;
     int m_panelWidth = 0;
     int m_panelHeight = 0;
+
+    // Visible icon/background area used by input routing and Dodge. Falls back
+    // to panelRect until QML publishes an explicit interaction rectangle.
+    int m_interactionX = 0;
+    int m_interactionY = 0;
+    int m_interactionWidth = 0;
+    int m_interactionHeight = 0;
+    bool m_hasInteractionRect = false;
 
     // Panel Y coordinate when the dock is visible (for overlap detection).
     // This value persists even while m_panelY moves off-screen during hide animation.

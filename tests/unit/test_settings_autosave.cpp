@@ -142,3 +142,34 @@ TEST_CASE("Changing any single setting persists it across a restart", "[settings
     INFO("reverted after restart: " << notPersisted.join(QStringLiteral(", ")).toStdString());
     CHECK(notPersisted.isEmpty());
 }
+
+TEST_CASE("Content padding and alignment persist independently", "[settings][content-layout]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+
+    REQUIRE(settings.contentPaddingLeft() == 8);
+    REQUIRE(settings.contentPaddingRight() == 8);
+    REQUIRE(settings.contentPaddingTop() == 8);
+    REQUIRE(settings.contentPaddingBottom() == 8);
+    REQUIRE(settings.contentAlignment() == 1);
+
+    QObject context;
+    kdockw::Application::connectSettingsAutoSave(&settings, &context);
+    settings.setContentPaddingLeft(1);
+    settings.setContentPaddingRight(17);
+    settings.setContentPaddingTop(33);
+    settings.setContentPaddingBottom(64);
+    settings.setContentAlignment(2);
+
+    KDockWSettings restarted;
+    restarted.load();
+    CHECK(restarted.contentPaddingLeft() == 1);
+    CHECK(restarted.contentPaddingRight() == 17);
+    CHECK(restarted.contentPaddingTop() == 33);
+    CHECK(restarted.contentPaddingBottom() == 64);
+    CHECK(restarted.contentAlignment() == 2);
+    CHECK(restarted.iconSize() == settings.iconSize());
+    CHECK(restarted.iconSpacing() == settings.iconSpacing());
+}

@@ -117,6 +117,11 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     };
     connect(settings, &KDockWSettings::IconSizeChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconSpacingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ContentPaddingLeftChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ContentPaddingRightChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ContentPaddingTopChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ContentPaddingBottomChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ContentAlignmentChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityActiveChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityInactiveChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityMinimizedChanged, context, saveSettings);

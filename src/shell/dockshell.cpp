@@ -130,6 +130,18 @@ void DockShell::connectSettingsSignals()
     // Floating margin is global-only; it resizes the gap exactly like toggling floating.
     connect(s, &KDockWSettings::FloatingMarginChanged, m_view.get(), updateFloatingPadding);
 
+    // Content padding changes the panel bar, exclusive zone, and the preview
+    // popup's edge offset. The row position itself follows DockSettings in QML.
+    const auto updateContentPadding = [this]() {
+        m_view->updateSize();
+        m_view->update();
+        m_previewController->updateEdge();
+    };
+    connect(s, &KDockWSettings::ContentPaddingLeftChanged, this, updateContentPadding);
+    connect(s, &KDockWSettings::ContentPaddingRightChanged, this, updateContentPadding);
+    connect(s, &KDockWSettings::ContentPaddingTopChanged, this, updateContentPadding);
+    connect(s, &KDockWSettings::ContentPaddingBottomChanged, this, updateContentPadding);
+
     // Screen-space reservation is global; reflow both the dock and open preview.
     connect(s, &KDockWSettings::ReserveScreenSpaceChanged, this, [this]() {
         m_view->updateSize();

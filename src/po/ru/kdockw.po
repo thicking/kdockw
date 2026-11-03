@@ -62,6 +62,50 @@ msgstr "Размер значков"
 msgid "Icon spacing"
 msgstr "Интервал между значками"
 
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Content layout"
+msgstr "Расположение содержимого"
+
+#: src/qml/settings/IconsPage.qml
+msgid "These insets are measured from the dock background, separately from its gap to the screen edge."
+msgstr "Эти отступы задают расстояние от содержимого до фона дока и не меняют зазор до края экрана."
+
+#: src/qml/settings/IconsPage.qml
+msgid "Restore defaults"
+msgstr "Восстановить значения по умолчанию"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Icon alignment"
+msgstr "Выравнивание значков"
+
+#: src/qml/settings/IconsPage.qml
+msgid "Start"
+msgstr "В начале"
+
+#: src/qml/settings/IconsPage.qml
+msgid "Center"
+msgstr "По центру"
+
+#: src/qml/settings/IconsPage.qml
+msgid "End"
+msgstr "В конце"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Left padding (px)"
+msgstr "Отступ слева (px)"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Right padding (px)"
+msgstr "Отступ справа (px)"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Top padding (px)"
+msgstr "Отступ сверху (px)"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Bottom padding (px)"
+msgstr "Отступ снизу (px)"
+
 #: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:342
 msgid "Zoom factor"
 msgstr "Масштаб увеличения"

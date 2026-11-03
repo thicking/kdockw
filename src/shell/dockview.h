@@ -163,7 +163,6 @@ private:
     DockPlatform::Edge m_edge = DockPlatform::Edge::Bottom;
     QMetaObject::Connection m_screenGeometryConnection;
 
-    static constexpr int s_padding = 8;
     /// Minimum tooltip reserve; covers the tooltip height above/below a horizontal panel.
     static constexpr int s_tooltipReserve = 36;
 };

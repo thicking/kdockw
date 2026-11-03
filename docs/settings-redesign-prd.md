@@ -77,6 +77,8 @@ added after the interview.
 | 37-39 | **Icon Opacity**: active window, inactive window and launcher, minimized window (10-100%) | Sliders | Three sliders. The stage dock shows icons in each state at the chosen opacity. |
 | 40 | **Zoom Style** (Parabolic / In place) | ComboBox | 2-card picker, each with a desktop thumbnail of neighbors moving aside or icons overlapping. Disabled while zoom factor is 1.0. |
 | 41-45 | **Zoom Animation**: preset, zoom-in/zoom-out duration (0-1000 ms), zoom-in/zoom-out easing | Preset radios + spin boxes and combos | "Preset" and "Custom" tabs. Preset: 4 cards (Natural, Quick, Relaxed, Instant), each playing its zoom motion. Custom: easing curve and motion preview above duration spin boxes and easing combos. Disabled while zoom factor is 1.0. |
+| 51 | **Content Alignment** (Start / Center / End) | ComboBox | Aligns the dock contents along its long axis independently of padding; live-apply. |
+| 52-55 | **Content Padding** (left, right, top, bottom; 0-64 logical px) | Exact-value spin boxes | Four independent insets with an 8 px default and a reset-to-defaults action; padding follows the physical dock edges in horizontal and vertical layouts. Live-apply. |
 
 **Note:** Preview icons are standard theme icons (Dolphin, Konsole, Firefox, and similar, with generic fallbacks), not the user's pinned apps.
 

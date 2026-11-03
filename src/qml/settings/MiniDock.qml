@@ -38,6 +38,12 @@ Item {
 
     property real iconSize: DockSettings.iconSize
     property real iconSpacing: DockSettings.iconSpacing
+    property real contentPaddingLeft: DockSettings.contentPaddingLeft
+    property real contentPaddingRight: DockSettings.contentPaddingRight
+    property real contentPaddingTop: DockSettings.contentPaddingTop
+    property real contentPaddingBottom: DockSettings.contentPaddingBottom
+    /// 0 Start, 1 Center, 2 End along the dock's long axis.
+    property int contentAlignment: DockSettings.contentAlignment
     property real maxZoomFactor: DockSettings.maxZoomFactor
     /// 0 Parabolic, 1 In place.
     property int zoomStyle: DockSettings.zoomStyle
@@ -99,8 +105,14 @@ Item {
     readonly property bool hovered: hoverArea.containsMouse
 
     /// Length of the resting dock along its edge in real pixels.
+    readonly property real primaryLeadingPadding: vertical ? contentPaddingTop : contentPaddingLeft
+    readonly property real primaryTrailingPadding: vertical ? contentPaddingBottom : contentPaddingRight
+    readonly property real crossPaddingTotal: vertical
+        ? contentPaddingLeft + contentPaddingRight
+        : contentPaddingTop + contentPaddingBottom
+    readonly property real restContentLengthReal: count * iconSize + Math.max(0, count - 1) * iconSpacing
     readonly property real restLengthReal: Math.max(
-        count * iconSize + Math.max(0, count - 1) * iconSpacing + 2 * Kirigami.Units.largeSpacing,
+        restContentLengthReal + primaryLeadingPadding + primaryTrailingPadding,
         Kirigami.Units.gridUnit * 6)
 
     /// Bounds of the focus icon at its current zoom.
@@ -123,13 +135,20 @@ Item {
     // main.qml (largeSpacing around the icons) and DockView::floatingPadding.
     readonly property real iconPx: iconSize * unit
     readonly property real gapPx: iconSpacing * unit
-    readonly property real padPx: Kirigami.Units.largeSpacing * unit
+    readonly property real padPx: crossPaddingTotal * unit
+    readonly property real edgePaddingPx: (vertical
+        ? (edge === 2 ? contentPaddingLeft : contentPaddingRight)
+        : (edge === 0 ? contentPaddingTop : contentPaddingBottom)) * unit
     readonly property real floatPx: floating ? floatingMargin * unit : 0
     readonly property real pitch: iconPx + gapPx
-    readonly property real thickness: iconPx + 2 * padPx
+    readonly property real thickness: iconPx + padPx
     readonly property real length: restLengthReal * unit
     readonly property real restContentLength: count * iconPx + Math.max(0, count - 1) * gapPx
-    readonly property real restStart: (length - restContentLength) / 2
+    readonly property real restStart: {
+        const available = Math.max(0, length - (primaryLeadingPadding + primaryTrailingPadding) * unit - restContentLength)
+        const alignFactor = contentAlignment === 0 ? 0 : contentAlignment === 2 ? 1 : 0.5
+        return primaryLeadingPadding * unit + available * alignFactor
+    }
     // How far zoomed icons reach past the panel, away from the edge.
     readonly property real zoomOverflow: iconPx * Math.max(0, maxZoomFactor - 1.0)
 
@@ -305,8 +324,12 @@ Item {
     // the leading edge of the first icon). Zoom moves each slot explicitly.
     Item {
         id: row
-        x: dock.vertical ? dock.padPx : dock.restStart
-        y: dock.vertical ? dock.restStart : dock.padPx
+        x: dock.vertical
+            ? dock.contentPaddingLeft * dock.unit + Math.max(0, (dock.width - dock.padPx - dock.iconPx) / 2)
+            : dock.restStart
+        y: dock.vertical
+            ? dock.restStart
+            : dock.contentPaddingTop * dock.unit + Math.max(0, (dock.height - dock.padPx - dock.iconPx) / 2)
 
         Repeater {
             id: repeater
@@ -375,13 +398,13 @@ Item {
                 // Running indicator between the icon and the screen edge
                 // (launchers have none).
                 Rectangle {
-                    readonly property real gap: (dock.padPx - width) / 2
+                    readonly property real gap: (dock.edgePaddingPx - width) / 2
                     visible: slot.windowState !== "launcher"
                     width: Math.max(2, Math.round(dock.iconPx / 10))
                     height: width
                     radius: width / 2
-                    x: dock.vertical ? (dock.edge === 2 ? -dock.padPx + gap : slot.width + gap) : (slot.width - width) / 2
-                    y: dock.vertical ? (slot.height - height) / 2 : (dock.edge === 0 ? -dock.padPx + gap : slot.height + gap)
+                    x: dock.vertical ? (dock.edge === 2 ? -dock.edgePaddingPx + gap : slot.width + gap) : (slot.width - width) / 2
+                    y: dock.vertical ? (slot.height - height) / 2 : (dock.edge === 0 ? -dock.edgePaddingPx + gap : slot.height + gap)
                     color: slot.windowState === "active" ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor
                     opacity: slot.windowState === "active" ? 1.0 : slot.windowState === "minimized" ? 0.35 : 0.6
                 }

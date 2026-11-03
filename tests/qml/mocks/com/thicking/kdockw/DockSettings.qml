@@ -9,6 +9,11 @@ QtObject {
     property string language: "system"
     property int iconSize: 48
     property int iconSpacing: 4
+    property int contentPaddingLeft: 8
+    property int contentPaddingRight: 8
+    property int contentPaddingTop: 8
+    property int contentPaddingBottom: 8
+    property int contentAlignment: 1
     property real maxZoomFactor: 1.6
     // 0 = Parabolic (neighbours move aside), 1 = InPlace
     property int zoomStyle: 0
@@ -47,7 +52,7 @@ QtObject {
     property real shadowIntensity: 0.3
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "maxZoomFactor", "zoomStyle", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "cornerRadius", "reserveScreenSpace", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "badgeDisplayMode", "otherDesktopOpacity", "previewEnabled", "previewHoverDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
+    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "contentPaddingLeft", "contentPaddingRight", "contentPaddingTop", "contentPaddingBottom", "contentAlignment", "maxZoomFactor", "zoomStyle", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "cornerRadius", "reserveScreenSpace", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "badgeDisplayMode", "otherDesktopOpacity", "previewEnabled", "previewHoverDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

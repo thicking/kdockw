@@ -226,7 +226,9 @@ void DockView::setScreenSettings(ScreenSettings *screenSettings)
 int DockView::panelBarHeight() const
 {
     const int iconSize = m_screenSettings ? m_screenSettings->iconSize() : m_settings->iconSize();
-    return kdockw::panelBarHeight(iconSize, s_padding, floatingPadding());
+    const int leadingPadding = isVertical() ? m_settings->contentPaddingLeft() : m_settings->contentPaddingTop();
+    const int trailingPadding = isVertical() ? m_settings->contentPaddingRight() : m_settings->contentPaddingBottom();
+    return kdockw::panelBarHeight(iconSize, leadingPadding, trailingPadding, floatingPadding());
 }
 
 DockPlatform *DockView::platform() const
@@ -274,10 +276,18 @@ void DockView::updateSize()
 {
     const int iconSize = m_screenSettings ? m_screenSettings->iconSize() : m_settings->iconSize();
     const double maxZoom = m_screenSettings ? m_screenSettings->maxZoomFactor() : m_settings->maxZoomFactor();
+    const int crossPaddingLeading = isVertical() ? m_settings->contentPaddingLeft() : m_settings->contentPaddingTop();
+    const int crossPaddingTrailing = isVertical() ? m_settings->contentPaddingRight()
+                                                  : m_settings->contentPaddingBottom();
     // Horizontal docks open the tooltip above/below the panel (fits s_tooltipReserve);
     // vertical docks open it beside the panel, so the reserve must fit its full width.
     const int tooltipReserve = isVertical() ? std::max(s_tooltipReserve, m_sideTooltipReserve) : s_tooltipReserve;
-    const int h = kdockw::surfaceHeight(iconSize, s_padding, maxZoom, tooltipReserve, floatingPadding());
+    const int h = kdockw::surfaceHeight(iconSize,
+                                        crossPaddingLeading,
+                                        crossPaddingTrailing,
+                                        maxZoom,
+                                        tooltipReserve,
+                                        floatingPadding());
     const QRect screenGeo = dockScreen() ? dockScreen()->geometry() : QRect();
 
     if (isVertical()) {

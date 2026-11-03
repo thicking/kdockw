@@ -252,23 +252,39 @@ void DockVisibilityController::setPanelRect(qreal x, qreal y, qreal width, qreal
     m_panelWidth = static_cast<int>(width);
     m_panelHeight = static_cast<int>(height);
 
-    // Record the Y coordinate only while the dock is visible (for overlap detection).
-    // During hide animation m_panelY moves off-screen, but hasOverlappingWindow()
-    // needs to answer "would there be overlap if the dock were visible?",
-    // so we must use the last visible-state Y.
+    if (!m_hasInteractionRect) {
+        m_interactionX = m_panelX;
+        m_interactionY = m_panelY;
+        m_interactionWidth = m_panelWidth;
+        m_interactionHeight = m_panelHeight;
+    }
+
+    // Record the interaction Y only while the dock is visible. During the
+    // hide animation the interaction rect moves off-screen, but Dodge must
+    // answer "would this area overlap if the dock were visible?".
     if (m_visible) {
-        m_panelRefY = m_panelY;
+        m_panelRefY = m_interactionY;
     }
 
     qCDebug(lcVisibility) << "setPanelRect: y=" << m_panelY << "refY=" << m_panelRefY << "visible=" << m_visible;
 
-    // Reapply input region with the updated panel geometry
-    applyInputRegion();
-
-    // Update overlap model's region geometry for SmartHide/DodgeWindows
-    updateRegionGeometry();
-
     Q_EMIT panelRectChanged();
+}
+
+void DockVisibilityController::setInteractionRect(qreal x, qreal y, qreal width, qreal height)
+{
+    m_interactionX = static_cast<int>(x);
+    m_interactionY = static_cast<int>(y);
+    m_interactionWidth = static_cast<int>(width);
+    m_interactionHeight = static_cast<int>(height);
+    m_hasInteractionRect = true;
+
+    if (m_visible) {
+        m_panelRefY = m_interactionY;
+    }
+
+    applyInputRegion();
+    updateRegionGeometry();
 }
 
 void DockVisibilityController::setShowDelay(int ms)
@@ -468,10 +484,10 @@ void DockVisibilityController::applyInputRegion()
     InputRegionParams params;
     params.surfaceWidth = m_dockWindow->width();
     params.surfaceHeight = m_dockWindow->height();
-    params.panelX = m_panelX;
-    params.panelY = m_panelY;
-    params.panelWidth = m_panelWidth;
-    params.panelHeight = m_panelHeight;
+    params.panelX = m_hasInteractionRect ? m_interactionX : m_panelX;
+    params.panelY = m_hasInteractionRect ? m_interactionY : m_panelY;
+    params.panelWidth = m_hasInteractionRect ? m_interactionWidth : m_panelWidth;
+    params.panelHeight = m_hasInteractionRect ? m_interactionHeight : m_panelHeight;
     params.zoomOverflowHeight = m_zoomOverflowHeight;
     params.visible = m_visible;
     params.hovered = m_hovered;
@@ -482,7 +498,9 @@ void DockVisibilityController::applyInputRegion()
 
 QRect DockVisibilityController::dockScreenRect() const
 {
-    if (!m_dockWindow || !m_dockScreen || m_panelWidth <= 0) {
+    const int interactionWidth = m_hasInteractionRect ? m_interactionWidth : m_panelWidth;
+    const int interactionHeight = m_hasInteractionRect ? m_interactionHeight : m_panelHeight;
+    if (!m_dockWindow || !m_dockScreen || interactionWidth <= 0 || interactionHeight <= 0) {
         return {};
     }
 
@@ -495,10 +513,10 @@ QRect DockVisibilityController::dockScreenRect() const
     params.screenHeight = screenGeo.height();
     params.surfaceWidth = m_dockWindow->width();
     params.surfaceHeight = m_dockWindow->height();
-    params.panelX = m_panelX;
+    params.panelX = m_hasInteractionRect ? m_interactionX : m_panelX;
     params.panelRefY = m_panelRefY;
-    params.panelWidth = m_panelWidth;
-    params.panelHeight = m_panelHeight;
+    params.panelWidth = interactionWidth;
+    params.panelHeight = interactionHeight;
     params.edge = static_cast<int>(m_platform->edge());
 
     return computeDockScreenRect(params);

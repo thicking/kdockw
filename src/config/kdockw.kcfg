@@ -25,6 +25,41 @@
       <max>64</max>
     </entry>
 
+    <entry name="ContentPaddingLeft" type="Int">
+      <label>Left content padding in logical pixels</label>
+      <default>8</default>
+      <min>0</min>
+      <max>64</max>
+    </entry>
+
+    <entry name="ContentPaddingRight" type="Int">
+      <label>Right content padding in logical pixels</label>
+      <default>8</default>
+      <min>0</min>
+      <max>64</max>
+    </entry>
+
+    <entry name="ContentPaddingTop" type="Int">
+      <label>Top content padding in logical pixels</label>
+      <default>8</default>
+      <min>0</min>
+      <max>64</max>
+    </entry>
+
+    <entry name="ContentPaddingBottom" type="Int">
+      <label>Bottom content padding in logical pixels</label>
+      <default>8</default>
+      <min>0</min>
+      <max>64</max>
+    </entry>
+
+    <entry name="ContentAlignment" type="Int">
+      <label>Dock content alignment (0=Start, 1=Center, 2=End)</label>
+      <default>1</default>
+      <min>0</min>
+      <max>2</max>
+    </entry>
+
     <entry name="IconOpacityActive" type="Double">
       <label>Icon opacity for the active window</label>
       <default>1.0</default>

@@ -231,6 +231,92 @@ Item {
             compare(its[0].y, its[1].y)
         }
 
+        function test_contentPaddingAndAlignment_data() {
+            const alignments = [0, 1, 2]
+            const rows = []
+            for (const edge of dockEdges()) {
+                for (const alignment of alignments) {
+                    rows.push({ tag: edge.tag + "-alignment-" + alignment, edge: edge.edge, alignment: alignment })
+                }
+            }
+            return rows
+        }
+
+        function test_contentPaddingAndAlignment(data) {
+            DockView.edge = data.edge
+            DockSettings.iconSize = 32
+            DockSettings.iconSpacing = 5
+            DockSettings.contentPaddingLeft = 11
+            DockSettings.contentPaddingRight = 19
+            DockSettings.contentPaddingTop = 7
+            DockSettings.contentPaddingBottom = 23
+            DockSettings.contentAlignment = data.alignment
+            DockSettings.maxZoomFactor = 1.6
+            addTasks(["A", "B", "C"])
+
+            const dock = makeDock(3)
+            const its = items(dock)
+            const row = its[0].parent
+            const panel = row.parent
+            const vertical = data.edge >= 2
+            const primaryExtent = vertical ? row.animatedContentHeight : row.animatedContentWidth
+            const primaryAvailable = vertical ? panel.height : panel.width
+            const primaryLeading = vertical ? DockSettings.contentPaddingTop : DockSettings.contentPaddingLeft
+            const primaryTrailing = vertical ? DockSettings.contentPaddingBottom : DockSettings.contentPaddingRight
+            const freeSpace = Math.max(0, primaryAvailable - primaryLeading - primaryTrailing - primaryExtent)
+            const alignmentFactor = data.alignment === 0 ? 0 : data.alignment === 2 ? 1 : 0.5
+            const expectedPrimaryStart = primaryLeading + freeSpace * alignmentFactor
+            fuzzyCompare(vertical ? row.y : row.x, expectedPrimaryStart, 0.5)
+
+            const crossLeading = vertical ? DockSettings.contentPaddingLeft : DockSettings.contentPaddingTop
+            const crossTrailing = vertical ? DockSettings.contentPaddingRight : DockSettings.contentPaddingBottom
+            const crossAvailable = vertical ? panel.width : panel.height
+            const crossExtent = vertical ? row.implicitWidth : row.implicitHeight
+            const expectedCrossStart = crossLeading + Math.max(0, crossAvailable - crossLeading - crossTrailing - crossExtent) / 2
+            fuzzyCompare(vertical ? row.x : row.y, expectedCrossStart, 0.5)
+
+            const visible = drawnBounds(its[1])
+            const panelRect = DockVisibility.panelRect
+            verify(visible.width > 0 && visible.height > 0)
+            verify(panelRect.width > 0 && panelRect.height > 0)
+            hoverItem(its[1])
+            tryVerify(() => its[1].zoomScale > 1.0, 1000, "padding disabled parabolic zoom")
+        }
+
+        function test_transparentPaddingDoesNotExpandInteractionRegion_data() {
+            return dockEdges()
+        }
+
+        function test_transparentPaddingDoesNotExpandInteractionRegion(data) {
+            DockView.edge = data.edge
+            DockView.backgroundStyleType = 1
+            DockSettings.contentPaddingLeft = 32
+            DockSettings.contentPaddingRight = 32
+            DockSettings.contentPaddingTop = 32
+            DockSettings.contentPaddingBottom = 32
+            DockSettings.iconSize = 24
+            addTasks(["A"])
+            const dock = makeDock(1)
+            settleDeferredCallbacks()
+            const background = DockVisibility.panelRect
+            const interactive = DockVisibility.interactionRect
+            verify(background.width > 0 && background.height > 0)
+            verify(interactive.width > 0 && interactive.height > 0)
+            if (data.edge < 2)
+                verify(interactive.width < background.width, "transparent horizontal padding intercepted input")
+            else
+                verify(interactive.height < background.height, "transparent vertical padding intercepted input")
+
+            const row = items(dock)[0].parent
+            DockSettings.contentAlignment = 0
+            tryVerify(() => {
+                const updated = DockVisibility.interactionRect
+                const expectedX = row.parent.x + row.x
+                const expectedY = row.parent.y + row.y
+                return Math.abs(updated.x - expectedX) <= 1 && Math.abs(updated.y - expectedY) <= 1
+            }, 1000, "transparent interaction region did not follow the aligned icon row")
+        }
+
         function test_spacingChangeRelayoutsLive() {
             addTasks(["A", "B"])
             let its = items(makeDock(2))
@@ -244,8 +330,9 @@ Item {
         function test_panelHugsContent() {
             addTasks(["A", "B", "C", "D", "E"])
             makeDock(5)
-            // Panel = content + large spacing on both sides (5*48 + 4*4 = 256).
-            let expected = Math.max(5 * 48 + 4 * 4 + Kirigami.Units.largeSpacing * 2, Kirigami.Units.gridUnit * 6)
+            // Panel = content + the independently configured side insets.
+            let expected = Math.max(5 * 48 + 4 * 4 + DockSettings.contentPaddingLeft + DockSettings.contentPaddingRight,
+                                    Kirigami.Units.gridUnit * 6)
             tryVerify(() => DockVisibility.panelRect.width === expected, 3000,
                       "panel width " + DockVisibility.panelRect.width + " != " + expected)
             let before = DockVisibility.panelRect.width

@@ -785,11 +785,22 @@ Item {
     // outside), so a real compositor leave reaches no onExited; end hover here.
     Connections {
         target: DockView
+        function onBackgroundStyleTypeChanged() { dockPanel.reportPanelRect() }
+        function onBackgroundColorChanged() { dockPanel.reportPanelRect() }
         function onPointerInsideChanged() {
             if (!DockView.pointerInside && !root._menuHeld && root._pointerOnDock
                     && !dockMouseArea.containsMouse)
                 root._pointerLeft()
         }
+    }
+
+    Connections {
+        target: DockSettings
+        function onContentPaddingLeftChanged() { dockPanel.reportPanelRect() }
+        function onContentPaddingRightChanged() { dockPanel.reportPanelRect() }
+        function onContentPaddingTopChanged() { dockPanel.reportPanelRect() }
+        function onContentPaddingBottomChanged() { dockPanel.reportPanelRect() }
+        function onContentAlignmentChanged() { dockPanel.reportPanelRect() }
     }
 
     MouseArea {
@@ -997,13 +1008,29 @@ Item {
     Rectangle {
         id: dockPanel
 
-        // Panel size: primary axis stretches to content, secondary axis = icon + padding
+        readonly property real paddingLeft: DockSettings.contentPaddingLeft
+        readonly property real paddingRight: DockSettings.contentPaddingRight
+        readonly property real paddingTop: DockSettings.contentPaddingTop
+        readonly property real paddingBottom: DockSettings.contentPaddingBottom
+
+        function alignedContentStart(available, contentExtent, leadingPadding, trailingPadding, alignment) {
+            const freeSpace = Math.max(0, available - leadingPadding - trailingPadding - contentExtent)
+            if (alignment === 0)
+                return leadingPadding
+            if (alignment === 2)
+                return leadingPadding + freeSpace
+            return leadingPadding + freeSpace / 2
+        }
+
+        // Padding belongs to the panel itself. The content's primary-axis
+        // alignment is applied separately below, so alignment does not alter
+        // the stored inset values.
         width: DockView.isVertical
-            ? (DockSettings.iconSize + Kirigami.Units.largeSpacing * 2)
-            : Math.max(dockRow.implicitWidth + root.taskZoneGap + Kirigami.Units.largeSpacing * 2, Kirigami.Units.gridUnit * 6)
+            ? (DockSettings.iconSize + paddingLeft + paddingRight)
+            : Math.max(dockRow.animatedContentWidth + paddingLeft + paddingRight, Kirigami.Units.gridUnit * 6)
         height: DockView.isVertical
-            ? Math.max(dockRow.implicitHeight + root.taskZoneGap + Kirigami.Units.largeSpacing * 2, Kirigami.Units.gridUnit * 6)
-            : (DockSettings.iconSize + Kirigami.Units.largeSpacing * 2)
+            ? Math.max(dockRow.animatedContentHeight + paddingTop + paddingBottom, Kirigami.Units.gridUnit * 6)
+            : (DockSettings.iconSize + paddingTop + paddingBottom)
         color: "transparent"
 
         // Rest slot coordinates stay at the visible panel position even
@@ -1242,6 +1269,44 @@ Item {
                 right = Math.min(root.width, right)
             }
             DockVisibility.setPanelRect(left, top, right - left, bottom - top)
+
+            // Opaque and blurred backgrounds are visible throughout their
+            // inset area. With a fully transparent background, only the row
+            // and its parabolic growth should receive input or count for Dodge.
+            const style = DockView.backgroundStyleType
+            const backgroundVisible = style === 3 || (style !== 1 && DockView.backgroundColor.a > 0)
+            let hitLeft = left
+            let hitTop = top
+            let hitRight = right
+            let hitBottom = bottom
+            if (!backgroundVisible) {
+                const leading = DockView.isVertical ? 0 : dockBackground.leadingGrowth
+                const trailing = DockView.isVertical ? 0 : dockBackground.trailingGrowth
+                const leadingY = DockView.isVertical ? dockBackground.leadingGrowth : 0
+                const trailingY = DockView.isVertical ? dockBackground.trailingGrowth : 0
+                hitLeft = Math.floor(x + dockRow.x - leading)
+                hitTop = Math.floor(y + dockRow.y - leadingY)
+                const contentWidth = DockView.isVertical ? dockRow.implicitWidth : dockRow.animatedContentWidth
+                const contentHeight = DockView.isVertical ? dockRow.animatedContentHeight : dockRow.implicitHeight
+                hitRight = Math.ceil(x + dockRow.x + contentWidth + trailing)
+                hitBottom = Math.ceil(y + dockRow.y + contentHeight + trailingY)
+                if (contentWidth <= 0 || contentHeight <= 0) {
+                    // Never submit an empty QRegion: Wayland interprets it as
+                    // accepting input everywhere on the surface.
+                    hitLeft = Math.floor(x + width / 2)
+                    hitTop = Math.floor(y + height / 2)
+                    hitRight = hitLeft + 1
+                    hitBottom = hitTop + 1
+                }
+                if (DockView.isVertical) {
+                    hitTop = Math.max(0, hitTop)
+                    hitBottom = Math.min(root.height, hitBottom)
+                } else {
+                    hitLeft = Math.max(0, hitLeft)
+                    hitRight = Math.min(root.width, hitRight)
+                }
+            }
+            DockVisibility.setInteractionRect(hitLeft, hitTop, hitRight - hitLeft, hitBottom - hitTop)
         }
         onXChanged: {
             reportPanelRect()
@@ -1266,8 +1331,14 @@ Item {
             flow: DockView.isVertical ? Flow.TopToBottom : Flow.LeftToRight
             spacing: DockSettings.iconSpacing
 
-            onXChanged: root.scheduleDelegateGeometryRefresh()
-            onYChanged: root.scheduleDelegateGeometryRefresh()
+            onXChanged: {
+                root.scheduleDelegateGeometryRefresh()
+                dockPanel.reportPanelRect()
+            }
+            onYChanged: {
+                root.scheduleDelegateGeometryRefresh()
+                dockPanel.reportPanelRect()
+            }
             onImplicitWidthChanged: root.scheduleDelegateGeometryRefresh()
             onImplicitHeightChanged: root.scheduleDelegateGeometryRefresh()
             onPositioningComplete: root.scheduleDelegateGeometryRefresh()
@@ -1290,11 +1361,11 @@ Item {
                 }
             }
             x: DockView.isVertical
-                ? (parent.width - animatedContentWidth) / 2
-                : (parent.width - animatedContentWidth) / 2
+                ? dockPanel.alignedContentStart(parent.width, implicitWidth, dockPanel.paddingLeft, dockPanel.paddingRight, DockSettings.contentAlignment)
+                : dockPanel.alignedContentStart(parent.width, animatedContentWidth, dockPanel.paddingLeft, dockPanel.paddingRight, DockSettings.contentAlignment)
             y: DockView.isVertical
-                ? (parent.height - animatedContentHeight) / 2
-                : (parent.height - animatedContentHeight) / 2
+                ? dockPanel.alignedContentStart(parent.height, animatedContentHeight, dockPanel.paddingTop, dockPanel.paddingBottom, DockSettings.contentAlignment)
+                : dockPanel.alignedContentStart(parent.height, implicitHeight, dockPanel.paddingTop, dockPanel.paddingBottom, DockSettings.contentAlignment)
 
             // Animate existing items displaced by add/remove within the Flow.
             // Disabled during hover zoom (mouseInside) to avoid lagging sibling

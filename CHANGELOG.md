@@ -11,6 +11,9 @@ carried forward from the Krema-based development period.
 
 ### Added
 
+- Added independently adjustable 0–64 logical-pixel content padding for all four
+  dock edges, plus start/center/end alignment. Changes apply immediately and are
+  saved; the Icons page includes a reset-to-defaults action.
 - Added a saved CPU-compatible window-preview capture option. Auto remains the
   default, and changing the option recreates active preview streams.
 

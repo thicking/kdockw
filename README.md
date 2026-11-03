@@ -50,6 +50,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 - **Parabolic Zoom** — macOS-style magnification on hover that pushes neighbouring icons aside, with an optional in-place style
 - **Zoom Animation** — Pick a hover zoom preset: Natural (default, eases in and out like the macOS Dock), Quick, Relaxed, or Instant; or switch to Custom to set zoom-in and zoom-out duration and easing separately
 - **Icon Size Normalization** — Auto-detects icon padding and scales for uniform appearance
+- **Content Padding and Alignment** — Set independent 0–64 px insets on all four sides of the dock and align its icons to the start, center, or end; changes apply immediately and are saved
 - **Indicator Dots** — Visual markers for running applications
 - **Pin/Unpin** — Keep favorite apps in the dock
 - **Context Menu** — Right-click for pin, close, new instance, and the app's own actions like "New Private Window" (KDE Breeze native)

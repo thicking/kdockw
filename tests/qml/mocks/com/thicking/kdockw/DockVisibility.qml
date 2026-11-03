@@ -16,7 +16,9 @@ QtObject {
     property bool keyboardActive: false
     property bool dragActive: false
     property rect panelRect
+    property rect interactionRect
     function setPanelRect(x, y, w, h) { panelRect = Qt.rect(x, y, w, h) }
+    function setInteractionRect(x, y, w, h) { interactionRect = Qt.rect(x, y, w, h) }
     function setHovered(v) { _record("setHovered", arguments); hovered = v }
     function setInteracting(v) { _record("setInteracting", arguments); interacting = v }
     function setKeyboardActive(v) { _record("setKeyboardActive", arguments); keyboardActive = v }
@@ -26,7 +28,7 @@ QtObject {
     function setDragActive(v) { _record("setDragActive", arguments); dragActive = v; interacting = v }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["calls", "dockVisible", "hovered", "interacting", "keyboardActive", "dragActive", "panelRect"]
+    readonly property var _resettable: ["calls", "dockVisible", "hovered", "interacting", "keyboardActive", "dragActive", "panelRect", "interactionRect"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

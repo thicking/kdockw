@@ -51,7 +51,9 @@ Kirigami.AbstractApplicationWindow {
             text: i18n("Icons"),
             iconName: "preferences-desktop-icons",
             group: "",
-            keywords: [i18n("Icon size"), i18n("Icon spacing"), i18n("Zoom factor"), i18n("Zoom style"), i18n("Zoom animation"),
+            keywords: [i18n("Icon size"), i18n("Icon spacing"), i18n("Content layout"), i18n("Icon alignment"),
+                i18n("Left padding (px)"), i18n("Right padding (px)"), i18n("Top padding (px)"), i18n("Bottom padding (px)"),
+                i18n("Zoom factor"), i18n("Zoom style"), i18n("Zoom animation"),
                 i18n("Icon size normalization"), i18n("Icon scale"), i18n("Active window icon opacity"),
                 i18n("Inactive window and launcher icon opacity"), i18n("Minimized window icon opacity")]
         },
