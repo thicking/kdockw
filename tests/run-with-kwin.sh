@@ -11,13 +11,60 @@
 
 set -eu
 
+# dbus-run-session's default session.conf includes the system service
+# directories. Some of those entries delegate activation to the real user
+# systemd manager, which breaks the isolation promised by this test harness.
+# Start a nested bus with only an empty, per-test service directory so requests
+# for desktop services fail locally instead of starting services in the host
+# session. KWin itself is launched directly below and owns its normal names.
+if [ "${KDOCKW_PRIVATE_TEST_BUS:-}" != 1 ]; then
+    bus_scratch=$(mktemp -d)
+    mkdir -p "$bus_scratch/services"
+    cat >"$bus_scratch/session.conf" <<EOF
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <keep_umask/>
+  <listen>unix:tmpdir=$bus_scratch</listen>
+  <auth>EXTERNAL</auth>
+  <servicedir>$bus_scratch/services</servicedir>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+  </policy>
+</busconfig>
+EOF
+    if KDOCKW_PRIVATE_TEST_BUS=1 dbus-run-session --config-file="$bus_scratch/session.conf" -- "$0" "$@"; then
+        bus_status=0
+    else
+        bus_status=$?
+    fi
+    rm -rf "$bus_scratch"
+    exit "$bus_status"
+fi
+
 scratch=$(mktemp -d)
 kwin_pid=
 # Must not fail: under set -e a failing kill/wait (KWin already gone) would
 # end the trap before the scratch directory is removed.
 cleanup() {
     if [ -n "$kwin_pid" ]; then
-        kill "$kwin_pid" 2>/dev/null || true
+        kill -TERM "$kwin_pid" 2>/dev/null || true
+        tries=0
+        while kill -0 "$kwin_pid" 2>/dev/null; do
+            state=$(ps -o stat= -p "$kwin_pid" 2>/dev/null || true)
+            case $state in
+                "" | Z*) break ;;
+            esac
+            tries=$((tries + 1))
+            if [ "$tries" -ge 50 ]; then
+                kill -KILL "$kwin_pid" 2>/dev/null || true
+                break
+            fi
+            sleep 0.1
+        done
         wait "$kwin_pid" 2>/dev/null || true
     fi
     rm -rf "$scratch"

@@ -16,17 +16,35 @@ set -eu
 bin=$1
 expected=$2
 
+terminate() {
+    target_pid=$1
+    kill -TERM "$target_pid" 2>/dev/null || true
+    tries=0
+    while kill -0 "$target_pid" 2>/dev/null; do
+        state=$(ps -o stat= -p "$target_pid" 2>/dev/null || true)
+        case $state in
+            "" | Z*) break ;;
+        esac
+        tries=$((tries + 1))
+        if [ "$tries" -ge 50 ]; then
+            kill -KILL "$target_pid" 2>/dev/null || true
+            break
+        fi
+        sleep 0.1
+    done
+    wait "$target_pid" 2>/dev/null || true
+}
+
 "$bin" -platform wayland >/dev/null 2>&1 &
 pid=$!
 cleanup() {
-    kill "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
+    terminate "$pid"
 }
 trap cleanup EXIT
 trap 'exit 1' INT TERM
 
 tries=0
-while ! busctl --user list 2>/dev/null | grep -q 'com\.thicking\.kdockw'; do
+while ! timeout --kill-after=1s 2s busctl --user list 2>/dev/null | grep -q 'com\.thicking\.kdockw'; do
     tries=$((tries + 1))
     if [ "$tries" -gt 300 ] || ! kill -0 "$pid" 2>/dev/null; then
         echo "first kdockw instance did not register com.thicking.kdockw" >&2
@@ -35,7 +53,7 @@ while ! busctl --user list 2>/dev/null | grep -q 'com\.thicking\.kdockw'; do
     sleep 0.1
 done
 
-out=$("$bin" --version)
+out=$(timeout --kill-after=2s 15s "$bin" --version)
 
 if ! kill -0 "$pid" 2>/dev/null; then
     echo "first instance exited while --version ran" >&2
