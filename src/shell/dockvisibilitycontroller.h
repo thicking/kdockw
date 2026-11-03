@@ -8,8 +8,9 @@
 
 #include <QObject>
 #include <QModelIndex>
-#include <QVariantList>
+#include <QPointer>
 #include <QTimer>
+#include <QVariantList>
 
 namespace TaskManager
 {
@@ -19,6 +20,7 @@ class VirtualDesktopInfo;
 }
 
 class QWindow;
+class QScreen;
 
 namespace kdockw
 {
@@ -47,6 +49,7 @@ public:
                                       TaskManager::VirtualDesktopInfo *virtualDesktopInfo,
                                       TaskManager::ActivityInfo *activityInfo,
                                       QWindow *dockWindow,
+                                      QScreen *dockScreen,
                                       QObject *parent = nullptr);
     ~DockVisibilityController() override;
 
@@ -143,6 +146,7 @@ private:
     TaskManager::VirtualDesktopInfo *m_virtualDesktopInfo = nullptr;
     TaskManager::ActivityInfo *m_activityInfo = nullptr;
     QWindow *m_dockWindow;
+    QPointer<QScreen> m_dockScreen;
 
     void applyInputRegion();
     void updateRegionGeometry();

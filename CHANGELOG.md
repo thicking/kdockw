@@ -26,6 +26,9 @@ carried forward from the Krema-based development period.
 
 ### Fixed
 
+- Kept each dock and its window previews tied to the selected monitor when
+  Wayland recalculates a layer surface's Qt screen during output geometry
+  changes.
 - Fixed the About page so its description, copyright, and author roles follow
   the selected KDockW language while the page is open. The settings search hint
   now follows the same language choice instead of Plasma's locale.

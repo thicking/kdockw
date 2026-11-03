@@ -25,6 +25,7 @@ DockVisibilityController::DockVisibilityController(DockPlatform *platform,
                                                    TaskManager::VirtualDesktopInfo *virtualDesktopInfo,
                                                    TaskManager::ActivityInfo *activityInfo,
                                                    QWindow *dockWindow,
+                                                   QScreen *dockScreen,
                                                    QObject *parent)
     : QObject(parent)
     , m_platform(platform)
@@ -32,6 +33,7 @@ DockVisibilityController::DockVisibilityController(DockPlatform *platform,
     , m_virtualDesktopInfo(virtualDesktopInfo)
     , m_activityInfo(activityInfo)
     , m_dockWindow(dockWindow)
+    , m_dockScreen(dockScreen)
 {
     // Region-filtered model: only windows overlapping the dock geometry pass through.
     // Uses KDE's built-in filterByRegion(Intersect) — same approach as Plasma panels.
@@ -480,11 +482,11 @@ void DockVisibilityController::applyInputRegion()
 
 QRect DockVisibilityController::dockScreenRect() const
 {
-    if (!m_dockWindow || !m_dockWindow->screen() || m_panelWidth <= 0) {
+    if (!m_dockWindow || !m_dockScreen || m_panelWidth <= 0) {
         return {};
     }
 
-    const QRect screenGeo = m_dockWindow->screen()->geometry();
+    const QRect screenGeo = m_dockScreen->geometry();
 
     DockScreenRectParams params;
     params.screenX = screenGeo.x();

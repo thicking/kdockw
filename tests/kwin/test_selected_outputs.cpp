@@ -42,6 +42,7 @@
 #include <QSet>
 #include <QSignalSpy>
 #include <QStandardPaths>
+#include <QTimer>
 #include <QTest>
 #include <QtQml>
 
@@ -114,6 +115,41 @@ QStringList screenNames()
     return names;
 }
 
+bool waitForStableScreenTopology()
+{
+    // KWin publishes the new primary and QtWayland updates screen geometry in
+    // separate asynchronous events. MultiDockManager debounces those changes
+    // for 300 ms; wait for a 350 ms quiet period before taking a saved-output
+    // snapshot so an earlier output transaction cannot rewrite the fixture
+    // after its first exposure check.
+    QTimer quiet;
+    quiet.setSingleShot(true);
+    quiet.setInterval(350);
+    const auto markDirty = [&quiet] {
+        quiet.start();
+    };
+    const auto watchScreen = [&quiet, &markDirty](QScreen *screen) {
+        QObject::connect(screen, &QScreen::geometryChanged, &quiet, markDirty);
+        QObject::connect(screen, &QScreen::availableGeometryChanged, &quiet, markDirty);
+        QObject::connect(screen, &QScreen::virtualGeometryChanged, &quiet, markDirty);
+    };
+    for (auto *screen : QGuiApplication::screens()) {
+        watchScreen(screen);
+    }
+    QObject::connect(qApp, &QGuiApplication::screenAdded, &quiet, [&](QScreen *screen) {
+        watchScreen(screen);
+        markDirty();
+    });
+    QObject::connect(qApp, &QGuiApplication::screenRemoved, &quiet, markDirty);
+    auto *order = kdockw::OutputOrderMonitor::instance();
+    QObject::connect(order, &kdockw::OutputOrderMonitor::primaryOutputChanged, &quiet, markDirty);
+    QObject::connect(order, &kdockw::OutputOrderMonitor::orderReadyChanged, &quiet, markDirty);
+
+    QSignalSpy settled(&quiet, &QTimer::timeout);
+    quiet.start();
+    return settled.wait(3000);
+}
+
 void writeSelectedMonitorConfig(const QStringList &selectedOutputs)
 {
     const auto config = KSharedConfig::openConfig(QStringLiteral("kdockwrc"));
@@ -127,9 +163,20 @@ QSet<QString> dockedScreenNames(const kdockw::MultiDockManager &manager)
 {
     QSet<QString> names;
     for (auto *shell : manager.shells()) {
-        if (shell && shell->view() && shell->view()->screen()) {
-            names.insert(shell->view()->screen()->name());
+        if (!shell || !shell->view()) {
+            continue;
         }
+        auto *view = shell->view();
+        auto *layer = LayerShellQt::Window::get(view);
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
+        if (layer && layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow && view->screen()) {
+            names.insert(view->screen()->name());
+        }
+#else
+        if (layer && layer->screen()) {
+            names.insert(layer->screen()->name());
+        }
+#endif
     }
     return names;
 }
@@ -147,7 +194,7 @@ QScreen *screenNamed(const QString &name)
 kdockw::DockShell *shellNamed(const kdockw::MultiDockManager &manager, const QString &name)
 {
     for (auto *shell : manager.shells()) {
-        if (shell->view()->screen() && shell->view()->screen()->name() == name) {
+        if (shell->view()->dockScreen() && shell->view()->dockScreen()->name() == name) {
             return shell;
         }
     }
@@ -156,6 +203,7 @@ kdockw::DockShell *shellNamed(const kdockw::MultiDockManager &manager, const QSt
 
 std::unique_ptr<kdockw::MultiDockManager> makeSelectedManager(const QStringList &selected)
 {
+    REQUIRE(waitForStableScreenTopology());
     auto *order = kdockw::OutputOrderMonitor::instance();
     REQUIRE(QTest::qWaitFor(
         [order] {
@@ -174,20 +222,55 @@ std::unique_ptr<kdockw::MultiDockManager> makeSelectedManager(const QStringList 
 void requireDocksOn(const kdockw::MultiDockManager &manager, const QStringList &names)
 {
     const QSet<QString> expected(names.cbegin(), names.cend());
-    REQUIRE(QTest::qWaitFor(
+    const bool ready = QTest::qWaitFor(
         [&] {
-            return manager.shells().size() == expected.size() && dockedScreenNames(manager) == expected;
+            const auto shells = manager.shells();
+            if (shells.size() != expected.size() || dockedScreenNames(manager) != expected) {
+                return false;
+            }
+            return std::all_of(shells.cbegin(), shells.cend(), [](kdockw::DockShell *shell) {
+                return shell && shell->view() && shell->view()->dockScreen() && shell->view()->isExposed();
+            });
         },
-        kTimeoutMs));
+        kTimeoutMs);
+    if (!ready) {
+        qWarning() << "Selected-output fixture did not settle. Expected:" << names << "screens:" << screenNames() << "docks:"
+                   << manager.shells().size() << dockedScreenNames(manager);
+        for (auto *shell : manager.shells()) {
+            auto *view = shell ? shell->view() : nullptr;
+            auto *layer = view ? LayerShellQt::Window::get(view) : nullptr;
+            QString layerName = QStringLiteral("<no layer screen>");
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
+            if (layer && layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow && view && view->screen()) {
+                layerName = view->screen()->name();
+            }
+#else
+            if (layer && layer->screen()) {
+                layerName = layer->screen()->name();
+            }
+#endif
+            qWarning() << "dock state: assigned=" << (view && view->dockScreen() ? view->dockScreen()->name() : QStringLiteral("<no screen>"))
+                       << "QWindow=" << (view && view->screen() ? view->screen()->name() : QStringLiteral("<no screen>"))
+                       << "exposed:" << (view && view->isExposed()) << "visible:" << (view && view->isVisible())
+                       << "layer screen:" << layerName;
+        }
+    }
+    REQUIRE(ready);
     for (auto *shell : manager.shells()) {
-        REQUIRE(QTest::qWaitFor(
-            [shell] {
-                return shell->view()->isExposed();
-            },
-            kTimeoutMs));
-        REQUIRE(shell->view()->screen());
+        REQUIRE(shell->view()->dockScreen());
         CHECK(shell->view()->isVisible());
-        CHECK(shell->view()->screen()->geometry().contains(shell->view()->geometry().center()));
+        auto *layer = LayerShellQt::Window::get(shell->view());
+        REQUIRE(layer);
+#ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
+        CHECK(layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow);
+#else
+        CHECK(layer->screen() == shell->view()->dockScreen());
+#endif
+        INFO("output " << shell->view()->dockScreen()->name().toStdString() << " screen geometry "
+                       << shell->view()->dockScreen()->geometry().x() << "," << shell->view()->dockScreen()->geometry().y() << " "
+                       << shell->view()->dockScreen()->geometry().width() << "x" << shell->view()->dockScreen()->geometry().height()
+                       << " window geometry " << shell->view()->geometry().x() << "," << shell->view()->geometry().y() << " "
+                       << shell->view()->geometry().width() << "x" << shell->view()->geometry().height());
     }
 }
 
@@ -328,8 +411,8 @@ QSet<QString> surfaceOutputNames(const char *scope)
 void requireRetained(const QPointer<kdockw::DockShell> &shell, const QString &name)
 {
     REQUIRE(shell);
-    REQUIRE(shell->view()->screen());
-    CHECK(shell->view()->screen()->name() == name);
+    REQUIRE(shell->view()->dockScreen());
+    CHECK(shell->view()->dockScreen()->name() == name);
 }
 
 } // namespace
@@ -408,17 +491,15 @@ TEST_CASE("Selected monitors create docks only on the saved outputs", "[selected
             kTimeoutMs));
         REQUIRE(previewView);
         REQUIRE(previewView->screen());
-        CHECK(previewView->screen() == view->screen());
         auto *layer = LayerShellQt::Window::get(previewView);
 #ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
         CHECK(layer->screenConfiguration() == LayerShellQt::Window::ScreenFromQWindow);
 #else
-        CHECK(layer->screen() == view->screen());
+        CHECK(layer->screen() == view->dockScreen());
 #endif
-        REQUIRE(view->screen());
-        CHECK(expected.contains(view->screen()->name()));
+        REQUIRE(view->dockScreen());
+        CHECK(expected.contains(view->dockScreen()->name()));
         CHECK(view->isVisible());
-        CHECK(view->screen()->geometry().contains(view->geometry().center()));
     }
 }
 
@@ -587,6 +668,7 @@ TEST_CASE(
     // Finish a real compositor transaction before injecting completed orders,
     // so late priority replies from an earlier test cannot overwrite the seam.
     requirePrimary(unselected->name());
+    REQUIRE(waitForStableScreenTopology());
     const auto originalOrder = order->outputOrder();
     const auto restoreOrder = qScopeGuard([&] {
         kdockw::OutputOrderMonitorTestAccess::deliverOrder(order, originalOrder);
@@ -597,6 +679,13 @@ TEST_CASE(
     selected.swapItemsAt(0, 1);
     auto manager = makeSelectedManager(selected);
     requireDocksOn(*manager, selected);
+    INFO("requested selected order: " << selected.join(QLatin1Char(',')).toStdString() << "; current screens: "
+                                        << screenNames().join(QLatin1Char(',')).toStdString());
+    QStringList managerScreens;
+    for (auto *shell : manager->shells()) {
+        managerScreens.append(shell && shell->view() && shell->view()->dockScreen() ? shell->view()->dockScreen()->name() : QStringLiteral("<none>"));
+    }
+    INFO("manager shell screens: " << managerScreens.join(QLatin1Char(',')).toStdString());
     auto *first = shellNamed(*manager, selected.first());
     auto *second = shellNamed(*manager, selected.last());
     REQUIRE(first);

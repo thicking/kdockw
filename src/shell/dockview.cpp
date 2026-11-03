@@ -49,6 +49,7 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
     // LayerShellQt < 6.6 creates the platform window in Window::get(), and
     // QtWayland then re-derives screen() from the still-empty geometry.
     QScreen *targetScreen = screen();
+    m_dockScreen = targetScreen;
 
     // Configure the platform layer (LayerShellQt on Wayland)
     m_platform->setupWindow(this);
@@ -64,7 +65,13 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
     m_edge = edge;
 
     // Create visibility controller (manages show/hide logic for all modes)
-    m_visibilityController = new DockVisibilityController(m_platform.get(), tasksModel, virtualDesktopInfo, activityInfo, this, this);
+    m_visibilityController = new DockVisibilityController(m_platform.get(),
+                                                          tasksModel,
+                                                          virtualDesktopInfo,
+                                                          activityInfo,
+                                                          this,
+                                                          dockScreen(),
+                                                          this);
     m_visibilityController->setMode(visibilityMode);
 
     // Created once, before show(), so it already holds the compositor's
@@ -115,8 +122,8 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
 
     // React to screen changes (e.g. DPMS off/on replaces QScreen objects)
     connect(this, &QWindow::screenChanged, this, &DockView::handleScreenChanged);
-    if (screen()) {
-        m_screenGeometryConnection = connect(screen(), &QScreen::geometryChanged, this, &DockView::handleScreenGeometryChanged);
+    if (m_dockScreen) {
+        m_screenGeometryConnection = connect(m_dockScreen, &QScreen::geometryChanged, this, &DockView::handleScreenGeometryChanged);
     }
 
     // React to screen lock/unlock (QScreen object stays the same, so screenChanged doesn't fire)
@@ -200,6 +207,11 @@ TaskIconProvider *DockView::iconProvider() const
     return m_iconProvider;
 }
 
+QScreen *DockView::dockScreen() const
+{
+    return m_dockScreen ? m_dockScreen.data() : screen();
+}
+
 void DockView::bumpIconCacheVersion()
 {
     ++m_iconCacheVersion;
@@ -266,7 +278,7 @@ void DockView::updateSize()
     // vertical docks open it beside the panel, so the reserve must fit its full width.
     const int tooltipReserve = isVertical() ? std::max(s_tooltipReserve, m_sideTooltipReserve) : s_tooltipReserve;
     const int h = kdockw::surfaceHeight(iconSize, s_padding, maxZoom, tooltipReserve, floatingPadding());
-    const QRect screenGeo = screen() ? screen()->geometry() : QRect();
+    const QRect screenGeo = dockScreen() ? dockScreen()->geometry() : QRect();
 
     if (isVertical()) {
         // Vertical dock: h becomes width, screen height becomes height
@@ -299,6 +311,16 @@ int DockView::zoomOverflowHeight() const
 
 void DockView::handleScreenChanged(QScreen *newScreen)
 {
+    if (m_dockScreen && newScreen != m_dockScreen) {
+        // QtWayland can recompute QWindow::screen() from a layer surface's
+        // global geometry after output topology changes. The layer surface is
+        // still pinned to m_dockScreen; keep sizing and screen-bound behavior
+        // tied to that assigned output instead of migrating the dock state.
+        qCDebug(lcDockView) << "Ignoring QWindow screen reassignment; dock remains on:" << m_dockScreen->name()
+                            << "reported screen:" << (newScreen ? newScreen->name() : QStringLiteral("nullptr"));
+        return;
+    }
+
     // Disconnect from old screen's geometry signal
     disconnect(m_screenGeometryConnection);
 
@@ -308,9 +330,12 @@ void DockView::handleScreenChanged(QScreen *newScreen)
     }
 
     // Connect to new screen's geometry signal
-    m_screenGeometryConnection = connect(newScreen, &QScreen::geometryChanged, this, &DockView::handleScreenGeometryChanged);
+    m_screenGeometryConnection = connect(m_dockScreen ? m_dockScreen.data() : newScreen,
+                                         &QScreen::geometryChanged,
+                                         this,
+                                         &DockView::handleScreenGeometryChanged);
 
-    const QRect geo = newScreen->geometry();
+    const QRect geo = dockScreen()->geometry();
     qCDebug(lcDockView) << "Screen changed:" << newScreen->name() << "geometry=" << geo;
 
     // Skip recovery if geometry is invalid (placeholder screen during DPMS off)
@@ -340,11 +365,11 @@ void DockView::handleScreenChanged(QScreen *newScreen)
 
 void DockView::handleScreenGeometryChanged()
 {
-    if (!screen()) {
+    if (!dockScreen()) {
         return;
     }
 
-    const QRect geo = screen()->geometry();
+    const QRect geo = dockScreen()->geometry();
     qCDebug(lcDockView) << "Screen geometry changed:" << geo;
 
     if (geo.width() <= 0 || geo.height() <= 0) {

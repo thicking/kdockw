@@ -6,6 +6,7 @@
 #include "platform/dockplatform.h"
 #include "style/backgroundstyle.h"
 
+#include <QPointer>
 #include <QQuickView>
 #include <QVariant>
 
@@ -19,6 +20,7 @@ class VirtualDesktopInfo;
 }
 
 class KDockWSettings;
+class QScreen;
 
 namespace kdockw
 {
@@ -93,6 +95,9 @@ public:
     [[nodiscard]] DockPlatform *platform() const;
     [[nodiscard]] DockVisibilityController *visibilityController() const;
     [[nodiscard]] TaskIconProvider *iconProvider() const;
+    /// The output selected for this dock. On Wayland, QWindow::screen() may
+    /// be recomputed from surface geometry even when LayerShell stays pinned.
+    [[nodiscard]] QScreen *dockScreen() const;
 
     /// Dock zoom layout for QML (see kdockw::computeDockZoom).
     /// @p style is a kdockw::ZoomStyle int (0=Parabolic, 1=InPlace);
@@ -146,6 +151,7 @@ private Q_SLOTS:
 
 private:
     std::unique_ptr<DockPlatform> m_platform;
+    QPointer<QScreen> m_dockScreen;
     KDockWSettings *m_settings = nullptr;
     BackgroundEffectPlan m_backgroundEffectPlan;
     ScreenSettings *m_screenSettings = nullptr;

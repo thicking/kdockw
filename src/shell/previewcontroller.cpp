@@ -88,7 +88,7 @@ void PreviewController::initialize()
         // position must also land on the target output (layer-shell ignores
         // absolute position). The LayerShellQt-level screen is what
         // get_layer_surface() binds to.
-        if (auto *screen = m_dockView->screen()) {
+        if (auto *screen = m_dockView->dockScreen()) {
 #ifdef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
             // LayerShellQt < 6.6: get_layer_surface() binds QWindow::screen()
             // (ScreenFromQWindow), so the Qt-side screen below is the pin.
@@ -556,7 +556,7 @@ void PreviewController::applyEdgeLayout()
     const int zoomOverflow = static_cast<int>(std::ceil(m_settings->iconSize() * (m_settings->maxZoomFactor() - 1.0)));
     const int dockMargin = (dockReservesPanelBar ? 0 : m_dockView->panelBarHeight()) + zoomOverflow + 4;
 
-    const QRect screenGeo = m_dockView->screen() ? m_dockView->screen()->geometry() : QRect(0, 0, 1920, 1080);
+    const QRect screenGeo = m_dockView->dockScreen() ? m_dockView->dockScreen()->geometry() : QRect(0, 0, 1920, 1080);
 
     // Anchors: same edge as dock + stretch along that edge
     LayerShellQt::Window::Anchors anchors;
