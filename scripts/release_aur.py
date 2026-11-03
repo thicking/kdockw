@@ -81,6 +81,67 @@ def _replace_one(text: str, pattern: str, replacement: str, what: str) -> str:
     return new
 
 
+def _replace_pkgbuild_array(text: str, name: str, values: str) -> str:
+    """Replace one top-level bash array assignment without parsing comments as data.
+
+    PKGBUILD is a bash script, so arrays can span lines and contain quoted
+    parentheses or inline comments. This scanner balances the array delimiters
+    without executing PKGBUILD code.
+    """
+    assignment = re.compile(rf"^{re.escape(name)}[ \t]*=[ \t]*\(", re.MULTILINE)
+    matches = list(assignment.finditer(text))
+    if len(matches) != 1:
+        raise ReleaseError(
+            f"tagged PKGBUILD must define {name} array exactly once (found {len(matches)})"
+        )
+
+    match = matches[0]
+    open_paren = text.find("(", match.start(), match.end())
+    depth = 0
+    quote: str | None = None
+    escaped = False
+    comment = False
+    close_paren = None
+    for index in range(open_paren, len(text)):
+        char = text[index]
+        if comment:
+            if char == "\n":
+                comment = False
+            continue
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if quote:
+            if char == quote:
+                quote = None
+            continue
+        if char in ("'", '"'):
+            quote = char
+        elif char == "#":
+            comment = True
+        elif char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                close_paren = index
+                break
+
+    if close_paren is None:
+        raise ReleaseError(f"tagged PKGBUILD has an unterminated {name} array")
+
+    line_end = text.find("\n", close_paren)
+    if line_end < 0:
+        line_end = len(text)
+    suffix = text[close_paren + 1 : line_end].strip()
+    if suffix and not suffix.startswith("#"):
+        raise ReleaseError(f"tagged PKGBUILD has trailing syntax after {name} array")
+    return text[: match.start()] + f"{name}=({values})" + text[line_end:]
+
+
 def render_pkgbuild(
     template: str, *, version: str, source_url: str, sha256: str
 ) -> str:
@@ -98,15 +159,10 @@ def render_pkgbuild(
         raise ReleaseError(f"tagged PKGBUILD does not declare pkgname={PKGNAME}")
     text = _replace_one(template, r"^pkgver=.*$", f"pkgver={version}", "pkgver")
     text = _replace_one(text, r"^pkgrel=.*$", "pkgrel=1", "pkgrel")
-    text = _replace_one(
-        text,
-        r"^source=\(.*\)$",
-        f'source=("$pkgname-$pkgver.tar.gz::{source_url}")',
-        "a single-line source array",
+    text = _replace_pkgbuild_array(
+        text, "source", f'"$pkgname-$pkgver.tar.gz::{source_url}"'
     )
-    return _replace_one(
-        text, r"^sha256sums=\(.*\)$", f"sha256sums=('{sha256}')", "sha256sums"
-    )
+    return _replace_pkgbuild_array(text, "sha256sums", f"'{sha256}'")
 
 
 def parse_srcinfo(text: str) -> dict[str, list[str]]:

@@ -59,6 +59,44 @@ class RenderPkgbuildTest(unittest.TestCase):
         self.assertIn("\npkgrel=1\n", out)
         self.assertIn(f'source=("$pkgname-$pkgver.tar.gz::{URL}")', out)
         self.assertIn(f"sha256sums=('{SHA}')", out)
+        self.assertNotIn("SKIP", out)
+
+    def test_comment_after_checksum_array_is_not_treated_as_array_syntax(self) -> None:
+        out = release_aur.render_pkgbuild(
+            TEMPLATE, version="1.2.3", source_url=URL, sha256=SHA
+        )
+        self.assertIn(f"sha256sums=('{SHA}')", out)
+        self.assertNotIn("SKIP", out)
+        context = make_context()
+        release_aur.validate_generated_srcinfo(
+            srcinfo(
+                context.version,
+                source=release_aur.expected_source(context),
+                sha=context.sha256,
+            ),
+            context,
+        )
+
+    def test_multiline_array_and_quoted_parentheses_are_replaced(self) -> None:
+        multiline = TEMPLATE.replace(
+            "source=(\"$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$_pkgsrcver.tar.gz\")",
+            "source=(\n  \"old (source)\" # previous source\n)",
+        ).replace(
+            "sha256sums=('SKIP') # No independent KDockW release archive exists yet.",
+            "sha256sums=(\n  'SKIP' # temporary\n) # replaced during release",
+        )
+        out = release_aur.render_pkgbuild(
+            multiline, version="1.2.3", source_url=URL, sha256=SHA
+        )
+        self.assertIn(f'source=("$pkgname-$pkgver.tar.gz::{URL}")', out)
+        self.assertIn(f"sha256sums=('{SHA}')", out)
+        self.assertNotIn("SKIP", out)
+
+    def test_publication_renderer_rejects_missing_verified_sha256(self) -> None:
+        with self.assertRaises(ReleaseError):
+            release_aur.render_pkgbuild(
+                TEMPLATE, version="1.2.3", source_url=URL, sha256="SKIP"
+            )
 
     def test_preserves_dependencies_arch_license_and_functions(self) -> None:
         out = release_aur.render_pkgbuild(
