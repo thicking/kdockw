@@ -335,20 +335,24 @@ void PreviewController::doShow()
     // Reapply edge layout (margins may change with icon size / zoom)
     applyEdgeLayout();
 
-    if (!m_visible) {
+    const bool wasVisible = m_visible;
+    if (!wasVisible) {
         m_visible = true;
         // Surface is always pre-shown — no need to call show().
-        // Just update the input region to accept events in the popup area.
+        // Prepare its input region before notifying QML that the popup is
+        // visible. Otherwise AT-SPI can expose the popup while the Wayland
+        // surface still has its previous (hidden) input region.
 
         // Lock dock visibility while preview is open
         if (m_dockView->visibilityController()) {
             m_dockView->visibilityController()->setInteracting(true);
         }
-
-        Q_EMIT visibleChanged(true);
     }
 
     updateInputRegion();
+    if (!wasVisible) {
+        Q_EMIT visibleChanged(true);
+    }
 }
 
 void PreviewController::doHide()
