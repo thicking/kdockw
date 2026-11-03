@@ -11,12 +11,17 @@ import hashlib
 import html
 import io
 import json
+import os
 import shutil
+import struct
+import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
 import urllib.error
+import urllib.parse
+import zlib
 import zipfile
 from pathlib import Path
 from unittest import mock
@@ -42,6 +47,24 @@ PNG_LFS_POINTER = (
     + b"0" * 64
     + b"\nsize 1\n"
 )
+
+
+def fixture_png(width: int, height: int) -> bytes:
+    """Create a tiny valid PNG fixture with the requested pixel dimensions."""
+    color = bytes((width % 251, height % 251, (width + height) % 251))
+    rows = (b"\0" + color * width) * height
+
+    def chunk(kind: bytes, body: bytes) -> bytes:
+        checksum = zlib.crc32(kind + body) & 0xFFFFFFFF
+        return struct.pack(">I", len(body)) + kind + body + struct.pack(">I", checksum)
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows, 9))
+        + chunk(b"IEND", b"")
+    )
 
 
 def make_archive(
@@ -102,7 +125,19 @@ class ReleaseFixture(unittest.TestCase):
             for item in data["media"]:
                 target = source / item["source"]
                 target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(REPO / item["source"], target)
+                original = (REPO / item["source"]).read_bytes()
+                if original.startswith(prepare_submission_kit.LFS_PREFIX):
+                    # Unit tests use synthetic local PNG bytes. Pointer parsing
+                    # and real network retrieval are covered separately below.
+                    original = fixture_png(item["width"], item["height"])
+                target.write_bytes(original)
+                # Keep receipt assertions self-contained when this fixture
+                # substitutes synthetic bytes for a checked-in media file.
+                if "uploaded_sha256" in item:
+                    item["uploaded_sha256"] = hashlib.sha256(original).hexdigest()
+            (source / SCHEMA_DIR / schema.name).write_text(
+                json.dumps(data, indent=2) + "\n", encoding="utf-8"
+            )
         return source
 
     def context(
@@ -198,7 +233,9 @@ class SubmissionKitBoundaryTest(ReleaseFixture):
         source = self.tmp / "bare-source"
         source.mkdir()
         context = self.context("9.8.7", make_archive("9.8.7"), source)
-        built = build_kit(context, self.tmp / "out" / "kit")
+        installed = self.tagged_source()
+        with mock.patch.object(prepare_submission_kit, "ROOT", installed):
+            built = build_kit(context, self.tmp / "out" / "kit")
         self.assertEqual(
             built["kit"]["templates"],
             {"source": "installed-fallback", "human_review_required": True},
@@ -345,7 +382,7 @@ class TaggedLfsMediaTest(ReleaseFixture):
     MEDIA_URL = f"https://media.githubusercontent.com/media/thicking/kdockw/{COMMIT}/"
 
     def pointerize(self, root: Path) -> dict[str, bytes]:
-        """Replace every template media file under ``root`` with its LFS pointer."""
+        """Pointerize only paths that are LFS objects in the checked-in tree."""
         payloads: dict[str, bytes] = {}
         for channel in CHANNELS:
             data = json.loads(
@@ -354,7 +391,10 @@ class TaggedLfsMediaTest(ReleaseFixture):
             for item in data["media"]:
                 if item["source"] in payloads:
                     continue
-                payload = (REPO / item["source"]).read_bytes()
+                checked_in = (REPO / item["source"]).read_bytes()
+                if not checked_in.startswith(prepare_submission_kit.LFS_PREFIX):
+                    continue
+                payload = (root / item["source"]).read_bytes()
                 payloads[item["source"]] = payload
                 (root / item["source"]).write_bytes(lfs_pointer_bytes(payload))
         return payloads
@@ -400,8 +440,20 @@ class TaggedLfsMediaTest(ReleaseFixture):
 
         built = build_kit(context, self.tmp / "out" / "kit")
 
+        stage = Path(context.work_dir) / LFS_STAGING
+        staged_hashes = {path.name for path in stage.iterdir()}
+        first_source_by_hash: dict[str, str] = {}
+        for source_path, payload in payloads.items():
+            first_source_by_hash.setdefault(
+                hashlib.sha256(payload).hexdigest(), source_path
+            )
+        used_pointers = [
+            source_path
+            for digest, source_path in first_source_by_hash.items()
+            if digest in staged_hashes
+        ]
         self.assertEqual(
-            sorted(requested), sorted(self.MEDIA_URL + rel for rel in payloads)
+            sorted(requested), sorted(self.MEDIA_URL + rel for rel in used_pointers)
         )
         self.assertEqual(built["kit"]["templates"]["source"], "tagged-source")
         for channel in CHANNELS:
@@ -419,12 +471,9 @@ class TaggedLfsMediaTest(ReleaseFixture):
             )
         self.assertEqual(self.snapshot(source), source_before)
         self.assertEqual(Path(context.archive).read_bytes(), archive_before)
-        stage = Path(context.work_dir) / LFS_STAGING
         self.assertEqual(
             sorted(path.name for path in stage.iterdir()),
-            sorted(
-                hashlib.sha256(payload).hexdigest() for payload in payloads.values()
-            ),
+            sorted(hashlib.sha256(payloads[rel]).hexdigest() for rel in used_pointers),
         )
 
         # Read-only helpers reuse the verified stage without another request.
@@ -518,7 +567,19 @@ class TaggedLfsMediaTest(ReleaseFixture):
         with mock.patch.object(prepare_submission_kit, "ROOT", installed):
             built = build_kit(context, self.tmp / "out" / "kit")
         self.assertEqual(built["kit"]["templates"]["source"], "installed-fallback")
-        self.assertEqual(len(requested), len(payloads))
+        stage = Path(context.work_dir) / LFS_STAGING
+        staged_hashes = {path.name for path in stage.iterdir()}
+        first_source_by_hash: dict[str, str] = {}
+        for source_path, payload in payloads.items():
+            first_source_by_hash.setdefault(
+                hashlib.sha256(payload).hexdigest(), source_path
+            )
+        used_pointers = [
+            source_path
+            for digest, source_path in first_source_by_hash.items()
+            if digest in staged_hashes
+        ]
+        self.assertEqual(len(requested), len(used_pointers))
         for channel in CHANNELS:
             for item in built["submissions"][channel]["media"]:
                 self.assertEqual(
@@ -565,6 +626,57 @@ class TaggedLfsMediaTest(ReleaseFixture):
         ):
             status = release_stores.launchpad_status(context)
         self.assertEqual(status["status"], "already_published", status)
+
+
+@unittest.skipUnless(
+    os.environ.get("KDOCKW_TEST_REAL_LFS") == "1",
+    "set KDOCKW_TEST_REAL_LFS=1 to download and verify real Git LFS objects",
+)
+class RealLfsDownloadIntegrationTest(unittest.TestCase):
+    """Opt-in network integration; deterministic unit tests above never fetch media."""
+
+    def test_current_commit_lfs_objects_download_and_match_pointer(self) -> None:
+        commit = subprocess.check_output(
+            ["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True
+        ).strip()
+        seen: set[str] = set()
+        downloaded = 0
+        with tempfile.TemporaryDirectory(prefix="kdockw-real-lfs-") as tmp:
+            pointer_path = Path(tmp) / "pointer"
+            for channel in CHANNELS:
+                schema = json.loads(
+                    (REPO / SCHEMA_DIR / f"{channel}.json").read_text("utf-8")
+                )
+                for item in schema["media"]:
+                    rel = item["source"]
+                    if rel in seen:
+                        continue
+                    seen.add(rel)
+                    pointer = subprocess.check_output(
+                        ["git", "-C", str(REPO), "show", f"{commit}:{rel}"]
+                    )
+                    pointer_path.write_bytes(pointer)
+                    parsed = prepare_submission_kit.lfs_pointer(
+                        pointer_path, f"{channel} media {rel}"
+                    )
+                    if parsed is None:
+                        continue
+                    oid, size = parsed
+                    url = (
+                        f"{prepare_submission_kit.LFS_MEDIA_BASE}/thicking/kdockw/"
+                        f"{commit}/{urllib.parse.quote(rel)}"
+                    )
+                    payload = prepare_submission_kit.fetch_lfs_object(url, oid, size)
+                    downloaded += 1
+                    self.assertEqual(len(payload), size, rel)
+                    self.assertEqual(hashlib.sha256(payload).hexdigest(), oid, rel)
+                    media_path = Path(tmp) / "download.png"
+                    media_path.write_bytes(payload)
+                    prepare_submission_kit.validate_png(
+                        media_path, item["width"], item["height"], rel
+                    )
+        self.assertTrue(seen, "submission schemas contain no media")
+        self.assertGreater(downloaded, 0, "commit contains no Git LFS media to verify")
 
 
 class StoreReceiptLifecycleTest(ReleaseFixture):
