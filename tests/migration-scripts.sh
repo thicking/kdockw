@@ -28,8 +28,17 @@ CONFIG
 chmod 640 "$config_dir/kremarc"
 cp -- "$config_dir/kremarc" "$temp_root/original"
 
-env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" PATH="$bin_dir:$PATH" \
-    "$source_dir/scripts/migrate-krema-config.sh"
+run_as_config_user() {
+    if [[ ${EUID:-$(id -u)} -eq 0 ]]; then
+        chown -R nobody:nobody "$temp_root"
+        runuser -u nobody -- env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" \
+            PATH="$bin_dir:$PATH" "$@"
+    else
+        env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" PATH="$bin_dir:$PATH" "$@"
+    fi
+}
+
+run_as_config_user "$source_dir/scripts/migrate-krema-config.sh"
 cmp -s "$temp_root/original" "$config_dir/kremarc"
 cmp -s "$config_dir/kremarc" "$config_dir/kdockwrc"
 [[ "$(stat -c '%a' "$config_dir/kdockwrc")" == 640 ]]
@@ -38,16 +47,14 @@ backup_file="$(find "$state_dir/kdockw/migrations" -name kdockwrc-migrated -prin
 cmp -s "$config_dir/kdockwrc" "$backup_file"
 
 printf '[General]\nIconSize=72\n' >"$config_dir/kdockwrc"
-if env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" PATH="$bin_dir:$PATH" \
-    "$source_dir/scripts/migrate-krema-config.sh"; then
+if run_as_config_user "$source_dir/scripts/migrate-krema-config.sh"; then
     echo "Migration unexpectedly overwrote an existing KDockW config." >&2
     exit 1
 fi
 grep -q 'IconSize=72' "$config_dir/kdockwrc"
 
 backup_dir="$(dirname "$backup_file")"
-env HOME="$home" XDG_CONFIG_HOME="$config_dir" XDG_STATE_HOME="$state_dir" PATH="$bin_dir:$PATH" \
-    "$source_dir/scripts/rollback-kdockw-config.sh" "$backup_dir"
+run_as_config_user "$source_dir/scripts/rollback-kdockw-config.sh" "$backup_dir"
 cmp -s "$temp_root/original" "$config_dir/kremarc"
 grep -q 'IconSize=72' "$config_dir/kdockwrc"
 
