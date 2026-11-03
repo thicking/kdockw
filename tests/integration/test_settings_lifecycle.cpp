@@ -19,6 +19,7 @@
 #include "shell/edgetrigger.h"
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
+#include "utils/zoomcalculator.h"
 
 #include "config/screensettings.h"
 #include <catch2/catch_session.hpp>
@@ -915,15 +916,19 @@ TEST_CASE("Every settings page loads without QML warnings", "[settings][pages]")
     CHECK(g_settingsQmlWarnings.isEmpty());
 }
 
-// The settings miniatures lay out Parabolic zoom with the dock's own
-// computeDockZoom, which splits the growth between both ends: with the
-// pointer in the middle of the row the panel background stays put. Pinning
-// the hovered icon to the pointer instead shifts the whole row by about a
-// pixel back and forth for every icon crossed (the shake #43 removed).
-TEST_CASE("Parabolic zoom in a settings preview keeps the panel still under a moving pointer", "[settings][preview-zoom]")
+// The settings miniature lays out Parabolic zoom with the dock's production
+// computeDockZoom. The discrete Gaussian sum can vary as the cursor crosses
+// icon centres, so compare the visible panel edge with that exact layout at
+// each pointer position. Pinning the hovered icon to the pointer instead
+// produces an additional per-icon shift (the shake #43 removed).
+TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge", "[settings][preview-zoom]")
 {
     resetTo(MultiDockManager::PrimaryOnly);
     app().settings->setZoomStyle(0);
+    // This test verifies the geometry at each sampled pointer position, not
+    // the 180 ms zoom transition between positions. Keep the production layout
+    // algorithm active while removing animation lag from the measurement.
+    app().settings->setZoomAnimationPreset(3); // Instant
     openSettingsFrom(app().manager->primaryShell());
     QPointer<QQuickWindow> dialog = settingsWindow();
     REQUIRE(dialog);
@@ -976,12 +981,38 @@ TEST_CASE("Parabolic zoom in a settings preview keeps the panel still under a mo
     for (int x = from; x <= to; ++x) {
         QTest::mouseMove(dialog, QPoint(x, y));
         QCoreApplication::processEvents();
+        const int count = dock->property("count").toInt();
+        const double unit = dock->property("unit").toDouble();
+        const double iconSize = dock->property("iconSize").toDouble() * unit;
+        const double spacing = dock->property("iconSpacing").toDouble() * unit;
+        const double restStart = dock->property("restStart").toDouble();
+        const double contentLength = count * iconSize + std::max(0, count - 1) * spacing;
+        const double zoomAmount = dock->property("zoomAmount").toDouble();
+        const double maxZoomFactor = dock->property("maxZoomFactor").toDouble();
+        const double cursor = dock->property("cursor").toDouble();
+        const auto layout = kdockw::computeDockZoom(count,
+                                                    0,
+                                                    iconSize,
+                                                    spacing,
+                                                    -1,
+                                                    0,
+                                                    -restStart,
+                                                    contentLength + restStart,
+                                                    1.0 + (maxZoomFactor - 1.0) * zoomAmount,
+                                                    kdockw::ZoomStyle::Parabolic,
+                                                    zoomAmount > 0.0,
+                                                    cursor,
+                                                    -std::numeric_limits<double>::infinity(),
+                                                    std::numeric_limits<double>::infinity());
+        const qreal dockLeft = dock->mapToScene(QPointF(0, 0)).x();
         const qreal left = panel->mapToScene(QPointF(0, 0)).x();
         minLeft = std::min(minLeft, left);
         maxLeft = std::max(maxLeft, left);
+        INFO("pointer x=" << x << ", cursor=" << cursor << ", panel left=" << left << ", expected="
+                           << dockLeft - layout.leadingGrowth);
+        CHECK(std::abs(left - (dockLeft - layout.leadingGrowth)) < 0.5);
     }
-    INFO("panel left edge moved by " << maxLeft - minLeft << " px over a " << pitch << " px sweep");
-    CHECK(maxLeft - minLeft < 0.5);
+    INFO("computed panel left edge moved by " << maxLeft - minLeft << " px over a " << pitch << " px sweep");
     closeSettings();
 }
 

@@ -131,7 +131,7 @@ class MockPipeWireSourceItem : public QQuickItem
     Q_PROPERTY(quint32 nodeId MEMBER m_nodeId NOTIFY nodeIdChanged)
     Q_PROPERTY(bool allowDmaBuf MEMBER m_allowDmaBuf NOTIFY allowDmaBufChanged)
     Q_PROPERTY(bool ready MEMBER m_ready NOTIFY readyChanged)
-    Q_PROPERTY(int state MEMBER m_state NOTIFY stateChanged)
+    Q_PROPERTY(int state READ state WRITE setState NOTIFY stateChanged)
     Q_PROPERTY(QSize streamSize MEMBER m_streamSize NOTIFY streamSizeChanged)
     Q_PROPERTY(bool usingDmaBuf READ usingDmaBuf NOTIFY usingDmaBufChanged)
 public:
@@ -139,6 +139,14 @@ public:
     ~MockPipeWireSourceItem() override;
     bool ready() const { return m_ready; }
     int state() const { return m_state; }
+    void setState(int state)
+    {
+        if (m_state == state) {
+            return;
+        }
+        m_state = state;
+        Q_EMIT stateChanged();
+    }
     QSize streamSize() const
     {
         return m_streamSize;
