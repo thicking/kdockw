@@ -104,12 +104,37 @@ def _park(kdockw: KDockW) -> tuple[int, int]:
         (20, env.SCREEN_HEIGHT - 20),
         (env.SCREEN_WIDTH - 20, env.SCREEN_HEIGHT - 20),
     ]
-    point = next((p for p in candidates if not any(rect.contains(*p) for rect in occupied)), None)
-    assert point is not None, f"no neutral pointer position outside surfaces {occupied}"
+    # KWin can report the preview surface's previous width briefly while a
+    # grouped popup is being hidden or resized. Avoid parking just beyond that
+    # stale edge: the popup may already have grown into that point, in which
+    # case the move re-enters it and its hover hold keeps it open. Keep a
+    # generous logical-pixel margin around both surfaces and the current popup.
+    margin = 64
+    point = next(
+        (
+            p
+            for p in candidates
+            if not any(
+                rect.x - margin <= p[0] < rect.x + rect.width + margin
+                and rect.y - margin <= p[1] < rect.y + rect.height + margin
+                for rect in occupied
+            )
+        ),
+        None,
+    )
+    assert point is not None, (
+        f"no neutral pointer position outside surfaces (with {margin}px margin): {occupied}"
+    )
     inp.move(*point)
     wait_until(lambda: kwin.cursor_pos() == point, message="native pointer parked outside dock/preview")
     wait_until(lambda: not kdockw.preview_visible(), message="preview hidden before measuring rest")
-    _record(kdockw, "pointer-park", native_cursor=kwin.cursor_pos(), occupied=[rect._asdict() for rect in occupied])
+    _record(
+        kdockw,
+        "pointer-park",
+        native_cursor=kwin.cursor_pos(),
+        occupied=[rect._asdict() for rect in occupied],
+        safety_margin=margin,
+    )
     return point
 
 
