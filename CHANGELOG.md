@@ -24,6 +24,7 @@ carried forward from the Krema-based development period.
 - Fixed the About page so its description, copyright, and author roles follow
   the selected KDockW language while the page is open. The settings search hint
   now follows the same language choice instead of Plasma's locale.
+- Fixed RPM packages so they include the compiled KI18n translation catalogs.
 - Fixed the language selector popup so all three options are visible, and
   restored the General page's access to the shared settings singleton. Language
   choices now save after user selection, persist across page navigation and

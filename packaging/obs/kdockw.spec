@@ -116,3 +116,4 @@ previews via PipeWire, and deep integration with KDE Plasma desktop.
 %endif
 %{_datadir}/metainfo/com.thicking.kdockw.metainfo.xml
 %{_datadir}/icons/hicolor/*/apps/com.thicking.kdockw.*
+%{_datadir}/locale/*/LC_MESSAGES/kdockw.mo
