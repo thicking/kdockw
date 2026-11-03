@@ -493,7 +493,7 @@ def test_icon009_drag_ghost_uses_raw_client_artwork(
         )
 
 
-@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND))
+@pytest.mark.kdockwrc({**kdockwrc(KWRITE, KFIND), "SeparateLaunchers": False})
 def test_dnd_004_drag_released_outside_dock_keeps_order(kdockw: KDockW, apps: TestWindows) -> None:
     alpha = open_active_window(apps, "Alpha")  # unpinned window task
     scene = Scene.capture(kdockw, [KWRITE, KFIND, "Alpha"])

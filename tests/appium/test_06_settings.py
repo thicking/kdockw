@@ -588,6 +588,15 @@ def test_set004_acrylic_background_applies_live(kdockw: KDockW, apps: TestWindow
     open_page(kdockw, "Panel Style")
     assert card_names(kdockw, "Style") == ["Panel Inherit", "Transparent", "Tinted", "Acrylic"]
     assert current_card(kdockw, "Style") == "Tinted"
+    pick(kdockw, "Style", "Panel Inherit")
+    wait_until(lambda: config_value(kdockw, "BackgroundStyle") == "0", message="kdockwrc BackgroundStyle=0")
+    inp.move(W - 20, H // 3)
+
+    def inherited_panel():
+        px = panel_band(kdockw, "style-panel-inherit")
+        return px if len(set(px)) <= 3 else None
+
+    inherited = wait_until(inherited_panel, timeout=5, message="flat Panel Inherit color before enabling Acrylic")
     pick(kdockw, "Style", "Acrylic")
     wait_until(lambda: config_value(kdockw, "BackgroundStyle") == "3", message="kdockwrc BackgroundStyle=3")
     inp.move(W - 20, H // 3)
@@ -602,7 +611,7 @@ def test_set004_acrylic_background_applies_live(kdockw: KDockW, apps: TestWindow
         timeout=5,
         message="acrylic noise grain on the dock panel",
     )
-    m0, m1 = mean(before), mean(after)
+    m0, m1 = mean(inherited), mean(after)
     assert max(abs(a - b) for a, b in zip(m0, m1)) < 16, f"acrylic tint should keep the panel colour: {m0} -> {m1}"
     assert settings_windows(kdockw), "style change must not close Settings"
 
