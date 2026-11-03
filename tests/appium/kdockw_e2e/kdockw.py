@@ -310,7 +310,11 @@ class KDockW:
 
     def preview_visible(self) -> bool:
         el = self.preview_popup()
-        return bool(el is not None and has_state(el, "showing") and el.rect["width"] > 0)
+        # The popup role does not consistently expose AT-SPI Component on
+        # every Qt/KF build. Its `showing` state is the visibility oracle;
+        # requesting WebDriver `rect` here can raise NotImplementedError even
+        # while the popup and its thumbnails are visibly on screen.
+        return bool(el is not None and has_state(el, "showing"))
 
     def thumbnails(self) -> list[WebElement]:
         """Thumbnail buttons of the preview popup (name = window title)."""

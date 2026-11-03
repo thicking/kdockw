@@ -594,7 +594,7 @@ AT-SPI lookup (XPath tags are role names with `_`: `tool_bar`, `button`,
 | `item(name)`, `wait_for_item(name, timeout=10)`, `wait_for_no_item(name, timeout=10)` | One dock item by accessible name. |
 | `focused_item() -> str \| None` | Name of the item with the `focused` state. |
 | `wait_keyboard_focus(surface="dock")` | Wait until KWin gives the surface keyboard focus (its window is KWin's active window). Call it before the first key after entering keyboard navigation: the `focused` state appears before KWin applies the layer surface's keyboard interactivity, and an earlier key goes to the previously active window. |
-| `preview_popup()`, `preview_visible() -> bool`, `thumbnails() -> list` | Preview `[popup menu]` (always in the tree, 0x0 while hidden) and its thumbnail buttons (name = window title). |
+| `preview_popup()`, `preview_visible() -> bool`, `thumbnails() -> list` | Preview `[popup menu]` (always in the tree, zero-sized while hidden; visibility uses `showing` because some Qt/KF popup roles do not expose AT-SPI Component) and its thumbnail buttons (name = window title). |
 | `settings() -> WebElement \| None` | The Settings window frame (`SETTINGS_XPATH`). |
 | `page_source() -> str` | Whole tree as XML. |
 | `has_state(element, state) -> bool` (module function) | `focused`, `showing`, `visible`, `focusable`, `sensitive`, `active`, ... |
