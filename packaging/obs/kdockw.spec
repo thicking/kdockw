@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 Name:           kdockw
-Version:        0.1.0
-Release:        0.dev%{?dist}
+Version:        0.1.0~dev
+Release:        1%{?dist}
 Summary:        A lightweight dock for KDE Plasma 6
 
 License:        GPL-3.0-or-later AND MIT-CMU

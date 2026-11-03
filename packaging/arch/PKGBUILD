@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 pkgname=kdockw
-pkgver=0.1.0_dev
-pkgsrcver=${pkgver//_/-}
+pkgver=0.1.0_pre
+_pkgsrcver=${pkgver/_pre/-dev}
 pkgrel=1
 pkgdesc='A lightweight dock for KDE Plasma 6 — spiritual successor to Latte Dock'
 arch=('x86_64' 'aarch64')
@@ -42,11 +42,11 @@ makedepends=(
     'gcc>=14'
     'qt6-shadertools'
 )
-source=("$pkgname-$pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$pkgsrcver.tar.gz")
+source=("$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$_pkgsrcver.tar.gz")
 sha256sums=('SKIP') # No independent KDockW release archive exists yet.
 
 build() {
-    cmake -S "$pkgname-$pkgsrcver" -B build \
+    cmake -S "$pkgname-$_pkgsrcver" -B build \
         -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr \
@@ -57,6 +57,6 @@ build() {
 package() {
     DESTDIR="$pkgdir" cmake --install build
     # MIT-CMU is not one of Arch's common licenses, so its text must ship.
-    install -Dm644 "$pkgname-$pkgver/LICENSES/MIT-CMU.txt" \
+    install -Dm644 "$pkgname-$_pkgsrcver/LICENSES/MIT-CMU.txt" \
         "$pkgdir/usr/share/licenses/$pkgname/MIT-CMU.txt"
 }

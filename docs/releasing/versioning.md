@@ -25,9 +25,15 @@ Package formats use their own spelling for this prerelease:
 | Format | Development version | Rule |
 | --- | --- | --- |
 | AppStream | `0.1.0-dev` | Keep the product version and mark `type="development"`. |
-| Arch | `0.1.0_dev` | Arch `pkgver` does not accept a hyphen; map the SemVer prerelease separator to `_`. |
-| RPM | `0.1.0` plus `0.dev` release | RPM stores the numeric core in `Version` and the prerelease in `Release`. |
+| Arch | `0.1.0_pre` | Arch rejects hyphens in `pkgver`; `_pre` is a recognized prerelease suffix and sorts before the stable version. The source tag keeps `-dev`. |
+| RPM | `0.1.0~dev` | RPM accepts `~` in `Version` and sorts the prerelease before the stable version. |
 | Debian | `0.1.0~dev-1` | `~dev` sorts before the eventual `0.1.0` release; `-1` is the Debian revision. |
+
+These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/PKGBUILD.5),
+[RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html), and
+[Debian Policy](https://www.debian.org/doc/debian-policy/policy.pdf). AppStream's
+`development` release type and required date follow its
+[release metadata specification](https://www.freedesktop.org/software/appstream/docs/sect-Metadata-Releases.html).
 
 These are metadata mappings, not evidence of published or validated binary
 packages. The development recipes point at the future `v0.1.0-dev` source tag;
