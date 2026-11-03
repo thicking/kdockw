@@ -71,6 +71,7 @@ SIDEBAR = SETTINGS_PAGES_XPATH
 SETTINGS_TITLE = "Settings — KDockW"
 COLOR_DIALOG = "//frame[@name='Choose tint color']"
 PAGES = [
+    "General",
     "Icons",
     "Layout & Position",
     "Panel Style",
@@ -435,7 +436,10 @@ def test_set001_settings_opens_once_with_formcard_controls_and_keeps_dock_shown(
     assert len(app_windows_after) == len(app_windows_before) + 1
     assert win.title == SETTINGS_TITLE and win.normal_window
     # Sidebar pages in order, Icons shown by default.
-    wait_until(lambda: [e.get_attribute("name") for e in kdockw.find_all(SIDEBAR)] == PAGES, message="sidebar pages")
+    wait_until(
+        lambda: [e.get_attribute("name") for e in sorted(kdockw.find_all(SIDEBAR), key=lambda e: e.rect["y"])] == PAGES,
+        message="sidebar pages",
+    )
     assert current_page(kdockw) == "Icons"
     assert kdockw.find(f"{SETTINGS}//{PAGE_ROLE}[@name='Icons']") is not None
     # FormCard widgets exposed with labels.
