@@ -71,3 +71,20 @@ endif()
 if(NOT debian_source MATCHES "DEBTRANSFORM-TAR: kdockw-${KDOCKW_VERSION}\\.tar\\.gz")
     message(FATAL_ERROR "Debian source archive name does not match KDOCKW_VERSION")
 endif()
+
+# The distro build harness must name/extract the source using the canonical
+# CMake version, not package-manager-specific versions such as 0.1.0_pre or
+# 0.1.0~dev. RPM Source0 uses a separate v-prefixed basename.
+file(READ "${SOURCE_DIR}/tests/distro/build-package.sh" distro_build)
+file(READ "${SOURCE_DIR}/tests/distro/source-version.sh" source_version_helper)
+file(READ "${SOURCE_DIR}/tests/distro/pkg/rpm-build.sh" rpm_build)
+string(FIND "${distro_build}" "source_version \"\$repo_root/CMakeLists.txt\"" source_version_call)
+if(source_version_call EQUAL -1 OR distro_build MATCHES "package_version")
+    message(FATAL_ERROR "Distro build harness must use the canonical source_version")
+endif()
+if(NOT source_version_helper MATCHES "KDOCKW_VERSION" OR NOT source_version_helper MATCHES "awk")
+    message(FATAL_ERROR "Distro source version must come from the root CMakeLists.txt")
+endif()
+if(NOT rpm_build MATCHES "SOURCES/v\\$\\{KDOCKW_VERSION\\}\\.tar\\.gz")
+    message(FATAL_ERROR "RPM source archive basename must match the spec Source0 URL")
+endif()

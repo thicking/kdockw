@@ -13,6 +13,9 @@ set(files
     packaging/obs/kdockw.spec
     packaging/obs/kdockw.dsc
     packaging/obs/debian.changelog
+    tests/distro/build-package.sh
+    tests/distro/source-version.sh
+    tests/distro/pkg/rpm-build.sh
 )
 file(REMOVE_RECURSE "${FIXTURE_DIR}")
 foreach(file IN LISTS files)

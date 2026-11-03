@@ -76,20 +76,12 @@ host_arch="$(uname -m)"
 # Source tarball
 # ---------------------------------------------------------------------------
 
-# package_version <family> -> version string defined by the packaging files
-package_version() {
-    case "$1" in
-        fedora|suse)
-            awk '/^Version:[[:space:]]*/ { print $2; exit }' \
-                "$packaging_dir/obs/kdockw.spec" ;;
-        debian)
-            sed -n '1s/^kdockw (\(.*\)) .*/\1/p' "$packaging_dir/obs/debian.changelog" \
-                | cut -d- -f1 ;;
-        arch)
-            awk -F= '/^pkgver=/ { print $2; exit }' "$packaging_dir/arch/PKGBUILD" ;;
-        *) return 1 ;;
-    esac
-}
+# source_version -> canonical version used by CMake and the source tree.
+# Package managers have different version syntax (for example, Arch uses
+# 0.1.0_pre and RPM/Debian use 0.1.0~dev). Those forms must never name the
+# source archive or extracted source directory.
+# shellcheck source=tests/distro/source-version.sh
+. "$script_dir/source-version.sh"
 
 # make_source_tarball <version> <dest-dir> -> writes kdockw-<version>.tar.gz
 # The file set mirrors what OBS tar_scm produces (the git tree). git metadata
@@ -206,8 +198,8 @@ for target in "${targets[@]}"; do
     fi
     family="$DISTRO_FAMILY"
 
-    if ! version="$(package_version "$family")" || [[ -z "$version" ]]; then
-        echo "error: cannot determine package version for family '$family'" >&2
+    if ! version="$(source_version "$repo_root/CMakeLists.txt")" || [[ -z "$version" ]]; then
+        echo "error: cannot determine canonical source version from CMakeLists.txt" >&2
         results[$target]="no-version"
         continue
     fi
