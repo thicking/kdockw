@@ -170,8 +170,8 @@ source-built kdockw. Four workflows are involved:
   `kwin_wayland --virtual` with an out-of-tree vgem (`setup-vgem.sh`;
   GitHub's Azure kernel ships no vgem, so the module for the runner kernel
   comes from ghcr.io, or is built in the job on a kernel ci-images.yml has
-  not seen). The suite runs sharded in three containers
-  (`KDOCKW_E2E_SHARDS=3`, `KDOCKW_E2E_SHARD` above). The `fedora-43` and
+  not seen). The suite runs sharded in two containers
+  (`KDOCKW_E2E_SHARDS=2`, `KDOCKW_E2E_SHARD` above). The `fedora-43` and
   `ubuntu-26.04` entries also run two-output SET-008 and SET-012 cases, then
   the three-output SET-012 subset/shortcut case, reusing the installed
   package image. Each leg writes

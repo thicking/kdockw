@@ -41,8 +41,10 @@
 # harness is tests/distro. tests/unit, qml, kwin, integration and e2e
 # (scenario docs) and Markdown are never used here.
 #
-# The suite runs sharded in three (KDOCKW_E2E_SHARDS=3;
-# tests/distro/run-distro-e2e.sh), all shards' JUnit files feed the summary.
+# The suite runs sharded in two (KDOCKW_E2E_SHARDS=2;
+# tests/distro/run-distro-e2e.sh), limiting concurrent KWin/AT-SPI sessions
+# per runner while still distributing the full collection. All shards' JUnit
+# files feed the summary.
 # A thumbnail whose PipeWire buffer set arrives untyped (an upstream
 # PipeWire/KWin race that load makes likelier; see tests/appium/kdockw_e2e/
 # preview.py) is renegotiated once by the preview oracle and reported as a
@@ -201,7 +203,7 @@ jobs:
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }})
         id: main
         env:
-          KDOCKW_E2E_SHARDS: "3"
+          KDOCKW_E2E_SHARDS: "2"
           KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
         run: tests/distro/run-distro-e2e.sh "$TARGET" -rs
 
