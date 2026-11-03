@@ -152,3 +152,30 @@ The code changes are limited to the isolated capture diagnostic mode and its
 tests; the staged-install script was separately corrected to keep its test
 installation inside the build tree. Automated mocks/software rendering cannot
 confirm cross-GPU DMA-BUF import or visible pixels in the user's Plasma session.
+
+## Follow-up: full CTest remediation (2026-11-03)
+
+The three remaining CTest failures from the earlier run were investigated on
+the development build and corrected. This follow-up supersedes the earlier
+“78/81 with two remaining failures” status above; that earlier result remains
+as a record of the Phase 2 run.
+
+| Test | Cause | Correction | Result |
+| --- | --- | --- | --- |
+| `kdockw_integration_tests` | The settings-preview assertion expected the panel background's left edge to remain fixed while parabolic zoom changed its leading growth. The test sampled a discrete zoom layout but compared it to a static-edge expectation. | Kept the 0.5 px coordinate tolerance and compared each sampled panel edge to the production `computeDockZoom()` result using the live QML inputs. Set the animation preset to Instant so the test measures layout, not the 180 ms transition. | Passed in 3/3 consecutive isolated runs. |
+| `kdockw_selected_output_tests` | After a virtual-output geometry update, QtWayland reported `QWindow::screen()` as `Virtual-1` while LayerShell remained bound to the selected `Virtual-0`. Production code then used the derived screen for dock sizing, dodge geometry, and preview placement. | `DockView` now retains its assigned output as the dock screen. Dock sizing, visibility geometry, and preview anchoring use that assigned screen; selected-output checks inspect the actual LayerShell output. | Passed in 3/3 consecutive isolated runs and in the full suite. |
+| `qml_tst_preview_popup` | The PipeWire test mock exposed `state` as a read-only `MEMBER` property although the QML under test sets it. The mock `PipeWireTracker` singleton registration also did not resolve in this QML test engine. | Made the mock state writable with a notifying setter and registered the shared tracker through a singleton provider with C++ ownership. | Passed in 3/3 consecutive isolated runs and in the full suite. |
+
+The full development CTest suite passed **82/82** tests (174.77 s). Each of the
+three formerly failing tests also passed three consecutive isolated runs.
+Release configure and build passed; the development preset build passed.
+The suite includes desktop-entry/XDG-autostart, KI18n, capture-mode persistence,
+preview, and multi-monitor checks. `clang-format` was not available in this
+environment, so its formatter could not be run.
+
+These automated KWin tests use a private virtual Wayland compositor. They do
+not replace a manual check in the user's Plasma session. In particular, the
+multi-monitor geometry change, visible CPU/DMA-BUF thumbnail rendering, and
+interactive drag-and-drop have not been manually rechecked on real hardware as
+part of this follow-up. No application installation, service change, or user
+session modification was performed.
