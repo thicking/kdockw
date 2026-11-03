@@ -30,6 +30,11 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v6
+        # Pages must be enabled once in repository settings with an admin
+        # token; GITHUB_TOKEN cannot create the site. This workflow only reads
+        # the existing configuration and deploys the explicitly assembled site.
+        with:
+          enablement: false
 
       - name: Assemble site
         shell: bash
