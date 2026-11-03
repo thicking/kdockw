@@ -63,16 +63,18 @@ ROOT = Path(__file__).resolve().parent.parent
 
 USER_AGENT = "kdockw-distro-release-watch (https://github.com/thicking/kdockw)"
 HTTP_TIMEOUT = 20  # seconds
+COPR_PROJECT_MISSING = False
+PPA_PROJECT_MISSING = False
 
 EOL_API = "https://endoflife.date/api/{distro}.json"
 OBS_META_API = "https://api.opensuse.org/public/source/{project}/_meta"
 COPR_PROJECT_API = (
     "https://copr.fedorainfracloud.org/api_3/project"
-    "?ownername=isac322&projectname=kdockw"
+    "?ownername=thicking&projectname=kdockw"
 )
 COPR_CHROOTS_API = "https://copr.fedorainfracloud.org/api_3/mock-chroots/list"
 LP_SOURCES_API = (
-    "https://api.launchpad.net/devel/~isac322/+archive/ubuntu/kdockw"
+    "https://api.launchpad.net/devel/~thicking/+archive/ubuntu/kdockw"
     "?ws.op=getPublishedSources&source_name=kdockw"
 )
 LP_SERIES_API = "https://api.launchpad.net/devel/ubuntu/series"
@@ -117,12 +119,18 @@ def fmt_version(key: tuple[int, ...]) -> str:
 # ---------------------------------------------------------------------------
 
 
-def fetch_json(url: str, what: str) -> object | None:
-    """GET JSON; return None (and warn) on any failure."""
+def fetch_json(url: str, what: str, *, missing_ok: bool = False) -> object | None:
+    """GET JSON; optionally classify a missing optional project separately."""
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
             return json.load(resp)
+    except urllib.error.HTTPError as e:
+        if missing_ok and e.code == 404:
+            warn(f"{what} is not configured yet (HTTP 404)")
+            return {"_not_configured": True}
+        warn(f"failed to fetch {what} ({url}): {e}")
+        return None
     except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
         warn(f"failed to fetch {what} ({url}): {e}")
         return None
@@ -174,10 +182,14 @@ def tracked_versions(repo_names: set[str], prefix: str) -> set[tuple[int, ...]]:
 
 
 def fetch_copr_tracked() -> set[tuple[int, ...]] | None:
-    """Fedora versions with a chroot enabled on the thicking/krema COPR project."""
-    data = fetch_json(COPR_PROJECT_API, "COPR project info")
+    """Fedora versions with a chroot enabled on the thicking/kdockw COPR project."""
+    global COPR_PROJECT_MISSING
+    data = fetch_json(COPR_PROJECT_API, "COPR project info", missing_ok=True)
     if data is None:
         return None
+    if isinstance(data, dict) and data.get("_not_configured"):
+        COPR_PROJECT_MISSING = True
+        return set()
     versions = set()
     for name in data.get("chroot_repos", {}):
         m = re.fullmatch(r"fedora-(\d+)-\w+", name)
@@ -229,9 +241,13 @@ def fetch_lp_series() -> LaunchpadInfo | None:
 
 def fetch_ppa_tracked(lp: LaunchpadInfo) -> set[tuple[int, ...]] | None:
     """Ubuntu versions with published kdockw sources in the PPA."""
-    data = fetch_json(LP_SOURCES_API, "Launchpad published sources")
+    global PPA_PROJECT_MISSING
+    data = fetch_json(LP_SOURCES_API, "Launchpad published sources", missing_ok=True)
     if data is None:
         return None
+    if isinstance(data, dict) and data.get("_not_configured"):
+        PPA_PROJECT_MISSING = True
+        return set()
     versions = set()
     for entry in data.get("entries", []):
         # distro_series_link ends with the series codename, e.g. ".../questing"
@@ -353,15 +369,22 @@ def detect(repo_names: set[str]) -> tuple[list[Gap], list[str], bool]:
     Waiting gaps are missing releases the channel does not offer yet; they
     are only logged.
     """
+    global COPR_PROJECT_MISSING, PPA_PROJECT_MISSING
+    COPR_PROJECT_MISSING = False
+    PPA_PROJECT_MISSING = False
     obs_fedora = tracked_versions(repo_names, "Fedora_")
     obs_ubuntu = tracked_versions(repo_names, "xUbuntu_")
     obs_debian = tracked_versions(repo_names, "Debian_")
     obs_leap = tracked_versions(repo_names, "openSUSE_Leap_")
 
     copr_tracked = fetch_copr_tracked()
-    copr_available = fetch_copr_available()
+    copr_available = set() if COPR_PROJECT_MISSING else fetch_copr_available()
     lp = fetch_lp_series()
-    ppa_tracked = fetch_ppa_tracked(lp) if lp is not None else None
+    ppa_tracked = (
+        fetch_ppa_tracked(lp)
+        if lp is not None and not PPA_PROJECT_MISSING
+        else (set() if PPA_PROJECT_MISSING else None)
+    )
 
     eol_fedora = eol_candidates("fedora")
     eol_ubuntu = eol_candidates("ubuntu")
@@ -471,7 +494,7 @@ def detect(repo_names: set[str]) -> tuple[list[Gap], list[str], bool]:
         lambda _ver, vstr: (
             f"chroots `fedora-{vstr}-x86_64`, `fedora-{vstr}-aarch64`"
         ),
-        "enable the chroots in the thicking/krema COPR project settings, "
+        "enable the chroots in the thicking/kdockw COPR project settings, "
         "then rebuild the latest release into them",
     )
 

@@ -37,6 +37,6 @@ pkgbase = kdockw
 	depends = pipewire
 	depends = wayland>=1.22
 	source = kdockw-0.1.0.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v0.1.0.tar.gz
-	sha256sums = SKIP
+	sha256sums = 2c9604d3d13a676b69dca7a57f5403172ef87af0dd6b2b6408fc69f248b555bd
 
 pkgname = kdockw

@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from release_common import ReleaseContext, ReleaseError, command, http_json, result
+from release_common import HttpError, ReleaseContext, ReleaseError, command, http_json, result
 
 PACKAGE = "kdockw"
 
@@ -778,6 +778,14 @@ def _copr_package(owner: str, project: str) -> dict:
     return data
 
 
+def _copr_project(owner: str, project: str) -> dict:
+    query = urllib.parse.urlencode({"ownername": owner, "projectname": project})
+    data = http_json(f"{COPR_API}/project?{query}")
+    if not isinstance(data, dict) or not isinstance(data.get("name"), str):
+        raise ReleaseError("unexpected COPR project response")
+    return data
+
+
 def _copr_builds(owner: str, project: str) -> list[dict]:
     query = urllib.parse.urlencode(
         {
@@ -809,6 +817,14 @@ def _copr_build_config(cache: dict[int, dict], build_id: int) -> dict:
 
 def _copr_evaluate(ctx: ReleaseContext) -> tuple[dict, CoprPlan]:
     owner, project = _copr_names(ctx)
+    try:
+        _copr_project(owner, project)
+    except HttpError as exc:
+        if exc.status == 404:
+            raise _Blocked(
+                f"COPR project {owner}/{project} does not exist yet. Create the project and its KDockW SCM package in the owner's COPR account, then retry; no package was submitted."
+            ) from None
+        raise
     package = _copr_package(owner, project)
     builds = _copr_builds(owner, project)
     cache: dict[int, dict] = {}
@@ -845,9 +861,13 @@ def _copr_dispatch(ctx: ReleaseContext, package: dict, plan: CoprPlan) -> list[i
     if not shutil.which("copr-cli"):
         raise _Blocked("copr-cli is not available")
     try:
-        command(["copr-cli", "whoami"], timeout=COPR_TIMEOUT)
+        account = command(["copr-cli", "whoami"], timeout=COPR_TIMEOUT).strip()
     except ReleaseError as e:
         raise _Blocked(f"copr-cli is not authenticated: {e}") from None
+    if account != owner:
+        raise _Blocked(
+            f"copr-cli is authenticated as {account!r}, but the configured project owner is {owner!r}; verify the maintainer's FAS account and project ownership before publishing"
+        )
 
     if plan.needs_edit:
         source = package["source_dict"]

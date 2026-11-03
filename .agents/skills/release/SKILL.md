@@ -67,13 +67,13 @@ Then check the local credentials the release CLI uses; there are no CI secrets. 
 | GitHub | `gh auth status` shows `thicking` |
 | AUR | `ssh -o BatchMode=yes -o StrictHostKeyChecking=yes aur@aur.archlinux.org help` succeeds |
 | OBS | `osc api /about` succeeds (`osc` may run as `uvx --from osc osc`) |
-| COPR | `copr-cli whoami` prints `isac322` |
-| PPA | Docker can run `linux/arm64` or `linux/amd64` Ubuntu images (or the host has `dpkg-dev`, `devscripts`, `debhelper`), and the signing key above is the one Launchpad has for `~isac322` (below) |
+| COPR | `copr-cli whoami` is the FAS account that owns `thicking/kdockw`; verify it independently because GitHub and FAS usernames need not match |
+| PPA | PPA `thicking/kdockw` exists and the signing key above is registered on Launchpad account `~thicking` |
 
 ```bash
 KEY=90798370719E91DDE1D5028AAA660B7C5AB258E7
 echo ok | gpg --batch --pinentry-mode error --local-user "$KEY" --clearsign >/dev/null && echo "signing ok"
-keys=$(curl -s https://api.launchpad.net/devel/~isac322 | jq -r .gpg_keys_collection_link)
+keys=$(curl -s https://api.launchpad.net/devel/~thicking | jq -r .gpg_keys_collection_link)
 curl -s "$keys" | jq -r '.entries[].fingerprint' | grep -qx "$KEY" && echo "Launchpad key matches"
 ```
 
@@ -167,12 +167,12 @@ Never move or re-push a pushed tag. Every command re-checks the tag against the 
 
 ## 5. GitHub release notes
 
-Search engines index release pages, so write them for users. `prepare` writes `notes.md` as the release banner (when the tagged tree has `branding/social/release-banner.png`) followed by the tagged CHANGELOG `## [x.y.z]` section body, verbatim. The lead sentence is the paragraph directly under that heading, before the first `###`; `prepare` does not write one for you. So write the CHANGELOG section to these rules in section 3. Read the keyword tiers in `marketing/strategy.md` and the previous release (`gh release view <previous tag>`) for style.
+Search engines index release pages, so write them for users. `prepare` writes `notes.md` as the existing KDockW website artwork (`website/og-image.png`, when present in the tagged tree) followed by the tagged CHANGELOG `## [x.y.z]` section body, verbatim. The lead sentence is the paragraph directly under that heading, before the first `###`; `prepare` does not write one for you. So write the CHANGELOG section to these rules in section 3. Read the keyword tiers in `marketing/strategy.md` and the previous release (`gh release view <previous tag>`) for style.
 
 The resulting `notes.md`:
 
 ```markdown
-![KDockW release notes](https://media.githubusercontent.com/media/thicking/kdockw/main/branding/social/release-banner.png)
+![KDockW release notes](https://media.githubusercontent.com/media/thicking/kdockw/main/website/og-image.png)
 
 KDockW vx.y.z <one or two sentences on the user-facing value, with primary keywords such as "KDE Plasma 6 dock", "Wayland", "parabolic zoom">.
 
@@ -252,7 +252,7 @@ python3 scripts/release_rpm.py prepare-obs --context "$CTX" --output "$(mktemp -
 
 `release_ppa.py prepare` takes `--series NAME` (repeatable) to limit the build to target series. It signs locally with the pinned key and uploads nothing.
 
-Before building, the PPA adapter downloads any `kdockw_X.Y.Z.orig.tar.gz` the PPA already holds for that upstream version and compares it with the context's archive. Launchpad rejects a second orig tarball with different bytes, so a mismatch makes `prepare` and `publish` return `blocked` and nothing is built or sent. This check always runs; there is no switch to skip it, and the fix is never to repackage or re-version the orig. `release.py prepare` reuses the published GitHub source bytes when the tag already has a release, which is what keeps the check passing for versions that predate this tooling: v0.10.0 was published before the named asset existed, so its context archive is the tag's GitHub source archive, which is byte-identical to the orig the PPA already holds. `blocked` therefore means the upstream source genuinely differs, and the remedies are to use a context built from the published bytes or to release a new upstream version.
+When a KDockW PPA exists, the adapter checks any existing orig tarball for the target upstream version against the verified context archive before building. It never overwrites mismatching source bytes. The configured KDockW PPA does not currently exist, so status and publish planning stop as `blocked` before build or upload.
 
 ### Channel rules
 
@@ -260,35 +260,35 @@ These are enforced by the adapters; know them when reading a `blocked` or `faile
 
 - **GitHub** (`scripts/release_github.py`): creates the release for the existing tag as a draft, downloads the exact green Distro E2E package artifacts, and uploads `kdockw-X.Y.Z.tar.gz`, one target-labelled binary package per target, and `SHA256SUMS` covering all files. Every package manifest binds the bytes to the tag commit, canonical version, target, and package format. A retry resumes a draft whose notes and target commit match the context exactly (reported as `planned` before `--execute`); any other draft for the tag is `blocked` and is never edited or deleted, so publish or delete it by hand. If the published release or an asset already exists, its hash must match the context or the channel fails; when only assets are missing, `--execute` uploads them from the verified context without editing the release title, body or existing assets. GitHub has no compare-and-swap for tags, so a tag moved after the last check is detected only by the post-publication check, which fails the channel with `remote tag vX.Y.Z moved during publication`; stop and report it to the user as an integrity problem. The context's `source_url` is this asset (`https://github.com/thicking/kdockw/releases/download/vX.Y.Z/kdockw-X.Y.Z.tar.gz`), so `release.py` refuses `--execute` for any other channel until the source and package assets are verified.
 - **AUR** (`scripts/release_aur.py`): stages the tagged `packaging/arch/PKGBUILD` in scratch, sets `pkgver`, the source URL and `sha256sums` from the context, regenerates `.SRCINFO` with `makepkg --printsrcinfo` (in an `archlinux` container on the Mac), and pushes to `ssh://aur@aur.archlinux.org/kdockw.git` over BatchMode SSH with strict host keys. It never edits the checkout and no longer uses `git subtree`. An identical remote state means `already_published`.
-- **OBS** (`scripts/release_rpm.py`, `home:isac322/kdockw`): uploads only `_service`, `kdockw.spec`, `kdockw.dsc`, `debian.changelog`, `debian.control`, `debian.rules` and `debian.copyright` from the tag, with `_service`'s `revision` pinned to the tag instead of `main`. `project.config`, `project.meta.xml` and `apply-project-config.sh` configure the OBS project and are never uploaded, and no repository is removed. Uses the existing `osc` configuration through `uvx --from osc osc`.
-- **COPR** (`scripts/release_rpm.py`, `isac322/kdockw`): points the SCM package `kdockw` at the tag (`packaging/obs/kdockw.spec`) and starts a build unless one for that version and tag already succeeded or is running. Never changes chroots or webhooks. COPR deletes EOL Fedora chroots on its own. Those releases keep building on OBS; don't remove their OBS target or README row.
-- **Launchpad PPA** (`scripts/release_ppa.py`, `ppa:isac322/kdockw`): uploads one source package per active Ubuntu series that ships Qt ≥ 6.8 (25.10 or later), queried from Launchpad rather than hardcoded, because Launchpad rejects uploads to Obsolete series. The version is `x.y.z-<debrev>~ppa1~<series>1`, with `<debrev>` taken from the top `debian.changelog` entry. Sources are built in an Ubuntu container, signed with the pinned key (the private key never leaves the local keyring), and uploaded. A series that already has that exact version, pending or published, is skipped; the revision is never bumped automatically. A packaging-only respin needs a new `debian.changelog` revision and therefore a new release commit and tag.
+- **OBS** (`scripts/release_rpm.py`, `home:thicking/kdockw`): uploads only `_service`, `kdockw.spec`, `kdockw.dsc`, `debian.changelog`, `debian.control`, `debian.rules` and `debian.copyright` from the tag, with `_service`'s `revision` pinned to the tag instead of `main`. `project.config`, `project.meta.xml` and `apply-project-config.sh` configure the OBS project and are never uploaded, and no repository is removed. Uses the existing `osc` configuration through `uvx --from osc osc`.
+- **COPR** (`scripts/release_rpm.py`, `thicking/kdockw`): targets the KDockW SCM package `kdockw` at the tag (`packaging/obs/kdockw.spec`). This project has not been created; status reports `blocked` with setup instructions until the owner creates it and confirms the matching Fedora account. The adapter never edits chroots or webhooks.
+- **Launchpad PPA** (`scripts/release_ppa.py`, `ppa:thicking/kdockw`): targets the KDockW PPA; it has not been created. Status reports `blocked` until the owner creates and activates it and registers the signing key on `~thicking`. Once configured, it uploads per-series Ubuntu source packages using Launchpad's current uploadable series and the Debian package revision.
 
 A series or chroot the platform rejects is reported per channel as `blocked` with the platform's reason. That is a platform action under the Distribution Support Policy, not a reason to remove the target anywhere else.
 
 ## 7. Stores, branding and catalogs
 
-Every channel KDockW is already on, and what a version release needs there:
+Current destinations and known verification state:
 
 | Channel | Destination | Per-release action | Mode |
 |---|---|---|---|
 | GitHub Release | https://github.com/thicking/kdockw/releases | Release, source archive, target packages, `SHA256SUMS` | CLI (`release.py publish`) |
-| AUR | https://aur.archlinux.org/packages/kdockw | New `PKGBUILD`/`.SRCINFO` | CLI (`release.py publish`) |
-| OBS | https://build.opensuse.org/package/show/home:isac322/kdockw | Updated package sources | CLI (`release.py publish`) |
-| COPR | https://copr.fedorainfracloud.org/coprs/isac322/kdockw/ | Build of the tag | CLI (`release.py publish`) |
-| Launchpad PPA | https://launchpad.net/~isac322/+archive/ubuntu/kdockw | Signed source upload per series | CLI (`release.py publish`) |
-| KDE Store (mirrored on OpenDesktop, Pling, LinuxApps.org) | https://store.kde.org/p/2376676 | Update the version and source download on the existing listing | `browser_required` until the public OCS record shows this version and the archive's MD5 |
-| AlternativeTo | https://alternativeto.net/software/kdockw/ | Make the existing listing's description match this packet; most releases change nothing there | `browser_required` until a public read shows the packet's description and the Latte Dock relationship |
-| Launchpad project branding | https://launchpad.net/kdockw | None. Icon, logo and brand image are static | Status only |
+| AUR | https://aur.archlinux.org/packages/kdockw | Package absent in the last public RPC check; blocked until maintainer creates it | CLI (`release.py publish`) |
+| OBS | https://build.opensuse.org/package/show/home:thicking/kdockw | Correct target configured; unauthenticated public check was inconclusive | CLI (`release.py publish`) |
+| COPR | https://copr.fedorainfracloud.org/coprs/thicking/kdockw/ | Project absent; blocked until created under the verified FAS owner | CLI (`release.py publish`) |
+| Launchpad PPA | https://launchpad.net/~thicking/+archive/ubuntu/kdockw | Signed source upload per series; blocked until the owner creates the PPA and registers the key | CLI (`release.py publish`) |
+| KDE Store | Not configured for KDockW; record `2376676` belongs to Krema and must not be edited | No publication task until a KDockW listing is separately authorized and configured | `blocked` |
+| AlternativeTo | https://alternativeto.net/software/kdockw/ | Public inspection returned HTTP 403; listing identity and owner remain unverified | `blocked` until verified and configured |
+| Launchpad project | https://launchpad.net/kdockw | No KDockW project or PPA exists; old Krema resources are not targets | `blocked` until separately created |
 | GitHub repository branding | Social preview and About section | None. Static | Status only |
 | Awesome KDE | https://github.com/francoism90/awesome-kde/pull/24 (open) | None. One-time list entry waiting on the maintainer | Status only |
 | Awesome Wayland | https://github.com/rcalixte/awesome-wayland/pull/109 (open) | None. One-time list entry waiting on the maintainer | Status only |
 | Nixpkgs | https://github.com/NixOS/nixpkgs/pull/570731 (open) | None from this tooling. Version updates after merge go through nixpkgs' own update process | Status only |
 | LinuxLinks | https://www.linuxlinks.com/ | None. Submitted 2026-10-06 with a correction request about its AI-use answer; listing and correction not yet verified | Status only |
 | Repology | https://repology.org/project/kdockw/versions | None. Indexes the AUR by itself (other repositories not yet established) | No action; not covered by `release_stores.py` |
-| Flathub | — | None. Blocked by Flathub's AI policy (`packaging/submissions/flathub-research.md`); never author or submit a manifest or PR | Blocked |
+| Flathub | — | None. Blocked by Flathub's AI policy (`docs/history/flathub-krema-research.md`); never author or submit a manifest or PR | Blocked |
 
-Static branding is not re-uploaded and catalog entries are not re-registered on version bumps. Only the version-specific packet (version number, source archive from the context, hash, changelog text) is regenerated. The schemas in the tagged `packaging/submissions/` use version tokens that the kit fills from the context, so a normal release needs no schema edit. If the tagged tree lacks them, the kit falls back to the installed copies and sets `human_review_required` in `kit.json`; have a person confirm the feature claims before using that packet. After the browser work, record the outcome with `release_stores.py record` (table above).
+Only verified destinations may receive a per-release update. The schemas in the tagged `packaging/submissions/` are local metadata and do not prove a remote listing exists. If the tagged tree lacks them, the kit falls back to installed copies and sets `human_review_required` in `kit.json`; have a person confirm the feature claims before using that packet. The KDE Store adapter blocks record 2376676 because it is Krema's listing; the Launchpad schema remains `proposed-project` until KDockW has a separately authorized destination.
 
 Tagged media are Git LFS files, so the extracted source tree holds pointers. The kit resolves each referenced pointer into a separate stage, `work_dir/submission-kit-lfs/`, fetching the object from the tagged commit on `media.githubusercontent.com` without credentials and checking it against the pointer's SHA-256 and size. Only verified bytes are copied into the packet; the source tree and the context archive stay untouched, and any missing or mismatching object stops the kit. `release_stores.py prepare` is still a dry run as defined under Tools: it writes only inside its output and work directories and sends nothing to any store.
 
@@ -298,28 +298,25 @@ python3 scripts/release_stores.py prepare --context "$CTX" --output "$STORES"
 python3 scripts/release_stores.py status --context "$CTX"
 ```
 
-Hand `$STORES/BROWSER-TASKS.md` and `$STORES/kit/` to the browser playbook. Every task in it is `browser_required`; the one-time catalogs are listed with their status, not resubmitted.
+Review `$STORES/BROWSER-TASKS.md` and `$STORES/kit/` against current public state. A blocked task is not an instruction to create or edit a project. The one-time catalogs are listed with their status, not resubmitted.
 
-KDE Store and AlternativeTo have no stable write API we can use, so their updates are browser work: follow [`references/browser-publication.md`](references/browser-publication.md) with the prepared packet. It uses the existing logged-in sessions; never export session cookies or invent an API.
+KDE Store and AlternativeTo have no stable write API we can use. The current KDE Store record is Krema and is blocked; AlternativeTo's listing identity is unverified after HTTP 403. Neither channel creates browser tasks that authorize publication until a separately authorized KDockW destination has been verified. Never export session cookies or invent an API.
 
 The browser work goes through the same CLI state and receipts, which are bound to the tag, commit, source hash and packet content:
 
 ```bash
-python3 scripts/release_stores.py record --context "$CTX" --packet "$STORES" --store kde-store --state start
-# browser update per the playbook, then one of:
-python3 scripts/release_stores.py record --context "$CTX" --packet "$STORES" --store kde-store --state published
-python3 scripts/release_stores.py record --context "$CTX" --packet "$STORES" --store kde-store --state pending --reference "$MODERATION_REF"
-python3 scripts/release_stores.py record --context "$CTX" --store kde-store --state abort
+python3 scripts/release_stores.py record --context "$CTX" --packet "$STORES" --store alternativeto --state start
+# A KDockW KDE Store record is not configured; record rejects the Krema record.
 ```
 
 `MODERATION_REF` is the submission or moderation reference the store showed. The same commands apply with `--store alternativeto`.
 
 - `start` takes the lock. It is refused while another session holds the lock, while a `pending` receipt exists, or when this exact packet content is already recorded as published. Every call except `abort` first re-verifies the whole packet against its `SHA256SUMS`, `kit.json` and the context.
 - `pending` needs `--reference`. It needs the lock or an existing pending receipt for the same content, writes the pending receipt and releases the lock. Repeating it replaces the reference and keeps the history.
-- `published` needs the lock or a pending receipt for the same content, then reads the public store before writing anything. KDE Store: the OCS record must show this version and a file whose MD5 matches the archive. AlternativeTo: the listing must return HTTP 200 for the existing item, contain every description paragraph from the packet, and the Latte Dock page must link to `/software/kdockw/`. On any mismatch it refuses. If AlternativeTo answers 403, it refuses too; record `pending` instead. `--reference` here accepts only the canonical listing URL, which is also the default.
+- `published` needs the lock or a pending receipt for the same content, then reads the public store before writing anything. AlternativeTo: the listing must return HTTP 200 for the intended item, contain every description paragraph from the packet, and the Latte Dock page must link to `/software/kdockw/`. On any mismatch it refuses. If AlternativeTo answers 403, it refuses too; record `pending` instead. `--reference` here accepts only the canonical listing URL, which is also the default. KDE Store receipts are disabled while the configured ID belongs to Krema.
 - `abort` releases a lock taken for this tag, commit, source hash and store. Without a lock, it withdraws a pending receipt and then requires `--reference` with the evidence for the withdrawal; after that `start` is allowed again.
 
-`release_stores.py status` reads the same receipts. A held lock is `pending`. On the KDE Store, a live file with this release's filename but a different MD5 is `browser_required`, even while a receipt is pending. Otherwise a pending receipt is `pending`, and a public listing that matches this release is `already_published`. For the KDE Store, a verified `published` receipt also counts during OCS caching lag. For AlternativeTo, it counts only when the public page answers 403 and the receipt's description hash matches the packet. Everything else is `browser_required`. The listing merely existing never counts as published, and neither does a receipt the public read did not verify.
+`release_stores.py status` reports KDE Store as `blocked` because record 2376676 belongs to Krema. Launchpad and AlternativeTo remain `blocked` until their KDockW destinations are verified and configured. A 403 is not verification.
 
 New channels are not registered as part of a release. Candidate channels and their policy blockers are in [`references/channel-research.md`](references/channel-research.md); registering any of them is a separate task that needs the user's go-ahead.
 
@@ -329,7 +326,6 @@ Report the version, the release commit, the tag's commit and signer, the Distro 
 
 - https://github.com/thicking/kdockw/releases/tag/vx.y.z
 - https://aur.archlinux.org/packages/kdockw
-- https://copr.fedorainfracloud.org/coprs/isac322/kdockw/builds/
-- https://build.opensuse.org/package/show/home:isac322/kdockw
-- https://launchpad.net/~isac322/+archive/ubuntu/kdockw
-- https://store.kde.org/p/2376676 (state whether the browser update is done, pending moderation, or still `browser_required`)
+- https://copr.fedorainfracloud.org/coprs/thicking/kdockw/builds/
+- https://build.opensuse.org/package/show/home:thicking/kdockw
+- https://launchpad.net/~thicking/+archive/ubuntu/kdockw

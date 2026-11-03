@@ -330,7 +330,7 @@ jobs:
       - name: Delete untagged and superseded versions
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSIONS: /users/isac322/packages/container/kdockw-ci/versions
+          VERSIONS: /users/thicking/packages/container/kdockw-ci/versions
         run: |
           # Tags of the refs this tree computes: never deleted.
           keep="$(

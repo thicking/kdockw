@@ -43,7 +43,7 @@ makedepends=(
     'qt6-shadertools'
 )
 source=("$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$_pkgsrcver.tar.gz")
-sha256sums=('SKIP') # No independent KDockW release archive exists yet.
+sha256sums=('2c9604d3d13a676b69dca7a57f5403172ef87af0dd6b2b6408fc69f248b555bd')
 
 build() {
     cmake -S "$pkgname-$_pkgsrcver" -B build \

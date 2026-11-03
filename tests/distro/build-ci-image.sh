@@ -92,7 +92,7 @@ if ((pull)); then
     echo "[ci-image] $ref: not available for $want_platform, building locally" >&2
 fi
 
-label=(--label "org.opencontainers.image.source=https://github.com/isac322/krema")
+label=(--label "org.opencontainers.image.source=https://github.com/thicking/kdockw")
 # KDOCKW_CI_PUSH=1 (the publisher): also push the ref with zstd-compressed
 # layers. Consumers pull these multi-GB images on every job; zstd layers are
 # smaller and decompress several times faster than gzip, which is what a

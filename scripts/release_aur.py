@@ -32,6 +32,9 @@ import re
 import shutil
 import sys
 import tempfile
+import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -42,6 +45,7 @@ PKGNAME = "kdockw"
 AUR_HTTPS_URL = f"https://aur.archlinux.org/{PKGNAME}.git"
 AUR_SSH_URL = f"aur@aur.archlinux.org:{PKGNAME}.git"
 AUR_BRANCH = "master"
+AUR_RPC = "https://aur.archlinux.org/rpc/v5/info"
 PKGBUILD_PATH = Path("packaging/arch/PKGBUILD")
 
 # makepkg is absent on macOS; Arch only publishes amd64 images.
@@ -59,6 +63,26 @@ SSH_COMMAND = (
 _VERSION_RE = re.compile(r"^\d+(?:\.\d+)*$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _UNSAFE_URL_RE = re.compile(r"[\s\"'`$\\]")
+
+
+def _aur_package_exists() -> bool:
+    """Check the public AUR RPC before cloning a package that may not exist."""
+    url = f"{AUR_RPC}?{urllib.parse.urlencode({'arg[]': PKGNAME})}"
+    request = urllib.request.Request(
+        url, headers={"User-Agent": "KDockW-release/1.0", "Accept": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            data = json.load(response)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return False
+        raise ReleaseError(f"AUR RPC returned HTTP {exc.code}") from None
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as exc:
+        raise ReleaseError(f"AUR RPC could not be read: {exc}") from None
+    if not isinstance(data, dict) or not isinstance(data.get("resultcount"), int):
+        raise ReleaseError("AUR RPC returned an unexpected response")
+    return data["resultcount"] > 0
 
 
 # ---------------------------------------------------------------------------
@@ -378,6 +402,17 @@ def _push(clone: Path, context: ReleaseContext) -> str:
 
 def status(context: ReleaseContext) -> dict:
     """Read-only: compare the public AUR repository with the context."""
+    try:
+        if not _aur_package_exists():
+            return result(
+                CHANNEL,
+                "blocked",
+                "AUR package kdockw does not exist yet. The maintainer must create it in AUR before this release adapter can stage an update.",
+                version=context.version,
+                package=f"https://aur.archlinux.org/packages/{PKGNAME}",
+            )
+    except ReleaseError as exc:
+        return result(CHANNEL, "failed", str(exc), version=context.version)
     scratch = _scratch(context)
     try:
         try:
@@ -427,6 +462,18 @@ def publish(context: ReleaseContext, *, execute: bool = False) -> dict:
         tagged_pkgbuild(context)
     except ReleaseError as exc:
         return result(CHANNEL, "blocked", f"cannot stage PKGBUILD: {exc}")
+
+    try:
+        if not _aur_package_exists():
+            return result(
+                CHANNEL,
+                "blocked",
+                "AUR package kdockw does not exist yet. Create it in the maintainer's AUR account before publishing; no clone or push was attempted.",
+                version=context.version,
+                package=f"https://aur.archlinux.org/packages/{PKGNAME}",
+            )
+    except ReleaseError as exc:
+        return result(CHANNEL, "failed", str(exc), version=context.version)
 
     scratch = _scratch(context)
     url = AUR_SSH_URL if execute else AUR_HTTPS_URL

@@ -1,23 +1,10 @@
-KDockW is a standalone dock for KDE Plasma 6 on Wayland and a spiritual successor to Latte Dock. It combines pinned launchers and running applications in a native KDE desktop surface.
+KDockW is a compiled desktop dock for KDE Plasma 6 on Wayland. It combines pinned application launchers and running applications, with parabolic icon zoom, PipeWire window previews, configurable layout and multi-monitor support.
 
-Parabolic hover zoom enlarges the icon under the pointer and moves neighboring icons aside. An in-place zoom option and an adjustable zoom animation duration are also available. KDockW provides live window previews through PipeWire, notification badges, task progress indicators, grouped-window cycling and multi-window previews, and keyboard navigation with AT-SPI screen reader support.
-
-KDockW supports Primary Only, All Screens, Follow Active Screen, and Selected monitors modes, with per-screen dock settings and virtual desktop filtering. Independent left-click actions for single and grouped windows, screen-space reservation in Always visible mode, and separate pinned and running app sections are available alongside the Kirigami settings for dock size, zoom, appearance, visibility, and behavior. KDockW is built with C++23, Qt 6, and KDE Frameworks 6.
-
-KDockW is a compiled desktop application for KDE Plasma 6 on Wayland. It is not a Plasmoid, widget, KPackage, or Get New Widgets add-on, so it cannot be installed through Plasma's widget installer.
-
-Install from a public package channel:
-
-- Arch Linux and Manjaro: AUR, https://aur.archlinux.org/packages/kdockw
-- Fedora: COPR, https://copr.fedorainfracloud.org/coprs/thicking/krema/
-- openSUSE: OBS, https://build.opensuse.org/package/show/home:thicking/krema
-- Ubuntu: PPA, https://launchpad.net/~isac322/+archive/ubuntu/kdockw
-
-For a source build, follow the procedure in the {{tag}} README:
+KDockW is not a Plasmoid, widget, KPackage, or Get New Widgets add-on. Build it from source using the instructions in the release README:
 https://github.com/{{repository}}/blob/{{tag}}/README.md#build--run
 
-Contribution guidance is available at:
-https://github.com/{{repository}}/blob/{{tag}}/README.md#contributing
+The signed source archive and any verified packages for this release are available from:
+https://github.com/{{repository}}/releases/tag/{{tag}}
 
 Project links:
 
@@ -25,3 +12,4 @@ Project links:
 - Issue tracker: https://github.com/thicking/kdockw/issues
 - Source repository: https://github.com/thicking/kdockw
 
+KDockW is developed independently from Krema and preserves the original project's license and attribution to Byeonghoon Yoo.

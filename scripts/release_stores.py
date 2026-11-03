@@ -69,7 +69,7 @@ ALTERNATIVETO_ITEM = "9ea8dc3b-7a8b-4570-837f-9d9f2ef98af1"
 ALTERNATIVETO_URL = "https://alternativeto.net/software/kdockw/"
 ALTERNATIVETO_LATTE_URL = "https://alternativeto.net/software/latte-dock/"
 LAUNCHPAD_PROJECT_API = "https://api.launchpad.net/1.0/kdockw"
-LAUNCHPAD_OWNER = "https://api.launchpad.net/1.0/~isac322"
+LAUNCHPAD_OWNER = "https://api.launchpad.net/1.0/~thicking"
 LAUNCHPAD_BRANDING = (
     ("project-icon", "icon_link"),
     ("project-logo", "logo_link"),
@@ -242,7 +242,15 @@ def ocs_record() -> dict[str, str]:
     content = root.find("data/content")
     if content is None or content.findtext("id") != KDE_RECORD:
         raise ReleaseError(f"KDE OCS response is not content record {KDE_RECORD}")
-    return {child.tag: (child.text or "").strip() for child in content}
+    record = {child.tag: (child.text or "").strip() for child in content}
+    # Record 2376676 is the original Krema listing, not a KDockW destination.
+    # Keep its ID only as provenance so tooling fails closed if it is queried.
+    title = record.get("name", "").strip()
+    if title and title.casefold() != "kdockw":
+        raise ReleaseError(
+            f"KDE Store record {KDE_RECORD} is titled {title!r}; it is not a KDockW listing. Configure a separately authorized KDockW listing before using this channel."
+        )
+    return record
 
 
 def kde_observe(context: ReleaseContext) -> dict[str, str]:
@@ -280,6 +288,15 @@ def kde_observe(context: ReleaseContext) -> dict[str, str]:
 
 def kde_store_status(context: ReleaseContext) -> dict[str, Any]:
     extra: dict[str, Any] = {"record": KDE_RECORD, "listing_url": KDE_LISTING_URL}
+    try:
+        current = ocs_record()
+        title = current.get("name", "").strip()
+        if title and title.casefold() != "kdockw":
+            raise ReleaseError(
+                f"KDE Store record {KDE_RECORD} is titled {title!r}; it is not a KDockW listing. Configure a separately authorized KDockW listing before using this channel."
+            )
+    except ReleaseError as exc:
+        return result("kde-store", "blocked", str(exc), **extra)
     lock = read_lock(context, "kde-store")
     if lock is not None:
         return lock_pending("kde-store", lock, extra)
@@ -403,6 +420,15 @@ def alternativeto_observe(context: ReleaseContext) -> dict[str, Any]:
 
 
 def alternativeto_status(context: ReleaseContext) -> dict[str, Any]:
+    submissions, _, _ = load_submissions(context)
+    schema = submissions["alternativeto"][0]
+    if schema.get("submission", {}).get("target_status") == "proposed-project":
+        return result(
+            "alternativeto",
+            "blocked",
+            "AlternativeTo returned HTTP 403 during the infrastructure audit; KDockW listing identity, owner, and relationship are unverified. Verify the exact destination and update its schema before preparing or recording a publication.",
+            listing_url=ALTERNATIVETO_URL,
+        )
     extra = {
         "item_id": ALTERNATIVETO_ITEM,
         "listing_url": ALTERNATIVETO_URL,
@@ -459,12 +485,20 @@ def alternativeto_status(context: ReleaseContext) -> dict[str, Any]:
 def launchpad_status(context: ReleaseContext) -> dict[str, Any]:
     submissions, _, _ = load_submissions(context)
     schema = submissions["launchpad"][0]
+    if schema.get("submission", {}).get("target_status") == "proposed-project":
+        return result(
+            "launchpad",
+            "blocked",
+            "No KDockW Launchpad project or PPA is configured. The historical ~isac322/~krema resources belong to Krema; create separate KDockW resources only with maintainer authorization.",
+            project="kdockw",
+            owner="thicking",
+        )
     project = http_json(LAUNCHPAD_PROJECT_API)
     if not isinstance(project, dict):
         raise ReleaseError("Launchpad project resource is not an object")
     problems = []
     if project.get("name") != "kdockw" or project.get("owner_link") != LAUNCHPAD_OWNER:
-        problems.append("project name or owner differs from kdockw/~isac322")
+        problems.append("project name or owner differs from kdockw/~thicking")
     if project.get("information_type") != "Public":
         problems.append(f"information type is {project.get('information_type')!r}")
     media = {item["role"]: item for item in schema["media"]}
@@ -664,40 +698,24 @@ def browser_tasks(
     return [
         result(
             "kde-store",
-            "browser_required",
-            f"update existing record {KDE_RECORD} to {context.version} and replace its source download with {source['filename']}",
-            packet="kit/kde-store",
+            "blocked",
+            f"KDockW has no configured KDE Store listing. Record {KDE_RECORD} belongs to Krema and must not be edited; create a separate listing only after explicit authorization.",
             record=KDE_RECORD,
-            listing_url=KDE_LISTING_URL,
-            ocs_url=KDE_OCS_URL,
-            mirrors=list(KDE_MIRRORS),
-            sign_in="GitHub as isac322 first, then OpenDesktop 'Login with GitHub'",
             version=context.version,
             source_filename=source["filename"],
-            source_label=source["label"],
             source_sha256=tokens["source_sha256"],
             source_md5=archive_md5(context),
-            media=[item["filename"] for item in kde["media"]],
-            content_sha256=channel_content_sha256(kit_dir, "kde-store"),
-            templates=templates["source"],
             claims_review_required=templates["human_review_required"],
-            done_when=f"status --store kde-store reports already_published (OCS version {context.version}, {source['filename']} MD5 match)",
+            content_sha256=channel_content_sha256(kit_dir, "kde-store"),
         ),
         result(
             "alternativeto",
-            "browser_required",
-            "review the existing listing and Latte Dock relationship; edit only if the packet content differs from the last applied packet",
-            packet="kit/alternativeto",
-            item_id=ALTERNATIVETO_ITEM,
+            "blocked",
+            "AlternativeTo listing identity, owner, and relationship remain unverified after HTTP 403; verify the destination before preparing an update",
             listing_url=ALTERNATIVETO_URL,
-            relation_target=alt["relation"]["target_name"],
-            relation_url=alt["relation"]["entry_url"],
-            sign_in="existing AlternativeTo session in Camofox",
             content_sha256=channel_content_sha256(kit_dir, "alternativeto"),
             templates=templates["source"],
             claims_review_required=templates["human_review_required"],
-            conditional=True,
-            done_when="status --store alternativeto reports already_published (public listing shows this packet's description and item ID, Latte Dock page lists KDockW); otherwise record pending with the moderation reference",
         ),
     ]
 
@@ -707,8 +725,8 @@ def static_surfaces() -> list[dict[str, Any]]:
     return [
         result(
             "launchpad",
-            "not_applicable",
-            "static project branding is retained on version bumps; check with status",
+            "blocked",
+            "No KDockW Launchpad project or PPA is configured; create them only with separate maintainer authorization",
         ),
         result(
             "github",
@@ -740,7 +758,7 @@ def render_tasks_markdown(
         f"Release: `{release['repository']}` `{release['tag']}` at `{release['commit']}`.",
         f"Playbook: `{PLAYBOOK.as_posix()}` (sha256 `{playbook_sha}`). Follow it exactly; it covers sign-in, locks, idempotence, and moderation.",
         "",
-        "Every task below is `browser_required`. Nothing has been submitted. Run `release_stores.py status` first and skip a task that already reports `already_published` or `pending`.",
+        "The task status may be `blocked` or `browser_required`. Nothing has been submitted. Run `release_stores.py status` first and skip a task that already reports `already_published` or `pending`.",
         "",
     ]
     for task in tasks:
@@ -1088,6 +1106,15 @@ def record(
         )
     if state == "abort":
         return abort(context, store, reference)
+    if store in {"kde-store", "alternativeto"}:
+        reason = (
+            f"record {KDE_RECORD} belongs to Krema"
+            if store == "kde-store"
+            else "the AlternativeTo listing identity and owner are unverified"
+        )
+        raise ReleaseError(
+            f"KDockW {store} publication is blocked: {reason}; verify and configure a KDockW destination before creating receipts"
+        )
     if packet is None:
         raise ReleaseError(
             f"recording {state} requires --packet with the prepare output"

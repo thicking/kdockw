@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from release_common import (
+    HttpError,
     ReleaseContext,
     ReleaseError,
     command,
@@ -51,7 +52,7 @@ from release_common import (
 
 CHANNEL = "ppa"
 SOURCE_NAME = "kdockw"
-PPA_OWNER = "isac322"
+PPA_OWNER = "thicking"
 PPA_NAME = "kdockw"
 DISTRIBUTION = "ubuntu"
 PPA_REVISION = "ppa1"
@@ -850,8 +851,18 @@ def _summary(
 def status(context: ReleaseContext) -> dict:
     """Read-only per-series publication report."""
     try:
+        http_json(PPA_ARCHIVE_API)
         tagged = load_tagged_packaging(context)
         reports = _inspect(context, tagged)
+    except HttpError as exc:
+        if exc.status == 404:
+            return result(
+                CHANNEL,
+                "blocked",
+                f"PPA ppa:{PPA_OWNER}/{PPA_NAME} does not exist yet. Create and activate it in Launchpad, register the configured signing key, then retry; no package was uploaded.",
+                ppa=PPA_WEB,
+            )
+        return result(CHANNEL, "failed", str(exc), version=context.version)
     except ReleaseError as exc:
         return result(CHANNEL, "failed", str(exc), version=context.version)
     targets = [
@@ -1381,8 +1392,19 @@ def prepare(context: ReleaseContext, *, series: Sequence[str] | None = None) -> 
 def publish(context: ReleaseContext, *, execute: bool = False) -> dict:
     """Read-only plan (default), or build, sign and upload every missing target series."""
     try:
+        http_json(PPA_ARCHIVE_API)
         tagged = load_tagged_packaging(context)
         reports = _inspect(context, tagged)
+    except HttpError as exc:
+        if exc.status == 404:
+            return result(
+                CHANNEL,
+                "blocked",
+                f"PPA ppa:{PPA_OWNER}/{PPA_NAME} does not exist yet. Create and activate it in Launchpad, register the configured signing key, then retry; no package was uploaded.",
+                version=context.version,
+                ppa=PPA_WEB,
+            )
+        return result(CHANNEL, "failed", str(exc), version=context.version)
     except ReleaseError as exc:
         return result(CHANNEL, "failed", str(exc), version=context.version)
     missing = [r for r in reports if r["state"] == "missing"]
