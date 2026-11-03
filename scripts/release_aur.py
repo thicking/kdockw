@@ -309,23 +309,30 @@ def generate_srcinfo(stage_dir: Path) -> tuple[str, str]:
             "neither makepkg nor docker is available to generate .SRCINFO"
         )
     # makepkg refuses to run as root and requires a writable startdir/$BUILDDIR,
-    # so the host stage stays read-only at /src and makepkg runs on a private
-    # copy in the container's /tmp. The PKGBUILD is only parsed, never built.
+    # so it runs on a private copy in the container's /tmp. A separate
+    # world-readable snapshot is mounted read-only: the caller's stage is often
+    # a mode-0700 TemporaryDirectory, which the unprivileged container user
+    # cannot traverse. The PKGBUILD is only parsed, never built.
     script = (
         "set -eu; mkdir /tmp/pkg; cp /src/PKGBUILD /tmp/pkg/PKGBUILD; "
         "cd /tmp/pkg; exec makepkg --printsrcinfo"
     )
-    argv = [
-        "docker", "run", "--rm", "--pull", "missing", "--network", "none",
-        "--platform", ARCH_PLATFORM, "--user", "65534:65534", "--env", "HOME=/tmp",
-        "--env", "BUILDDIR=/tmp/pkg", "--env", "SRCDEST=/tmp/pkg", "--env", "PKGDEST=/tmp/pkg",
-        "--env", "SRCPKGDEST=/tmp/pkg", "--env", "LOGDEST=/tmp/pkg",
-        "--volume", f"{stage_dir.resolve()}:/src:ro", "--workdir", "/tmp",
-        ARCH_IMAGE, "sh", "-c", script,
-    ]  # fmt: skip
-    return command(
-        argv, timeout=SRCINFO_TIMEOUT
-    ), f"makepkg in {ARCH_IMAGE} ({ARCH_PLATFORM})"
+    with tempfile.TemporaryDirectory(prefix="kdockw-aur-srcinfo-") as tmp:
+        container_source = Path(tmp)
+        pkgbuild = container_source / "PKGBUILD"
+        shutil.copyfile(stage_dir / "PKGBUILD", pkgbuild)
+        os.chmod(container_source, 0o755)
+        os.chmod(pkgbuild, 0o644)
+        argv = [
+            "docker", "run", "--rm", "--pull", "missing", "--network", "none",
+            "--platform", ARCH_PLATFORM, "--user", "65534:65534", "--env", "HOME=/tmp",
+            "--env", "BUILDDIR=/tmp/pkg", "--env", "SRCDEST=/tmp/pkg", "--env", "PKGDEST=/tmp/pkg",
+            "--env", "SRCPKGDEST=/tmp/pkg", "--env", "LOGDEST=/tmp/pkg",
+            "--volume", f"{container_source}:/src:ro", "--workdir", "/tmp",
+            ARCH_IMAGE, "sh", "-c", script,
+        ]  # fmt: skip
+        text = command(argv, timeout=SRCINFO_TIMEOUT)
+    return text, f"makepkg in {ARCH_IMAGE} ({ARCH_PLATFORM})"
 
 
 def _commit_identity(clone: Path) -> tuple[str, str]:

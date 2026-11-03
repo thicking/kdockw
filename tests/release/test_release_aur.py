@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -197,6 +198,50 @@ class GeneratedSrcinfoTest(unittest.TestCase):
             release_aur.validate_generated_srcinfo(
                 srcinfo("1.2.3", sha="b" * 64), make_context()
             )
+
+    def test_docker_uses_readable_snapshot_for_private_stage_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            stage = Path(tmp) / "private-stage"
+            stage.mkdir(mode=0o700)
+            pkgbuild = stage / "PKGBUILD"
+            pkgbuild.write_text("pkgname=kdockw\n", encoding="utf-8")
+            pkgbuild.chmod(0o600)
+            observed: dict[str, Path] = {}
+
+            def inspect_command(argv, **kwargs):  # noqa: ANN001
+                volume = argv[argv.index("--volume") + 1]
+                source = Path(volume.split(":", 1)[0])
+                mounted_pkgbuild = source / "PKGBUILD"
+                observed["source"] = source
+                self.assertNotEqual(source, stage.resolve())
+                self.assertEqual(source.stat().st_mode & 0o777, 0o755)
+                self.assertEqual(mounted_pkgbuild.stat().st_mode & 0o777, 0o644)
+                self.assertEqual(
+                    mounted_pkgbuild.read_text(encoding="utf-8"),
+                    pkgbuild.read_text(encoding="utf-8"),
+                )
+                self.assertTrue(kwargs["timeout"] > 0)
+                return srcinfo("1.2.3")
+
+            with (
+                mock.patch.object(
+                    release_aur.shutil,
+                    "which",
+                    side_effect=lambda name: (
+                        "/usr/bin/docker" if name == "docker" else None
+                    ),
+                ),
+                mock.patch.object(release_aur, "command", side_effect=inspect_command),
+            ):
+                text, tool = release_aur.generate_srcinfo(stage)
+
+            self.assertEqual(
+                tool,
+                f"makepkg in {release_aur.ARCH_IMAGE} ({release_aur.ARCH_PLATFORM})",
+            )
+            self.assertEqual(text, srcinfo("1.2.3"))
+            self.assertFalse(observed["source"].exists(), "temporary snapshot must be cleaned")
+            self.assertEqual(sorted(path.name for path in stage.iterdir()), ["PKGBUILD"])
 
     @unittest.skipUnless(
         shutil.which("makepkg") or shutil.which("docker"), "neither makepkg nor docker"
