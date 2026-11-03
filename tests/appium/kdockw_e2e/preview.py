@@ -104,8 +104,12 @@ def fast_pointer_entry(kdockw: KDockW, item: str, timeout: float = 10.0) -> tupl
         if states.contains(pyatspi.STATE_SHOWING):
             if component is None:
                 component = popup.get_component_iface()
-            # Refresh extents at the first VISIBLE sample in case AT-SPI reports SHOWING and VISIBLE separately.
-            if component is not None and (geometry is None or states.contains(pyatspi.STATE_VISIBLE)):
+            # Capture extents once both states are available and AT-SPI has a component.
+            # The first valid extents are the geometry used for the immediate
+            # pointer entry. Re-querying them on every 5 ms poll adds AT-SPI
+            # round trips to the measured visibility-to-input race without
+            # making the eventual entry point any more current.
+            if component is not None and geometry is None:
                 candidate = component.get_extents(pyatspi.XY_SCREEN)
                 local = Rect(candidate.x, candidate.y, candidate.width, candidate.height)
                 if (
