@@ -30,12 +30,15 @@ uses a separate `kdockw-service.desktop` shortcut that starts that service.
 These are observations from the stated configuration, not evidence that PRIME
 variables or desktop wrappers cause the same symptoms on every system.
 
-KPipeWire reported stream state and readiness separately. On this machine the
-preview could enter streaming without receiving a usable first frame. KDockW's
-no-first-frame retry asks KPipeWire to reconnect without DMA-BUF; this is a
-diagnostic fallback, not a confirmed fix for cross-GPU DMA-BUF import. A black
-thumbnail can also result from KWin permissions, stream setup, buffer import,
-or rendering. Compare the logs below before attributing the cause.
+KPipeWire reports stream state and first-frame readiness separately. A
+`ready=true` observation means KPipeWire received a first frame; it does not
+prove the pixels are non-black or that GPU-buffer import and Qt Quick
+presentation succeeded. Conversely, Streaming with `ready=false` means no
+first frame has arrived yet. KDockW's one-shot retry reconnects that
+no-first-frame stream without DMA-BUF. It is an experimental fallback, not a
+confirmed fix for a black frame or cross-GPU DMA-BUF import. Diagnose source,
+GPU import, and scene-graph presentation as separate stages; see the
+[window-preview architecture note](../architecture/window-previews.md).
 
 ## PRIME and Qt environment variables
 
@@ -55,14 +58,17 @@ one variable on a temporary command, then remove it. Changing the Qt Quick
 backend can affect the whole UI renderer and does not by itself prove or repair
 DMA-BUF import between GPUs.
 
-## User service configuration
+## Startup choice and optional user service
 
-On the reproduced setup, the working user service removed inherited PRIME and
-Qt backend overrides for KDockW. The normal installed desktop entry remained
-`com.thicking.kdockw.desktop`, including its project-provided
-`X-KDE-Wayland-Interfaces` declaration for the KWin interfaces KDockW uses.
-The service runs the KDockW binary directly; a separate menu shortcut starts
-the service. Do not rename or replace the normal desktop ID.
+KDockW's installed XDG autostart entry is the recommended default; the
+systemd user service is optional and is not required for KWin screencasting.
+On the reproduced setup, running KDockW with inherited PRIME and Qt backend
+overrides removed coincided with previews returning. Those variables were
+cleared together, so the observation neither identifies which value mattered
+nor proves a universal cause. The normal installed desktop entry remained
+`com.thicking.kdockw.desktop`, including its
+`X-KDE-Wayland-Interfaces` declaration. A separate menu shortcut can start the
+optional service; do not rename or replace the normal desktop ID.
 
 Create `~/.config/systemd/user/kdockw.service` (back up an existing file
 first):
@@ -154,7 +160,57 @@ Restore the user's previous autostart choice separately. Do not remove
 `/usr/local/share/applications/com.thicking.kdockw.desktop` or change system GPU,
 driver, KWin, or SDDM configuration as part of this workaround.
 
-## Diagnostics
+## Comparing preview capture paths
+
+The process-local `KDOCKW_PREVIEW_CAPTURE_MODE` variable selects:
+
+- `auto` (default): normal DMA-BUF-preferred capture and the bounded retry if a
+  Streaming source does not provide a first frame.
+- `cpu-only`: disallow DMA-BUF when each `PipeWireSourceItem` is first created;
+  do not run the Auto no-first-frame retry.
+
+This is a diagnostic control, not a regular settings option. It only affects
+the process started with the variable. Do not run two KDockW instances at once.
+Close the existing instance normally and verify that it has exited before each
+launch. Use one launch at a time:
+
+```sh
+QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
+QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=cpu-only /usr/local/bin/kdockw
+```
+
+Then compare Auto with only the listed process environment overrides removed:
+
+```sh
+env -u DRI_PRIME \
+    -u __GLX_VENDOR_LIBRARY_NAME \
+    -u __NV_PRIME_RENDER_OFFLOAD \
+    -u __VK_LAYER_NV_optimus \
+    -u QSG_RHI_BACKEND \
+    QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
+```
+
+Substitute `build/release/bin/kdockw` for a source build. Direct launches may
+not have the exact environment of a desktop-file or user-service launch, so
+record the launch method. `QSG_INFO=1` enables Qt Quick scene-graph startup
+diagnostics; depending on the backend and driver these report the selected
+graphics API and may identify its device. It does not force a backend or GPU.
+
+Use the same open windows and repeat for one Wayland-native and one XWayland
+window. Record the renderer/device output, KDockW's mode and capture metadata,
+whether the thumbnail is black, and whether reopening it changes the result.
+Do not capture or write window pixels or titles into persistent diagnostics.
+Compare `ready`, `streamSize`, `usingDmaBuf`, and `captureMode`; `ready=true`
+alone cannot distinguish import from presentation errors. A black Auto image
+that becomes correct in CPU-only is evidence for a path-specific buffer/import
+problem, but still needs repetition and GPU/backend correlation before
+assigning a precise cause. If both modes receive frames and stay black, inspect
+scene-graph presentation and compositor output instead.
+
+For the full protocol and confirmation criteria, see
+[`../architecture/window-previews.md`](../architecture/window-previews.md).
+
+## Logs
 
 Inspect only the relevant environment variables for the running service:
 
@@ -168,12 +224,20 @@ With `UnsetEnvironment`, this command should print no matching lines unless
 the process sets one itself. Avoid dumping the complete process environment:
 it may contain unrelated private values.
 
-KDockW logs preview transitions, readiness, stream size, DMA-BUF selection, and
-KPipeWire's error string with the `[kdockw.preview]` prefix. Read only those
-messages from the service journal:
+KDockW logs capture mode, preview transitions, readiness, stream size, actual
+DMA-BUF selection, and KPipeWire's error string with the `[kdockw.preview]`
+prefix. For the optional service:
 
 ```sh
 journalctl --user -b -u kdockw.service -o cat | grep '\[kdockw.preview\]'
+```
+
+For a directly launched process, query its PID:
+
+```sh
+pid=$(pgrep -n -x kdockw) || { echo 'KDockW process not found'; exit 1; }
+journalctl --user _PID="$pid" --since '5 minutes ago' -o cat --no-pager |
+  grep '\[kdockw.preview\]'
 ```
 
 Look for whether the stream reached `Streaming`, whether `ready` became true,

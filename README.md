@@ -37,8 +37,11 @@ KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor
 | Plasma task-manager drag and drop | Reads the task launch URL MIME type while keeping `.desktop` launcher drops supported. |
 | External file drag hover | Activates an existing app window after a configurable delay without consuming the file drag. |
 | TaskManager diagnostics | Logs task rows and role changes without logging window titles or changing filtering. |
-| PipeWire preview diagnostics | Logs capture state and keeps an experimental CPU-buffer retry for streams with no first frame; this is not a confirmed general DMA-BUF fix. |
+| PipeWire preview diagnostics | Logs capture state and offers process-local Auto and CPU-only comparison modes; the one-shot CPU retry only covers a missing first frame, not a confirmed black-frame fix. |
 | NVIDIA PRIME guidance | Documents observed behavior on one hybrid-GPU TUXEDO OS / Wayland setup. |
+
+See the [window-preview architecture and diagnostic procedure](docs/architecture/window-previews.md)
+and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md).
 
 ## Features
 

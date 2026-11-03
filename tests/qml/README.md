@@ -67,6 +67,12 @@ the same identifiers resolve to test doubles:
   `ScreencastingRequest`) and `org.kde.pipewire` (`PipeWireSourceItem`) are
   C++ mocks registered in `qmltestmocks.cpp`. Type-less `qmldir` files under
   `mocks/` shadow the installed plugins.
+- Preview-popup tests verify that the process-local CPU-only capture mode
+  disables DMA-BUF at item creation and that Auto's one-shot no-first-frame
+  retry is bounded. The mock has no PipeWire frames, so these tests do not
+  validate GPU import or visible thumbnail pixels; use
+  [`../../docs/architecture/window-previews.md`](../../docs/architecture/window-previews.md)
+  for real Wayland/GPU diagnostics.
 - `i18n()` comes from the real `KLocalization::setupLocalizedContext`, as in
   `DockView`.
 

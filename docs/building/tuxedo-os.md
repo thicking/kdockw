@@ -61,11 +61,17 @@ standard desktop file with a custom service shortcut or change its ID. For
 PRIME-specific service setup and diagnostics, see
 [`../troubleshooting/nvidia-prime-wayland.md`](../troubleshooting/nvidia-prime-wayland.md).
 
-## Optional systemd user service
+## Recommended startup and optional systemd user service
 
-If KDockW needs a controlled process environment, install the checked-in user
-service template. It starts the installed binary directly and removes only the
-listed PRIME and Qt backend variables from that service:
+The installed XDG autostart entry is the recommended default. Leave it enabled
+for normal use. A user systemd service is optional and is useful when you need
+an explicit restart policy or a controlled environment for KDockW. Do not
+enable both login starters: choose either XDG autostart or the service.
+
+If you choose the service, first save any user override, then disable the XDG
+autostart entry for this user. The checked-in unit starts the installed binary
+directly and removes only the listed PRIME and Qt backend variables from that
+service:
 
 ```sh
 install -D -m 644 packaging/systemd/kdockw.service \
@@ -73,6 +79,12 @@ install -D -m 644 packaging/systemd/kdockw.service \
 systemctl --user daemon-reload
 systemctl --user enable --now kdockw.service
 ```
+
+To return to XDG autostart, stop and disable the service, remove only the
+user-created override at
+`~/.config/autostart/com.thicking.kdockw.autostart.desktop`, reload the user
+manager, and let the installed XDG entry run at the next login. Restore any
+saved override rather than deleting it if it existed before the migration.
 
 For the full one-starter migration sequence and rollback, see
 [`../migration/krema-to-kdockw.md`](../migration/krema-to-kdockw.md).
@@ -134,3 +146,34 @@ build configuration does not provide it, remove only the files listed in that
 build's `install_manifest.txt`. Do not use a broad `rm -rf /usr/local` command.
 Disable and remove only a user-created KDockW service or launcher, and restore
 the user's prior autostart choice.
+
+## Window-preview diagnostics
+
+The XDG autostart entry and the optional service are both suitable for normal
+use; neither is a requirement for KWin screencasting. For a controlled preview
+comparison, first close the current KDockW instance and ensure no other instance
+is running. Then launch one mode at a time:
+
+```sh
+QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
+QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=cpu-only /usr/local/bin/kdockw
+```
+
+To compare Auto after clearing PRIME and Qt backend overrides for this process
+only:
+
+```sh
+env -u DRI_PRIME \
+    -u __GLX_VENDOR_LIBRARY_NAME \
+    -u __NV_PRIME_RENDER_OFFLOAD \
+    -u __VK_LAYER_NV_optimus \
+    -u QSG_RHI_BACKEND \
+    QSG_INFO=1 KDOCKW_PREVIEW_CAPTURE_MODE=auto /usr/local/bin/kdockw
+```
+
+These direct launches do not modify the user service or Plasma environment.
+Record the renderer/device information and preview state logs for the same
+Wayland-native and XWayland test windows. The CPU-only mode is diagnostic and
+does not imply that the general DMA-BUF path is defective. See
+[`../architecture/window-previews.md`](../architecture/window-previews.md) for
+the comparison protocol and interpretation.
