@@ -22,6 +22,12 @@ add_test(NAME kdockw_version_metadata
         -DKDOCKW_VERSION=${KDOCKW_VERSION}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/check_version_metadata.cmake
 )
+add_test(NAME kdockw_version_metadata_stable
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -DFIXTURE_DIR=${CMAKE_CURRENT_BINARY_DIR}/stable-version-fixture
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/check_stable_version_fixture.cmake
+)
 
 # CLI contract (issue #59): `kdockw --version` prints "kdockw <version>" and
 # `kdockw --help`/`--author`/`--license` their text, exiting 0 without a
