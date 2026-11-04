@@ -7,6 +7,7 @@
 #include "dockvisibilitycontroller.h"
 #include "kdockw.h"
 #include "models/taskiconprovider.h"
+#include "models/icondiag.h"
 #include "platform/pointerfocustracker.h"
 #include "utils/surfacegeometry.h"
 #include "utils/zoomlayoutvariant.h"
@@ -80,7 +81,10 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
     connect(m_pointerFocusTracker.get(), &PointerFocusTracker::pointerInsideChanged, this, &DockView::pointerInsideChanged);
 
     // Register the icon image provider for QML
-    m_iconProvider = new TaskIconProvider(m_settings->iconNormalization());
+    m_iconDiagnostics = new IconDiagnostics(this);
+    m_iconDiagnostics->attachWindow(this);
+    engine()->rootContext()->setContextProperty(QStringLiteral("IconDiagnostics"), m_iconDiagnostics);
+    m_iconProvider = new TaskIconProvider(m_settings->iconNormalization(), m_iconDiagnostics);
     m_iconProvider->setIconScale(m_settings->iconScale());
     engine()->addImageProvider(QStringLiteral("icon"), m_iconProvider);
 
@@ -89,6 +93,7 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
         m_iconProvider->clearCache();
         bumpIconCacheVersion();
     });
+    connect(m_iconDiagnostics, &IconDiagnostics::iconDprChanged, this, &DockView::bumpIconCacheVersion);
 
     // Refresh provider URLs when task artwork arrives or changes.
     connect(tasksModel, &QAbstractItemModel::dataChanged, this, [this](const QModelIndex &, const QModelIndex &, const QList<int> &roles) {
@@ -135,6 +140,7 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
                                           SLOT(handleScreenLockChanged(bool)));
 
     show();
+    m_iconDiagnostics->logEnvironment(QStringLiteral("dock-shown"));
 }
 
 QColor DockView::backgroundColor() const

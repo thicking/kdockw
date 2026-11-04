@@ -54,6 +54,8 @@ add_library(kdockw_lib STATIC
     models/desktopactions.cpp
     models/taskiconprovider.h
     models/taskiconprovider.cpp
+    models/icondiag.h
+    models/icondiag.cpp
     models/notificationtracker.h
     models/notificationtracker.cpp
     models/launcherentrytracker.h

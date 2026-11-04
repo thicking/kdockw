@@ -26,6 +26,7 @@ namespace kdockw
 {
 
 class DockVisibilityController;
+class IconDiagnostics;
 class PointerFocusTracker;
 class ScreenSettings;
 class TaskIconProvider;
@@ -158,6 +159,7 @@ private:
     DockVisibilityController *m_visibilityController = nullptr;
     std::unique_ptr<PointerFocusTracker> m_pointerFocusTracker;
     TaskIconProvider *m_iconProvider = nullptr;
+    IconDiagnostics *m_iconDiagnostics = nullptr;
     int m_iconCacheVersion = 0;
     int m_sideTooltipReserve = 0;
     DockPlatform::Edge m_edge = DockPlatform::Edge::Bottom;

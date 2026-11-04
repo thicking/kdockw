@@ -144,6 +144,7 @@ Item {
 
     // --- Notification → animation debug logging ---
     on_BadgeCountChanged: {
+        _iconDiagLogBadge("count-changed")
         console.log("[NOTIF-TRACE] '" + displayName + "' appId=" + _appId
                     + " badgeCount=" + _badgeCount)
         if (_badgeCount > _prevBadgeCount) {
@@ -425,6 +426,41 @@ Item {
     // styles ease in/out through main.qml's global zoomAmount, so nothing here
     // animates or retargets per mouse move.
     readonly property real currentScale: zoomScale
+    readonly property bool _iconDiagEnabled: typeof IconDiagnostics !== "undefined" && IconDiagnostics.debugEnabled
+    property int _iconDiagZoomBucket: -1
+
+    function _iconDiagBucket(value) {
+        if (value >= maxZoomFactor - 0.025) return 4
+        if (value >= 1.475) return 3
+        if (value >= 1.225) return 2
+        if (value >= 0.975) return 1
+        return 0
+    }
+
+    function _iconDiagLogImage(reason) {
+        if (!_iconDiagEnabled) return
+        IconDiagnostics.logQmlImage(reason, _appId, _launcherUrl.toString(),
+                                    DockModel.iconName(index), Qt.size(iconImage.width, iconImage.height),
+                                    iconImage.sourceSize, currentScale)
+    }
+
+    function _iconDiagLogBadge(reason) {
+        if (!_iconDiagEnabled || !badge.visible) return
+        let source = _launcherCountVisible ? "launcher-entry" : "notification-tracker"
+        IconDiagnostics.logBadge(_appId, _badgeCount, source,
+                                 Qt.rect(badge.x, badge.y, badge.width, badge.height),
+                                 badgeLabel.font.pixelSize, currentScale,
+                                 badge.layer.enabled, badge.layer.smooth, badge.layer.textureSize)
+    }
+
+    onCurrentScaleChanged: {
+        let bucket = _iconDiagBucket(currentScale)
+        if (bucket !== _iconDiagZoomBucket) {
+            _iconDiagZoomBucket = bucket
+            _iconDiagLogImage("zoom-bucket-" + bucket)
+            _iconDiagLogBadge("zoom-bucket-" + bucket)
+        }
+    }
     readonly property real currentOffset: zoomOffset
     readonly property real primaryTranslate: currentOffset + restOffset
 
@@ -523,12 +559,22 @@ Item {
             let iconCacheVersion = DockView.iconCacheVersion
             let name = DockModel.iconName(dockItem.index)
             if (name && name.length > 0) {
-                return "image://icon/" + name + "?v=" + iconCacheVersion
+                let source = "image://icon/" + name + "?v=" + iconCacheVersion
+                if (dockItem._iconDiagEnabled)
+                    source += "&diag-app=" + encodeURIComponent(dockItem._appId)
+                             + "&diag-launcher=" + encodeURIComponent(dockItem._launcherUrl.toString())
+                return source
             }
             return ""
         }
         sourceSize: Qt.size(Math.ceil(iconSize * maxZoomFactor), Math.ceil(iconSize * maxZoomFactor))
         smooth: true
+
+        onSourceChanged: dockItem._iconDiagLogImage("source-changed")
+        onStatusChanged: {
+            if (status === Image.Ready || status === Image.Error)
+                dockItem._iconDiagLogImage(status === Image.Ready ? "image-ready" : "image-error")
+        }
 
         // Transforms: launch bounce + attention animations
         transform: [
@@ -683,6 +729,7 @@ Item {
         Accessible.ignored: true
 
         layer.enabled: DockSettings.badgeDisplayMode === 0
+                       && !(dockItem._iconDiagEnabled && IconDiagnostics.testBadgeLayerOff)
         layer.effect: MultiEffect {
             shadowEnabled: true
             shadowColor: Qt.alpha("black", 0.4)
@@ -690,7 +737,25 @@ Item {
             shadowVerticalOffset: 1
         }
 
+        Component {
+            id: badgeCounterScale
+            Scale {
+                origin.x: badge.width / 2
+                origin.y: badge.height / 2
+                xScale: 1 / Math.max(0.001, dockItem.currentScale)
+                yScale: 1 / Math.max(0.001, dockItem.currentScale)
+            }
+        }
+        Component.onCompleted: {
+            if (dockItem._iconDiagEnabled && IconDiagnostics.testBadgeSeparate)
+                badge.transform = [badgeCounterScale.createObject(badge)]
+            dockItem._iconDiagLogBadge("component-created")
+        }
+        onVisibleChanged: dockItem._iconDiagLogBadge("visibility-changed")
+        onWidthChanged: dockItem._iconDiagLogBadge("geometry-changed")
+        onHeightChanged: dockItem._iconDiagLogBadge("geometry-changed")
         QQC2.Label {
+            id: badgeLabel
             visible: DockSettings.badgeDisplayMode === 0
             anchors.centerIn: parent
             text: dockItem._badgeCount > 99 ? "99+" : dockItem._badgeCount.toString()
