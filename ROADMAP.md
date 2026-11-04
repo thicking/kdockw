@@ -21,11 +21,13 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
 - [ ] Manually verify one XDG autostart launch after login and upgrade for both
   `/usr` and `/usr/local` installations in a real Plasma session.
 - [x] Establish KDockW's independent versioning policy and stable `0.1.0`
-  metadata; the release remains unpublished until signing and package gates pass.
-- [ ] Publish the first standalone KDockW release; the existing `v0.x` tags
-  belong to Krema history.
-- [ ] Complete release automation and package smoke checks before publishing
-  KDockW-specific binary packages.
+  metadata; the signed stable release was published on 2026-11-03 after the
+  signing and package gates passed.
+- [x] Publish the first standalone KDockW release; the existing `v0.x` tags
+  belong to Krema history. [v0.1.0 release](https://github.com/thicking/kdockw/releases/tag/v0.1.0)
+- [x] Complete release automation and package smoke checks for the initial
+  standalone release. The release contains 12 distro package assets, and the
+  tagged release gate passed for all 12 supported distro targets.
 
 ## P1 — Documentation and user experience
 
