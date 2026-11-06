@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
             QStringLiteral("KDOCKW_PREVIEW_CLIP_TEST"),
             QStringLiteral("KDOCKW_PREVIEW_SOURCE_TEST"),
             QStringLiteral("KDOCKW_PREVIEW_SG_TRACE"),
+            QStringLiteral("KDOCKW_PREVIEW_METRICS"),
         };
         for (const QString &name : names) {
             if (qEnvironmentVariableIsSet(name.toLocal8Bit().constData())) {
@@ -47,16 +48,19 @@ int main(int argc, char *argv[])
             diagnostics.previewClipMode() == QLatin1String("rounded");
         const bool expectedSourceMode = diagnostics.previewSourceMode() == QLatin1String("image");
         const bool expectedSceneGraphTrace = diagnostics.previewSceneGraphTrace();
+        const bool expectedCaptureMetrics = diagnostics.previewCaptureMetrics();
 #else
             diagnostics.previewClipMode().isEmpty();
         const bool expectedSourceMode = diagnostics.previewSourceMode().isEmpty();
         const bool expectedSceneGraphTrace = !diagnostics.previewSceneGraphTrace();
+        const bool expectedCaptureMetrics = !diagnostics.previewCaptureMetrics();
 #endif
         return diagnostics.debugEnabled() && diagnostics.testBadgeOverlay() &&
                        diagnostics.testBadgeMetrics() &&
                        diagnostics.testBadgeTextNative() &&
                        !diagnostics.testBadgeTextQt() && expectedClipMode &&
-                       expectedSourceMode && expectedSceneGraphTrace
+                       expectedSourceMode && expectedSceneGraphTrace &&
+                       expectedCaptureMetrics
             ? 0
             : 2;
     }

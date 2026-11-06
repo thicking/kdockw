@@ -27,6 +27,7 @@ TEST_CASE("Icon rendering experiments require the debug master switch") {
       QStringLiteral("KDOCKW_PREVIEW_CLIP_TEST"),
       QStringLiteral("KDOCKW_PREVIEW_SOURCE_TEST"),
       QStringLiteral("KDOCKW_PREVIEW_SG_TRACE"),
+      QStringLiteral("KDOCKW_PREVIEW_METRICS"),
   };
   const QProcessEnvironment previous = QProcessEnvironment::systemEnvironment();
   const auto restoreEnvironment = qScopeGuard([&names, &previous] {
@@ -58,6 +59,7 @@ TEST_CASE("Icon rendering experiments require the debug master switch") {
   qputenv("KDOCKW_PREVIEW_CLIP_TEST", "raw");
   qputenv("KDOCKW_PREVIEW_SOURCE_TEST", "image");
   qputenv("KDOCKW_PREVIEW_SG_TRACE", "1");
+  qputenv("KDOCKW_PREVIEW_METRICS", "1");
 
   const kdockw::IconDiagnostics disabled;
   REQUIRE_FALSE(disabled.debugEnabled());
@@ -75,10 +77,12 @@ TEST_CASE("Icon rendering experiments require the debug master switch") {
   REQUIRE(disabled.previewClipMode() == QLatin1String("raw"));
   REQUIRE(disabled.previewSourceMode() == QLatin1String("image"));
   REQUIRE(disabled.previewSceneGraphTrace());
+  REQUIRE(disabled.previewCaptureMetrics());
 #else
   REQUIRE(disabled.previewClipMode().isEmpty());
   REQUIRE(disabled.previewSourceMode().isEmpty());
   REQUIRE_FALSE(disabled.previewSceneGraphTrace());
+  REQUIRE_FALSE(disabled.previewCaptureMetrics());
 #endif
 
   qputenv("KDOCKW_ICON_DEBUG", "1");
@@ -117,6 +121,7 @@ TEST_CASE("Diagnostic rendering switches are consumed before child launches") {
   environment.insert(QStringLiteral("KDOCKW_PREVIEW_CLIP_TEST"), QStringLiteral("rounded"));
   environment.insert(QStringLiteral("KDOCKW_PREVIEW_SOURCE_TEST"), QStringLiteral("image"));
   environment.insert(QStringLiteral("KDOCKW_PREVIEW_SG_TRACE"), QStringLiteral("1"));
+  environment.insert(QStringLiteral("KDOCKW_PREVIEW_METRICS"), QStringLiteral("1"));
   environment.remove(QStringLiteral("KDOCKW_ICON_TEST_BADGE_TEXT_QT"));
   process.setProcessEnvironment(environment);
   process.start(QCoreApplication::applicationFilePath(),

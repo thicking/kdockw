@@ -99,6 +99,18 @@ Item {
         }
     }
 
+    function captureRectInViewport(capture) {
+        const topLeft = capture.mapToItem(root.captureViewport, 0, 0)
+        const bottomRight = capture.mapToItem(
+            root.captureViewport, capture.width, capture.height)
+        return {
+            x: topLeft.x,
+            y: topLeft.y,
+            width: bottomRight.x - topLeft.x,
+            height: bottomRight.y - topLeft.y
+        }
+    }
+
     function retryWithoutDmaBuf() {
         if (forceCpuCapture)
             return
@@ -141,13 +153,44 @@ Item {
         const capture = root.captureItem
         if (!capture)
             return
+        if (IconDiagnostics.previewCaptureMetrics
+                && root.captureSourceMode === "pipewire") {
+            const dpr = root.Screen.devicePixelRatio > 0
+                ? root.Screen.devicePixelRatio : IconDiagnostics.windowDevicePixelRatio
+            const stream = capture.streamSize
+            const viewport = Qt.size(root.captureViewportWidth, root.captureViewportHeight)
+            const content = Qt.size(root.captureContentWidth, root.captureContentHeight)
+            const mapped = root.captureRectInViewport(capture)
+            const painted = capture.paintedRect
+            console.info("[kdockw.preview.metrics]", JSON.stringify({
+                event: reason,
+                pipeWireFramePixels: { width: stream.width, height: stream.height },
+                windowDpr: dpr,
+                thumbnailSlotLogical: { width: root.thumbnailWidth, height: root.thumbnailHeight },
+                viewportLogical: { width: viewport.width, height: viewport.height },
+                viewportPhysical: { width: viewport.width * dpr, height: viewport.height * dpr },
+                coverContentLogical: { width: content.width, height: content.height },
+                coverContentPhysical: { width: content.width * dpr, height: content.height * dpr },
+                physicalPixelsPerStreamPixel: {
+                    x: stream.width > 0 ? content.width * dpr / stream.width : null,
+                    y: stream.height > 0 ? content.height * dpr / stream.height : null
+                },
+                sourceMappedToViewport: mapped,
+                paintedRect: {
+                    x: painted.x, y: painted.y,
+                    width: painted.width, height: painted.height
+                },
+                usingDmaBuf: capture.usingDmaBuf,
+                captureMode: root.forceCpuCapture ? "cpu-fallback"
+                    : PreviewController.cpuCaptureOnly ? "cpu-only" : "auto"
+            }))
+        }
         if (root.captureSourceMode === "image") {
             console.log("[kdockw.preview] source-test", reason,
                 "source: QML Image", "clipMode:", root.captureClipMode,
                 "sourceGeometry:", Qt.rect(capture.x, capture.y, capture.width, capture.height),
                 "viewport:", Qt.size(root.captureViewportWidth, root.captureViewportHeight),
-                "mappedToViewport:", capture.mapRectToItem(root.captureViewport,
-                    Qt.rect(0, 0, capture.width, capture.height)))
+                "mappedToViewport:", root.captureRectInViewport(capture))
             return
         }
         const error = capture.state === 0 ? capture.error() : ""
@@ -160,8 +203,7 @@ Item {
             "ready:", capture.ready,
             "streamSize:", capture.streamSize,
             "sourceGeometry:", Qt.rect(capture.x, capture.y, capture.width, capture.height),
-            "sourceMappedToViewport:", capture.mapRectToItem(root.captureViewport,
-                Qt.rect(0, 0, capture.width, capture.height)),
+            "sourceMappedToViewport:", root.captureRectInViewport(capture),
             "paintedRect:", capture.paintedRect,
             "itemRect:", Qt.size(capture.width, capture.height),
             "visible/opacity/z:", capture.visible, capture.opacity, capture.z,
@@ -352,6 +394,12 @@ Item {
             Connections {
                 target: PreviewController
                 function onCaptureModeChanged() { root.restartCapture() }
+            }
+
+            Connections {
+                target: root.Window.window
+                ignoreUnknownSignals: true
+                function onScreenChanged() { root.logCaptureState("preview-screen-changed") }
             }
 
             // KWin can briefly publish DMA-BUF buffers before PipeWire has

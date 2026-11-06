@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+test_binary="$(readlink -f -- "${repo_root}/build/preview-gap-sharpness-diagnostic/bin/kdockw")"
+test_service="kdockw-preview-sharpness-test.service"
+
+fail() {
+    printf 'KDockW preview sharpness stop refused: %s\n' "$1" >&2
+    exit 1
+}
+
+if ! systemctl --user is-active --quiet "$test_service"; then
+    printf '%s is not active; no process was changed.\n' "$test_service"
+    exit 0
+fi
+main_pid="$(systemctl --user show "$test_service" -p MainPID --value)"
+service_exec="$(systemctl --user show "$test_service" -p ExecStart --value)"
+[[ "$service_exec" == *"${test_binary}"* ]] || fail "active service ExecStart is not the expected candidate"
+[[ "$main_pid" =~ ^[1-9][0-9]*$ ]] || fail "active service has no valid MainPID"
+[[ "$(readlink -f "/proc/${main_pid}/exe" 2>/dev/null || true)" == "$test_binary" ]] \
+    || fail "active service PID does not point to the expected candidate"
+systemctl --user stop "$test_service"
+for _ in {1..50}; do
+    systemctl --user is-active --quiet "$test_service" || break
+    sleep 0.1
+done
+systemctl --user is-active --quiet "$test_service" && fail "test service did not stop cleanly"
+printf 'Stopped only %s. The installed dock was not started or changed.\n' "$test_service"

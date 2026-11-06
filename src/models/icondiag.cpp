@@ -37,6 +37,7 @@ struct DiagnosticSwitches {
   QString previewClipMode;
   QString previewSourceMode;
   bool previewSceneGraphTrace = false;
+  bool previewCaptureMetrics = false;
 };
 
 DiagnosticSwitches readDiagnosticSwitches() {
@@ -75,6 +76,7 @@ DiagnosticSwitches readDiagnosticSwitches() {
     switches.previewSourceMode = sourceMode;
   }
   switches.previewSceneGraphTrace = envIsOne("KDOCKW_PREVIEW_SG_TRACE");
+  switches.previewCaptureMetrics = envIsOne("KDOCKW_PREVIEW_METRICS");
 #endif
 
   if (switches.testBadgeTextQt && switches.testBadgeTextNative) {
@@ -107,6 +109,7 @@ void clearDiagnosticSwitchEnvironment() {
       "KDOCKW_PREVIEW_CLIP_TEST",
       "KDOCKW_PREVIEW_SOURCE_TEST",
       "KDOCKW_PREVIEW_SG_TRACE",
+      "KDOCKW_PREVIEW_METRICS",
   };
   for (const char *name : names) {
     qunsetenv(name);
@@ -161,6 +164,7 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
   m_previewClipMode = switches.previewClipMode;
   m_previewSourceMode = switches.previewSourceMode;
   m_previewSceneGraphTrace = switches.previewSceneGraphTrace;
+  m_previewCaptureMetrics = switches.previewCaptureMetrics;
 
   if (m_debugEnabled) {
     QJsonObject record{
@@ -178,6 +182,7 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
         {QStringLiteral("previewClipMode"), m_previewClipMode}};
     record.insert(QStringLiteral("previewSourceMode"), m_previewSourceMode);
     record.insert(QStringLiteral("previewSceneGraphTrace"), m_previewSceneGraphTrace);
+    record.insert(QStringLiteral("previewCaptureMetrics"), m_previewCaptureMetrics);
     emitRecord(record);
   }
 }
@@ -224,6 +229,7 @@ QString IconDiagnostics::previewClipMode() const { return m_previewClipMode; }
 QString IconDiagnostics::previewSourceMode() const { return m_previewSourceMode; }
 
 bool IconDiagnostics::previewSceneGraphTrace() const { return m_previewSceneGraphTrace; }
+bool IconDiagnostics::previewCaptureMetrics() const { return m_previewCaptureMetrics; }
 
 qreal IconDiagnostics::windowDevicePixelRatio() const {
   return m_windowDpr.load(std::memory_order_relaxed);

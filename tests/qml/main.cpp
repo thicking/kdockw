@@ -56,6 +56,7 @@ class MockIconDiagnostics : public QObject {
                  setPreviewSourceMode NOTIFY changed)
   Q_PROPERTY(bool previewSceneGraphTrace READ previewSceneGraphTrace WRITE
                  setPreviewSceneGraphTrace NOTIFY changed)
+  Q_PROPERTY(bool previewCaptureMetrics READ previewCaptureMetrics CONSTANT)
   Q_PROPERTY(qreal windowDevicePixelRatio READ windowDevicePixelRatio NOTIFY
                  changed)
 
@@ -74,6 +75,7 @@ public:
   QString previewClipMode() const { return m_previewClipMode; }
   QString previewSourceMode() const { return m_previewSourceMode; }
   bool previewSceneGraphTrace() const { return m_previewSceneGraphTrace; }
+  bool previewCaptureMetrics() const { return false; }
   qreal windowDevicePixelRatio() const { return 1.0; }
 
   void setDebugEnabled(bool value) { assign(m_debugEnabled, value); }

@@ -33,6 +33,7 @@ class IconDiagnostics final : public QObject {
   Q_PROPERTY(QString previewClipMode READ previewClipMode CONSTANT)
   Q_PROPERTY(QString previewSourceMode READ previewSourceMode CONSTANT)
   Q_PROPERTY(bool previewSceneGraphTrace READ previewSceneGraphTrace CONSTANT)
+  Q_PROPERTY(bool previewCaptureMetrics READ previewCaptureMetrics CONSTANT)
   Q_PROPERTY(qreal windowDevicePixelRatio READ windowDevicePixelRatio NOTIFY
                  iconDprChanged)
 
@@ -53,6 +54,7 @@ public:
   [[nodiscard]] QString previewClipMode() const;
   [[nodiscard]] QString previewSourceMode() const;
   [[nodiscard]] bool previewSceneGraphTrace() const;
+  [[nodiscard]] bool previewCaptureMetrics() const;
   [[nodiscard]] qreal windowDevicePixelRatio() const;
 
   /// Cache opt-in diagnostic switches, then remove them before launch actions
@@ -122,6 +124,7 @@ private:
   QString m_previewClipMode;
   QString m_previewSourceMode;
   bool m_previewSceneGraphTrace = false;
+  bool m_previewCaptureMetrics = false;
 };
 
 } // namespace kdockw
