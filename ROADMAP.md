@@ -175,13 +175,14 @@ surface/input-region geometry. Launch and attention animation remains independen
 
 ## P3 — Future exploration
 
-- **Badge Appearance:** use `#FF3B30` red with `#FFFFFF` text by default and
-  provide independent settings for both colors.
+- **Badge Appearance (in review):** use `#FF3B30` red with `#FFFFFF` text by
+  default and provide independent settings for both colors. Visual acceptance
+  remains pending.
 - **Badge Startup Synchronization:** investigate why a Telegram counter can be
   absent when Telegram starts before KDockW, while restarting Telegram restores
   it and restarting KDockW does not.
-- **Preview Close Button:** use a KDE-themed close button that remains readable
-  without hover.
+- **Preview Close Button (in review):** use a KDE-themed close button that
+  remains readable without hover. Visual acceptance remains pending.
 - **GitHub Release Update Checker:** check for stable GitHub Releases in the
   background, send KDE notifications, offer manual checks and settings, and
   never install updates automatically.

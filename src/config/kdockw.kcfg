@@ -409,6 +409,16 @@
       <max>2</max>
     </entry>
 
+    <entry name="BadgeBackgroundColor" type="String">
+      <label>Notification badge background color</label>
+      <default>#ffff3b30</default>
+    </entry>
+
+    <entry name="BadgeTextColor" type="String">
+      <label>Notification badge text color</label>
+      <default>#ffffffff</default>
+    </entry>
+
     <entry name="BadgeFontWeight" type="Int">
       <label>Notification badge text weight</label>
       <default>500</default>

@@ -176,6 +176,8 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::IconScaleChanged, context, saveSettings);
     connect(settings, &KDockWSettings::AttentionAnimationDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BadgeDisplayModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BadgeBackgroundColorChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BadgeTextColorChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BadgeFontWeightChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BadgeTextSizePercentChanged, context, saveSettings);
     connect(settings, &KDockWSettings::RunningIndicatorStyleChanged, context, saveSettings);

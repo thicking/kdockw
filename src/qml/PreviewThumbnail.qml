@@ -417,11 +417,13 @@ Item {
         // Close button (top-right corner, always visible)
         QQC2.ToolButton {
             id: closeButton
+            objectName: "previewCloseButton"
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: Kirigami.Units.smallSpacing
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
+            hoverEnabled: true
             icon.name: "window-close"
             icon.width: Kirigami.Units.iconSizes.small
             icon.height: Kirigami.Units.iconSizes.small
@@ -441,8 +443,12 @@ Item {
                 radius: width / 2
                 color: closeButton.hovered
                     ? Kirigami.Theme.negativeTextColor
-                    : root.panelColor
-                opacity: closeButton.hovered ? 0.9 : 0.7
+                    : Kirigami.Theme.backgroundColor
+                opacity: 0.96
+                border.width: 1
+                border.color: closeButton.hovered
+                    ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, Kirigami.Theme.textColor)
+                    : root.panelForeground
 
                 Behavior on color {
                     ColorAnimation { duration: Kirigami.Units.shortDuration }
@@ -453,8 +459,8 @@ Item {
             }
 
             icon.color: closeButton.hovered
-                ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, "white")
-                : root.panelForeground
+                ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, Kirigami.Theme.textColor)
+                : BadgeTextColor.choose(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor)
         }
 
         // Click to activate window

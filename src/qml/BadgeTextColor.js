@@ -40,3 +40,11 @@ function choose(background, preferredForeground) {
     return contrastRatio(black, background) >= contrastRatio(white, background)
         ? "#000000" : "#ffffff"
 }
+
+function contrastDescription(foreground, background) {
+    const ratio = contrastRatio(foreground, background)
+    return {
+        ratio: ratio,
+        meetsRecommended: ratio >= 4.5
+    }
+}

@@ -75,3 +75,27 @@ TEST_CASE("Diagnostic settings use one file without changing the Plasma environm
     SUCCEED("Diagnostic configuration routing is compiled only in diagnostic builds");
 #endif
 }
+
+TEST_CASE("Badge colors default to the approved palette and persist independently", "[settings][badges]")
+{
+    QTemporaryDir directory;
+    REQUIRE(directory.isValid());
+    const QString configPath = directory.filePath(QStringLiteral("kdockwrc"));
+    const auto config = KSharedConfig::openConfig(configPath, KConfig::SimpleConfig);
+
+    KDockWSettings settings;
+    settings.setSharedConfig(config);
+    settings.load();
+    CHECK(settings.badgeBackgroundColor() == QStringLiteral("#ffff3b30"));
+    CHECK(settings.badgeTextColor() == QStringLiteral("#ffffffff"));
+
+    settings.setBadgeBackgroundColor(QStringLiteral("#ff123456"));
+    settings.setBadgeTextColor(QStringLiteral("#ffabcdef"));
+    settings.save();
+
+    KDockWSettings restarted;
+    restarted.setSharedConfig(KSharedConfig::openConfig(configPath, KConfig::SimpleConfig));
+    restarted.load();
+    CHECK(restarted.badgeBackgroundColor() == QStringLiteral("#ff123456"));
+    CHECK(restarted.badgeTextColor() == QStringLiteral("#ffabcdef"));
+}

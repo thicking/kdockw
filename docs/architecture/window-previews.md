@@ -25,12 +25,14 @@ can pause and resume rather than being recreated for every update.
 shadow bounds to `PreviewController`, so placement and input-region geometry
 include the visual effect. The initial visual review found the card had used
 `Kirigami.Theme.backgroundColor` from the Window color set, which can be white
-independently of the dock. The card, thumbnail backing, close button, and the
-existing Firefox/app-name tooltip now use `DockView.backgroundColor` (the
-resolved panel style, tint/accent, and opacity) with a theme fallback only when
-the panel color is transparent. Text and the thin outline select a foreground
-with at least 4.5:1 contrast against that resolved surface. Radius and soft
-shadow use the existing dock settings. The tooltip change is styling only; the
+independently of the dock. The card, thumbnail backing, and existing
+Firefox/app-name tooltip use `DockView.backgroundColor` (the resolved panel
+style, tint/accent, and opacity) with a theme fallback only when the panel color
+is transparent. The close button uses the active KDE theme's background and
+foreground with an always-visible outline; hover changes it to the theme's
+negative color. Card text and its thin outline select a foreground with at least
+4.5:1 contrast against that resolved surface. Radius and soft shadow use the
+existing dock settings. The tooltip change is styling only; the
 separate Application Name Tooltip task still owns its behavior and switching
 rules.
 

@@ -822,7 +822,7 @@ Item {
                : Math.round(iconSize * 0.38)
         height: width
         radius: width / 2
-        color: Kirigami.Theme.highlightColor
+        color: DockSettings.badgeBackgroundColor
         Accessible.ignored: true
 
         // Keep the glyph out of a badge texture. QtRendering rasterizes the
@@ -860,7 +860,7 @@ Item {
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
             text: dockItem._badgeCount > 99 ? "99+" : dockItem._badgeCount.toString()
-            color: BadgeTextColor.choose(badge.color, Kirigami.Theme.highlightedTextColor)
+            color: DockSettings.badgeTextColor
             renderType: Text.QtRendering
             font.pixelSize: parent.height * 0.55 * (DockSettings.badgeTextSizePercent / 100)
                              * dockItem._iconDiagBadgeLabelScale

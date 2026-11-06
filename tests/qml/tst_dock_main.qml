@@ -169,6 +169,37 @@ Item {
             verify(Math.round(label.font.pixelSize) === label.font.pixelSize)
         }
 
+        function test_badgeColorsUseSavedValuesAndKeepQtTextRendering() {
+            compare(DockSettings.badgeBackgroundColor.toString(), "#ff3b30")
+            compare(DockSettings.badgeTextColor.toString(), "#ffffff")
+            DockSettings.iconSize = 40
+            DockSettings.badgeDisplayMode = 0
+            DockModel.tasksModel.addTask({
+                display: "Badge color test",
+                AppId: "org.telegram.desktop",
+                IsWindow: true,
+            })
+            NotificationTracker.setUnread("org.telegram.desktop", 12)
+
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            const badge = T.findFirst(item, o => o.objectName === "badge")
+            const label = T.findFirst(badge, o => o.objectName === "badgeLabel")
+            verify(badge && label)
+            tryVerify(() => badge.visible)
+            compare(badge.color.toString(), "#ff3b30")
+            compare(label.color.toString(), "#ffffff")
+            compare(label.renderType, Text.QtRendering)
+
+            DockSettings.badgeBackgroundColor = "#ff000000"
+            DockSettings.badgeTextColor = "#ffffff00"
+            tryVerify(() => badge.color.toString() === "#000000")
+            tryVerify(() => label.color.toString() === "#ffff00")
+            compare(DockSettings.badgeDisplayMode, 0)
+            compare(item._badgeCount, 12)
+            compare(label.renderType, Text.QtRendering)
+        }
+
         // Item center in stage coordinates (valid while the item is at rest scale 1).
         function centerOf(item) {
             return item.mapToItem(stage, item.width / 2, item.height / 2)

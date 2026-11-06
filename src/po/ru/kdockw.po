@@ -1318,3 +1318,36 @@ msgstr "Внутренний отступ карточки (пикс.)"
 #: src/qml/settings/PreviewPage.qml
 msgid "Gap between preview and dock (px)"
 msgstr "Расстояние между предпросмотром и доком (пикс.)"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "Badge background color"
+msgstr "Цвет фона бейджа"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "Choose badge background color"
+msgstr "Выберите цвет фона бейджа"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "Badge text color"
+msgstr "Цвет текста бейджа"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "Choose badge text color"
+msgstr "Выберите цвет текста бейджа"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "Restore badge color defaults"
+msgstr "Восстановить цвета бейджа по умолчанию"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgctxt "@label contrast ratio"
+msgid "Contrast ratio: %1:1 (%2)"
+msgstr "Контрастность: %1:1 (%2)"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "meets recommended 4.5:1"
+msgstr "соответствует рекомендуемому значению 4,5:1"
+
+#: src/qml/settings/BadgeColorSettings.qml
+msgid "below recommended 4.5:1"
+msgstr "ниже рекомендуемого значения 4,5:1"

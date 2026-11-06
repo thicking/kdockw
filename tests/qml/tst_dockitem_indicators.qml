@@ -264,8 +264,10 @@ Item {
                     "badge text and circle must not be baked into a scaled texture")
             verify(shadow.visible, "circle shadow remains enabled in production mode")
             compare(shadow.layer.enabled, true)
-            verify(BadgeTextColor.contrastRatio(label.color, badge.color) >= 4.5,
-                   "badge text must meet WCAG contrast against the opaque badge fill")
+            compare(badge.color.toString(), "#ff3b30")
+            compare(label.color.toString(), "#ffffff")
+            fuzzyCompare(BadgeTextColor.contrastRatio(label.color, badge.color), 3.547, 0.001,
+                         "approved white-on-red defaults are below the recommended 4.5:1 ratio")
         }
 
         function test_badgeTextColorPrefersThemeColorWhenReadable() {

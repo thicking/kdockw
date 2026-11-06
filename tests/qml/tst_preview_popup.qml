@@ -9,6 +9,7 @@ import QtTest
 import com.thicking.kdockw 1.0
 import kdockw.test 1.0
 import "../../src/qml" as KDockW
+import "../../src/qml/BadgeTextColor.js" as BadgeTextColor
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -45,6 +46,11 @@ Item {
             DockModel.tasksModel.addChildTask(1, { display: "Konsole 3", IsMinimized: true, WinIdList: ["k-3"] })
             // Row 2: launcher without windows.
             DockModel.tasksModel.addTask({ display: "Okular", IsWindow: false })
+        }
+
+        function cleanup() {
+            PreviewController.previewKeyboardActive = false
+            mouseMove(stage, -1, -1)
         }
 
         function makePopup() {
@@ -397,9 +403,19 @@ Item {
             show(1, "Konsole")
             waitThumbs(popup, 3)
             let t = thumbs(popup)[2]
-            let close = T.findFirst(t, o => o.icon !== undefined && o.icon.name === "window-close")
+            let close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            mouseClick(close)
+            compare(close.icon.name, "window-close")
+            verify(close.background.visible)
+            verify(close.background.opacity >= 0.9)
+            verify(BadgeTextColor.contrastRatio(close.icon.color, close.background.color) >= 4.5,
+                   "close icon must contrast with its always-visible theme button surface")
+            const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
+            mouseMove(stage, closeCenter.x, closeCenter.y)
+            tryCompare(close, "hovered", true)
+            verify(BadgeTextColor.contrastRatio(close.icon.color, close.background.color) >= 4.5,
+                   "hover feedback must preserve close icon contrast")
+            mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
             compare(DockModel.tasksModel.lastRequestChild, 2)

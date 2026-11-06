@@ -37,6 +37,13 @@ The current local candidate targets v0.1.2. It has not been published.
 - Added live, saved badge text weight and size controls, with Medium (500) and
   100% as factory defaults. Explicitly saved user choices, including Bold (700),
   continue to take precedence over factory defaults.
+- Added independent, saved badge background and text color settings with the
+  requested red and white defaults, a live badge preview, contrast feedback,
+  and a joint reset action. Existing badge counts and text rendering remain
+  unchanged.
+- Made the preview close button readable before hover with a KDE-themed surface
+  and outline; hover now visibly marks the close action while retaining the
+  existing window-close icon and grouped-window behavior.
 
 ### Changed
 

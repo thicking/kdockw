@@ -552,19 +552,6 @@ SettingsPage {
                                 unit: Math.max(width / screenSize.width, height / screenSize.height)
                                 Accessible.ignored: true
 
-                                Item {
-                                    id: badgeHeaderColors
-                                    visible: false
-                                    Kirigami.Theme.colorSet: Kirigami.Theme.Header
-                                    Kirigami.Theme.inherit: false
-                                }
-                                Item {
-                                    id: badgeAccentColors
-                                    visible: false
-                                    Kirigami.Theme.colorSet: Kirigami.Theme.Selection
-                                    Kirigami.Theme.inherit: false
-                                }
-
                                 Rectangle {
                                     id: badgeStrip
                                     readonly property real pad: Kirigami.Units.smallSpacing * 1.5
@@ -573,10 +560,7 @@ SettingsPage {
                                     width: badgeIcon.width + 2 * pad
                                     height: width
                                     radius: Math.min(height / 2, Kirigami.Units.cornerRadius * 2)
-                                    color: Qt.alpha(DockSettings.useAccentColor
-                                                    ? badgeAccentColors.Kirigami.Theme.backgroundColor
-                                                    : badgeHeaderColors.Kirigami.Theme.backgroundColor,
-                                                    DockSettings.backgroundStyle === 1 ? 0.0 : DockSettings.backgroundOpacity)
+                                    color: DockSettings.badgeBackgroundColor
                                 }
 
                                 Kirigami.Icon {
@@ -629,7 +613,8 @@ SettingsPage {
                                         width: parent.width - 2
                                         height: parent.height - 2
                                         text: i18nc("@label sample badge count", "8")
-                                        color: Kirigami.Theme.highlightedTextColor
+                                        color: DockSettings.badgeTextColor
+                                        renderType: Text.QtRendering
                                         font.pixelSize: Math.max(1, parent.height * 0.55
                                                                   * DockSettings.badgeTextSizePercent / 100)
                                         font.weight: DockSettings.badgeFontWeight
@@ -646,8 +631,6 @@ SettingsPage {
                 }
             }
         }
-
-        FormCard.FormDelegateSeparator {}
 
         FormCard.FormComboBoxDelegate {
             text: i18n("Badge text weight")
@@ -670,6 +653,10 @@ SettingsPage {
             maxLabel: i18nc("@label slider maximum", "Larger")
             onMoved: value => DockSettings.badgeTextSizePercent = value
         }
+    }
+
+    BadgeColorSettings {
+        secondaryTextColor: page.secondaryTextColor
     }
 
     // --- Running indicators ---
