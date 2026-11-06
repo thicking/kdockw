@@ -90,6 +90,12 @@ Item {
             return T.directChildren(popup, c => c.requestedVisible !== undefined)[0]
         }
 
+        function composite(color, over, alpha) {
+            return Qt.rgba(color.r * alpha + over.r * (1 - alpha),
+                           color.g * alpha + over.g * (1 - alpha),
+                           color.b * alpha + over.b * (1 - alpha), 1)
+        }
+
         function card(popup) {
             return T.findFirst(container(popup), c => c.radius !== undefined && c.shadow !== undefined)
         }
@@ -405,16 +411,28 @@ Item {
             let t = thumbs(popup)[2]
             let close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            compare(close.icon.name, "window-close")
-            verify(close.background.visible)
-            verify(close.background.opacity >= 0.9)
-            verify(BadgeTextColor.contrastRatio(close.icon.color, close.background.color) >= 4.5,
-                   "close icon must contrast with its always-visible theme button surface")
+            const glyph = T.findFirst(close, o => o.objectName === "previewCloseThemeIcon")
+            verify(glyph, "the KDE theme icon must be present in the close button component")
+            compare(glyph.source, "window-close-symbolic")
+            compare(glyph.isMask, true)
+            tryVerify(() => glyph.valid, 2000,
+                      "window-close-symbolic must resolve from the active icon theme")
+            mouseMove(stage, -1, -1)
+            tryCompare(close, "hovered", false)
+            verify(!close.background.visible,
+                   "the idle button should show the theme glyph without the old gray disc")
+            verify(BadgeTextColor.contrastRatio(glyph.color, t.panelColor) >= 4.5,
+                   "the idle theme glyph must contrast with the preview surface")
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseMove(stage, closeCenter.x, closeCenter.y)
             tryCompare(close, "hovered", true)
-            verify(BadgeTextColor.contrastRatio(close.icon.color, close.background.color) >= 4.5,
-                   "hover feedback must preserve close icon contrast")
+            tryVerify(() => close.background.visible)
+            const hoverSurface = composite(close.background.color, t.panelColor,
+                                           close.background.opacity)
+            verify(BadgeTextColor.contrastRatio(glyph.color, hoverSurface) >= 4.5,
+                   "hover glyph contrast is " + BadgeTextColor.contrastRatio(glyph.color, hoverSurface)
+                       + "; glyph=" + glyph.color + ", hover=" + hoverSurface
+                       + ", panel=" + t.panelColor + ", opacity=" + close.background.opacity)
             mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)

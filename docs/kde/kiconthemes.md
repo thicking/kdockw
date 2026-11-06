@@ -224,6 +224,21 @@ QIcon icon = KDE::icon("document-open", colors);
 
 ## Dock-Relevant Patterns
 
+### QML themed glyphs
+
+The installed `org.kde.kirigami.primitives/Icon` type is exported to QML as
+`Kirigami.Icon`. Its installed type metadata exposes `source`, `fallback`,
+`isMask`, `color`, `status`, and `valid`. Use a symbolic theme asset with
+`isMask: true` when the glyph must follow a contrast-selected theme color; test
+that `valid` becomes true so a missing icon cannot silently pass as a rendered
+control.
+
+Icon names can resolve to different artwork within the same theme. For example,
+the current MacTahoe theme's `window-close.svg` is a filled circle with the
+cross cut out, while `window-close-symbolic.svg` is a monochrome cross. Use the
+symbolic variant for a standalone close glyph rather than placing a second
+button background behind the filled control.
+
 ### Loading Task Icons
 
 ```cpp

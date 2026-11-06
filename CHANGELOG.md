@@ -41,9 +41,9 @@ The current local candidate targets v0.1.2. It has not been published.
   requested red and white defaults, a live badge preview, contrast feedback,
   and a joint reset action. Existing badge counts and text rendering remain
   unchanged.
-- Made the preview close button readable before hover with a KDE-themed surface
-  and outline; hover now visibly marks the close action while retaining the
-  existing window-close icon and grouped-window behavior.
+- Made the preview close control show a theme-resolved symbolic close glyph at
+  rest, with theme-aware contrast and negative-color hover feedback. Grouped
+  window close behavior remains unchanged.
 
 ### Changed
 

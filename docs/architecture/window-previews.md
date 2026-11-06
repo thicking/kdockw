@@ -28,11 +28,17 @@ include the visual effect. The initial visual review found the card had used
 independently of the dock. The card, thumbnail backing, and existing
 Firefox/app-name tooltip use `DockView.backgroundColor` (the resolved panel
 style, tint/accent, and opacity) with a theme fallback only when the panel color
-is transparent. The close button uses the active KDE theme's background and
-foreground with an always-visible outline; hover changes it to the theme's
-negative color. Card text and its thin outline select a foreground with at least
-4.5:1 contrast against that resolved surface. Radius and soft shadow use the
-existing dock settings. The tooltip change is styling only; the
+is transparent. The close control uses `Kirigami.Icon` with the active theme's
+`window-close-symbolic` asset as a color mask. This avoids selecting a theme's
+`window-close` variant that may be a filled traffic-light control with a cutout
+cross. The resting glyph uses the contrast-selected panel foreground without a
+second background disc; hover adds the theme's negative-color surface and
+selects a contrasting glyph color. QML tests verify that the symbolic icon
+resolves, is mask-tinted, remains contrast-readable at rest and hover, and
+retains grouped-window close behavior. Card text and its thin outline select a
+foreground with at least 4.5:1 contrast against the resolved panel surface.
+Radius and soft shadow use existing dock settings. The tooltip change is
+styling only; the
 separate Application Name Tooltip task still owns its behavior and switching
 rules.
 

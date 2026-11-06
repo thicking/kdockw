@@ -424,10 +424,21 @@ Item {
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
             hoverEnabled: true
-            icon.name: "window-close"
-            icon.width: Kirigami.Units.iconSizes.small
-            icon.height: Kirigami.Units.iconSizes.small
             z: 10
+
+            contentItem: Item {
+                Kirigami.Icon {
+                    objectName: "previewCloseThemeIcon"
+                    anchors.centerIn: parent
+                    width: Kirigami.Units.iconSizes.small
+                    height: width
+                    source: "window-close-symbolic"
+                    isMask: true
+                    color: closeButton.hovered
+                        ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, root.panelForeground)
+                        : root.panelForeground
+                }
+            }
 
             Accessible.name: i18n("Close %1", root.title)
 
@@ -441,26 +452,10 @@ Item {
 
             background: Rectangle {
                 radius: width / 2
-                color: closeButton.hovered
-                    ? Kirigami.Theme.negativeTextColor
-                    : Kirigami.Theme.backgroundColor
-                opacity: 0.96
-                border.width: 1
-                border.color: closeButton.hovered
-                    ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, Kirigami.Theme.textColor)
-                    : root.panelForeground
-
-                Behavior on color {
-                    ColorAnimation { duration: Kirigami.Units.shortDuration }
-                }
-                Behavior on opacity {
-                    NumberAnimation { duration: Kirigami.Units.shortDuration }
-                }
+                color: Kirigami.Theme.negativeTextColor
+                opacity: closeButton.hovered ? 1.0 : 0.0
+                visible: opacity > 0
             }
-
-            icon.color: closeButton.hovered
-                ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, Kirigami.Theme.textColor)
-                : BadgeTextColor.choose(Kirigami.Theme.backgroundColor, Kirigami.Theme.textColor)
         }
 
         // Click to activate window
