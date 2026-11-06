@@ -213,3 +213,11 @@ TEST_CASE("Preview input region matches the visible popup", "[input-region][prev
         REQUIRE(region == QRegion(0, 0, 1, 1));
     }
 }
+
+TEST_CASE("Preview surface margin follows configured visible gap", "[input-region][preview]")
+{
+    REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, 4, false) == 92);
+    REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, 0, false) == 88);
+    REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, 4, true) == 60);
+    REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, -4, false) == 88);
+}

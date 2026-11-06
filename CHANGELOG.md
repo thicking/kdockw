@@ -19,7 +19,7 @@ The current local candidate targets v0.1.2. It has not been published.
 
 - Added live, saved window-preview layout controls: thumbnail width, maximum
   thumbnail height with source aspect-ratio preservation, card padding, and the
-  dock gap. New defaults are 200 px, 180 px, 8 px, and 8 px; existing saved
+  dock gap. New defaults are 200 px, 180 px, 8 px, and 4 px; existing saved
   thumbnail widths remain intact.
 - Redesigned the preview as a compact, rounded, translucent card with a thin
   border, soft shadow, application header, and per-window title. The popup has
@@ -52,6 +52,9 @@ The current local candidate targets v0.1.2. It has not been published.
 
 ### Fixed
 
+- Reduced the preview's default visible gap to the dock from 12 px to 4 px by
+  removing an extra fixed surface offset and lowering the saved-setting default;
+  the popup remains beyond the dock's maximum zoom envelope.
 - Applied rounded clipping to the PipeWire frame's own scene-graph subtree,
   instead of placing a clip node beside the QML child that needed clipping.
 - Fixed rounded preview clipping on Qt 6 scene-graph backends by replacing

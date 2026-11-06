@@ -326,7 +326,7 @@ TEST_CASE("Preview redesign defaults preserve existing thumbnail preferences", "
     CHECK(settings.previewThumbnailSize() == 260);
     CHECK(settings.previewMaximumHeight() == 180);
     CHECK(settings.previewCardPadding() == 8);
-    CHECK(settings.previewDockGap() == 8);
+    CHECK(settings.previewDockGap() == 4);
 
     settings.setPreviewMaximumHeight(240);
     settings.setPreviewCardPadding(12);

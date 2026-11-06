@@ -82,6 +82,13 @@ QRegion computeDockInputRegion(const InputRegionParams &p)
     }
 }
 
+int computePreviewSurfaceMargin(int panelBarHeight, int zoomOverflow,
+                                int previewDockGap, bool panelBarReserved)
+{
+    return (panelBarReserved ? 0 : std::max(0, panelBarHeight))
+        + std::max(0, zoomOverflow) + std::max(0, previewDockGap);
+}
+
 QRect computeDockScreenRect(const DockScreenRectParams &p)
 {
     int surfaceX = 0;

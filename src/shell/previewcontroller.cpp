@@ -560,16 +560,16 @@ void PreviewController::applyEdgeLayout()
 
     const auto edge = m_dockView->platform()->edge();
     const bool vertical = (edge == DockPlatform::Edge::Left || edge == DockPlatform::Edge::Right);
-    // The margin puts the popup right past the dock's zoom area. It counts from
-    // where the compositor places the surface: exclusive zone 0 moves it out of
-    // other surfaces' exclusive zones. When AlwaysVisible reserves the panel
-    // bar, that zone is already behind the popup origin; otherwise include it.
+    // The surface starts after the dock's panel and zoom envelope. Its shadow
+    // margin is inside the surface, so no extra fixed spacing is needed here;
+    // PreviewDockGap controls the actual gap before the preview shadow.
     const auto *visibility = m_dockView->visibilityController();
     const bool dockReservesPanelBar =
         visibility && visibility->mode() == static_cast<int>(DockPlatform::VisibilityMode::AlwaysVisible) && m_settings->reserveScreenSpace();
     const int zoomOverflow = static_cast<int>(std::ceil(m_settings->iconSize() * (m_settings->maxZoomFactor() - 1.0)));
-    const int dockMargin = (dockReservesPanelBar ? 0 : m_dockView->panelBarHeight())
-        + zoomOverflow + 4 + m_settings->previewDockGap();
+    const int dockMargin = computePreviewSurfaceMargin(
+        m_dockView->panelBarHeight(), zoomOverflow, m_settings->previewDockGap(),
+        dockReservesPanelBar);
 
     const QRect screenGeo = m_dockView->dockScreen() ? m_dockView->dockScreen()->geometry() : QRect(0, 0, 1920, 1080);
 

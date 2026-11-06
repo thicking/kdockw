@@ -31,6 +31,11 @@ struct InputRegionParams {
 /// Compute the input region mask for the dock surface.
 QRegion computeDockInputRegion(const InputRegionParams &p);
 
+/// Distance from the screen edge needed to place the preview surface beyond
+/// the dock's panel and zoom envelope while honoring the configured gap.
+int computePreviewSurfaceMargin(int panelBarHeight, int zoomOverflow,
+                                int previewDockGap, bool panelBarReserved);
+
 struct DockScreenRectParams {
     int screenX;
     int screenY;
