@@ -1174,20 +1174,33 @@ def test_set011_zoom_animation_preset_and_custom_tabs_apply_and_persist(kdockw: 
     # wheel before the tab bar could.
     time.sleep(0.5)
     inp.scroll(wheel_x, wheel_y, dy=60)
-    wait_until(
-        lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y < tab_y0 - 10,
-        message="wheel over the tab bar scrolls the page",
-    )
     assert config_value(kdockw, "ZoomAnimationPreset") == "1", "wheel over the tab bar must not switch to Custom"
+    assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)), "wheel over the tab bar must keep Preset selected"
+    try:
+        wait_until(
+            lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y < tab_y0 - 10,
+            timeout=1.0,
+            message="wheel down over the tab bar scrolls the page",
+        )
+        scroll_delta = 60
+    except WaitTimeout:
+        # On shorter settings layouts scroll_into_view can leave the page at
+        # its lower bound. Try the opposite direction before concluding that
+        # wheel input over the tab bar was swallowed.
+        inp.scroll(wheel_x, wheel_y, dy=-60)
+        assert config_value(kdockw, "ZoomAnimationPreset") == "1", "wheel over the tab bar must not switch to Custom"
+        assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)), "wheel over the tab bar must keep Preset selected"
+        wait_until(
+            lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y > tab_y0 + 10,
+            message="wheel up over the tab bar scrolls the page",
+        )
+        scroll_delta = -60
     assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)) and not zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB))
     assert has_state(kdockw.wait_for(quick_xpath), "checked")
-    # Scroll back up over the scroll bar: the old tab centre now lies over
-    # whatever row scrolled under it, possibly a ComboBox that takes the wheel.
-    tab_y1 = wait_stable(lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y, duration=0.3)
-    inp.scroll(*page_wheel_point(kdockw), dy=-60)
+    inp.scroll(wheel_x, wheel_y, dy=-scroll_delta)
     wait_until(
-        lambda: Rect.of(kdockw.wait_for(PRESET_TAB)).y > tab_y1 + 10,
-        message="wheel up over the scroll bar scrolls the page back",
+        lambda: abs(Rect.of(kdockw.wait_for(PRESET_TAB)).y - tab_y0) < 10,
+        message="opposite wheel over the tab bar restores the page position",
     )
     assert config_value(kdockw, "ZoomAnimationPreset") == "1"
     assert zoom_tab_selected(kdockw.wait_for(PRESET_TAB)) and not zoom_tab_selected(kdockw.wait_for(CUSTOM_TAB))
