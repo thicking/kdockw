@@ -53,6 +53,19 @@ foreach(test_name IN LISTS KDOCKW_QML_TEST_FILES)
     )
 endforeach()
 
+# The application selects this KDE desktop style. Keep the focused state test
+# separate so the rest of the preview suite remains independent of system
+# theme colors and style implementation details.
+add_test(NAME qml_preview_close_native_kde_style
+    COMMAND kdockw_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/tst_preview_popup.qml
+        PreviewPopup::test_closeButtonUsesNativeKdeStyleStates
+)
+set_tests_properties(qml_preview_close_native_kde_style PROPERTIES
+    LABELS "qml;preview;theme"
+    TIMEOUT 120
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;LANGUAGE=en_US;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
+)
+
 # Tooltip placement is also checked with fractional/high-DPI surface scales.
 foreach(tooltip_dpr IN ITEMS 1.25 1.5 2.0)
     string(REPLACE "." "_" tooltip_dpr_suffix "${tooltip_dpr}")

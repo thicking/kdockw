@@ -411,33 +411,48 @@ Item {
             let t = thumbs(popup)[2]
             let close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            const glyph = T.findFirst(close, o => o.objectName === "previewCloseThemeIcon")
-            verify(glyph, "the KDE theme icon must be present in the close button component")
-            compare(glyph.source, "window-close-symbolic")
-            compare(glyph.isMask, true)
-            tryVerify(() => glyph.valid, 2000,
-                      "window-close-symbolic must resolve from the active icon theme")
+            compare(close.icon.name, "window-close-symbolic",
+                    "the KDE desktop style must receive the close glyph from the active icon theme")
+            verify(close.background, "QQC2.ToolButton must retain the KDE style background")
             mouseMove(stage, -1, -1)
             tryCompare(close, "hovered", false)
-            verify(!close.background.visible,
-                   "the idle button should show the theme glyph without the old gray disc")
-            verify(BadgeTextColor.contrastRatio(glyph.color, t.panelColor) >= 4.5,
-                   "the idle theme glyph must contrast with the preview surface")
+            verify(BadgeTextColor.contrastRatio(close.icon.color, t.panelColor) >= 4.5,
+                   "the theme-resolved idle glyph must contrast with the preview surface")
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseMove(stage, closeCenter.x, closeCenter.y)
             tryCompare(close, "hovered", true)
-            tryVerify(() => close.background.visible)
-            const hoverSurface = composite(close.background.color, t.panelColor,
-                                           close.background.opacity)
-            verify(BadgeTextColor.contrastRatio(glyph.color, hoverSurface) >= 4.5,
-                   "hover glyph contrast is " + BadgeTextColor.contrastRatio(glyph.color, hoverSurface)
-                       + "; glyph=" + glyph.color + ", hover=" + hoverSurface
-                       + ", panel=" + t.panelColor + ", opacity=" + close.background.opacity)
             mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
             compare(DockModel.tasksModel.lastRequestChild, 2)
             compare(DockModel.tasksModel.activateRequests, 0)
+        }
+
+        function test_closeButtonUsesNativeKdeStyleStates() {
+            let popup = makePopup()
+            show(1, "Konsole")
+            waitThumbs(popup, 3)
+            const t = thumbs(popup)[2]
+            const close = T.findFirst(t, o => o.objectName === "previewCloseButton")
+            verify(close, "close button not found")
+            if (close.background.hover === undefined || close.background.sunken === undefined)
+                skip("KDE desktop control style is required for this state test")
+
+            compare(close.icon.name, "window-close-symbolic")
+            compare(close.background.properties.icon, close.icon.name,
+                    "the KDE style must receive the icon theme name")
+            const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
+            mouseMove(stage, -1, -1)
+            tryCompare(close.background, "hover", false)
+            tryCompare(close.background, "sunken", false)
+            mouseMove(stage, closeCenter.x, closeCenter.y)
+            tryCompare(close.background, "hover", true)
+            mousePress(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
+            tryCompare(close.background, "sunken", true)
+            mouseRelease(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
+            tryCompare(DockModel.tasksModel, "closeRequests", 1)
+            compare(DockModel.tasksModel.lastRequestRow, 1)
+            compare(DockModel.tasksModel.lastRequestChild, 2)
         }
 
         function test_thumbnailSizeFollowsSetting() {

@@ -425,20 +425,10 @@ Item {
             height: Kirigami.Units.iconSizes.smallMedium
             hoverEnabled: true
             z: 10
-
-            contentItem: Item {
-                Kirigami.Icon {
-                    objectName: "previewCloseThemeIcon"
-                    anchors.centerIn: parent
-                    width: Kirigami.Units.iconSizes.small
-                    height: width
-                    source: "window-close-symbolic"
-                    isMask: true
-                    color: closeButton.hovered
-                        ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, root.panelForeground)
-                        : root.panelForeground
-                }
-            }
+            icon.name: "window-close-symbolic"
+            icon.width: Kirigami.Units.iconSizes.small
+            icon.height: Kirigami.Units.iconSizes.small
+            icon.color: root.panelForeground
 
             Accessible.name: i18n("Close %1", root.title)
 
@@ -448,13 +438,6 @@ Item {
                     ? DockModel.tasksModel.index(root.parentIndex, 0)
                     : DockModel.tasksModel.makeModelIndex(root.parentIndex, root.childIndex)
                 DockModel.tasksModel.requestClose(modelIndex)
-            }
-
-            background: Rectangle {
-                radius: width / 2
-                color: Kirigami.Theme.negativeTextColor
-                opacity: closeButton.hovered ? 1.0 : 0.0
-                visible: opacity > 0
             }
         }
 
