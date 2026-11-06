@@ -102,22 +102,21 @@ def test_prev001_hover_opens_preview_above_dock_with_live_thumbnails(kdockw: KDo
     assert popup.get_attribute("name") == f"Preview for {APP}"
     assert has_state(popup, "showing") and has_state(popup, "visible")
     assert kdockw.find(pv.HEADER_XPATH).get_attribute("name") == APP
-    assert kdockw.find(pv.SEPARATOR_XPATH) is not None
+    assert kdockw.find("//popup_menu/button[starts-with(@name, 'Close ')]") is not None
     wait_until(lambda: sorted(pv.thumb_titles(kdockw)) == ["Blue", "Red"], message="one thumbnail per window")
+    pv.wait_on_screen(kdockw, popup)
     for title in ("Red", "Blue"):
+        pv.glide_into(kdockw, _thumb_center(kdockw, title))
         assert kdockw.find(pv.close_xpath(title)) is not None, f"close button of {title!r}"
         assert kdockw.find(f"{pv.thumb_xpath(title)}/label").get_attribute("name") == title
 
-    # Above the (bottom) dock, horizontally over the hovered item, right where
-    # the dock surface (panel bar + zoom headroom) ends: no gap in between, in
-    # the default AlwaysVisible mode too, where the dock reserves its panel
-    # bar as exclusive zone.
+    # Above the (bottom) dock and horizontally over the hovered item. The
+    # full-width dock surface includes the panel and Classic Zoom headroom, so
+    # its top edge is not the visible popup-to-icon spacing contract.
     popup_rect = pv.screen_rect(kdockw, popup)
     item = kdockw.screen_rect(kdockw.item(APP))
     assert popup_rect.y + popup_rect.height <= item.y, f"popup {popup_rect} not above item {item}"
     assert popup_rect.x <= item.center[0] <= popup_rect.x + popup_rect.width
-    dock = kdockw.surface_rect("dock")
-    assert abs(dock.y - (popup_rect.y + popup_rect.height)) <= 8, f"popup {popup_rect} detached from the dock surface {dock}"
 
     # Live PipeWire thumbnails: each shows its own window's content color.
     image = _wait_thumbnail_color(kdockw, "Red", pv.is_red, "prev001-red")
@@ -140,8 +139,7 @@ def test_prev002_grouped_app_shows_one_thumbnail_per_window_in_a_row(kdockw: KDo
 
     windows = _app_window_titles()
     assert windows == {"Alpha", "Beta", "Gamma"}
-    wait_until(lambda: len(kdockw.thumbnails()) == len(windows), message="thumbnail count == window count")
-    assert set(pv.thumb_titles(kdockw)) == windows
+    wait_until(lambda: set(pv.thumb_titles(kdockw)) == windows, message="thumbnail titles match KWin windows")
     rects = sorted((Rect.of(kdockw.find(pv.thumb_xpath(t))) for t in windows), key=lambda r: r.x)
     assert len({r.y for r in rects}) == 1, f"thumbnails not in one row: {rects}"
     for left, right in zip(rects, rects[1:]):
@@ -186,11 +184,17 @@ def test_prev004_close_button_closes_that_window(kdockw: KDockW, apps: TestWindo
     kdockw.wait_for_item(APP)
     kdockw.move_away()
     popup = pv.open_by_hover(kdockw, APP)
-    wait_until(lambda: len(kdockw.thumbnails()) == 3, message="three thumbnails")
+    wait_until(lambda: set(pv.thumb_titles(kdockw)) == {"Alpha", "Beta", "Gamma"}, message="three thumbnails")
 
     pv.wait_on_screen(kdockw, popup)
+    beta = pv.screen_rect(kdockw, kdockw.wait_for(pv.thumb_xpath("Beta")))
+    pv.glide_into(kdockw, beta.center)
     close = pv.screen_rect(kdockw, kdockw.wait_for(pv.close_xpath("Beta")))
-    pv.glide_into(kdockw, close.center)
+    # Leave Beta through the gap above its thumbnail. A straight diagonal to
+    # the right-aligned header control can cross Gamma and intentionally retarget
+    # the shared close button to that last hovered window.
+    inp.move_path([(beta.center[0], beta.y - 2), close.center], step_ms=20)
+    wait_until(lambda: kdockw.find(pv.close_xpath("Beta")) is not None, message="header close target remains Beta")
     assert kdockw.preview_visible(), "preview closed while moving the pointer into it"
     inp.click()
 

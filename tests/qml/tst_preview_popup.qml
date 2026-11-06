@@ -382,16 +382,23 @@ Item {
             compare(capture.opacity, 1, "PipeWire render item must retain its normal scene-graph opacity")
             capture.ready = true
 
+            let fallback = T.findFirst(minimized, o => o.objectName === "previewFallbackIcon")
+            verify(fallback && fallback.visible,
+                   "an initially minimized stream without a visible-window frame must show the app icon")
+
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
             tryCompare(minimized, "isMinimized", true)
             compare(minimized.captureItem, capture, "minimizing must not recreate or discard this window's capture")
             verify(capture.visible, "PipeWire source must remain active while minimized")
-            let fallback = T.findFirst(minimized, o => o.iconName !== undefined)
-            verify(fallback && !fallback.visible, "a ready minimized thumbnail must not show the app icon")
 
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", false)
             tryCompare(minimized, "isMinimized", false)
             compare(minimized.captureItem, capture, "restore must resume the existing capture")
+            tryVerify(() => !fallback.visible, 1000,
+                      "restoring a ready stream must uncover the thumbnail")
+            DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
+            tryCompare(minimized, "isMinimized", true)
+            verify(!fallback.visible, "a frame obtained while visible must be retained when minimized")
             verify(capture.visible)
             compare(capture.opacity, 1)
         }

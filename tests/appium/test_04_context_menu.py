@@ -158,19 +158,44 @@ def test_ctx001_right_click_opens_native_menu_at_the_item(kdockw: KDockW, apps: 
     assert area.x >= 0 and area.y >= 0
     assert area.x + area.width <= env.SCREEN_WIDTH and area.y + area.height <= env.SCREEN_HEIGHT
 
-    # Rendered with content (text/separators), not an empty surface.
-    shot = crop(capture(kdockw, "menu-open", area), area)
-    colors = shot.getcolors(maxcolors=1 << 16)
-    assert colors is None or len(colors) > 16, f"menu region looks blank: {colors}"
+    # Wait for the popup's first composited frame. KWin can publish the popup
+    # to AT-SPI before ScreenShot2 has captured its first rendered frame.
+    def rendered_menu() -> Image.Image | None:
+        candidate = crop(capture(kdockw, "menu-open", area), area)
+        colors = candidate.getcolors(maxcolors=1 << 16)
+        return candidate if colors is None or len(colors) > 16 else None
+
+    def rendered_menu_bytes() -> bytes | None:
+        frame = rendered_menu()
+        return frame.tobytes() if frame is not None else None
+
+    wait_until(rendered_menu, timeout=5, message="context menu frame to be composited")
+    wait_stable(rendered_menu_bytes, duration=0.4, timeout=5)
+    shot = wait_until(rendered_menu, timeout=5, message="context menu frame after its opening animation")
 
     # The menu owns the keyboard: the first Down highlights the first enabled
     # entry ("Pin to Dock"), a row below the disabled app-name header, in the
     # upper part of the menu.
     inp.key("Down")
-    changed = wait_until(
-        lambda: ImageChops.difference(shot, crop(capture(kdockw, "menu-down", area), area)).getbbox(),
+
+    wait_stable(
+        lambda: crop(capture(kdockw, "menu-down", area), area).tobytes(),
+        duration=0.2,
         timeout=5,
-        message="keyboard highlight in the menu",
+    )
+
+    def first_row_highlight() -> tuple[int, int, int, int] | None:
+        candidate = crop(capture(kdockw, "menu-down", area), area)
+        bounds = ImageChops.difference(shot, candidate).getbbox()
+        if bounds is None:
+            return None
+        top, bottom = bounds[1], bounds[3]
+        return bounds if top >= area.height * 0.08 and bottom <= area.height * 0.34 else None
+
+    changed = wait_until(
+        first_row_highlight,
+        timeout=5,
+        message="first enabled context-menu row to highlight",
     )
     top, bottom = changed[1], changed[3]
     assert top >= area.height * 0.08, f"highlight {changed} is on the header row (menu {area})"

@@ -36,9 +36,9 @@ from .waits import wait_stable, wait_until
 #: Seen under CPU contention (sharded runs) on Ubuntu 25.04 and 26.04.
 UNTYPED_BUFFER_WARNING = "invalid buffer type"
 
-#: Direct thumbnail buttons of the popup (their close buttons are nested
-#: one level deeper, so ``//popup_menu/button`` does not match them).
-THUMB_XPATH = PREVIEW_XPATH + "/button"
+#: Thumbnail buttons expose a title label as a direct child. The close
+#: control in the card header is also a direct button, but has no label child.
+THUMB_XPATH = PREVIEW_XPATH + "/button[label]"
 HEADER_XPATH = PREVIEW_XPATH + "/label"
 SEPARATOR_XPATH = PREVIEW_XPATH + "/separator"
 
@@ -50,7 +50,9 @@ def thumb_xpath(title: str) -> str:
 
 
 def close_xpath(title: str) -> str:
-    return f"{thumb_xpath(title)}/button[@name={_xpath_str('Close ' + title)}]"
+    # One close control lives in the card header; the hovered thumbnail selects
+    # which grouped window it targets.
+    return f"{PREVIEW_XPATH}/button[@name={_xpath_str('Close ' + title)}]"
 
 
 def thumb_titles(kdockw: KDockW) -> list[str]:

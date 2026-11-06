@@ -25,6 +25,10 @@ Item {
     property string title: ""
     property bool isMinimized: false
     property bool isActive: false
+    // A minimized window can expose a stream before KWin has delivered a
+    // usable frame. Retain the app icon until we have observed a frame while
+    // the window was visible, then keep that frame through minimize/restore.
+    property bool hasFrameWhileVisible: false
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
@@ -161,6 +165,10 @@ Item {
     }
 
     onCaptureItemChanged: updateSourceAspectRatio()
+    onIsMinimizedChanged: {
+        if (!isMinimized && captureItem && captureItem.ready)
+            hasFrameWhileVisible = true
+    }
     Component.onCompleted: {
         captureWinId = winId
         updateSourceAspectRatio()
@@ -284,6 +292,10 @@ Item {
             objectName: "previewImageViewport"
             anchors.fill: parent
             anchors.margins: root.captureBorderWidth
+            // Keep the PipeWire stream alive while minimized. When no frame
+            // was captured from a visible window, show the app icon instead
+            // of KWin's empty minimized-window buffer.
+            opacity: !root.isMinimized || root.hasFrameWhileVisible ? 1 : 0
             sourceComponent: root.captureClipMode === "raw" ? rawCaptureComponent
                 : root.captureClipMode === "center50" ? center50CaptureComponent
                 : root.captureSourceMode === "image" ? roundedImageReferenceComponent
@@ -417,6 +429,8 @@ Item {
                 function onStateChanged() { root.logCaptureState("state-changed") }
                 function onReadyChanged() {
                     root.updateSourceAspectRatio()
+                    if (root.captureItem && root.captureItem.ready && !root.isMinimized)
+                        root.hasFrameWhileVisible = true
                     root.logCaptureState("ready-changed")
                 }
                 function onStreamSizeChanged() {
@@ -456,6 +470,7 @@ Item {
         // Fallback: icon until PipeWire has received a frame.
         Item {
             id: fallbackIcon
+            objectName: "previewFallbackIcon"
             anchors.centerIn: parent
             width: Kirigami.Units.iconSizes.large
             height: Kirigami.Units.iconSizes.large
@@ -466,6 +481,7 @@ Item {
             }
             readonly property bool isRawIcon: iconName.startsWith("raw:")
             visible: !root.captureItem || !root.captureItem.ready
+                || (root.isMinimized && !root.hasFrameWhileVisible)
 
             Kirigami.Icon {
                 anchors.fill: parent

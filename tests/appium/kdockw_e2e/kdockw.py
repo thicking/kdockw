@@ -30,7 +30,9 @@ from .waits import wait_stable, wait_until
 TOOLBAR_XPATH = "//tool_bar[@name='KDockW Dock']"
 ITEMS_XPATH = TOOLBAR_XPATH + "/button"
 PREVIEW_XPATH = "//popup_menu"
-THUMBNAILS_XPATH = PREVIEW_XPATH + "/button"
+# The header close control is also a direct button; only thumbnail buttons
+# expose a direct title label.
+THUMBNAILS_XPATH = PREVIEW_XPATH + "/button[label]"
 #: The Settings window's frame (SettingsDialog.qml, title "Settings").
 SETTINGS_XPATH = "/*/frame[@name='Settings']"
 #: AT-SPI role of a Kirigami/QQC2 Page: QQuickPage::accessibleRole() is

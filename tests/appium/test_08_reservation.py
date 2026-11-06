@@ -554,20 +554,22 @@ def test_prev_reservation_hover_popup_stays_inward_of_resting_dock_item(
     screen = Rect(*rest["screen"])
     assert screen.x <= popup_rect.x and popup_rect.x + popup_rect.width <= screen.x + screen.width, observation
     assert screen.y <= popup_rect.y and popup_rect.y + popup_rect.height <= screen.y + screen.height, observation
-    # Both the actual popup and its KWin toplevel must sit on the content
-    # side of the unzoomed icon measured before hover. No margin, exclusive
-    # zone getter, thumbnail pixels, or KDockW panel-size constants are used.
+    # The visible popup must sit on the content side of the unzoomed icon
+    # measured before hover. The full-screen LayerShell surface intentionally
+    # includes transparent anchor/headroom around that popup; its containment
+    # of the popup is checked by _popup_geometry, but its outer bounds are not
+    # a visible overlap contract.
     if edge == config.EDGE_TOP:
-        assert surface.y >= icon.y + icon.height and popup_rect.y >= icon.y + icon.height, observation
+        assert popup_rect.y >= icon.y + icon.height, observation
         assert popup_rect.x <= icon.center[0] <= popup_rect.x + popup_rect.width, observation
     elif edge == config.EDGE_BOTTOM:
-        assert surface.y + surface.height <= icon.y and popup_rect.y + popup_rect.height <= icon.y, observation
+        assert popup_rect.y + popup_rect.height <= icon.y, observation
         assert popup_rect.x <= icon.center[0] <= popup_rect.x + popup_rect.width, observation
     elif edge == config.EDGE_LEFT:
-        assert surface.x >= icon.x + icon.width and popup_rect.x >= icon.x + icon.width, observation
+        assert popup_rect.x >= icon.x + icon.width, observation
         assert popup_rect.y <= icon.center[1] <= popup_rect.y + popup_rect.height, observation
     else:
-        assert surface.x + surface.width <= icon.x and popup_rect.x + popup_rect.width <= icon.x, observation
+        assert popup_rect.x + popup_rect.width <= icon.x, observation
         assert popup_rect.y <= icon.center[1] <= popup_rect.y + popup_rect.height, observation
 
 

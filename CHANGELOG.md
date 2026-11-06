@@ -60,6 +60,12 @@ KDockW 0.3.0 brings rounded live previews for open and minimized windows, flexib
 
 ### Fixed
 
+- Showed the application icon for an initially minimized window until KWin
+  provides a usable frame, while retaining a real frame through later
+  minimize-and-restore cycles.
+- Started hover hit-testing from the configured maximum zoom envelope when the
+  pointer enters the dock, so reconnected pointer devices can activate the item
+  without relying on a follow-up motion event.
 - Reduced the preview's default visible gap to the dock to 2 px by removing
   extra fixed offsets and positioning the card from the measured icon edge;
   the popup remains beyond the dock's maximum zoom envelope.

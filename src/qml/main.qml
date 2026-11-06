@@ -602,7 +602,7 @@ Item {
     // re-run the hit test. dockPanel.mouseX = primary axis (along the dock),
     // dockPanel.mouseY = secondary axis (depth), so all zoom/hover logic works
     // identically regardless of orientation; -1 = outside the dock zone.
-    function trackPointer(x, y) {
+    function trackPointer(x, y, entryEnvelope = false) {
         // The context menu holds the zoom anchor (see _hoverHeld).
         if (_hoverHeld) return
         let zoomExtension = DockSettings.iconSize * (DockSettings.maxZoomFactor - 1.0)
@@ -636,10 +636,10 @@ Item {
                 dockPanel.mouseY = -1
             }
         }
-        updateHoveredItem()
+        updateHoveredItem(entryEnvelope)
     }
 
-    function updateHoveredItem() {
+    function updateHoveredItem(entryEnvelope = false) {
         // Geometry/scale callbacks must not move the held hover.
         if (_hoverHeld) return
         if (dockPanel.mouseX < 0) {
@@ -691,14 +691,17 @@ Item {
                 let it = dockRepeater.itemAt(i)
                 if (!it) continue
                 let dist = Math.abs(dockPanel.mouseX - (it.itemCenterX + it.currentOffset))
-                let half = DockSettings.iconSize * it.currentScale / 2 + DockSettings.iconSpacing / 2
+                let hitScale = entryEnvelope ? Math.max(it.currentScale, DockSettings.maxZoomFactor) : it.currentScale
+                let half = DockSettings.iconSize * hitScale / 2 + DockSettings.iconSpacing / 2
                 if (dist <= half && dist < bestDist) { slot = i; bestDist = dist }
             }
             let slotItem = slot >= 0 ? dockRepeater.itemAt(slot) : null
             let hit = false
             if (slotItem) {
                 // Secondary axis: scaled extent honours the edge-pinned Scale origin
-                let span = _secondarySpan(slotItem, slotItem.currentScale)
+                let hitScale = entryEnvelope
+                    ? Math.max(slotItem.currentScale, DockSettings.maxZoomFactor) : slotItem.currentScale
+                let span = _secondarySpan(slotItem, hitScale)
                 hit = dockPanel.mouseY >= span.near && dockPanel.mouseY <= span.far
             }
             if (hit) {
@@ -735,8 +738,9 @@ Item {
             // icon). Primary extent is item.width (horizontal) / item.height
             // (vertical); itemCenterX is already axis-aware.
             let dist = Math.abs(dockPanel.mouseX - item.itemCenterX)
+            let hitScale = entryEnvelope ? Math.max(item.currentScale, DockSettings.maxZoomFactor) : item.currentScale
             let scaledHalfWidth = ((DockView.isVertical ? item.height : item.width)
-                                   * item.currentScale) / 2
+                                   * hitScale) / 2
             let normDist = dist / scaledHalfWidth
 
             // Hysteresis: currently-hovered icon uses wider exit threshold
@@ -745,7 +749,7 @@ Item {
 
             // Secondary-axis check: scaled extent honours the edge-pinned
             // Scale origin (grows away from the screen edge)
-            let span = _secondarySpan(item, item.currentScale)
+            let span = _secondarySpan(item, hitScale)
             if (dockPanel.mouseY < span.near || dockPanel.mouseY > span.far) continue
 
             // Comparison: currently-hovered icon gets distance bonus (sticky)
@@ -883,6 +887,8 @@ Item {
             DockVisibility.setHovered(true)
             if (root._hoverReconciling)
                 root._reconcileAt(mouseX, mouseY)
+            else
+                root.trackPointer(mouseX, mouseY, true)
         }
         onExited: {
             if (root._menuHeld) return

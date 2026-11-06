@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from kdockw_e2e import config, env, kwin
+from kdockw_e2e import config, env, kwin, preview as pv
 from kdockw_e2e import input as inp
 from kdockw_e2e.kdockw import ITEMS_XPATH, DescriptionChanges, KDockW, Rect, painted_rect
 from kdockw_e2e.shortcuts import invoke_shortcut
@@ -892,9 +892,25 @@ def _tooltip_bbox(shot: np.ndarray, baseline: np.ndarray) -> Rect | None:
     return bbox if bbox is not None and 14 <= bbox.height <= 48 else None
 
 
-def _tooltip_glyph_count(shot: np.ndarray, rect: Rect) -> int:
+def _tooltip_glyph_count(shot: np.ndarray, rect: Rect, occluded_by: Rect | None = None) -> int:
     region = shot[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
-    luminance = region[..., :3] @ np.array([0.299, 0.587, 0.114])
+    pixels = region[..., :3]
+    if occluded_by is not None:
+        # The redesigned preview is a separate, higher layer-shell surface and
+        # can cover the old tooltip's screen coordinates. Those pixels cannot
+        # show a dock tooltip; exclude them so thumbnail text in the preview
+        # is not miscounted as tooltip glyphs.
+        x1 = max(rect.x, occluded_by.x) - rect.x
+        y1 = max(rect.y, occluded_by.y) - rect.y
+        x2 = min(rect.x + rect.width, occluded_by.x + occluded_by.width) - rect.x
+        y2 = min(rect.y + rect.height, occluded_by.y + occluded_by.height) - rect.y
+        mask = np.ones((rect.height, rect.width), dtype=bool)
+        if x1 < x2 and y1 < y2:
+            mask[y1:y2, x1:x2] = False
+        pixels = pixels[mask]
+        if pixels.size == 0:
+            return 0
+    luminance = pixels @ np.array([0.299, 0.587, 0.114])
     background = np.median(luminance)
     return int((np.abs(luminance - background) > 80).sum())
 
@@ -954,8 +970,11 @@ def test_mouse013_group_preview_clears_tooltip_and_restores_it_after_close(
     assert group_tip is not None
     kdockw.click_item(NAME1)
     wait_until(kdockw.preview_visible, message="explicit group preview to become visible")
+    popup_rect = pv.screen_rect(kdockw, kdockw.preview_popup())
     wait_until(
-        lambda: _tooltip_glyph_count(_pixels(kdockw.screenshot("qa011-popup-no-tooltip", band)), group_tip) < 40,
+        lambda: _tooltip_glyph_count(
+            _pixels(kdockw.screenshot("qa011-popup-no-tooltip", band)), group_tip, popup_rect
+        ) < 40,
         message="explicit preview to clear its text tooltip",
     )
     kdockw.click_item(NAME1)

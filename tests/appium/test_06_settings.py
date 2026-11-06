@@ -301,6 +301,21 @@ def focus_slider(kdockw: KDockW, xpath: str, lo: float, hi: float):
     raise AssertionError(f"{xpath}: could not restore {before} after focusing (now {value})")
 
 
+def click_slider_to_value(kdockw: KDockW, xpath: str, value: float, lo: float, hi: float):
+    """Set a slider by clicking the track at ``value`` and return its node.
+
+    This avoids relying on keyboard focus changing while the long settings
+    page is being scrolled; the persisted value is still checked by callers.
+    """
+    slider = scroll_into_view(kdockw, xpath)
+    rect = kdockw.screen_rect(slider, "settings")
+    handle = min(rect.height, 24)
+    fraction = (value - lo) / (hi - lo) if hi > lo else 0.0
+    x = round(rect.x + handle / 2 + fraction * (rect.width - handle))
+    inp.click(x, rect.center[1])
+    return kdockw.wait_for(xpath)
+
+
 def close_settings(kdockw: KDockW) -> None:
     """Close the settings window with a real Alt+F4 (KWin's Window Close)."""
     (win,) = settings_windows(kdockw)
@@ -1489,11 +1504,17 @@ def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
         slider = scroll_into_view(kdockw, xpath)
         assert has_state(slider, "enabled") == enabled, f"{label} availability must match how previews can be opened"
         if enabled:
-            slider = focus_slider(kdockw, xpath, lo, hi)
             old_value = slider_value(slider)
-            inp.key("right")
-            wait_until(lambda: slider_value(slider) == old_value + step, message=f"{label} changed through the UI")
-            wait_until(lambda: int(config_value(kdockw, key) or 0) == int(old_value + step), message=f"{label} saved")
+            target_value = old_value + step
+            click_slider_to_value(kdockw, xpath, target_value, lo, hi)
+            # Track clicks have physical-pixel precision. The native slider's
+            # continuous value may sit between steps; the user-visible value
+            # and persisted setting are the snapped preference.
+            wait_until(
+                lambda: int(config_value(kdockw, key) or 0) == int(target_value),
+                message=f"{label} saved at the selected step",
+            )
+            wait_until(lambda: int(config_value(kdockw, key) or 0) == int(target_value), message=f"{label} saved")
     close_settings(kdockw)
 
     kdockw.hover_item(env.TEST_APP_NAME)

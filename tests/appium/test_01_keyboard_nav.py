@@ -219,12 +219,11 @@ def test_kbd003_down_opens_preview_with_first_thumbnail_focused(kdockw: KDockW, 
     assert popup.get_attribute("name") == f"Preview for {env.TEST_APP2_NAME}"
     assert has_state(popup, "showing") and has_state(popup, "visible")
     assert kdockw.find(f"//popup_menu/label[@name='{env.TEST_APP2_NAME}']") is not None, "app name label"
-    assert kdockw.find("//popup_menu/separator") is not None, "separator"
+    assert kdockw.find("//popup_menu/button[@name='Close Calc']") is not None, "header close button"
     thumbs = kdockw.thumbnails()
     assert len(thumbs) == 1
     assert thumbnail_title(thumbs[0].get_attribute("name")) == "Calc"
     assert has_state(thumbs[0], "focused")
-    assert kdockw.find("//popup_menu/button/button[@name='Close Calc']") is not None, "close button"
     assert kdockw.find("//popup_menu/button/label[@name='Calc']") is not None, "title label"
 
     if kwin.can_capture():
