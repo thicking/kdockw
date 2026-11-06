@@ -11,6 +11,14 @@ add_test(NAME kdockw_desktop_entries
         -P ${CMAKE_CURRENT_SOURCE_DIR}/check_desktop_entries.cmake
 )
 
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    add_test(NAME kdockw_diagnostic_desktop_permissions
+        COMMAND ${CMAKE_COMMAND}
+            -DDESKTOP_FILE=${CMAKE_SOURCE_DIR}/tools/kdockw-icon-diagnostic.desktop
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/check_diagnostic_desktop_permissions.cmake
+    )
+endif()
+
 add_test(NAME kdockw_config_migration
     COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/migration-scripts.sh ${CMAKE_SOURCE_DIR}
 )

@@ -11,6 +11,8 @@
 #include <QQuickImageProvider>
 #include <QRect>
 
+namespace kdockw { class IconDiagnostics; }
+
 namespace kdockw
 {
 
@@ -39,7 +41,7 @@ struct IconNormalizationInfo {
 class TaskIconProvider : public QQuickImageProvider
 {
 public:
-    explicit TaskIconProvider(bool normalizationEnabled = true);
+    explicit TaskIconProvider(bool normalizationEnabled = true, IconDiagnostics *diagnostics = nullptr);
 
     QPixmap requestPixmap(const QString &id, QSize *size, const QSize &requestedSize) override;
 
@@ -63,19 +65,20 @@ private:
     /// Analyze an icon to determine its content ratio. The cache key includes
     /// the icon's content revision so replacement artwork cannot reuse stale
     /// normalization geometry.
-    IconNormalizationInfo analyzeIcon(const QString &iconName, const QIcon &icon);
+    IconNormalizationInfo analyzeIcon(const QString &iconName, const QIcon &icon, bool *cacheHit = nullptr);
 
     /// Load, crop, and scale an icon to fill the target size.
-    QPixmap normalizePixmap(const QIcon &icon, int targetSize, const IconNormalizationInfo &info);
+    QPixmap normalizePixmap(const QIcon &icon, int targetSize, const IconNormalizationInfo &info, qreal dpr = 1.0);
 
     /// Shrink an icon to add breathing room. Factor 1.0 = no shrink, 0.88 = 12% smaller.
-    static QPixmap shrinkPixmap(const QIcon &icon, int targetSize, qreal shrinkFactor);
+    static QPixmap shrinkPixmap(const QIcon &icon, int targetSize, qreal shrinkFactor, qreal dpr = 1.0);
 
     QMutex m_mutex;
     QHash<QString, IconNormalizationInfo> m_cache;
     quint64 m_cacheGeneration = 0;
     bool m_normalizationEnabled = true;
     qreal m_iconScale = 1.0;
+    IconDiagnostics *m_diagnostics = nullptr;
 
     // QML image providers are created per DockView, while DockModel is shared.
     // Keep only a bounded number of opaque raw sources for all providers and

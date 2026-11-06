@@ -247,36 +247,59 @@ void DockVisibilityController::setDodgeActiveOnly(bool activeOnly)
 
 void DockVisibilityController::setPanelRect(qreal x, qreal y, qreal width, qreal height)
 {
-    m_panelX = static_cast<int>(x);
-    m_panelY = static_cast<int>(y);
-    m_panelWidth = static_cast<int>(width);
-    m_panelHeight = static_cast<int>(height);
+    const int panelX = static_cast<int>(x);
+    const int panelY = static_cast<int>(y);
+    const int panelWidth = static_cast<int>(width);
+    const int panelHeight = static_cast<int>(height);
 
     if (!m_hasInteractionRect) {
-        m_interactionX = m_panelX;
-        m_interactionY = m_panelY;
-        m_interactionWidth = m_panelWidth;
-        m_interactionHeight = m_panelHeight;
+        m_interactionX = panelX;
+        m_interactionY = panelY;
+        m_interactionWidth = panelWidth;
+        m_interactionHeight = panelHeight;
     }
+
+    const int panelRefY = m_visible ? m_interactionY : m_panelRefY;
+    const bool panelGeometryChanged = m_panelX != panelX || m_panelY != panelY || m_panelWidth != panelWidth || m_panelHeight != panelHeight;
+    const bool panelRefChanged = m_panelRefY != panelRefY;
+    if (!panelGeometryChanged && !panelRefChanged) {
+        return;
+    }
+
+    m_panelX = panelX;
+    m_panelY = panelY;
+    m_panelWidth = panelWidth;
+    m_panelHeight = panelHeight;
 
     // Record the interaction Y only while the dock is visible. During the
     // hide animation the interaction rect moves off-screen, but Dodge must
     // answer "would this area overlap if the dock were visible?".
-    if (m_visible) {
-        m_panelRefY = m_interactionY;
-    }
+    m_panelRefY = panelRefY;
 
     qCDebug(lcVisibility) << "setPanelRect: y=" << m_panelY << "refY=" << m_panelRefY << "visible=" << m_visible;
 
-    Q_EMIT panelRectChanged();
+    if (panelGeometryChanged) {
+        Q_EMIT panelRectChanged();
+    } else {
+        updateRegionGeometry();
+    }
 }
 
 void DockVisibilityController::setInteractionRect(qreal x, qreal y, qreal width, qreal height)
 {
-    m_interactionX = static_cast<int>(x);
-    m_interactionY = static_cast<int>(y);
-    m_interactionWidth = static_cast<int>(width);
-    m_interactionHeight = static_cast<int>(height);
+    const int interactionX = static_cast<int>(x);
+    const int interactionY = static_cast<int>(y);
+    const int interactionWidth = static_cast<int>(width);
+    const int interactionHeight = static_cast<int>(height);
+    if (m_hasInteractionRect && m_interactionX == interactionX && m_interactionY == interactionY
+        && m_interactionWidth == interactionWidth && m_interactionHeight == interactionHeight) {
+        return;
+    }
+
+    m_interactionX = interactionX;
+    m_interactionY = interactionY;
+    m_interactionWidth = interactionWidth;
+    m_interactionHeight = interactionHeight;
     m_hasInteractionRect = true;
 
     if (m_visible) {

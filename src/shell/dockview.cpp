@@ -7,6 +7,7 @@
 #include "dockvisibilitycontroller.h"
 #include "kdockw.h"
 #include "models/taskiconprovider.h"
+#include "models/icondiag.h"
 #include "platform/pointerfocustracker.h"
 #include "utils/surfacegeometry.h"
 #include "utils/zoomlayoutvariant.h"
@@ -80,7 +81,10 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
     connect(m_pointerFocusTracker.get(), &PointerFocusTracker::pointerInsideChanged, this, &DockView::pointerInsideChanged);
 
     // Register the icon image provider for QML
-    m_iconProvider = new TaskIconProvider(m_settings->iconNormalization());
+    m_iconDiagnostics = new IconDiagnostics(this);
+    m_iconDiagnostics->attachWindow(this);
+    engine()->rootContext()->setContextProperty(QStringLiteral("IconDiagnostics"), m_iconDiagnostics);
+    m_iconProvider = new TaskIconProvider(m_settings->iconNormalization(), m_iconDiagnostics);
     m_iconProvider->setIconScale(m_settings->iconScale());
     engine()->addImageProvider(QStringLiteral("icon"), m_iconProvider);
 
@@ -89,6 +93,7 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
         m_iconProvider->clearCache();
         bumpIconCacheVersion();
     });
+    connect(m_iconDiagnostics, &IconDiagnostics::iconDprChanged, this, &DockView::bumpIconCacheVersion);
 
     // Refresh provider URLs when task artwork arrives or changes.
     connect(tasksModel, &QAbstractItemModel::dataChanged, this, [this](const QModelIndex &, const QModelIndex &, const QList<int> &roles) {
@@ -135,6 +140,7 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
                                           SLOT(handleScreenLockChanged(bool)));
 
     show();
+    m_iconDiagnostics->logEnvironment(QStringLiteral("dock-shown"));
 }
 
 QColor DockView::backgroundColor() const
@@ -175,21 +181,19 @@ bool DockView::isVertical() const
     return m_edge == DockPlatform::Edge::Left || m_edge == DockPlatform::Edge::Right;
 }
 
-int DockView::sideTooltipReserve() const
+int DockView::tooltipReserve() const
 {
-    return m_sideTooltipReserve;
+    return m_tooltipReserve;
 }
 
-void DockView::setSideTooltipReserve(int reserve)
+void DockView::setTooltipReserve(int reserve)
 {
-    if (m_sideTooltipReserve == reserve) {
+    if (m_tooltipReserve == reserve) {
         return;
     }
-    m_sideTooltipReserve = reserve;
-    if (isVertical()) {
-        updateSize();
-    }
-    Q_EMIT sideTooltipReserveChanged();
+    m_tooltipReserve = reserve;
+    updateSize();
+    Q_EMIT tooltipReserveChanged();
 }
 
 void DockView::setEdge(DockPlatform::Edge edge)
@@ -283,9 +287,9 @@ void DockView::updateSize()
     const int crossPaddingLeading = isVertical() ? m_settings->contentPaddingLeft() : m_settings->contentPaddingTop();
     const int crossPaddingTrailing = isVertical() ? m_settings->contentPaddingRight()
                                                   : m_settings->contentPaddingBottom();
-    // Horizontal docks open the tooltip above/below the panel (fits s_tooltipReserve);
-    // vertical docks open it beside the panel, so the reserve must fit its full width.
-    const int tooltipReserve = isVertical() ? std::max(s_tooltipReserve, m_sideTooltipReserve) : s_tooltipReserve;
+    // The tooltip is rendered inside this layer-shell surface on every edge.
+    // Reserve its full extent plus zoom gap and shadow, not a fixed strip.
+    const int tooltipReserve = std::max(s_tooltipReserve, m_tooltipReserve);
     const int h = kdockw::surfaceHeight(iconSize,
                                         crossPaddingLeading,
                                         crossPaddingTrailing,

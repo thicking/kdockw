@@ -3,9 +3,11 @@
 
 import QtQuick
 import QtQuick.Controls as QQC2
+import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
+import "BadgeTextColor.js" as BadgeTextColor
 
 /**
  * Main dock container.
@@ -1814,16 +1816,16 @@ Item {
         }
     }
 
-    // Vertical docks open the tooltip beside the panel, inside a fixed surface
-    // reserve. Publish that reserve (gap + max tooltip width) so DockView sizes
-    // the surface to fit; the input region stays on the panel.
+    // Tooltips are rendered inside the dock's layer-shell surface. Publish the
+    // maximum cross-axis extent (text, gap at maximum zoom, shadow) so the
+    // compositor surface contains the full tooltip on every dock edge.
     Binding {
         target: DockView
-        property: "sideTooltipReserve"
-        value: Math.ceil(Kirigami.Units.largeSpacing + tooltipItem.maxSideWidth)
+        property: "tooltipReserve"
+        value: tooltipItem.requiredSurfaceReserve
     }
 
-    Rectangle {
+    Kirigami.ShadowedRectangle {
         id: tooltipItem
         objectName: "dockTooltip"
         Accessible.ignored: true
@@ -1835,6 +1837,31 @@ Item {
 
         // Longer names elide on vertical docks instead of clipping at the surface edge
         readonly property real maxSideWidth: Kirigami.Units.gridUnit * 15
+        readonly property real maxLabelWidth: DockView.isVertical
+            ? maxSideWidth - Kirigami.Units.largeSpacing * 2
+            : Math.max(0, root.width - Kirigami.Units.largeSpacing * 4)
+        readonly property real maximumZoomGrowth: DockSettings.iconSize
+            * Math.max(0, DockSettings.maxZoomFactor - 1)
+        readonly property real maximumGap: Kirigami.Units.largeSpacing + maximumZoomGrowth
+        readonly property real shadowOverflow: shadow.size
+            + Math.max(Math.abs(shadow.xOffset), Math.abs(shadow.yOffset))
+        readonly property real crossAxisExtent: DockView.isVertical
+            ? maxSideWidth
+            : height
+        readonly property int requiredSurfaceReserve: Math.ceil(
+            crossAxisExtent + maximumGap + shadowOverflow)
+
+        // The tooltip sits beyond the zoomed icon's outward edge, not just
+        // beyond the dock's rest-size panel. This keeps it clear of the icon
+        // while still using the same live zoom scale for launchers and windows.
+        function gapForItem(item) {
+            return Kirigami.Units.largeSpacing
+                + Math.max(0, item.iconSize * (item.currentScale - 1))
+        }
+
+        function clampToSurface(center, extent, available) {
+            return Math.max(0, Math.min(available - extent, center - extent / 2))
+        }
 
         // Position on the opposite side of the dock edge
         x: {
@@ -1842,40 +1869,52 @@ Item {
                 return 0
             let item = dockRepeater.itemAt(root.hoveredIndex)
             if (!item) return 0
-            let sp = Kirigami.Units.largeSpacing
+            let sp = tooltipItem.gapForItem(item)
             if (DockView.edge === 2) return dockPanel.x + dockPanel.width + sp  // Left → right
             if (DockView.edge === 3) return dockPanel.x - width - sp            // Right → left
-            // Visual centre: rest centre plus the animated zoom offset (Scale keeps the centre)
-            return dockPanel.x + root._primaryRestSlotStart(item) + item.width / 2 + item.currentOffset - width / 2
+            // Visual centre: rest centre plus the animated zoom offset (Scale keeps the centre).
+            // Clamp along the screen axis so edge icons never put the label
+            // outside the layer-shell surface.
+            const center = dockPanel.x + root._primaryRestSlotStart(item)
+                + item.width / 2 + item.currentOffset
+            return tooltipItem.clampToSurface(center, width, root.width)
         }
         y: {
             if (root.hoveredIndex < 0 || root.hoveredIndex >= dockRepeater.count)
                 return 0
             let item = dockRepeater.itemAt(root.hoveredIndex)
             if (!item) return 0
-            let sp = Kirigami.Units.largeSpacing
+            let sp = tooltipItem.gapForItem(item)
             if (DockView.edge === 0) return dockPanel.y + dockPanel.height + sp  // Top → below
             if (DockView.edge === 1) return dockPanel.y - height - sp            // Bottom → above
-            return dockPanel.y + root._primaryRestSlotStart(item) + item.height / 2 + item.currentOffset - height / 2
+            const center = dockPanel.y + root._primaryRestSlotStart(item)
+                + item.height / 2 + item.currentOffset
+            return tooltipItem.clampToSurface(center, height, root.height)
         }
-
-        Kirigami.Theme.colorSet: Kirigami.Theme.Tooltip
-        Kirigami.Theme.inherit: false
 
         width: tooltipLabel.width + Kirigami.Units.largeSpacing * 2
         height: tooltipLabel.implicitHeight + Kirigami.Units.largeSpacing
-        radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.backgroundColor
+        radius: Math.min(DockSettings.cornerRadius, width / 2, height / 2)
+        color: DockView.backgroundColor.a > 0
+            ? DockView.backgroundColor
+            : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
+        border.width: 1
+        border.color: Qt.alpha(BadgeTextColor.choose(color, Kirigami.Theme.textColor), 0.27)
+        shadow.size: DockSettings.shadowEnabled ? DockSettings.shadowLightRadius * 2 : 0
+        shadow.xOffset: -DockSettings.shadowLightX * DockSettings.shadowElevation
+            / Math.max(1, DockSettings.shadowLightZ)
+        shadow.yOffset: -DockSettings.shadowLightY * DockSettings.shadowElevation
+            / Math.max(1, DockSettings.shadowLightZ)
+        shadow.color: Qt.alpha(DockSettings.shadowColor, DockSettings.shadowIntensity)
         z: 100
 
         QQC2.Label {
             id: tooltipLabel
             anchors.centerIn: parent
-            width: DockView.isVertical
-                ? Math.min(implicitWidth, tooltipItem.maxSideWidth - Kirigami.Units.largeSpacing * 2)
-                : implicitWidth
+            width: Math.min(implicitWidth, tooltipItem.maxLabelWidth)
             elide: Text.ElideRight
             text: root.hoveredName
+            color: BadgeTextColor.choose(tooltipItem.color, Kirigami.Theme.textColor)
             Accessible.ignored: true
         }
 
@@ -1922,6 +1961,119 @@ Item {
         function onModelReset() {
             root.scheduleDelegateGeometryRefresh()
             root.scheduleHoverRehit()
+        }
+    }
+
+    // Debug-only badge overlay prototype. These delegates are siblings of the
+    // dock panel under the existing layer-shell root, so glyphs are laid out
+    // at their final zoom size without creating another Wayland surface or
+    // inheriting DockItem's parabolic Scale transform.
+    Repeater {
+        model: DockModel.tasksModel
+        delegate: Item {
+            id: badgeOverlay
+            objectName: "badgeOverlayItem"
+            // Repeater.itemAt() has no change notification. Depend on the
+            // dock repeater's insertion/removal revision so this lookup is
+            // retried when its delegates are created asynchronously.
+            readonly property int sourceItemRevision: dockRepeater.layoutRevision
+            readonly property var sourceItem: sourceItemRevision >= 0
+                ? dockRepeater.itemAt(index) : null
+            readonly property real sourceScale: sourceItem ? sourceItem.badgeOverlayScale : 1
+            readonly property rect mappedBadge: sourceItem && sourceItem.badgeOverlayVisible
+                    && sourceScale >= 0
+                ? sourceItem.badgeOverlayRectIn(root) : Qt.rect(0, 0, 0, 0)
+            x: mappedBadge.x
+            y: mappedBadge.y
+            width: mappedBadge.width
+            height: mappedBadge.height
+            visible: !!sourceItem && sourceItem.badgeOverlayVisible
+            enabled: false
+            z: 250
+            Accessible.ignored: true
+
+            Rectangle {
+                id: badgeOverlayCircle
+                anchors.fill: parent
+                radius: width / 2
+                color: Kirigami.Theme.highlightColor
+            }
+
+            MultiEffect {
+                anchors.fill: badgeOverlayCircle
+                source: badgeOverlayCircle
+                shadowEnabled: true
+                shadowColor: Qt.alpha("black", 0.4)
+                shadowBlur: 0.3
+                shadowVerticalOffset: 1
+            }
+
+            QQC2.Label {
+                id: badgeOverlayLabel
+                objectName: "badgeOverlayLabel"
+                width: parent.width - 2
+                height: parent.height - 2
+                // Keep the label centered at fractional zoom coordinates;
+                // QQuick anchors can snap the top-left to an integer pixel.
+                x: (parent.width - width) / 2
+                y: (parent.height - height) / 2
+                text: sourceItem && sourceItem.badgeOverlayCount > 99
+                    ? "99+" : (sourceItem ? sourceItem.badgeOverlayCount.toString() : "")
+                color: BadgeTextColor.choose(badgeOverlayCircle.color,
+                                             Kirigami.Theme.highlightedTextColor)
+                renderType: Text.QtRendering
+                font.pixelSize: parent.height * 0.55
+                font.bold: true
+                fontSizeMode: Text.Fit
+                minimumPixelSize: 5
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                Component.onCompleted: {
+                    if (IconDiagnostics.testBadgeTextQt)
+                        renderType = Text.QtRendering
+                    else if (IconDiagnostics.testBadgeTextNative)
+                        renderType = Text.NativeRendering
+                    logOverlayMetrics("component-created")
+                }
+                function renderTypeName() {
+                    if (renderType === Text.NativeRendering) return "native"
+                    if (renderType === Text.CurveRendering) return "curve"
+                    return "qt"
+                }
+                function logOverlayMetrics(reason) {
+                    if (!sourceItem || !IconDiagnostics.testBadgeMetrics)
+                        return
+                    const topLeft = mapToItem(root, 0, 0)
+                    const bottomRight = mapToItem(root, width, height)
+                    const rootGeometry = Qt.rect(
+                        Math.min(topLeft.x, bottomRight.x),
+                        Math.min(topLeft.y, bottomRight.y),
+                        Math.abs(bottomRight.x - topLeft.x),
+                        Math.abs(bottomRight.y - topLeft.y))
+                    IconDiagnostics.logBadgeOverlayRenderMetrics(
+                        sourceItem._appId, sourceItem.badgeOverlayCount,
+                        renderTypeName(), sourceItem.badgeOverlayScale,
+                        parent.height * 0.55, font.pixelSize, fontInfo.pixelSize,
+                        baselineOffset, contentWidth, contentHeight,
+                        Qt.rect(x, y, width, height), rootGeometry,
+                        layer.enabled, badgeOverlay.layer.enabled,
+                        scale, badgeOverlay.scale,
+                        IconDiagnostics.windowDevicePixelRatio)
+                }
+                onWidthChanged: logOverlayMetrics("width-changed")
+                onHeightChanged: logOverlayMetrics("height-changed")
+                onFontChanged: logOverlayMetrics("overlay-font-changed")
+                onBaselineOffsetChanged: logOverlayMetrics("overlay-baseline-changed")
+                onContentWidthChanged: logOverlayMetrics("overlay-content-width-changed")
+                onContentHeightChanged: logOverlayMetrics("overlay-content-height-changed")
+            }
+
+            Connections {
+                target: sourceItem
+                function onBadgeOverlayScaleChanged() {
+                    badgeOverlayLabel.logOverlayMetrics("zoom-frame")
+                }
+            }
         }
     }
 

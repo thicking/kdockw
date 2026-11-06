@@ -1479,6 +1479,9 @@ def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
     preview_controls_enabled = hover_enabled or grouped_action == 1
     for label, enabled, key, lo, hi, step in (
         ("Thumbnail width (px)", preview_controls_enabled, "PreviewThumbnailSize", 120, 320, 20),
+        ("Maximum thumbnail height (px)", preview_controls_enabled, "PreviewMaximumHeight", 80, 300, 10),
+        ("Card inner padding (px)", preview_controls_enabled, "PreviewCardPadding", 4, 24, 1),
+        ("Gap between preview and dock (px)", preview_controls_enabled, "PreviewDockGap", 0, 32, 1),
         ("Hide delay (ms)", preview_controls_enabled, "PreviewHideDelay", 0, 1000, 50),
         ("Hover delay (ms)", hover_enabled, "PreviewHoverDelay", 0, 2000, 50),
     ):

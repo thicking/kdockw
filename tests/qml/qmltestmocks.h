@@ -16,6 +16,7 @@
 // The com.thicking.kdockw singletons are plain QML files under mocks/.
 
 #include <QQuickItem>
+#include <QRectF>
 #include <QStandardItemModel>
 #include <QVariantMap>
 
@@ -75,6 +76,7 @@ public:
     Q_INVOKABLE int addChildTask(int parentRow, const QVariantMap &roles);
     Q_INVOKABLE void removeChildTask(int parentRow, int childRow);
     Q_INVOKABLE void setTaskData(int row, const QString &roleName, const QVariant &value);
+    Q_INVOKABLE void setChildTaskData(int parentRow, int childRow, const QString &roleName, const QVariant &value);
     Q_INVOKABLE void removeTask(int row);
     Q_INVOKABLE void reset();
     // Role lookup by name, used by the QML DockModel mock.
@@ -173,6 +175,30 @@ private:
     bool m_ready = false;
     int m_state = 0;
     QSize m_streamSize;
+};
+
+class MockClippedPipeWireSourceItem : public MockPipeWireSourceItem
+{
+    Q_OBJECT
+    Q_PROPERTY(QString clipMode READ clipMode WRITE setClipMode NOTIFY clipModeChanged)
+    Q_PROPERTY(QRectF clipViewportRect READ clipViewportRect WRITE setClipViewportRect NOTIFY clipViewportRectChanged)
+    Q_PROPERTY(qreal clipRadius READ clipRadius WRITE setClipRadius NOTIFY clipRadiusChanged)
+public:
+    using MockPipeWireSourceItem::MockPipeWireSourceItem;
+    QString clipMode() const { return m_clipMode; }
+    void setClipMode(const QString &mode) { if (m_clipMode != mode) { m_clipMode = mode; Q_EMIT clipModeChanged(); } }
+    QRectF clipViewportRect() const { return m_clipViewportRect; }
+    void setClipViewportRect(const QRectF &rect) { if (m_clipViewportRect != rect) { m_clipViewportRect = rect; Q_EMIT clipViewportRectChanged(); } }
+    qreal clipRadius() const { return m_clipRadius; }
+    void setClipRadius(qreal radius) { if (!qFuzzyCompare(m_clipRadius + 1, radius + 1)) { m_clipRadius = radius; Q_EMIT clipRadiusChanged(); } }
+Q_SIGNALS:
+    void clipModeChanged();
+    void clipViewportRectChanged();
+    void clipRadiusChanged();
+private:
+    QString m_clipMode;
+    QRectF m_clipViewportRect;
+    qreal m_clipRadius = 0;
 };
 
 class MockPipeWireTracker : public QObject

@@ -25,41 +25,52 @@ foreach(file IN LISTS files)
 endforeach()
 
 # Model a development checkout from the stable release source and verify the
-# package-format conversion rules in the opposite direction. The real tree
-# remains at its release version during this fixture test.
+# package-format conversion rules in the opposite direction. Derive the source
+# version so this fixture continues to cover subsequent stable version bumps.
 file(READ "${FIXTURE_DIR}/CMakeLists.txt" contents)
-string(REPLACE "KDOCKW_VERSION \"0.1.0\"" "KDOCKW_VERSION \"0.1.0-dev\"" contents "${contents}")
+string(REGEX MATCH "set\\(KDOCKW_VERSION \"([^\"]+)\"\\)" _ "${contents}")
+set(stable_version "${CMAKE_MATCH_1}")
+if(NOT stable_version OR stable_version MATCHES "-dev$")
+    message(FATAL_ERROR "Expected a stable KDOCKW_VERSION in fixture source")
+endif()
+set(development_version "${stable_version}-dev")
+string(REPLACE "KDOCKW_VERSION \"${stable_version}\"" "KDOCKW_VERSION \"${development_version}\"" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/CMakeLists.txt" "${contents}")
 file(READ "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" contents)
-string(REPLACE "version=\"0.1.0\"" "version=\"0.1.0-dev\"" contents "${contents}")
-string(REPLACE "date=\"2026-11-03\">" "date=\"2026-11-03\" type=\"development\">" contents "${contents}")
+string(REGEX MATCH "<release version=\"${stable_version}\" date=\"([^\"]+)\">" _ "${contents}")
+set(stable_release_date "${CMAKE_MATCH_1}")
+if(NOT stable_release_date)
+    message(FATAL_ERROR "AppStream has no release entry for ${stable_version}")
+endif()
+string(REPLACE "version=\"${stable_version}\"" "version=\"${development_version}\"" contents "${contents}")
+string(REPLACE "date=\"${stable_release_date}\">" "date=\"${stable_release_date}\" type=\"development\">" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" "${contents}")
 file(READ "${FIXTURE_DIR}/src/po/ru/kdockw.po" contents)
-string(REPLACE "Project-Id-Version: KDockW 0.1.0\\n" "Project-Id-Version: KDockW 0.1.0-dev\\n" contents "${contents}")
+string(REPLACE "Project-Id-Version: KDockW ${stable_version}\\n" "Project-Id-Version: KDockW ${development_version}\\n" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/src/po/ru/kdockw.po" "${contents}")
 file(READ "${FIXTURE_DIR}/packaging/arch/PKGBUILD" contents)
-string(REPLACE "pkgver=0.1.0" "pkgver=0.1.0_pre" contents "${contents}")
+string(REPLACE "pkgver=${stable_version}" "pkgver=${stable_version}_pre" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/packaging/arch/PKGBUILD" "${contents}")
 file(READ "${FIXTURE_DIR}/packaging/arch/.SRCINFO" contents)
-string(REPLACE "pkgver = 0.1.0" "pkgver = 0.1.0_pre" contents "${contents}")
-string(REPLACE "kdockw-0.1.0.tar.gz" "kdockw-0.1.0-dev.tar.gz" contents "${contents}")
+string(REPLACE "pkgver = ${stable_version}" "pkgver = ${stable_version}_pre" contents "${contents}")
+string(REPLACE "kdockw-${stable_version}.tar.gz" "kdockw-${development_version}.tar.gz" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/packaging/arch/.SRCINFO" "${contents}")
 file(READ "${FIXTURE_DIR}/packaging/obs/kdockw.spec" contents)
-string(REPLACE "Version:        0.1.0" "Version:        0.1.0~dev" contents "${contents}")
-string(REPLACE "upstream_version 0.1.0" "upstream_version 0.1.0-dev" contents "${contents}")
+string(REPLACE "Version:        ${stable_version}" "Version:        ${stable_version}~dev" contents "${contents}")
+string(REPLACE "upstream_version ${stable_version}" "upstream_version ${development_version}" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/packaging/obs/kdockw.spec" "${contents}")
 file(READ "${FIXTURE_DIR}/packaging/obs/kdockw.dsc" contents)
-string(REPLACE "Version: 0.1.0-1" "Version: 0.1.0~dev-1" contents "${contents}")
-string(REPLACE "kdockw-0.1.0.tar.gz" "kdockw-0.1.0-dev.tar.gz" contents "${contents}")
+string(REPLACE "Version: ${stable_version}-1" "Version: ${stable_version}~dev-1" contents "${contents}")
+string(REPLACE "kdockw-${stable_version}.tar.gz" "kdockw-${development_version}.tar.gz" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/packaging/obs/kdockw.dsc" "${contents}")
 file(READ "${FIXTURE_DIR}/packaging/obs/debian.changelog" contents)
-string(REPLACE "kdockw (0.1.0-1)" "kdockw (0.1.0~dev-1)" contents "${contents}")
+string(REPLACE "kdockw (${stable_version}-1)" "kdockw (${stable_version}~dev-1)" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/packaging/obs/debian.changelog" "${contents}")
 
 execute_process(
     COMMAND "${CMAKE_COMMAND}"
         "-DSOURCE_DIR=${FIXTURE_DIR}"
-        "-DKDOCKW_VERSION=0.1.0-dev"
+        "-DKDOCKW_VERSION=${development_version}"
         -P "${SOURCE_DIR}/tests/check_version_metadata.cmake"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE output

@@ -41,8 +41,9 @@ Rules that apply to every agent working on this repository, regardless of harnes
 
 ## Roadmap
 
-- `ROADMAP.md` tracks milestones; the current one is marked ⬅️. Work from the current milestone.
-- After finishing a feature, check its ROADMAP items. When a milestone is complete, mark it ✅ and move ⬅️ to the next one.
+- Obsidian `KDockW/_Roadmap.md` is the planning source for agreed scope and priorities; repository `ROADMAP.md` is its public view of approved milestones and progress. Draft Obsidian versions or ideas are not release commitments.
+- Work only on an approved current milestone. Preserve the existing `⬅️` marker process, but do not move it or alter roadmap scope until the corresponding plan is agreed and reflected consistently in both documents.
+- After finishing a feature, check the applicable approved ROADMAP items. When an approved milestone is complete, mark it ✅ and move ⬅️ to the next approved milestone in both documents as appropriate.
 - Keep the tech stack table current when dependencies change.
 
 ## CHANGELOG
@@ -51,6 +52,14 @@ Rules that apply to every agent working on this repository, regardless of harnes
 - Categories: `### Added`, `### Changed`, `### Fixed`, `### Removed`.
 - Write in English, past tense, from the user's point of view (user benefit, not the commit message).
 - Do not record changes invisible to users (internal refactors, CI, agent configuration).
+
+## Obsidian Project Documentation
+
+- After completing each KDockW task, update the corresponding existing Obsidian project note with the work actually completed, relevant commit SHAs, verified test results, and discovered limitations.
+- Keep implemented, investigated, planned, and externally blocked work clearly distinguished. Do not record a task as complete unless its result is supported by evidence.
+- Reuse the existing KDockW notes and their structure; do not create a duplicate note when an existing history, status, verification, distribution, or research note is the right place.
+- The Obsidian project guide (`KDockW/AGENTS.md`) owns documentation and PM Compass workflow. This file and `.agents/rules/` own repository implementation and release requirements; keep the scopes aligned without duplicating their detailed technical procedures.
+- Obsidian is the planning source for agreed scope; this repository’s `ROADMAP.md` is a public view of approved items. Do not promote draft stages into release promises or change roadmap scope without owner agreement.
 
 ## Releases
 

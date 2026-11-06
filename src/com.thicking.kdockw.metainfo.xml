@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.1.2" date="2026-11-06">
+      <description>
+        <p>Local release candidate prepared for verification; this version has not been published.</p>
+        <p xml:lang="ru">Локальный кандидат подготовлен для проверки; эта версия не опубликована.</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-11-03">
       <description>
         <p>The first stable standalone release of KDockW brings a customizable dock layout, running-app indicators, CPU-compatible window previews, and reliability improvements.</p>

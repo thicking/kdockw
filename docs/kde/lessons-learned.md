@@ -490,3 +490,28 @@ KAboutData. Bind AboutPage to that property. Translate Kirigami SearchField's
 **Key lesson:** A QML singleton that returns a value snapshot is not a live
 binding to its C++ source. Test both an already open consumer and a recreated
 page, and trace framework-default strings to their actual translation domain.
+
+## 25. A custom QQuickItem paint node does not wrap its QML children (2026-11)
+
+**Symptom:** A separate QQuickItem returned a rounded QSGClipNode from
+`updatePaintNode()`, but the live PipeWire image continued outside the desired
+rounded bounds. Replacing triangle-fan geometry with triangle lists did not
+change the leak.
+
+**Cause:** Qt Quick's QQuickItem scene-graph synchronizer attaches a custom
+paint node and visual child-item nodes into the item's child container as
+separate entries. The QML child therefore was not under the custom clip node.
+Qt's built-in `clip: true` creates the internal clip node used as the child
+container. KPipeWire exposes its own `updatePaintNode()` override, so a
+specialized PipeWire item can wrap the exact frame subtree returned by that
+override.
+
+**Fix:** Keep a rectangular center-50% experiment using the built-in QML clip
+and compare ordinary QML `Image` and PipeWire source items under the same QML
+parent. For rounded PipeWire clipping, subclass the public KPipeWire item,
+pass its previous returned child node back to the base implementation, and
+place that returned subtree under a QSGClipNode. Add opt-in runtime node-tree
+logging before relying on QML parent relationships.
+
+**Key lesson:** QML visual parentage does not prove QSG node ancestry. Inspect
+Qt's scene-graph synchronization and log/test the actual QSG parent chain.

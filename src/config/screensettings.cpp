@@ -3,6 +3,7 @@
 
 #include "screensettings.h"
 
+#include "applicationconfig.h"
 #include "kdockw.h"
 
 #include <QLoggingCategory>
@@ -16,7 +17,7 @@ ScreenSettings::ScreenSettings(const QString &screenName, KDockWSettings *fallba
     : QObject(parent)
     , m_screenName(screenName)
     , m_fallback(fallback)
-    , m_group(KSharedConfig::openConfig(QStringLiteral("kdockwrc"))->group(QStringLiteral("Screen-%1").arg(screenName)))
+    , m_group(applicationConfig()->group(QStringLiteral("Screen-%1").arg(screenName)))
 {
     qCDebug(lcScreenSettings) << "Created ScreenSettings for" << screenName << "hasOverrides:" << hasOverrides();
 

@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
+import "BadgeTextColor.js" as BadgeTextColor
 
 /**
  * Preview popup root component.
@@ -47,11 +48,6 @@ Item {
         }
     }
 
-    // Parent's window IDs — used by both grouped and single preview.
-    // On Wayland these are UUID strings matching Plasma's WinIdList format.
-    // Kept as a direct QVariantList from the model (like Plasma's approach).
-    property var parentWinIds: []
-
     // Child window model for grouped preview.
     // Uses ListModel instead of JS array so Repeater preserves delegates
     // on incremental updates — critical for keeping PipeWire streams alive.
@@ -65,15 +61,17 @@ Item {
             // Keep delegates alive so PipeWire streams pause/resume naturally
             // via visibility cascade. Destroying delegates triggers
             // ScreencastingRequest race conditions on reopen.
-            parentWinIds = []
             return
         }
 
-        // Get ALL window IDs from the parent task (like Plasma does).
+        // The parent WinIdList is useful for knowing how many grouped window
+        // rows currently have IDs, but each child's own WinIdList is the stable
+        // identity for its thumbnail. Do not index into the parent list: after
+        // a child is removed, its child row may shift before the aggregate list
+        // is updated, which could temporarily assign a neighbor's old UUID.
         let parentModelIdx = DockModel.tasksModel.index(parentIdx, 0)
         let allWinIds = DockModel.tasksModel.data(
             parentModelIdx, TaskManager.AbstractTasksModel.WinIdList) || []
-        parentWinIds = allWinIds
 
         let childCount = DockModel.childCount(parentIdx)
 
@@ -83,6 +81,7 @@ Item {
         if (childCount === 0) {
             if (allWinIds.length > 0) {
                 let entry = {
+                    winId: allWinIds[0],
                     title: DockModel.tasksModel.data(
                         parentModelIdx, Qt.DisplayRole) || "",
                     isMinimized: DockModel.tasksModel.data(
@@ -109,16 +108,22 @@ Item {
             }
         } else {
             // === Grouped (2+ windows): use child rows ===
-            // Use the lesser of childCount and winId count to avoid undefined winIds
-            // when WinIdList hasn't been updated yet (async mismatch).
-            // dataChanged signal will fire when WinIdList updates, triggering another rebuild.
+            // Use the lesser of childCount and aggregate ID count when the parent
+            // list is briefly behind. Individual child IDs still come from the
+            // matching child row, so row removal/reordering cannot reuse a
+            // neighbor's previous UUID.
             let maxCount = Math.min(childCount, allWinIds.length)
 
             // Incremental update: set() preserves existing delegates (and their
             // PipeWire streams), append() adds new ones, remove() trims excess.
             for (let i = 0; i < maxCount; i++) {
                 let childModelIndex = DockModel.tasksModel.makeModelIndex(parentIdx, i)
+                let childWinIds = DockModel.tasksModel.data(
+                    childModelIndex, TaskManager.AbstractTasksModel.WinIdList) || []
+                if (childWinIds.length === 0)
+                    break
                 let entry = {
+                    winId: childWinIds[0],
                     title: DockModel.tasksModel.data(childModelIndex, Qt.DisplayRole) || "",
                     isMinimized: DockModel.tasksModel.data(
                         childModelIndex, TaskManager.AbstractTasksModel.IsMinimized) || false,
@@ -193,10 +198,35 @@ Item {
         }
     }
 
-    // The visible popup container
-    Rectangle {
+    // The visible popup card. Its outer item includes the shadow bounds so
+    // placement clamping and the Wayland input region account for the effect.
+    Item {
         id: popup
-        visible: PreviewController.visible && PreviewController.parentIndex >= 0
+        readonly property bool requestedVisible: PreviewController.visible && PreviewController.parentIndex >= 0
+        readonly property real cardPadding: DockSettings.previewCardPadding
+        readonly property real shadowMargin: Kirigami.Units.smallSpacing * 2
+        // Follow the dock's resolved Header/Selection/tint color, not the
+        // unrelated Window color from the current Plasma color scheme.
+        readonly property color surfaceColor: DockView.backgroundColor.a > 0
+            ? DockView.backgroundColor
+            : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
+        readonly property color foregroundColor: BadgeTextColor.choose(
+            surfaceColor, Kirigami.Theme.textColor)
+        readonly property color outlineColor: Qt.alpha(foregroundColor, 0.27)
+
+        visible: requestedVisible || opacity > 0.01
+        opacity: requestedVisible ? 1 : 0
+        Behavior on opacity {
+            NumberAnimation {
+                duration: Kirigami.Units.shortDuration
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        implicitWidth: popupContent.implicitWidth + 2 * (cardPadding + shadowMargin)
+        implicitHeight: popupContent.implicitHeight + 2 * (cardPadding + shadowMargin)
+        width: implicitWidth
+        height: implicitHeight
 
         Accessible.role: Accessible.PopupMenu
         Accessible.name: PreviewController.appName
@@ -207,46 +237,80 @@ Item {
             if (DockView.edge === 3) return parent.width - width         // Right → right edge
             return PreviewController.contentX                            // Top/Bottom → centered
         }
-        width: popupContent.implicitWidth + 2 * Kirigami.Units.largeSpacing
-        height: popupContent.implicitHeight + 2 * Kirigami.Units.largeSpacing
         y: {
             if (DockView.edge === 0) return 0                            // Top → top edge
             if (DockView.edge === 1) return parent.height - height       // Bottom → bottom edge
             return PreviewController.contentY                            // Left/Right → centered
         }
-        radius: Kirigami.Units.cornerRadius
-        color: Kirigami.Theme.backgroundColor
-
-        Kirigami.Theme.colorSet: Kirigami.Theme.Window
-        Kirigami.Theme.inherit: false
-
-        // Shadow-like border (guard against undefined during theme init)
-        border.color: Kirigami.Theme.separatorColor ?? "transparent"
-        border.width: 1
-
         // Report size to controller for input region + positioning
         onWidthChanged: PreviewController.setContentSize(width, height)
         onHeightChanged: PreviewController.setContentSize(width, height)
 
+        Kirigami.ShadowedRectangle {
+            id: card
+            anchors.fill: parent
+            anchors.margins: popup.shadowMargin
+            radius: Math.min(DockSettings.cornerRadius, width / 2, height / 2)
+            color: popup.surfaceColor
+            border.color: popup.outlineColor
+            border.width: 1
+            shadow.size: DockSettings.shadowEnabled ? DockSettings.shadowLightRadius * 2 : 0
+            shadow.xOffset: -DockSettings.shadowLightX * DockSettings.shadowElevation
+                / Math.max(1, DockSettings.shadowLightZ)
+            shadow.yOffset: -DockSettings.shadowLightY * DockSettings.shadowElevation
+                / Math.max(1, DockSettings.shadowLightZ)
+            shadow.color: Qt.alpha(DockSettings.shadowColor, DockSettings.shadowIntensity)
+
+            Kirigami.Theme.colorSet: Kirigami.Theme.Window
+            Kirigami.Theme.inherit: false
+        }
+
         ColumnLayout {
             id: popupContent
-            anchors.fill: parent
-            anchors.margins: Kirigami.Units.largeSpacing
+            anchors.fill: card
+            anchors.margins: popup.cardPadding
             spacing: Kirigami.Units.smallSpacing
 
-            // App name header (width capped to thumbnail row)
-            QQC2.Label {
+            // Compact app header. The app name is part of this card, so the
+            // dock's separate app-name tooltip must stay hidden while it is open.
+            RowLayout {
                 Layout.fillWidth: true
                 Layout.maximumWidth: groupedRow.implicitWidth
-                text: PreviewController.appName
-                font.weight: Font.Bold
-                elide: Text.ElideRight
-                horizontalAlignment: Text.AlignHCenter
-            }
+                Layout.alignment: Qt.AlignHCenter
+                spacing: Kirigami.Units.smallSpacing
 
-            // Separator
-            Kirigami.Separator {
-                Layout.fillWidth: true
+                Item {
+                    readonly property string iconName: DockModel.iconName(PreviewController.parentIndex)
+                        || "application-x-executable"
+                    readonly property bool rawIcon: iconName.startsWith("raw:")
+                    Layout.preferredWidth: Kirigami.Units.iconSizes.small
+                    Layout.preferredHeight: Kirigami.Units.iconSizes.small
+
+                    Kirigami.Icon {
+                        anchors.fill: parent
+                        source: parent.rawIcon ? "" : parent.iconName
+                        visible: !parent.rawIcon
+                        Accessible.ignored: true
+                    }
+                    Image {
+                        anchors.fill: parent
+                        source: parent.rawIcon
+                            ? "image://icon/" + parent.iconName + "?v=" + DockView.iconCacheVersion
+                            : ""
+                        sourceSize: Qt.size(width, height)
+                        smooth: true
+                        visible: parent.rawIcon
+                        Accessible.ignored: true
+                    }
+                }
+
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: PreviewController.appName
+                        color: popup.foregroundColor
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                }
             }
 
             // Grouped windows: horizontal row of thumbnails
@@ -254,16 +318,17 @@ Item {
                 id: groupedRow
                 Layout.alignment: Qt.AlignHCenter
                 spacing: Kirigami.Units.smallSpacing
-                visible: PreviewController.visible && PreviewController.parentIndex >= 0
+                // Retain thumbnails through the fade-out so the content and
+                // card opacity animate together; source items pause when the
+                // outer popup finishes fading and becomes invisible.
+                visible: popup.visible
 
                 Repeater {
                     id: thumbnailRepeater
                     model: childWindowModel
 
                     PreviewThumbnail {
-                        // Get winId from QVariantList to preserve QVariant type
-                        winId: (index >= 0 && index < root.parentWinIds.length)
-                            ? root.parentWinIds[index] : undefined
+                        winId: model.winId
                         title: model.title
                         isMinimized: model.isMinimized
                         isActive: model.isActive

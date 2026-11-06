@@ -52,7 +52,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 - **Icon Size Normalization** — Auto-detects icon padding and scales for uniform appearance
 - **Content Padding and Alignment** — Set independent 0–64 px insets on all four sides of the dock and align its icons to the start, center, or end; changes apply immediately and are saved
 - **Running App Indicators** — Configure Dot, Line, Pill, Glow, or Bar markers, their placement, size, and color
-- **First-Run Appearance** — The planned 0.1.0 defaults use 40 px icons, 13 px spacing, 8/8/8/0 px insets, 1.7 zoom, and a tinted `#4b4144` panel with shadow
+- **First-Run Appearance** — The default layout uses 40 px icons, 13 px spacing, 8/8/8/0 px insets, 1.7 zoom, and a tinted `#4b4144` panel with shadow
 - **Pin/Unpin** — Keep favorite apps in the dock
 - **Context Menu** — Right-click for pin, close, new instance, and the app's own actions like "New Private Window" (KDE Breeze native)
 - **Mouse Wheel Cycling** — Scroll to switch between windows of the same app
@@ -69,6 +69,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 - **PipeWire Thumbnails** — Live GPU-efficient window previews on hover
 - **Capture Compatibility** — Keep Auto (DMA-BUF preferred) or enable saved CPU mode if previews appear black; CPU mode may increase processor usage
 - **Multi-Window List** — All windows of grouped apps shown together; the optional grouped click action opens this list even with hover previews off
+- **Preview Card Layout** — Set thumbnail width and maximum height, preserve window proportions, and adjust card padding and its gap from the dock
 - **Click-to-Activate** — Click a preview to switch to that window
 - **Preview Close Button** — Close windows directly from the preview popup
 
@@ -119,6 +120,9 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 ## Installation
 
 KDockW source builds are available. KDockW v0.1.0 is published as the first independent stable release. Source and verified release files are available from [GitHub Releases](https://github.com/thicking/kdockw/releases). See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+
+The working tree prepares local candidate v0.1.2 for verification. It has not
+been published; release downloads below remain the verified v0.1.0 assets.
 
 ### Linux package targets
 

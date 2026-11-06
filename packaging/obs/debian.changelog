@@ -1,3 +1,17 @@
+kdockw (0.1.2-1) unstable; urgency=medium
+
+  * Prepare an unpublished local 0.1.2 candidate with the accepted window-preview redesign.
+  * Package source checksums must be generated from the exact source archive used for submission.
+
+ -- thicking <thicking@gmail.com>  Fri, 06 Nov 2026 00:00:00 +0500
+
+kdockw (0.1.1-1) unstable; urgency=medium
+
+  * Prepare local KDockW 0.1.1 build with animation smoothness investigation.
+  * This source version is not a published release.
+
+ -- thicking <thicking@gmail.com>  Thu, 05 Nov 2026 14:15:20 +0500
+
 kdockw (0.1.0-1) unstable; urgency=medium
 
   * Release the first stable standalone version of KDockW.

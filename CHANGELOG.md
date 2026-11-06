@@ -8,6 +8,76 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+The current local candidate targets v0.1.2. It has not been published.
+
+### Changed
+
+- Set the local application and package metadata version to 0.1.2. This
+  candidate has not been published.
+
+### Added
+
+- Added live, saved window-preview layout controls: thumbnail width, maximum
+  thumbnail height with source aspect-ratio preservation, card padding, and the
+  dock gap. New defaults are 200 px, 180 px, 8 px, and 8 px; existing saved
+  thumbnail widths remain intact.
+- Redesigned the preview as a compact, rounded, translucent card with a thin
+  border, soft shadow, application header, and per-window title. The popup has
+  no arrow and fades in and out.
+- Followed the dock's resolved panel color, opacity, radius, shadow and rounded
+  KWin blur/contrast region in the preview and existing app-name tooltip. Kept a
+  stable preview slot across window shapes, rendered PipeWire frames directly,
+  and used a clipped center-crop Cover viewport without an offscreen effect
+  layer. The app-name tooltip gap now follows icon zoom.
+- Completed the accepted preview redesign with rounded Scene Graph clipping on
+  the PipeWire source subtree, minimized-window previews, a fixed 16:10 card,
+  centered Cover crop, and tooltip bounds that remain clear during icon zoom.
+  CPU-only remains available as a compatibility capture mode.
+
+- Added live, saved badge text weight and size controls, with Medium (500) and
+  100% as factory defaults. Explicitly saved user choices, including Bold (700),
+  continue to take precedence over factory defaults.
+- Added independent, saved badge background and text color settings with the
+  requested red and white defaults, a live badge preview, contrast feedback,
+  and a joint reset action. Existing badge counts and text rendering remain
+  unchanged.
+- Made the preview close control show a theme-resolved symbolic close glyph at
+  rest, with theme-aware contrast and negative-color hover feedback. Grouped
+  window close behavior remains unchanged.
+
+### Changed
+
+- Changed the factory badge text weight from Bold (700) to Medium (500). The
+  text size remains 100%, and Number remains the default notification style.
+
+### Fixed
+
+- Applied rounded clipping to the PipeWire frame's own scene-graph subtree,
+  instead of placing a clip node beside the QML child that needed clipping.
+- Fixed rounded preview clipping on Qt 6 scene-graph backends by replacing
+  unsupported triangle-fan clip geometry with explicitly triangulated geometry,
+  without adding an offscreen PipeWire texture layer.
+- Filled the inner window-preview area with centered Cover-cropped frames and
+  rounded the viewport through scene-graph clipping, while keeping PipeWire
+  frames on the direct rendering path.
+- Prevented the application-name tooltip from being clipped at the dock's
+  Wayland surface edge by reserving its full size, maximum-zoom clearance, and
+  shadow, and clamping its along-screen position.
+- Owner manual acceptance on KDE Plasma 6 / Wayland confirmed working
+  previews for open and minimized windows in CPU-only mode. DMA-BUF/auto remains
+  technical debt; it is not recorded as verified or as a confirmed cause of the
+  earlier black-preview report.
+- Kept the PipeWire source active for minimized-window previews, retained the
+  last received texture in memory, and bound each grouped thumbnail to its own
+  window UUID. The source keeps its default scene-graph opacity; the app icon
+  covers it until the first frame arrives.
+- Unified icon opacity across active, inactive, and minimized apps with a saved,
+  live 50–100% control that affects icon images only. Legacy per-state opacity
+  keys remain for configuration compatibility but no longer affect rendering.
+- Kept notification badge digits out of the scaled badge texture, rendered them
+  with Qt's text renderer, and selected a theme-aware foreground that meets
+  WCAG AA contrast against opaque badge fills.
+
 ## [0.1.0] - 2026-11-03
 
 KDockW 0.1.0 is the first stable standalone release of this KDE Plasma 6 dock

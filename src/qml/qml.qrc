@@ -1,7 +1,9 @@
 <RCC>
     <qresource prefix="/qml">
+        <file>fixtures/preview-clip-pattern.svg</file>
         <file>main.qml</file>
         <file>DockItem.qml</file>
+        <file>BadgeTextColor.js</file>
         <file>ZoomAnimationProfile.qml</file>
         <file>SettingsDialog.qml</file>
         <file>PreviewPopup.qml</file>
@@ -19,6 +21,7 @@
         <file>settings/PanelStylePage.qml</file>
         <file>settings/ShadowPage.qml</file>
         <file>settings/AnimationsPage.qml</file>
+        <file>settings/BadgeColorSettings.qml</file>
         <file>settings/BehaviorPage.qml</file>
         <file>settings/MonitorsPage.qml</file>
         <file>settings/PreviewPage.qml</file>

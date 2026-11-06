@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
 #include "app/application.h"
+#include "config/applicationconfig.h"
+#include "models/icondiag.h"
 
 #include <KAboutData>
 #include <KConfigGroup>
@@ -69,8 +71,11 @@ int main(int argc, char *argv[])
     if (QDir(buildLocaleDir).exists()) {
         KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), buildLocaleDir);
     }
-    const KConfigGroup general(KSharedConfig::openConfig(QStringLiteral("kdockwrc"), KSharedConfig::NoGlobals), QStringLiteral("General"));
+    const KConfigGroup general(kdockw::applicationConfig(), QStringLiteral("General"));
     kdockw::Application::applyLanguagePreference(general.readEntry(QStringLiteral("Language"), QStringLiteral("system")));
+    (void)kdockw::diagnosticTaskLoggingEnabled();
+    kdockw::IconDiagnostics::prepareProcessEnvironment();
+    kdockw::clearDiagnosticLaunchEnvironment();
     aboutData = kdockw::Application::makeAboutData();
     // Pass 2: QApplication has removed its own options; anything left that
     // the parser does not know is an error.

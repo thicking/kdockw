@@ -44,6 +44,9 @@ add_library(kdockw_lib STATIC
     style/backgroundstyle.h
     style/backgroundstyle.cpp
 
+    scenegraph/clippedpipewiresourceitem.h
+    scenegraph/clippedpipewiresourceitem.cpp
+
     models/dockmodel.h
     models/dockmodel.cpp
     models/dockactions.h
@@ -54,6 +57,8 @@ add_library(kdockw_lib STATIC
     models/desktopactions.cpp
     models/taskiconprovider.h
     models/taskiconprovider.cpp
+    models/icondiag.h
+    models/icondiag.cpp
     models/notificationtracker.h
     models/notificationtracker.cpp
     models/launcherentrytracker.h
@@ -85,6 +90,7 @@ qt6_add_shaders(kdockw_lib "acrylic_shaders"
 )
 
 target_link_libraries(kdockw_lib PUBLIC
+    K::KPipeWire
     Qt6::Core
     Qt6::Gui
     Qt6::Widgets

@@ -26,6 +26,7 @@ namespace kdockw
 {
 
 class DockVisibilityController;
+class IconDiagnostics;
 class PointerFocusTracker;
 class ScreenSettings;
 class TaskIconProvider;
@@ -47,7 +48,7 @@ class DockView : public QQuickView
     Q_PROPERTY(int iconCacheVersion READ iconCacheVersion NOTIFY iconCacheVersionChanged)
     Q_PROPERTY(int edge READ edge NOTIFY edgeChanged)
     Q_PROPERTY(bool isVertical READ isVertical NOTIFY edgeChanged)
-    Q_PROPERTY(int sideTooltipReserve READ sideTooltipReserve WRITE setSideTooltipReserve NOTIFY sideTooltipReserveChanged)
+    Q_PROPERTY(int tooltipReserve READ tooltipReserve WRITE setTooltipReserve NOTIFY tooltipReserveChanged)
     /// Whether the compositor's pointer focus is on the dock surface. Unlike
     /// Qt's hover state this ignores the leave QtWayland fakes for a popup
     /// grab (see PointerFocusTracker). False without a Wayland pointer.
@@ -71,12 +72,11 @@ public:
     [[nodiscard]] int iconCacheVersion() const;
     [[nodiscard]] int edge() const;
     [[nodiscard]] bool isVertical() const;
-    [[nodiscard]] int sideTooltipReserve() const;
+    [[nodiscard]] int tooltipReserve() const;
 
-    /// Space the in-scene tooltip needs beside a vertical panel (gap + max tooltip width).
-    /// Published by QML from the tooltip's font-derived max width; vertical docks size
-    /// their perpendicular surface reserve to fit it so the tooltip is never clipped.
-    void setSideTooltipReserve(int reserve);
+    /// Cross-axis extent needed for the in-scene tooltip, including its gap,
+    /// maximum zoom overflow and shadow. Published by QML from live geometry.
+    void setTooltipReserve(int reserve);
 
     /// Update the dock edge and recalculate surface size.
     void setEdge(DockPlatform::Edge edge);
@@ -136,7 +136,7 @@ Q_SIGNALS:
     void floatingPaddingChanged();
     void iconCacheVersionChanged();
     void edgeChanged();
-    void sideTooltipReserveChanged();
+    void tooltipReserveChanged();
     void pointerInsideChanged();
 
 private:
@@ -158,12 +158,13 @@ private:
     DockVisibilityController *m_visibilityController = nullptr;
     std::unique_ptr<PointerFocusTracker> m_pointerFocusTracker;
     TaskIconProvider *m_iconProvider = nullptr;
+    IconDiagnostics *m_iconDiagnostics = nullptr;
     int m_iconCacheVersion = 0;
-    int m_sideTooltipReserve = 0;
+    int m_tooltipReserve = 0;
     DockPlatform::Edge m_edge = DockPlatform::Edge::Bottom;
     QMetaObject::Connection m_screenGeometryConnection;
 
-    /// Minimum tooltip reserve; covers the tooltip height above/below a horizontal panel.
+    /// Minimum tooltip reserve before the font-, shadow- and zoom-derived value.
     static constexpr int s_tooltipReserve = 36;
 };
 

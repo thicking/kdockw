@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
+import "BadgeTextColor.js" as BadgeTextColor
 
 /**
  * A single window thumbnail in the preview popup.
@@ -26,7 +27,18 @@ Item {
     property int childIndex: 0
     property bool isKeyboardFocused: false
     property bool forceCpuCapture: false
-    readonly property var captureItem: captureLoader.item
+    property var captureWinId: undefined
+    readonly property var captureItem: captureLoader.item ? captureLoader.item.sourceItem : null
+    readonly property var captureViewport: captureLoader.item
+    readonly property string captureClipMode: {
+        const requested = typeof IconDiagnostics !== "undefined" ? IconDiagnostics.previewClipMode : ""
+        return requested === "raw" || requested === "center50" || requested === "rounded"
+            ? requested : "rounded"
+    }
+    readonly property string captureSourceMode: {
+        const requested = typeof IconDiagnostics !== "undefined" ? IconDiagnostics.previewSourceMode : ""
+        return requested === "image" ? "image" : "pipewire"
+    }
 
     Accessible.role: Accessible.Button
     Accessible.name: {
@@ -39,11 +51,33 @@ Item {
     Accessible.focused: isKeyboardFocused
     Accessible.onPressAction: thumbnailMouseArea.clicked(null)
 
-    readonly property real thumbnailWidth: DockSettings.previewThumbnailSize
-    readonly property real thumbnailHeight: thumbnailWidth * 0.7
+    readonly property real sourceAspectRatio: {
+        const size = root.captureItem ? root.captureItem.streamSize : null
+        return size && size.width > 0 && size.height > 0 ? size.width / size.height : 1.6
+    }
+    // Keep a stable 16:10 preview slot for every app. The image fills the
+    // inner card area and a scene-graph clip rounds its visible corners.
+    readonly property real thumbnailWidth: Math.min(
+        DockSettings.previewThumbnailSize,
+        DockSettings.previewMaximumHeight * 1.6)
+    readonly property real thumbnailHeight: thumbnailWidth / 1.6
+    readonly property real captureBorderWidth: isActive ? 2 : 0
+    readonly property real captureViewportWidth: thumbnailWidth - 2 * captureBorderWidth
+    readonly property real captureViewportHeight: thumbnailHeight - 2 * captureBorderWidth
+    readonly property real captureViewportRadius: Math.max(0, thumbnailRadius - captureBorderWidth)
+    readonly property real captureContentWidth: Math.max(
+        captureViewportWidth, captureViewportHeight * sourceAspectRatio)
+    readonly property real captureContentHeight: captureContentWidth / sourceAspectRatio
+    readonly property real thumbnailRadius: Math.min(
+        DockSettings.cornerRadius, thumbnailWidth / 2, thumbnailHeight / 2)
+    readonly property color panelColor: DockView.backgroundColor.a > 0
+        ? DockView.backgroundColor
+        : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
+    readonly property color panelForeground: BadgeTextColor.choose(
+        panelColor, Kirigami.Theme.textColor)
 
-    implicitWidth: thumbnailWidth + 2 * Kirigami.Units.smallSpacing
-    implicitHeight: thumbnailHeight + titleLabel.implicitHeight + Kirigami.Units.smallSpacing * 3
+    implicitWidth: thumbnailWidth
+    implicitHeight: thumbnailHeight + titleLabel.implicitHeight + Kirigami.Units.smallSpacing
 
     // PipeWire screencasting: uuid → nodeId
     // Match Plasma's pattern: pass winId directly, let QML engine handle QVariant→QString
@@ -82,18 +116,58 @@ Item {
         Qt.callLater(function() { captureLoader.active = true })
     }
 
+    function resetCaptureForWindowChange() {
+        // A grouped row may be reused for a different UUID after removal/reorder.
+        // Destroy the old source so its last texture can never be shown for the
+        // new window while ScreencastingRequest resolves the replacement node.
+        forceCpuCapture = false
+        captureLoader.active = false
+        Qt.callLater(function() { captureLoader.active = true })
+    }
+
+    Component.onCompleted: captureWinId = winId
+    onWinIdChanged: {
+        if (captureWinId === undefined) {
+            captureWinId = winId
+            return
+        }
+        if (captureWinId === winId)
+            return
+        captureWinId = winId
+        resetCaptureForWindowChange()
+    }
+
     function logCaptureState(reason) {
-        const capture = captureLoader.item
+        const capture = root.captureItem
         if (!capture)
             return
+        if (root.captureSourceMode === "image") {
+            console.log("[kdockw.preview] source-test", reason,
+                "source: QML Image", "clipMode:", root.captureClipMode,
+                "sourceGeometry:", Qt.rect(capture.x, capture.y, capture.width, capture.height),
+                "viewport:", Qt.size(root.captureViewportWidth, root.captureViewportHeight),
+                "mappedToViewport:", capture.mapRectToItem(root.captureViewport,
+                    Qt.rect(0, 0, capture.width, capture.height)))
+            return
+        }
         const error = capture.state === 0 ? capture.error() : ""
         console.log("[kdockw.preview] capture", reason,
             "nodeId:", capture.nodeId,
             "captureMode:", root.forceCpuCapture ? "cpu-fallback"
                 : PreviewController.cpuCaptureOnly ? "cpu-only" : "auto",
+            "clipMode:", root.captureClipMode,
             "state:", capture.state,
             "ready:", capture.ready,
             "streamSize:", capture.streamSize,
+            "sourceGeometry:", Qt.rect(capture.x, capture.y, capture.width, capture.height),
+            "sourceMappedToViewport:", capture.mapRectToItem(root.captureViewport,
+                Qt.rect(0, 0, capture.width, capture.height)),
+            "paintedRect:", capture.paintedRect,
+            "itemRect:", Qt.size(capture.width, capture.height),
+            "visible/opacity/z:", capture.visible, capture.opacity, capture.z,
+            "viewport:", Qt.size(root.thumbnailWidth, root.thumbnailHeight),
+            "imageViewport:", Qt.size(root.captureViewportWidth, root.captureViewportHeight),
+            "coverRect:", Qt.size(root.captureContentWidth, root.captureContentHeight),
             "dmaBuf:", capture.usingDmaBuf,
             "error:", error)
     }
@@ -103,7 +177,7 @@ Item {
         id: previewFocusRing
         anchors.fill: thumbnailContainer
         anchors.margins: -2
-        radius: thumbnailContainer.radius + 2
+        radius: root.thumbnailRadius + 2
         color: "transparent"
         border.color: Kirigami.Theme.focusColor
         border.width: 2
@@ -114,13 +188,14 @@ Item {
     // Thumbnail container
     Rectangle {
         id: thumbnailContainer
-        anchors.top: parent.top
+        objectName: "previewThumbnailContainer"
+        anchors.top: titleLabel.bottom
+        anchors.topMargin: Kirigami.Units.smallSpacing / 2
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.thumbnailWidth
         height: root.thumbnailHeight
-        radius: Kirigami.Units.smallSpacing
-        color: Kirigami.Theme.alternateBackgroundColor
-        clip: true
+        radius: root.thumbnailRadius
+        color: root.panelColor
 
         // Passive hover detection — not affected by ToolButton z-order.
         // MouseArea.containsMouse goes false when ToolButton appears on top,
@@ -135,22 +210,139 @@ Item {
         // GPU-accelerated PipeWire thumbnail
         Loader {
             id: captureLoader
+            objectName: "previewImageViewport"
             anchors.fill: parent
-            anchors.margins: parent.border.width > 0 ? 2 : 0
-            sourceComponent: captureComponent
+            anchors.margins: root.captureBorderWidth
+            sourceComponent: root.captureClipMode === "raw" ? rawCaptureComponent
+                : root.captureClipMode === "center50" ? center50CaptureComponent
+                : root.captureSourceMode === "image" ? roundedImageReferenceComponent
+                : roundedPipeWireCaptureComponent
+            onLoaded: Qt.callLater(() => root.logCaptureState("component-loaded"))
 
             Component {
-                id: captureComponent
+                id: pipeWireSourceComponent
                 PipeWire.PipeWireSourceItem {
                     nodeId: screencastRequest.nodeId
                     allowDmaBuf: !PreviewController.cpuCaptureOnly && !root.forceCpuCapture
-                    visible: !root.isMinimized
                     Accessible.ignored: true
                 }
             }
 
+            Component {
+                id: imageSourceComponent
+                Image {
+                    source: Qt.resolvedUrl("fixtures/preview-clip-pattern.svg")
+                    fillMode: Image.Stretch
+                    smooth: true
+                    Accessible.ignored: true
+                }
+            }
+
+            Component {
+                id: rawCaptureComponent
+                Item {
+                    objectName: "rawCaptureViewport"
+                    property alias sourceItem: sourceLoader.item
+                    Loader {
+                        id: sourceLoader
+                        width: root.captureContentWidth
+                        height: root.captureContentHeight
+                        x: (parent.width - width) / 2
+                        y: (parent.height - height) / 2
+                        sourceComponent: root.captureSourceMode === "image"
+                            ? imageSourceComponent : pipeWireSourceComponent
+                        onLoaded: {
+                            if (item) {
+                                item.width = width
+                                item.height = height
+                            }
+                        }
+                    }
+                }
+            }
+
+            Component {
+                id: center50CaptureComponent
+                Item {
+                    objectName: "center50CaptureViewport"
+                    property alias sourceItem: sourceLoader.item
+                    Item {
+                        id: center50Clip
+                        objectName: "center50BuiltInClip"
+                        width: root.captureContentWidth / 2
+                        height: root.captureContentHeight / 2
+                        x: (parent.width - root.captureContentWidth) / 2 + width / 2
+                        y: (parent.height - root.captureContentHeight) / 2 + height / 2
+                        clip: true
+                        Loader {
+                            id: sourceLoader
+                            width: root.captureContentWidth
+                            height: root.captureContentHeight
+                            x: -width / 4
+                            y: -height / 4
+                            sourceComponent: root.captureSourceMode === "image"
+                                ? imageSourceComponent : pipeWireSourceComponent
+                            onLoaded: {
+                                if (item) {
+                                    item.width = width
+                                    item.height = height
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Component {
+                id: roundedPipeWireCaptureComponent
+                Item {
+                    objectName: "roundedCaptureViewport"
+                    property alias sourceItem: captureSource
+                    ClippedPipeWireSourceItem {
+                        id: captureSource
+                        objectName: "roundedPipeWireSource"
+                        width: root.captureContentWidth
+                        height: root.captureContentHeight
+                        x: (parent.width - width) / 2
+                        y: (parent.height - height) / 2
+                        clipMode: "rounded"
+                        clipViewportRect: Qt.rect(
+                            (width - root.captureViewportWidth) / 2,
+                            (height - root.captureViewportHeight) / 2,
+                            root.captureViewportWidth,
+                            root.captureViewportHeight)
+                        clipRadius: root.captureViewportRadius
+                        nodeId: screencastRequest.nodeId
+                        allowDmaBuf: !PreviewController.cpuCaptureOnly && !root.forceCpuCapture
+                        Accessible.ignored: true
+                    }
+                }
+            }
+
+            Component {
+                id: roundedImageReferenceComponent
+                Item {
+                    objectName: "roundedImageReferenceViewport"
+                    property alias sourceItem: sourceImage
+                    clip: true
+                    Image {
+                        id: sourceImage
+                        objectName: "imageSourceReference"
+                        source: Qt.resolvedUrl("fixtures/preview-clip-pattern.svg")
+                        width: root.captureContentWidth
+                        height: root.captureContentHeight
+                        x: (parent.width - width) / 2
+                        y: (parent.height - height) / 2
+                        fillMode: Image.Stretch
+                        smooth: true
+                        Accessible.ignored: true
+                    }
+                }
+            }
+
             Connections {
-                target: captureLoader.item
+                target: root.captureItem
+                ignoreUnknownSignals: true
                 function onStateChanged() { root.logCaptureState("state-changed") }
                 function onReadyChanged() { root.logCaptureState("ready-changed") }
                 function onStreamSizeChanged() { root.logCaptureState("stream-size-changed") }
@@ -170,15 +362,15 @@ Item {
                 repeat: false
                 running: !root.forceCpuCapture
                     && !PreviewController.cpuCaptureOnly
-                    && captureLoader.item !== null
-                    && captureLoader.item.visible
-                    && captureLoader.item.state === 4 // PipeWireSourceItem::Streaming
-                    && !captureLoader.item.ready
+                    && root.captureItem !== null
+                    && root.captureItem.visible
+                    && root.captureItem.state === 4 // PipeWireSourceItem::Streaming
+                    && !root.captureItem.ready
                 onTriggered: root.retryWithoutDmaBuf()
             }
         }
 
-        // Fallback: icon (when PipeWire not ready or minimized)
+        // Fallback: icon until PipeWire has received a frame.
         Item {
             id: fallbackIcon
             anchors.centerIn: parent
@@ -190,7 +382,7 @@ Item {
                 return DockModel.iconName(root.parentIndex) || "application-x-executable"
             }
             readonly property bool isRawIcon: iconName.startsWith("raw:")
-            visible: !captureLoader.item || !captureLoader.item.ready || root.isMinimized
+            visible: !root.captureItem || !root.captureItem.ready
 
             Kirigami.Icon {
                 anchors.fill: parent
@@ -209,14 +401,6 @@ Item {
             }
         }
 
-        // Minimized overlay
-        Rectangle {
-            anchors.fill: parent
-            color: Kirigami.Theme.backgroundColor
-            opacity: 0.5
-            visible: root.isMinimized
-        }
-
         // Hover highlight
         Rectangle {
             anchors.fill: parent
@@ -233,15 +417,28 @@ Item {
         // Close button (top-right corner, always visible)
         QQC2.ToolButton {
             id: closeButton
+            objectName: "previewCloseButton"
             anchors.top: parent.top
             anchors.right: parent.right
             anchors.margins: Kirigami.Units.smallSpacing
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
-            icon.name: "window-close"
-            icon.width: Kirigami.Units.iconSizes.small
-            icon.height: Kirigami.Units.iconSizes.small
+            hoverEnabled: true
             z: 10
+
+            contentItem: Item {
+                Kirigami.Icon {
+                    objectName: "previewCloseThemeIcon"
+                    anchors.centerIn: parent
+                    width: Kirigami.Units.iconSizes.small
+                    height: width
+                    source: "window-close-symbolic"
+                    isMask: true
+                    color: closeButton.hovered
+                        ? BadgeTextColor.choose(Kirigami.Theme.negativeTextColor, root.panelForeground)
+                        : root.panelForeground
+                }
+            }
 
             Accessible.name: i18n("Close %1", root.title)
 
@@ -255,17 +452,9 @@ Item {
 
             background: Rectangle {
                 radius: width / 2
-                color: closeButton.hovered
-                    ? Kirigami.Theme.negativeTextColor
-                    : Kirigami.Theme.backgroundColor
-                opacity: closeButton.hovered ? 0.9 : 0.7
-
-                Behavior on color {
-                    ColorAnimation { duration: Kirigami.Units.shortDuration }
-                }
-                Behavior on opacity {
-                    NumberAnimation { duration: Kirigami.Units.shortDuration }
-                }
+                color: Kirigami.Theme.negativeTextColor
+                opacity: closeButton.hovered ? 1.0 : 0.0
+                visible: opacity > 0
             }
         }
 
@@ -290,12 +479,12 @@ Item {
     // Window title
     QQC2.Label {
         id: titleLabel
-        anchors.top: thumbnailContainer.bottom
-        anchors.topMargin: Kirigami.Units.smallSpacing
+        anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.thumbnailWidth
         text: root.title
-        horizontalAlignment: Text.AlignHCenter
+        color: root.panelForeground
+        horizontalAlignment: Text.AlignLeft
         elide: Text.ElideRight
         maximumLineCount: 1
         font: Kirigami.Theme.smallFont

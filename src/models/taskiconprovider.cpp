@@ -2,10 +2,14 @@
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
 #include "taskiconprovider.h"
+#include "icondiag.h"
 
 #include <QImage>
 #include <QMutexLocker>
 #include <QPainter>
+#include <QUrl>
+#include <QUrlQuery>
+#include <QStringList>
 
 #include <algorithm>
 #include <cmath>
@@ -16,9 +20,10 @@ namespace kdockw
 QMutex TaskIconProvider::s_rawIconsMutex;
 QCache<QString, QIcon> TaskIconProvider::s_rawIcons{TaskIconProvider::kRawIconCacheCapacity};
 
-TaskIconProvider::TaskIconProvider(bool normalizationEnabled)
+TaskIconProvider::TaskIconProvider(bool normalizationEnabled, IconDiagnostics *diagnostics)
     : QQuickImageProvider(QQuickImageProvider::Pixmap)
     , m_normalizationEnabled(normalizationEnabled)
+    , m_diagnostics(diagnostics)
 {
 }
 
@@ -45,28 +50,48 @@ QPixmap TaskIconProvider::requestPixmap(const QString &id, QSize *size, const QS
     // Parse "org.kde.dolphin?v=0" → iconName = "org.kde.dolphin"
     const int queryIdx = id.indexOf(QLatin1Char('?'));
     const QString iconName = (queryIdx >= 0) ? id.left(queryIdx) : id;
+    QString appId;
+    QString launcherUrl;
+    if (m_diagnostics && m_diagnostics->debugEnabled() && queryIdx >= 0) {
+        const QUrlQuery query(QUrl(QStringLiteral("image://icon/") + id));
+        appId = query.queryItemValue(QStringLiteral("diag-app"), QUrl::FullyDecoded);
+        launcherUrl = query.queryItemValue(QStringLiteral("diag-launcher"), QUrl::FullyDecoded);
+    }
 
     const int width = requestedSize.width() > 0 ? requestedSize.width() : 48;
     const int height = requestedSize.height() > 0 ? requestedSize.height() : 48;
     const int targetSize = std::max(width, height);
+    const qreal dpr = m_diagnostics && m_diagnostics->testHiDpiEnabled()
+        ? std::max<qreal>(1.0, m_diagnostics->windowDevicePixelRatio())
+        : 1.0;
+    const int targetPixels = static_cast<int>(std::ceil(targetSize * dpr));
 
     // Nameless task decorations are registered under opaque keys by
     // DockModel. Theme names remain the first-class path for named icons.
     QIcon icon;
+    QString sourceType;
     {
         const QMutexLocker locker(&s_rawIconsMutex);
         if (const QIcon *rawIcon = s_rawIcons.object(iconName)) {
             icon = *rawIcon;
+            sourceType = QStringLiteral("taskmanager-decoration");
         }
     }
     if (icon.isNull()) {
         icon = QIcon::fromTheme(iconName);
+        if (!icon.isNull()) {
+            sourceType = QStringLiteral("theme-name");
+        }
     }
     if (icon.isNull()) {
         icon = QIcon(iconName);
+        if (!icon.isNull()) {
+            sourceType = QStringLiteral("file-or-icon-name");
+        }
     }
     if (icon.isNull()) {
         icon = QIcon::fromTheme(QStringLiteral("application-x-executable"));
+        sourceType = QStringLiteral("fallback-theme-icon");
     }
 
     bool normalizationEnabled;
@@ -78,17 +103,18 @@ QPixmap TaskIconProvider::requestPixmap(const QString &id, QSize *size, const QS
     }
 
     QPixmap result;
+    bool normalizationCacheHit = false;
 
     // Fast path: normalization disabled
     if (!normalizationEnabled) {
-        result = icon.pixmap(QSize(targetSize, targetSize), 1.0);
+        result = icon.pixmap(QSize(targetSize, targetSize), dpr);
         if (result.isNull()) {
-            result = QPixmap(targetSize, targetSize);
+            result = QPixmap(targetPixels, targetPixels);
             result.fill(Qt::transparent);
         }
     } else {
         // Analyze icon padding (cached)
-        auto info = analyzeIcon(iconName, icon);
+        auto info = analyzeIcon(iconName, icon, &normalizationCacheHit);
 
         // Shape correction only applies when there's actual padding to reclaim.
         // If the bounding box already fills the canvas (contentRatio > 0.95), scaling up
@@ -103,26 +129,53 @@ QPixmap TaskIconProvider::requestPixmap(const QString &id, QSize *size, const QS
         // matching the target fill used by normalizePixmap for square icons.
         if (effectiveRatio >= kMinContentRatio) {
             const qreal shrinkFactor = (info.contentRatio > kEdgeToEdgeFill) ? kEdgeToEdgeFill / info.contentRatio : 1.0;
-            result = shrinkPixmap(icon, targetSize, shrinkFactor);
+            result = shrinkPixmap(icon, targetPixels, shrinkFactor, dpr);
         } else {
             // Normalize: crop padding and rescale
-            result = normalizePixmap(icon, targetSize, info);
+            result = normalizePixmap(icon, targetPixels, info, dpr);
         }
     }
 
     // Apply uniform icon scale (adds equal padding around all icons)
     if (iconScale < 1.0) {
-        int shrunkSize = static_cast<int>(std::round(targetSize * iconScale));
+        int shrunkSize = static_cast<int>(std::round(targetPixels * iconScale));
         QImage scaled = result.toImage().scaled(shrunkSize, shrunkSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        result = QPixmap(targetSize, targetSize);
+        result = QPixmap(targetPixels, targetPixels);
         result.fill(Qt::transparent);
         QPainter painter(&result);
-        painter.drawImage((targetSize - scaled.width()) / 2, (targetSize - scaled.height()) / 2, scaled);
+        painter.drawImage((targetPixels - scaled.width()) / 2, (targetPixels - scaled.height()) / 2, scaled);
         painter.end();
     }
 
+    result.setDevicePixelRatio(dpr);
+
     if (size) {
-        *size = result.size();
+        *size = QSize(static_cast<int>(std::ceil(result.width() / dpr)),
+                      static_cast<int>(std::ceil(result.height() / dpr)));
+    }
+    if (m_diagnostics && m_diagnostics->debugEnabled()) {
+        const QPixmap qiconProbe = icon.pixmap(QSize(width, height), dpr);
+        QStringList availableSizes;
+        for (const QSize &available : icon.availableSizes()) {
+            availableSizes.append(QStringLiteral("%1x%2").arg(available.width()).arg(available.height()));
+        }
+        const QSize logicalSize(static_cast<int>(std::ceil(result.width() / dpr)),
+                                static_cast<int>(std::ceil(result.height() / dpr)));
+        m_diagnostics->logIconResource(appId,
+                                       launcherUrl,
+                                       iconName,
+                                       sourceType,
+                                       QString(),
+                                       QSize(width, height),
+                                       dpr,
+                                       qiconProbe.size(),
+                                       qiconProbe.devicePixelRatio(),
+                                       availableSizes.join(QLatin1Char(',')),
+                                       result.size(),
+                                       result.devicePixelRatio(),
+                                       QSizeF(logicalSize),
+                                       normalizationEnabled,
+                                       normalizationEnabled ? (normalizationCacheHit ? QStringLiteral("hit") : QStringLiteral("miss")) : QStringLiteral("disabled"));
     }
     return result;
 }
@@ -180,7 +233,7 @@ QRect TaskIconProvider::findContentBounds(const QImage &image, int threshold)
     return QRect(left, top, right - left + 1, bottom - top + 1);
 }
 
-IconNormalizationInfo TaskIconProvider::analyzeIcon(const QString &iconName, const QIcon &icon)
+IconNormalizationInfo TaskIconProvider::analyzeIcon(const QString &iconName, const QIcon &icon, bool *cacheHit)
 {
     // QIcon::cacheKey changes when the artwork is replaced. Include it in
     // the normalization key so geometry cannot outlive the pixels it describes.
@@ -191,9 +244,15 @@ IconNormalizationInfo TaskIconProvider::analyzeIcon(const QString &iconName, con
         const QMutexLocker locker(&m_mutex);
         const auto it = m_cache.constFind(cacheKey);
         if (it != m_cache.constEnd()) {
+            if (cacheHit) {
+                *cacheHit = true;
+            }
             return it.value();
         }
         cacheGeneration = m_cacheGeneration;
+    }
+    if (cacheHit) {
+        *cacheHit = false;
     }
 
     // Determine probe size: use the largest available raster, or 256 for SVG
@@ -255,7 +314,7 @@ IconNormalizationInfo TaskIconProvider::analyzeIcon(const QString &iconName, con
     return info;
 }
 
-QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, const IconNormalizationInfo &info)
+QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, const IconNormalizationInfo &info, qreal dpr)
 {
     // Adaptive margin: circular icons (low fillRatio) have inherent visual spacing
     // in their transparent corners, so they need less explicit margin.
@@ -268,7 +327,7 @@ QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, con
     int targetContentPx = static_cast<int>(std::round(targetSize * targetFill));
 
     // How large we need to load the icon so that its content region is >= targetContentPx
-    int requiredLoadSize = static_cast<int>(std::ceil(static_cast<qreal>(targetContentPx) / info.contentRatio));
+    int requiredLoadSize = static_cast<int>(std::ceil(static_cast<qreal>(targetContentPx) / info.contentRatio / dpr));
 
     // Determine actual load size
     const auto sizes = icon.availableSizes();
@@ -292,10 +351,11 @@ QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, con
     // SVG: loadSize = requiredLoadSize (exact render)
 
     // Load icon at the determined size
-    QImage loadedImage = icon.pixmap(QSize(loadSize, loadSize), 1.0).toImage();
+    QImage loadedImage = icon.pixmap(QSize(loadSize, loadSize), dpr).toImage();
     if (loadedImage.isNull()) {
         QPixmap fallback(targetSize, targetSize);
         fallback.fill(Qt::transparent);
+        fallback.setDevicePixelRatio(dpr);
         return fallback;
     }
     if (loadedImage.format() != QImage::Format_ARGB32_Premultiplied) {
@@ -305,7 +365,7 @@ QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, con
     // Find actual content bounds in the loaded image
     QRect bounds = findContentBounds(loadedImage, kAlphaThreshold);
     if (bounds.isEmpty()) {
-        return icon.pixmap(QSize(targetSize, targetSize), 1.0);
+        return icon.pixmap(QSize(static_cast<int>(std::ceil(targetSize / dpr)), static_cast<int>(std::ceil(targetSize / dpr))), dpr);
     }
 
     // Expand to square, centered on the content center
@@ -333,16 +393,19 @@ QPixmap TaskIconProvider::normalizePixmap(const QIcon &icon, int targetSize, con
     int offsetY = (targetSize - scaled.height()) / 2;
     painter.drawImage(offsetX, offsetY, scaled);
     painter.end();
+    result.setDevicePixelRatio(dpr);
 
     return result;
 }
 
-QPixmap TaskIconProvider::shrinkPixmap(const QIcon &icon, int targetSize, qreal shrinkFactor)
+QPixmap TaskIconProvider::shrinkPixmap(const QIcon &icon, int targetSize, qreal shrinkFactor, qreal dpr)
 {
-    QPixmap original = icon.pixmap(QSize(targetSize, targetSize), 1.0);
+    const int logicalTargetSize = static_cast<int>(std::ceil(targetSize / dpr));
+    QPixmap original = icon.pixmap(QSize(logicalTargetSize, logicalTargetSize), dpr);
     if (original.isNull()) {
         original = QPixmap(targetSize, targetSize);
         original.fill(Qt::transparent);
+        original.setDevicePixelRatio(dpr);
         return original;
     }
 
@@ -356,6 +419,7 @@ QPixmap TaskIconProvider::shrinkPixmap(const QIcon &icon, int targetSize, qreal 
     int offsetY = (targetSize - scaled.height()) / 2;
     painter.drawImage(offsetX, offsetY, scaled);
     painter.end();
+    result.setDevicePixelRatio(dpr);
 
     return result;
 }

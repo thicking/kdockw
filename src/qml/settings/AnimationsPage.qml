@@ -33,6 +33,11 @@ SettingsPage {
         i18n("Off")
     ]
 
+    readonly property var badgeFontWeightOptions: [
+        i18n("Regular"), i18n("Medium"), i18n("DemiBold"), i18n("Bold")
+    ]
+    readonly property var badgeFontWeightValues: [400, 500, 600, 700]
+
     readonly property var indicatorStyleOptions: [
         i18n("Dot"), i18n("Line"), i18n("Pill"), i18n("Glow"), i18n("Bar")
     ]
@@ -50,8 +55,8 @@ SettingsPage {
     // width) to the resting bounds of the icon it stands in for. `edge`
     // decides the bounce direction away from the screen edge (DockItem's
     // _bounceProp and _attentionBounceTarget; 14 px for a 48 px icon, scaled
-    // to the sample size) and `baseOpacity` mirrors the window-state opacity
-    // of the icon it covers. `dotBlinkOpacity` is the animated state of the
+    // to the sample size) and `baseOpacity` mirrors the shared icon-opacity
+    // setting. `dotBlinkOpacity` is the animated state of the
     // "Dot color" type — bind it to the sample's running indicator.
     component AttentionIconSample: Item {
         id: sample
@@ -334,16 +339,12 @@ SettingsPage {
                     const padding = dock.iconNormalization ? 1.0 : (dock.apps[dock.focusIndex].padding ?? 1.0)
                     return focusIcon.width * dock.iconScale * padding
                 }
-                readonly property string focusState: dock.apps[dock.focusIndex].state ?? "launcher"
-
                 visible: focusIcon !== null && drawSize > 0
                 x: focusPos.x + (focusIcon ? (focusIcon.width - drawSize) / 2 : 0)
                 y: focusPos.y + (focusIcon ? (focusIcon.height - drawSize) / 2 : 0)
                 width: drawSize
 
-                baseOpacity: focusState === "active" ? dock.opacityActive
-                    : focusState === "minimized" ? dock.opacityMinimized
-                    : dock.opacityInactive
+                baseOpacity: dock.iconOpacity
                 edge: dock.edge
                 animationType: DockSettings.attentionAnimation
                 playing: stage.active
@@ -612,7 +613,7 @@ SettingsPage {
                                         : Math.round(badgeIcon.width * 0.38)
                                     height: width
                                     radius: width / 2
-                                    color: Kirigami.Theme.highlightColor
+                                    color: DockSettings.badgeBackgroundColor
 
                                     layer.enabled: badgeCard.index === 0
                                     layer.effect: MultiEffect {
@@ -628,11 +629,13 @@ SettingsPage {
                                         width: parent.width - 2
                                         height: parent.height - 2
                                         text: i18nc("@label sample badge count", "8")
-                                        color: Kirigami.Theme.highlightedTextColor
-                                        font.pixelSize: Math.max(1, parent.height * 0.55)
-                                        font.bold: true
+                                        color: DockSettings.badgeTextColor
+                                        renderType: Text.QtRendering
+                                        font.pixelSize: Math.max(1, parent.height * 0.55
+                                                                  * DockSettings.badgeTextSizePercent / 100)
+                                        font.weight: DockSettings.badgeFontWeight
                                         fontSizeMode: Text.Fit
-                                        minimumPixelSize: 4
+                                        minimumPixelSize: 4 * DockSettings.badgeTextSizePercent / 100
                                         horizontalAlignment: Text.AlignHCenter
                                         verticalAlignment: Text.AlignVCenter
                                         Accessible.ignored: true
@@ -644,6 +647,32 @@ SettingsPage {
                 }
             }
         }
+
+        FormCard.FormComboBoxDelegate {
+            text: i18n("Badge text weight")
+            displayMode: FormCard.FormComboBoxDelegate.Dialog
+            model: page.badgeFontWeightOptions
+            currentIndex: Math.max(0, page.badgeFontWeightValues.indexOf(DockSettings.badgeFontWeight))
+            onActivated: index => DockSettings.badgeFontWeight = page.badgeFontWeightValues[index]
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            text: i18n("Badge text size")
+            from: 75
+            to: 125
+            stepSize: 5
+            value: DockSettings.badgeTextSizePercent
+            valueText: i18nc("@label percent", "%1%", value)
+            minLabel: i18nc("@label slider minimum", "Smaller")
+            maxLabel: i18nc("@label slider maximum", "Larger")
+            onMoved: value => DockSettings.badgeTextSizePercent = value
+        }
+    }
+
+    BadgeColorSettings {
+        secondaryTextColor: page.secondaryTextColor
     }
 
     // --- Running indicators ---

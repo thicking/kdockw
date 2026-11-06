@@ -6,6 +6,7 @@ import QtQuick.Controls as QQC2
 import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
+import "BadgeTextColor.js" as BadgeTextColor
 
 /**
  * A single dock item (app icon + indicator).
@@ -144,6 +145,7 @@ Item {
 
     // --- Notification → animation debug logging ---
     on_BadgeCountChanged: {
+        _iconDiagLogBadge("count-changed")
         console.log("[NOTIF-TRACE] '" + displayName + "' appId=" + _appId
                     + " badgeCount=" + _badgeCount)
         if (_badgeCount > _prevBadgeCount) {
@@ -425,6 +427,102 @@ Item {
     // styles ease in/out through main.qml's global zoomAmount, so nothing here
     // animates or retargets per mouse move.
     readonly property real currentScale: zoomScale
+    readonly property bool _iconDiagEnabled: typeof IconDiagnostics !== "undefined" && IconDiagnostics.debugEnabled
+    readonly property bool _iconDiagCrispBadge: _iconDiagEnabled && IconDiagnostics.testBadgeCrisp
+    readonly property bool _iconDiagCrispBadgeStable: _iconDiagEnabled && IconDiagnostics.testBadgeCrispStable
+    readonly property bool _iconDiagBadgeOverlay: _iconDiagEnabled && IconDiagnostics.testBadgeOverlay
+    readonly property real _iconDiagBadgeLabelScale: _iconDiagCrispBadge
+                                                     ? currentScale : 1
+    readonly property real _iconDiagBadgeLabelCounterScale: _iconDiagCrispBadgeStable
+                                                            ? 1
+                                                            : _iconDiagCrispBadge
+                                                              ? 1 / Math.max(0.001, currentScale) : 1
+    property int _iconDiagZoomBucket: -1
+
+    function _iconDiagBucket(value) {
+        if (value >= maxZoomFactor - 0.025) return 4
+        if (value >= 1.475) return 3
+        if (value >= 1.225) return 2
+        if (value >= 0.975) return 1
+        return 0
+    }
+
+    function _iconDiagLogImage(reason) {
+        if (!_iconDiagEnabled) return
+        IconDiagnostics.logQmlImage(reason, _appId, _launcherUrl.toString(),
+                                    DockModel.iconName(index), Qt.size(iconImage.width, iconImage.height),
+                                    iconImage.sourceSize, currentScale)
+    }
+
+    function _iconDiagLogBadge(reason) {
+        if (!_iconDiagEnabled || !badge.visible) return
+        let source = _launcherCountVisible ? "launcher-entry" : "notification-tracker"
+        IconDiagnostics.logBadge(_appId, _badgeCount, source,
+                                 Qt.rect(badge.x, badge.y, badge.width, badge.height),
+                                 badgeLabel.font.pixelSize, currentScale,
+                                 badge.layer.enabled, badge.layer.smooth,
+                                 badgeShadowEnabled, _iconDiagCrispBadge,
+                                 _iconDiagCrispBadgeStable,
+                                 badge.layer.textureSize)
+    }
+
+    function _iconDiagLogBadgeMetrics(reason) {
+        if (!_iconDiagEnabled || !IconDiagnostics.testBadgeMetrics || !badge.visible)
+            return
+        const badgeCenter = badge.mapToItem(dockItem, badge.width / 2, badge.height / 2)
+        const labelCenter = badgeLabel.mapToItem(dockItem, badgeLabel.width / 2, badgeLabel.height / 2)
+        IconDiagnostics.logBadgeMetrics(reason, _appId, _badgeCount, currentScale,
+                                        badgeCenter, labelCenter,
+                                        Qt.rect(badgeLabel.x, badgeLabel.y,
+                                                badgeLabel.width, badgeLabel.height),
+                                        badgeLabel.implicitWidth, badgeLabel.implicitHeight,
+                                        badgeLabel.contentWidth, badgeLabel.contentHeight,
+                                        badgeLabel.baselineOffset, badgeLabel.font.pixelSize,
+                                        badgeLabel.minimumPixelSize,
+                                        badgeLabelCounterScale.xScale)
+    }
+
+    // The experimental badge sibling lives in main.qml under the dock root,
+    // outside this item's parabolic Scale. Map both corners so it follows the
+    // actual visual position without changing the item or panel geometry.
+    function badgeOverlayRectIn(targetItem) {
+        const topLeft = badge.mapToItem(targetItem, 0, 0)
+        const bottomRight = badge.mapToItem(targetItem, badge.width, badge.height)
+        return Qt.rect(Math.min(topLeft.x, bottomRight.x),
+                       Math.min(topLeft.y, bottomRight.y),
+                       Math.abs(bottomRight.x - topLeft.x),
+                       Math.abs(bottomRight.y - topLeft.y))
+    }
+
+    function logBadgeOverlayMetrics(reason, targetItem, labelItem) {
+        if (!_iconDiagEnabled || !IconDiagnostics.testBadgeMetrics || !badge.visible)
+            return
+        const badgeCenter = badge.mapToItem(targetItem, badge.width / 2, badge.height / 2)
+        const labelCenter = labelItem.mapToItem(targetItem, labelItem.width / 2, labelItem.height / 2)
+        IconDiagnostics.logBadgeMetrics(reason, _appId, _badgeCount, currentScale,
+                                        badgeCenter, labelCenter,
+                                        Qt.rect(labelItem.x, labelItem.y,
+                                                labelItem.width, labelItem.height),
+                                        labelItem.implicitWidth, labelItem.implicitHeight,
+                                        labelItem.contentWidth, labelItem.contentHeight,
+                                        labelItem.baselineOffset, labelItem.font.pixelSize,
+                                        labelItem.minimumPixelSize, 1)
+    }
+
+    readonly property int badgeOverlayCount: _badgeCount
+    readonly property real badgeOverlayScale: currentScale
+    readonly property bool badgeOverlayVisible: badge.visible && _iconDiagBadgeOverlay
+
+    onCurrentScaleChanged: {
+        let bucket = _iconDiagBucket(currentScale)
+        if (bucket !== _iconDiagZoomBucket) {
+            _iconDiagZoomBucket = bucket
+            _iconDiagLogImage("zoom-bucket-" + bucket)
+            _iconDiagLogBadge("zoom-bucket-" + bucket)
+        }
+        if (_iconDiagEnabled && IconDiagnostics.testBadgeMetrics)
+            _iconDiagLogBadgeMetrics("zoom-frame")
+    }
     readonly property real currentOffset: zoomOffset
     readonly property real primaryTranslate: currentOffset + restOffset
 
@@ -523,12 +621,22 @@ Item {
             let iconCacheVersion = DockView.iconCacheVersion
             let name = DockModel.iconName(dockItem.index)
             if (name && name.length > 0) {
-                return "image://icon/" + name + "?v=" + iconCacheVersion
+                let source = "image://icon/" + name + "?v=" + iconCacheVersion
+                if (dockItem._iconDiagEnabled)
+                    source += "&diag-app=" + encodeURIComponent(dockItem._appId)
+                             + "&diag-launcher=" + encodeURIComponent(dockItem._launcherUrl.toString())
+                return source
             }
             return ""
         }
         sourceSize: Qt.size(Math.ceil(iconSize * maxZoomFactor), Math.ceil(iconSize * maxZoomFactor))
         smooth: true
+
+        onSourceChanged: dockItem._iconDiagLogImage("source-changed")
+        onStatusChanged: {
+            if (status === Image.Ready || status === Image.Error)
+                dockItem._iconDiagLogImage(status === Image.Ready ? "image-ready" : "image-error")
+        }
 
         // Transforms: launch bounce + attention animations
         transform: [
@@ -546,15 +654,9 @@ Item {
             }
         ]
 
-        // Highlight for active window / drag source dimming (× blink for type 6)
-        opacity: {
-            let base
-            if (dockItem.isDragSource) base = 0.3
-            else if (dockItem.model.IsActive) base = DockSettings.iconOpacityActive
-            else if (dockItem.model.IsMinimized) base = DockSettings.iconOpacityMinimized
-            else base = DockSettings.iconOpacityInactive
-            return base * dockItem._blinkOpacity
-        }
+        // The single icon-opacity setting applies identically to every task.
+        // Drag feedback and attention blinking remain transient visual effects.
+        opacity: (dockItem.isDragSource ? 0.3 : 1.0) * DockSettings.iconOpacity * dockItem._blinkOpacity
 
         Behavior on opacity {
             // Disable during blink animation — rapid _blinkOpacity changes cause
@@ -665,11 +767,52 @@ Item {
         }
     }
 
+    // When the badge layer is disabled, retain its circular shadow in an
+    // independent surface. The text stays outside this texture, so zoom does
+    // not magnify a pre-rasterized glyph along with the background.
+    Rectangle {
+        id: badgeShadowSource
+        objectName: "badgeShadowSource"
+        x: badge.x
+        y: badge.y
+        width: badge.width
+        height: badge.height
+        radius: badge.radius
+        color: badge.color
+        visible: DockSettings.badgeDisplayMode === 0
+                 && badge.visible
+                 && !badge.layer.enabled && badgeShadowEnabled
+        layer.enabled: visible
+        layer.effect: MultiEffect {
+            shadowEnabled: true
+            shadowColor: Qt.alpha("black", 0.4)
+            shadowBlur: 0.3
+            shadowVerticalOffset: 1
+        }
+        Component {
+            id: badgeShadowCounterScale
+            Scale {
+                origin.x: badgeShadowSource.width / 2
+                origin.y: badgeShadowSource.height / 2
+                xScale: 1 / Math.max(0.001, dockItem.currentScale)
+                yScale: xScale
+            }
+        }
+        Component.onCompleted: {
+            if (dockItem._iconDiagEnabled && IconDiagnostics.testBadgeSeparate)
+                badgeShadowSource.transform = [badgeShadowCounterScale.createObject(badgeShadowSource)]
+        }
+    }
+
+    readonly property bool badgeShadowEnabled:
+        !(dockItem._iconDiagEnabled && IconDiagnostics.testBadgeShadowOff)
+
     // Badge count overlay (unified: LauncherEntry + WatchedNotifications)
     Rectangle {
         id: badge
         objectName: "badge"
         visible: dockItem._badgeCount > 0 && DockSettings.badgeDisplayMode !== 2
+        opacity: dockItem._iconDiagBadgeOverlay ? 0 : 1
         anchors.right: iconImage.right
         anchors.top: iconImage.top
         anchors.rightMargin: -width * 0.2
@@ -679,30 +822,67 @@ Item {
                : Math.round(iconSize * 0.38)
         height: width
         radius: width / 2
-        color: Kirigami.Theme.highlightColor
+        color: DockSettings.badgeBackgroundColor
         Accessible.ignored: true
 
-        layer.enabled: DockSettings.badgeDisplayMode === 0
+        // Keep the glyph out of a badge texture. QtRendering rasterizes the
+        // text at its own size while the circle follows parabolic zoom.
+        layer.enabled: false
         layer.effect: MultiEffect {
-            shadowEnabled: true
+            shadowEnabled: dockItem.badgeShadowEnabled
             shadowColor: Qt.alpha("black", 0.4)
             shadowBlur: 0.3
             shadowVerticalOffset: 1
         }
-
+        Component {
+            id: badgeCounterScale
+            Scale {
+                origin.x: badge.width / 2
+                origin.y: badge.height / 2
+                xScale: 1 / Math.max(0.001, dockItem.currentScale)
+                yScale: xScale
+            }
+        }
+        Component.onCompleted: {
+            if (dockItem._iconDiagEnabled && IconDiagnostics.testBadgeSeparate)
+                badge.transform = [badgeCounterScale.createObject(badge)]
+            dockItem._iconDiagLogBadge("component-created")
+        }
+        onVisibleChanged: dockItem._iconDiagLogBadge("visibility-changed")
+        onWidthChanged: dockItem._iconDiagLogBadge("geometry-changed")
+        onHeightChanged: dockItem._iconDiagLogBadge("geometry-changed")
         QQC2.Label {
+            id: badgeLabel
+            objectName: "badgeLabel"
             visible: DockSettings.badgeDisplayMode === 0
-            anchors.centerIn: parent
+            // Keep fractional positioning explicit for resized diagnostic
+            // labels; QQuick anchors can snap their top-left to an integer.
+            x: (parent.width - width) / 2
+            y: (parent.height - height) / 2
             text: dockItem._badgeCount > 99 ? "99+" : dockItem._badgeCount.toString()
-            color: Kirigami.Theme.highlightedTextColor
-            font.pixelSize: parent.height * 0.55
-            font.bold: true
+            color: DockSettings.badgeTextColor
+            renderType: Text.QtRendering
+            font.pixelSize: parent.height * 0.55 * (DockSettings.badgeTextSizePercent / 100)
+                             * dockItem._iconDiagBadgeLabelScale
+            font.weight: DockSettings.badgeFontWeight
             fontSizeMode: Text.Fit
-            minimumPixelSize: 5
+            minimumPixelSize: 3 * (DockSettings.badgeTextSizePercent / 100)
+                              * dockItem._iconDiagBadgeLabelScale
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
-            width: parent.width - 2
-            height: parent.height - 2
+            width: (parent.width - 2) * dockItem._iconDiagBadgeLabelScale
+            height: (parent.height - 2) * dockItem._iconDiagBadgeLabelScale
+            transform: Scale {
+                id: badgeLabelCounterScale
+                origin.x: badgeLabel.width / 2
+                origin.y: badgeLabel.height / 2
+                xScale: dockItem._iconDiagBadgeLabelCounterScale
+                yScale: xScale
+            }
+            onImplicitWidthChanged: dockItem._iconDiagLogBadgeMetrics("implicit-width-changed")
+            onImplicitHeightChanged: dockItem._iconDiagLogBadgeMetrics("implicit-height-changed")
+            onContentWidthChanged: dockItem._iconDiagLogBadgeMetrics("content-width-changed")
+            onContentHeightChanged: dockItem._iconDiagLogBadgeMetrics("content-height-changed")
         }
     }
 

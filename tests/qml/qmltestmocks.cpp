@@ -143,6 +143,17 @@ void MockTasksModel::setTaskData(int row, const QString &roleName, const QVarian
     }
 }
 
+void MockTasksModel::setChildTaskData(int parentRow, int childRow, const QString &roleName, const QVariant &value)
+{
+    const int role = roleForName(roleName);
+    if (role >= 0) {
+        const QModelIndex childIndex = index(childRow, 0, index(parentRow, 0));
+        if (childIndex.isValid()) {
+            setData(childIndex, value, role);
+        }
+    }
+}
+
 void MockTasksModel::removeTask(int row)
 {
     removeRow(row);
@@ -242,6 +253,7 @@ void registerMockTypes()
     qmlRegisterUncreatableType<MockAbstractTasksModel>("org.kde.taskmanager", 0, 1, "AbstractTasksModel", QStringLiteral("Role enum holder"));
     qmlRegisterType<MockScreencastingRequest>("org.kde.taskmanager", 0, 1, "ScreencastingRequest");
     qmlRegisterType<MockPipeWireSourceItem>("org.kde.pipewire", 0, 1, "PipeWireSourceItem");
+    qmlRegisterType<MockClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
     qmlRegisterSingletonType<MockPipeWireTracker>("kdockw.test", 1, 0, "PipeWireTracker", [](QQmlEngine *, QJSEngine *) -> QObject * {
         auto *tracker = MockPipeWireTracker::instance();
         QQmlEngine::setObjectOwnership(tracker, QQmlEngine::CppOwnership);
