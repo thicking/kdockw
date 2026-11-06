@@ -552,6 +552,19 @@ SettingsPage {
                                 unit: Math.max(width / screenSize.width, height / screenSize.height)
                                 Accessible.ignored: true
 
+                                Item {
+                                    id: badgeHeaderColors
+                                    visible: false
+                                    Kirigami.Theme.colorSet: Kirigami.Theme.Header
+                                    Kirigami.Theme.inherit: false
+                                }
+                                Item {
+                                    id: badgeAccentColors
+                                    visible: false
+                                    Kirigami.Theme.colorSet: Kirigami.Theme.Selection
+                                    Kirigami.Theme.inherit: false
+                                }
+
                                 Rectangle {
                                     id: badgeStrip
                                     readonly property real pad: Kirigami.Units.smallSpacing * 1.5
@@ -560,7 +573,10 @@ SettingsPage {
                                     width: badgeIcon.width + 2 * pad
                                     height: width
                                     radius: Math.min(height / 2, Kirigami.Units.cornerRadius * 2)
-                                    color: DockSettings.badgeBackgroundColor
+                                    color: Qt.alpha(DockSettings.useAccentColor
+                                                    ? badgeAccentColors.Kirigami.Theme.backgroundColor
+                                                    : badgeHeaderColors.Kirigami.Theme.backgroundColor,
+                                                    DockSettings.backgroundStyle === 1 ? 0.0 : DockSettings.backgroundOpacity)
                                 }
 
                                 Kirigami.Icon {
@@ -597,7 +613,7 @@ SettingsPage {
                                         : Math.round(badgeIcon.width * 0.38)
                                     height: width
                                     radius: width / 2
-                                    color: Kirigami.Theme.highlightColor
+                                    color: DockSettings.badgeBackgroundColor
 
                                     layer.enabled: badgeCard.index === 0
                                     layer.effect: MultiEffect {
