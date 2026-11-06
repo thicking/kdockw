@@ -6,7 +6,6 @@
 // PipeWire/ScreencastingRequest are inert mocks (no live frames).
 import QtQuick
 import QtTest
-import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import kdockw.test 1.0
 import "../../src/qml" as KDockW
@@ -33,16 +32,6 @@ Item {
         Component {
             id: popupComponent
             KDockW.PreviewPopup {}
-        }
-
-        Component {
-            id: closeIconProbeComponent
-            Kirigami.Icon {
-                source: "window-close-symbolic"
-                isMask: true
-                width: 16
-                height: 16
-            }
         }
 
         function init() {
@@ -422,16 +411,7 @@ Item {
             let t = thumbs(popup)[2]
             let close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            compare(close.icon.name, "window-close-symbolic",
-                    "the KDE desktop style must receive the close glyph from the active icon theme")
-            verify(close.background, "QQC2.ToolButton must retain the KDE style background")
-            mouseMove(stage, -1, -1)
-            tryCompare(close, "hovered", false)
-            verify(BadgeTextColor.contrastRatio(close.icon.color, t.panelColor) >= 4.5,
-                   "the theme-resolved idle glyph must contrast with the preview surface")
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
-            mouseMove(stage, closeCenter.x, closeCenter.y)
-            tryCompare(close, "hovered", true)
             mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
@@ -439,28 +419,48 @@ Item {
             compare(DockModel.tasksModel.activateRequests, 0)
         }
 
-        function test_closeButtonUsesActivePlasmaStyleStates() {
+        function test_closeButtonUsesApprovedIdleHoverPressedAppearance() {
             let popup = makePopup()
             show(1, "Konsole")
             waitThumbs(popup, 3)
             const t = thumbs(popup)[2]
             const close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            compare(close.background.button, close,
-                    "the active Plasma style background must be owned by this button")
-            compare(close.icon.name, "window-close-symbolic")
-            const iconProbe = createTemporaryObject(closeIconProbeComponent, stage)
-            verify(iconProbe, "theme icon probe could not be created")
-            tryVerify(() => iconProbe.valid, 2000,
-                      "window-close-symbolic must resolve from the active icon theme")
+            const background = close.background
+            const cross = T.findFirst(close, o => o.objectName === "previewCloseCross")
+            verify(background && cross, "the button circle and cross must be present")
+            compare(close.width, 22)
+            compare(close.height, 22)
+            compare(background.radius, close.width / 2)
+            compare(background.color.toString().toLowerCase(), "#ff5f57")
+            verify(background.visible, "the red circle must remain visible while idle")
+            compare(cross.visible, false, "the cross must be hidden while idle")
+            verify(BadgeTextColor.contrastRatio(cross.color, background.color) >= 4.5,
+                   "the dark hover cross must contrast with the idle red circle")
+
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseMove(stage, -1, -1)
             tryCompare(close, "hovered", false)
             tryCompare(close, "down", false)
+            compare(background.color.toString().toLowerCase(), "#ff5f57")
+            compare(cross.visible, false)
+
             mouseMove(stage, closeCenter.x, closeCenter.y)
             tryCompare(close, "hovered", true)
+            tryCompare(cross, "visible", true)
+            compare(background.color.toString().toLowerCase(), "#ff5f57")
+            compare(close.width, 22)
+            compare(close.height, 22)
+
             mousePress(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
             tryCompare(close, "down", true)
+            tryCompare(cross, "visible", true)
+            compare(background.color.toString().toLowerCase(), "#e6534d")
+            verify(BadgeTextColor.contrastRatio(cross.color, background.color) >= 4.5,
+                   "the dark pressed cross must contrast with the pressed red circle")
+            compare(close.width, 22)
+            compare(close.height, 22)
+
             mouseRelease(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)

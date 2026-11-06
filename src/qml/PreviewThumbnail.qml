@@ -5,7 +5,6 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
@@ -416,7 +415,7 @@ Item {
         }
 
         // Close button (top-right corner, always visible)
-        PlasmaComponents3.ToolButton {
+        QQC2.ToolButton {
             id: closeButton
             objectName: "previewCloseButton"
             anchors.top: parent.top
@@ -424,14 +423,21 @@ Item {
             anchors.margins: Kirigami.Units.smallSpacing
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
-            // PlasmaComponents3 supplies the active Plasma Style states; the
-            // icon name below is resolved independently from the icon theme.
             hoverEnabled: true
             z: 10
-            icon.name: "window-close-symbolic"
-            icon.width: Kirigami.Units.iconSizes.small
-            icon.height: Kirigami.Units.iconSizes.small
-            icon.color: root.panelForeground
+
+            contentItem: Text {
+                objectName: "previewCloseCross"
+                anchors.fill: parent
+                text: "×"
+                color: "#351010"
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                renderType: Text.QtRendering
+                visible: closeButton.hovered || closeButton.down
+            }
 
             Accessible.name: i18n("Close %1", root.title)
 
@@ -441,6 +447,11 @@ Item {
                     ? DockModel.tasksModel.index(root.parentIndex, 0)
                     : DockModel.tasksModel.makeModelIndex(root.parentIndex, root.childIndex)
                 DockModel.tasksModel.requestClose(modelIndex)
+            }
+
+            background: Rectangle {
+                radius: width / 2
+                color: closeButton.down ? "#E6534D" : "#FF5F57"
             }
         }
 
