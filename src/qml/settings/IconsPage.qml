@@ -510,6 +510,9 @@ SettingsPage {
             background: null
             contentItem: QQC2.TabBar {
                 id: zoomAnimationTabs
+                // Let wheel events reach the scrollable settings page; the
+                // tab bar is navigated by clicks and keyboard input.
+                wheelEnabled: false
                 // Guards onCurrentIndexChanged until the Binding below has
                 // applied: with a Custom preset the tab bar starts at index 0
                 // and must not write the preset back before construction ends.

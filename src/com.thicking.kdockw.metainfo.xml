@@ -73,7 +73,7 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
-    <release version="0.3.0" date="2026-11-06">
+    <release version="0.3.0" date="2026-11-07">
       <description>
         <p>Window previews now offer rounded, resizable cards for open and minimized windows, with clearer controls and improved icon and badge rendering.</p>
         <p xml:lang="ru">Предпросмотр окон получил скруглённые настраиваемые карточки для обычных и свёрнутых окон, более понятные элементы управления и улучшенный рендеринг значков и бейджей.</p>

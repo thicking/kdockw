@@ -1006,7 +1006,10 @@ def test_mouse013_group_preview_clears_tooltip_and_restores_it_after_close(
         shot = _pixels(kdockw.screenshot("qa011-pending-hide-no-tooltip", band))
         if not kdockw.preview_visible():
             return True
-        glyph_count = _tooltip_glyph_count(shot, target_tip)
+        # The high-layer preview can cover the lower dock tooltip while the
+        # popup is still visible. Exclude those pixels so preview content in
+        # the old tooltip bounds is not counted as rendered tooltip text.
+        glyph_count = _tooltip_glyph_count(shot, target_tip, popup_rect)
         if glyph_count >= 40:
             overlap_counts.append(glyph_count)
         return False

@@ -8,7 +8,7 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-06
+## [0.3.0] - 2026-11-07
 
 KDockW 0.3.0 brings rounded live previews for open and minimized windows, flexible preview sizing, and clearer icon and badge presentation in a KDE Plasma 6 Wayland dock.
 
@@ -60,6 +60,7 @@ KDockW 0.3.0 brings rounded live previews for open and minimized windows, flexib
 
 ### Fixed
 
+- Allowed the zoom preset page to scroll when the pointer is over its tab bar.
 - Showed the application icon for an initially minimized window until KWin
   provides a usable frame, while retaining a real frame through later
   minimize-and-restore cycles.

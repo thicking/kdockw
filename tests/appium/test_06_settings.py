@@ -105,7 +105,8 @@ def dock_surfaces(kdockw: KDockW) -> list[kwin.Window]:
     out = [
         w
         for w in kdockw.windows()
-        if w.skip_taskbar
+        if w.dock
+        and w.skip_taskbar
         and not w.desktops
         and w.client_width == W
         and w.client_y + w.client_height == H
@@ -127,10 +128,11 @@ def preview_surfaces(kdockw: KDockW) -> list[kwin.Window]:
         [
             w
             for w in kdockw.windows()
-            if w.skip_taskbar
+            if w.special_window
+            and not w.dock
+            and w.skip_taskbar
             and not w.desktops
             and w.client_width == W
-            and w.client_y + w.client_height < H - EDGE_TRIGGER_PX
             and w.client_height > EDGE_TRIGGER_PX
         ],
         key=lambda w: w.client_x,
