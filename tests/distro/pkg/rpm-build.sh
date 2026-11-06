@@ -14,8 +14,8 @@ topdir=/work/rpmbuild
 
 mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 cp "$spec" "$topdir/SPECS/kdockw.spec"
-# Source0 in kdockw.spec is versioned as v<upstream_version>.tar.gz.
-cp "$tarball" "$topdir/SOURCES/v${KDOCKW_VERSION}.tar.gz"
+# Source0 uses the archive basename from the permanent tag URL.
+cp "$tarball" "$topdir/SOURCES/kdockw-v${KDOCKW_VERSION}.tar.gz"
 
 # debuginfo/debugsource stay enabled: find-debuginfo is what strips the
 # binary in the shipped rpm (eu-strip + .gnu_debuglink, and .gnu_debugdata on

@@ -77,7 +77,7 @@ endif()
 
 # The distro build harness must name/extract the source using the canonical
 # CMake version, not package-manager-specific versions such as 0.1.0_pre or
-# 0.1.0~dev. RPM Source0 uses a separate v-prefixed basename.
+# 0.1.0~dev. RPM Source0 uses the basename from its permanent tag URL.
 file(READ "${SOURCE_DIR}/tests/distro/build-package.sh" distro_build)
 file(READ "${SOURCE_DIR}/tests/distro/source-version.sh" source_version_helper)
 file(READ "${SOURCE_DIR}/tests/distro/pkg/rpm-build.sh" rpm_build)
@@ -88,6 +88,9 @@ endif()
 if(NOT source_version_helper MATCHES "KDOCKW_VERSION" OR NOT source_version_helper MATCHES "awk")
     message(FATAL_ERROR "Distro source version must come from the root CMakeLists.txt")
 endif()
-if(NOT rpm_build MATCHES "SOURCES/v\\$\\{KDOCKW_VERSION\\}\\.tar\\.gz")
+if(NOT rpm MATCHES "Source0:[ \\t]*https://github\\.com/.*/archive/refs/tags/kdockw-v%\\{upstream_version\\}\\.tar\\.gz")
+    message(FATAL_ERROR "RPM Source0 archive basename must follow the permanent tag URL")
+endif()
+if(NOT rpm_build MATCHES "SOURCES/kdockw-v\\$\\{KDOCKW_VERSION\\}\\.tar\\.gz")
     message(FATAL_ERROR "RPM source archive basename must match the spec Source0 URL")
 endif()
