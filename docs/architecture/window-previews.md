@@ -119,12 +119,44 @@ node. Neither test tier claims GPU stencil or KWin visual acceptance.
 
 The saved settings are `PreviewThumbnailSize` (120–320 px, default 200),
 `PreviewMaximumHeight` (80–300 px, default 180), `PreviewCardPadding` (4–24 px,
-default 8), and `PreviewDockGap` (0–32 px, default 8). Width and height define
+default 8), and `PreviewDockGap` (0–32 px, default 4). Width and height define
 the stable 16:10 outer preview; stream dimensions only change the centered Cover
 rectangle. Before stream dimensions arrive, sizing uses the 1.6:1 fallback.
 The previous thumbnail-width key is unchanged, so old user values remain
 effective. These settings are saved through KConfig and the dock gap reapplies
 the existing layer-shell margins live.
+
+The preview layer-shell margin now equals the non-reserved panel-bar extent,
+maximum zoom overflow, and configured `PreviewDockGap`. The shadow bounds are
+already inside the preview surface; an extra fixed four-pixel term previously
+increased the visible separation and has been removed. The new factory setting
+reduces the outer shadow gap from 12 px to 4 px while preserving the zoom
+clearance. Existing explicitly saved gap values remain unchanged.
+
+## Preview sharpness and pixel scale
+
+The normal preview path does not render through an intermediate QML layer:
+KPipeWire's source scene-graph subtree (including its image node) is wrapped by
+the rounded clip and rendered directly. The Cover geometry gives the source
+one proportional logical-size scale; the QQuickWindow then maps that geometry
+to output pixels using the screen DPR. Rounded clipping does not create a
+second texture pass.
+
+KPipeWire exposes `streamSize`, the source frame size after the first frame.
+The viewport has fixed logical dimensions, while its physical output extent is
+the logical size multiplied by the preview window DPR. Sharpness depends on the
+ratio of these values: a larger output than the captured frame requires
+upsampling. The current owner-visible logs did not contain a frame size and DPR
+pair, so the source-resolution limitation has not been established for the
+reported blur. No filter or capture-mode change is justified without that
+measurement.
+
+In a diagnostic build only, opt-in `KDOCKW_PREVIEW_METRICS=1` logs
+size-only capture metrics: PipeWire frame pixels, window DPR, logical and
+physical viewport/Cover sizes, mapped source bounds, `paintedRect`, and whether
+DMA-BUF is active. It records no window/app names, UUIDs, frame pixels, or
+screenshots. The safe sharpness-test launcher enables this flag explicitly; normal builds and
+other diagnostic runs do not emit these records.
 
 ## Minimized-window lifecycle
 

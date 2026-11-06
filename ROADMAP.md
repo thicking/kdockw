@@ -111,6 +111,11 @@ and open and minimized CPU-only previews work. DMA-BUF/auto, RAM/VRAM profiling,
 and exhaustive multi-monitor validation are not claimed. It depends on accepted
 v0.2.0 geometry.
 
+Follow-up refinement ([[11.7-Window-Preview-Spacing-And-Sharpness]], `review`):
+the factory dock gap is reduced while preserving zoom clearance. Capture-size/DPR metrics are opt-in in the diagnostic
+build; source-resolution adequacy and any sharpness improvement still require
+measurements from the owner’s live preview.
+
 ### P0 — Application Name Tooltip
 
 - [ ] Show a compact application-name tooltip when no preview card is visible.
