@@ -41,10 +41,9 @@ The current local candidate targets v0.1.2. It has not been published.
   requested red and white defaults, a live badge preview, contrast feedback,
   and a joint reset action. Existing badge counts and text rendering remain
   unchanged.
-- Used the KDE Qt Quick Controls desktop style for the preview close control's
-  idle, hover, and pressed states, with a symbolic close icon from the active
-  icon theme and contrast-adaptive tint. Grouped window close behavior remains
-  unchanged.
+- Used the active Plasma Style for the preview close control's idle, hover, and
+  pressed states, with a symbolic close icon from the active icon theme and
+  contrast-adaptive tint. Grouped window close behavior remains unchanged.
 
 ### Changed
 

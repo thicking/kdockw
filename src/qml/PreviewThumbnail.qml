@@ -5,6 +5,7 @@ import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components 3.0 as PlasmaComponents3
 import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
@@ -415,7 +416,7 @@ Item {
         }
 
         // Close button (top-right corner, always visible)
-        QQC2.ToolButton {
+        PlasmaComponents3.ToolButton {
             id: closeButton
             objectName: "previewCloseButton"
             anchors.top: parent.top
@@ -423,6 +424,8 @@ Item {
             anchors.margins: Kirigami.Units.smallSpacing
             width: Kirigami.Units.iconSizes.smallMedium
             height: Kirigami.Units.iconSizes.smallMedium
+            // PlasmaComponents3 supplies the active Plasma Style states; the
+            // icon name below is resolved independently from the icon theme.
             hoverEnabled: true
             z: 10
             icon.name: "window-close-symbolic"

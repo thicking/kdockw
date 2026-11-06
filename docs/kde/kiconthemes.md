@@ -239,43 +239,46 @@ cross cut out, while `window-close-symbolic.svg` is a monochrome cross. Use the
 symbolic variant for a standalone close glyph rather than placing a second
 button background behind the filled control.
 
-### Native Qt Quick Controls states versus KWin decoration buttons
+### Plasma style controls versus KWin decoration buttons
 
-KDockW's application setup selects the public `org.kde.desktop` Qt Quick
-Controls style when no style was selected by the environment. The installed
-`org/kde/desktop/ToolButton.qml` implements its background with KDE's
-`StylePrivate.StyleItem` and forwards `ToolButton.down` as `sunken` and
-`ToolButton.hovered` as `hover`. A normal `QQC2.ToolButton` that does not
-override `background` therefore gets its idle, hover, and pressed presentation
-from the KDE desktop control style. Setting `icon.name` lets that style resolve
-the glyph through the active icon theme; an icon name is artwork, not a button
-state style.
+When the in-app control must follow the active Plasma Style, use the public
+`PlasmaComponents3.ToolButton` from `org.kde.plasma.components 3.0`. Its
+installed QML source describes its visual style as determined by the active
+Plasma theme. The public component creates a `Private.ButtonBackground` and
+uses `KSvg.FrameSvgItem` with the standard `widgets/button` artwork prefixes:
+`toolbutton-hover`/`normal` for hover and `toolbutton-pressed`/`pressed` for
+pressed. Those states are driven by the control's `hovered` and `down` values.
+Its content item uses `Kirigami.Icon`, so `icon.name` still resolves artwork
+from the active icon theme. This is separate from `QQC2.ToolButton` using the
+`org.kde.desktop` Controls style.
 
-KWin window decorations are a separate system. KDE's Plasma developer
+KWin window decorations are a third, separate system. KDE's Plasma developer
 documentation describes them as Aurorae SVG themes or C++ KDecoration plugins.
 The public KDecoration button API is implemented by decoration plugins and
 requires a `Decoration` context; it does not expose a stable app-facing API for
 rendering an arbitrary titlebar button inside another application's QML scene.
-Do not load KWin decoration artwork or claim a Controls button reproduces the
-decoration. For an in-app control, use the KDE Qt Quick Controls style and the
-active icon theme. The controls style is selected before QML is loaded; theme
-palette and icon-theme changes are handled by the respective Qt/KDE theming
-systems, while switching the application Controls style at runtime is not
-supported by `QQuickStyle`.
+Therefore a button inside KDockW should use PlasmaComponents when the desired
+source is the active Plasma Style; it should not load KWin decoration artwork
+or claim to reproduce that decoration. The ordinary Qt Quick Controls style
+may remain `org.kde.desktop` for other controls in KDockW.
 
-Local API verification (2026-11-06): `src/app/application.cpp` selects
-`org.kde.desktop`; the installed `ToolButton.qml` forwards the `hovered` and
-`down` states to `StyleItem`. In the inspected Plasma session, the icon theme
-was `MacTahoe`, color scheme `KlassyLight`, Plasma style `WhiteSur-alt`, and
-KWin decoration plugin `org.kde.klassy` (decoration theme `Klassy`). These
-settings identify distinct theme systems and are host observations, not
-portable defaults.
+Local API verification (2026-11-06): installed PlasmaComponents3
+`ToolButton.qml`, `ButtonBackground.qml`, `FlatButtonBackground.qml`, and
+`ButtonContent.qml` confirm that the component consumes active Plasma `widgets/button`
+artwork, maps `hovered`/`down` to themed hover/pressed assets, and resolves the
+icon name through Kirigami. The runtime QML module is supplied by the installed
+`plasma-desktoptheme`, which is a dependency of the supported Plasma workspace
+session in the inspected system. In that session, the icon theme was `MacTahoe`,
+color scheme `KlassyLight`, Plasma style `WhiteSur-alt`, and KWin decoration
+plugin `org.kde.klassy` (decoration theme `Klassy`). These settings identify
+distinct theme systems and are host observations, not portable defaults.
 
 References:
 
 - [Qt Quick Controls styles](https://doc.qt.io/qt-6/qtquickcontrols-styles.html)
 - [QQuickStyle](https://doc.qt.io/qt-6/qquickstyle.html)
 - [KDE Plasma themes and plugins: window decorations](https://develop.kde.org/docs/plasma/)
+- [Plasma QML API: PlasmaComponents controls](https://develop.kde.org/docs/plasma/widget/plasma-qml-api/)
 - [KDecoration3::DecorationButton](https://api.kde.org/legacy/plasma/kdecoration/html/classKDecoration3_1_1DecorationButton.html)
 
 ### Loading Task Icons

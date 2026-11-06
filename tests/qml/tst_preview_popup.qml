@@ -6,6 +6,7 @@
 // PipeWire/ScreencastingRequest are inert mocks (no live frames).
 import QtQuick
 import QtTest
+import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import kdockw.test 1.0
 import "../../src/qml" as KDockW
@@ -32,6 +33,16 @@ Item {
         Component {
             id: popupComponent
             KDockW.PreviewPopup {}
+        }
+
+        Component {
+            id: closeIconProbeComponent
+            Kirigami.Icon {
+                source: "window-close-symbolic"
+                isMask: true
+                width: 16
+                height: 16
+            }
         }
 
         function init() {
@@ -428,27 +439,28 @@ Item {
             compare(DockModel.tasksModel.activateRequests, 0)
         }
 
-        function test_closeButtonUsesNativeKdeStyleStates() {
+        function test_closeButtonUsesActivePlasmaStyleStates() {
             let popup = makePopup()
             show(1, "Konsole")
             waitThumbs(popup, 3)
             const t = thumbs(popup)[2]
             const close = T.findFirst(t, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            if (close.background.hover === undefined || close.background.sunken === undefined)
-                skip("KDE desktop control style is required for this state test")
-
+            compare(close.background.button, close,
+                    "the active Plasma style background must be owned by this button")
             compare(close.icon.name, "window-close-symbolic")
-            compare(close.background.properties.icon, close.icon.name,
-                    "the KDE style must receive the icon theme name")
+            const iconProbe = createTemporaryObject(closeIconProbeComponent, stage)
+            verify(iconProbe, "theme icon probe could not be created")
+            tryVerify(() => iconProbe.valid, 2000,
+                      "window-close-symbolic must resolve from the active icon theme")
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseMove(stage, -1, -1)
-            tryCompare(close.background, "hover", false)
-            tryCompare(close.background, "sunken", false)
+            tryCompare(close, "hovered", false)
+            tryCompare(close, "down", false)
             mouseMove(stage, closeCenter.x, closeCenter.y)
-            tryCompare(close.background, "hover", true)
+            tryCompare(close, "hovered", true)
             mousePress(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
-            tryCompare(close.background, "sunken", true)
+            tryCompare(close, "down", true)
             mouseRelease(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)

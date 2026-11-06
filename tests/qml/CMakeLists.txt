@@ -53,17 +53,16 @@ foreach(test_name IN LISTS KDOCKW_QML_TEST_FILES)
     )
 endforeach()
 
-# The application selects this KDE desktop style. Keep the focused state test
-# separate so the rest of the preview suite remains independent of system
-# theme colors and style implementation details.
-add_test(NAME qml_preview_close_native_kde_style
+# PlasmaComponents3.ToolButton reads state artwork from the active Plasma
+# Style; isolate its focused state check from unrelated preview palette tests.
+add_test(NAME qml_preview_close_active_plasma_style
     COMMAND kdockw_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/tst_preview_popup.qml
-        PreviewPopup::test_closeButtonUsesNativeKdeStyleStates
+        PreviewPopup::test_closeButtonUsesActivePlasmaStyleStates
 )
-set_tests_properties(qml_preview_close_native_kde_style PROPERTIES
+set_tests_properties(qml_preview_close_active_plasma_style PROPERTIES
     LABELS "qml;preview;theme"
     TIMEOUT 120
-    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=org.kde.desktop;LANGUAGE=en_US;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
+    ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;LANGUAGE=en_US;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
 )
 
 # Tooltip placement is also checked with fractional/high-DPI surface scales.
