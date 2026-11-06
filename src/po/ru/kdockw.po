@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.1.0\n"
+"Project-Id-Version: KDockW 0.1.2\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-01 20:00+0500\n"
@@ -128,6 +128,10 @@ msgstr "Нормализация размера значков"
 msgid "Icon scale"
 msgstr "Масштаб значков"
 
+#: src/qml/SettingsDialog.qml src/qml/settings/IconsPage.qml
+msgid "Icon opacity"
+msgstr "Непрозрачность значков"
+
 #: src/qml/SettingsDialog.qml:48 src/qml/settings/IconsPage.qml:731
 msgid "Active window icon opacity"
 msgstr "Непрозрачность значка активного окна"
@@ -246,6 +250,40 @@ msgstr "Анимация привлечения внимания"
 #: src/qml/settings/AnimationsPage.qml:492
 msgid "Badge display"
 msgstr "Индикатор уведомлений"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Badge text weight"
+msgstr "Насыщенность шрифта бейджа"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Badge text size"
+msgstr "Размер текста бейджа"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Regular"
+msgstr "Обычный"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Medium"
+msgstr "Средний"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "DemiBold"
+msgstr "Полужирный"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Bold"
+msgstr "Жирный"
+
+#: src/qml/settings/SliderDelegate.qml
+msgctxt "@label slider minimum"
+msgid "Smaller"
+msgstr "Меньше"
+
+#: src/qml/settings/SliderDelegate.qml
+msgctxt "@label slider maximum"
+msgid "Larger"
+msgstr "Больше"
 
 #: src/qml/SettingsDialog.qml:83 src/qml/settings/BehaviorPage.qml:14
 msgid "Behavior"
@@ -1268,3 +1306,15 @@ msgstr "Выберите цвет индикатора"
 #: src/qml/settings/AnimationsPage.qml
 msgid "Restore indicator defaults"
 msgstr "Вернуть параметры индикаторов по умолчанию"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Maximum thumbnail height (px)"
+msgstr "Максимальная высота миниатюры (пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Card inner padding (px)"
+msgstr "Внутренний отступ карточки (пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Gap between preview and dock (px)"
+msgstr "Расстояние между предпросмотром и доком (пикс.)"

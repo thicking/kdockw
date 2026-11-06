@@ -109,6 +109,31 @@ TEST_CASE("TaskIconProvider renders registered raw artwork", "[taskiconprovider]
     REQUIRE(alphaBounds(rendered) == QRect(0, 0, 32, 32));
 }
 
+TEST_CASE("TaskIconProvider preserves source alpha when it scales icon artwork", "[taskiconprovider][raw][alpha]")
+{
+    Q_UNUSED(guiApplication());
+
+    kdockw::TaskIconProvider provider(true);
+    const QString key = QStringLiteral("raw:test-alpha-scale-3bb7");
+    const QColor artwork(56, 153, 232, 255);
+    QImage source(32, 32, QImage::Format_ARGB32_Premultiplied);
+    source.fill(Qt::transparent);
+    {
+        QPainter painter(&source);
+        painter.fillRect(QRect(8, 8, 16, 16), artwork);
+    }
+    REQUIRE(qAlpha(source.pixel(16, 16)) == 255);
+    REQUIRE(qAlpha(source.pixel(1, 1)) == 0);
+    kdockw::TaskIconProvider::registerRawIcon(key, QIcon(QPixmap::fromImage(source)));
+
+    const QPixmap rendered = provider.requestPixmap(key, nullptr, QSize(96, 96));
+    const QImage image = rendered.toImage().convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    REQUIRE(image.size() == QSize(96, 96));
+    CHECK(qAlpha(image.pixel(48, 48)) == 255);
+    CHECK(qAlpha(image.pixel(1, 1)) == 0);
+    CHECK(image.pixelColor(48, 48).rgb() == artwork.rgb());
+}
+
 TEST_CASE("TaskIconProvider replaces raw artwork under the same key", "[taskiconprovider][raw]")
 {
     Q_UNUSED(guiApplication());

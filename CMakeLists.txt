@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.1.0")
+set(KDOCKW_VERSION "0.1.2")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
@@ -102,6 +102,10 @@ int main() { static_cast<LayerShellQt::Window*>(nullptr)->setScreen(static_cast<
 " _HAVE_LAYERSHELLQT_SET_SCREEN)
 
 add_compile_definitions(KDOCKW_VERSION_STRING="${KDOCKW_VERSION}")
+option(KDOCKW_DIAGNOSTIC_BUILD "Enable opt-in diagnostic-only configuration routing" OFF)
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    add_compile_definitions(KDOCKW_DIAGNOSTIC_BUILD)
+endif()
 if(NOT _HAVE_LAYERSHELLQT_DESIRED_SIZE)
     add_compile_definitions(KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE)
 endif()
@@ -110,6 +114,11 @@ if(NOT _HAVE_LAYERSHELLQT_SET_SCREEN)
 endif()
 
 add_subdirectory(src)
+
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    add_executable(kdockw_diagnostic_metadata_check tools/verify-kdockw-wayland-metadata.cpp)
+    target_link_libraries(kdockw_diagnostic_metadata_check PRIVATE Qt6::Core KF6::Service)
+endif()
 
 option(KDOCKW_E2E_TESTS "Register the Docker-based AT-SPI E2E suite (tests/appium/run-e2e.sh) with CTest" OFF)
 

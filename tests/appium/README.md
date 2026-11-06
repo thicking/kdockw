@@ -312,6 +312,7 @@ Tier 3 runs the Tier 2 Appium scenarios against installed distro packages.
 | PREV-004 | `test_03_preview.py::test_prev004_close_button_closes_that_window`, `test_prev004_delete_key_closes_focused_thumbnail_window`, `test_prev004_closing_last_window_closes_preview_and_returns_to_dock` | KWin, AT-SPI | pass |
 | PREV-005 | `test_03_preview.py::test_prev005_preview_closes_when_pointer_leaves`, `test_prev005_close_on_leave_is_delayed`, `test_prev005_preview_stays_closed_when_a_task_row_appears_while_leaving` | AT-SPI | pass |
 | PREV-006 | `test_03_preview.py::test_prev006_single_window_preview` | screenshot, AT-SPI | pass |
+| PREV-012 | `test_03_preview.py::test_prev012_minimized_window_keeps_last_frame_and_group_frames_stay_bound` | KWin minimize/restore, ScreenShot2 pixel oracle, grouped windows, close cleanup | prepared; Docker is unavailable in the current host, so live capture test not run |
 | PREV-007 | `test_03_preview.py::test_prev007_opening_preview_announces_window_count` | AT-SPI event | pass |
 | QA-PREV-01 | `test_03_preview.py::test_qa_prev01_atspi_visible_popup_accepts_fast_pointer_entry` | AT-SPI, KWin, real input | pass (pre-fix failed at 33 ms; fixed 1/1) |
 | CTX-001 | `test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item`, `test_ctx001_about_kdockw_is_the_fifth_entry`, `test_ctx001_quit_is_the_last_entry` | KWin | pass |

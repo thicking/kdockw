@@ -15,6 +15,10 @@
 #include <QSignalSpy>
 #include <QTemporaryDir>
 
+#include <KConfig>
+
+#include <memory>
+
 namespace
 {
 class CaptureModeEnvironment
@@ -105,6 +109,7 @@ TEST_CASE("Saved capture mode applies live and environment overrides take preced
     qunsetenv("KDOCKW_PREVIEW_CAPTURE_MODE");
 
     KDockWSettings settings;
+    settings.setConfig(std::make_unique<KConfig>(configHome.path() + QStringLiteral("/kdockwrc"), KConfig::SimpleConfig));
     settings.load();
     REQUIRE_FALSE(settings.cpuOnlyPreviewCapture());
 
@@ -118,6 +123,7 @@ TEST_CASE("Saved capture mode applies live and environment overrides take preced
     CHECK(modeChanged.count() == 1);
     {
         KDockWSettings restarted;
+        restarted.setConfig(std::make_unique<KConfig>(configHome.path() + QStringLiteral("/kdockwrc"), KConfig::SimpleConfig));
         restarted.load();
         CHECK(restarted.cpuOnlyPreviewCapture());
     }
@@ -158,6 +164,7 @@ TEST_CASE("Saved capture mode applies live and environment overrides take preced
     CHECK(cpuOverride.cpuCaptureOnly());
     CHECK_FALSE(settings.cpuOnlyPreviewCapture());
     KDockWSettings restartedAfterOverride;
+    restartedAfterOverride.setConfig(std::make_unique<KConfig>(configHome.path() + QStringLiteral("/kdockwrc"), KConfig::SimpleConfig));
     restartedAfterOverride.load();
     CHECK_FALSE(restartedAfterOverride.cpuOnlyPreviewCapture());
 }

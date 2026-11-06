@@ -7,6 +7,7 @@ import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import ".."
+import "../BadgeTextColor.js" as BadgeTextColor
 
 // Lifelike miniature of the dock: real theme icons on the panel background,
 // drawn at `unit` preview pixels per real pixel. Every look property defaults
@@ -58,11 +59,12 @@ Item {
     property bool useAccentColor: DockSettings.useAccentColor
     property bool useSystemColor: DockSettings.useSystemColor
     property color tintColor: DockSettings.tintColor
-    property real opacityActive: DockSettings.iconOpacityActive
-    property real opacityInactive: DockSettings.iconOpacityInactive
-    property real opacityMinimized: DockSettings.iconOpacityMinimized
+    property real iconOpacity: DockSettings.iconOpacity
+    property real otherDesktopOpacity: DockSettings.otherDesktopOpacity
     /// 0 Number, 1 Dot, 2 Off.
     property int badgeDisplayMode: DockSettings.badgeDisplayMode
+    property int badgeFontWeight: DockSettings.badgeFontWeight
+    property int badgeTextSizePercent: DockSettings.badgeTextSizePercent
     property int runningIndicatorStyle: DockSettings.runningIndicatorStyle
     /// 0 Screen edge, 1 Dock interior.
     property int runningIndicatorPosition: DockSettings.runningIndicatorPosition
@@ -363,6 +365,10 @@ Item {
                 readonly property string windowState: modelData.state ?? "launcher"
                 readonly property Item iconBox: box
 
+                // Preserve the separate virtual-desktop dimming preview.
+                // App active/minimized state no longer changes icon opacity.
+                opacity: modelData.otherDesktop === true ? dock.otherDesktopOpacity : 1.0
+
                 x: dock.vertical ? 0 : primaryCenter - slotLength / 2
                 y: dock.vertical ? primaryCenter - slotLength / 2 : 0
                 width: dock.vertical ? dock.iconPx : slotLength
@@ -399,9 +405,7 @@ Item {
                         source: slot.modelData.icon
                         fallback: slot.modelData.fallback ?? "application-x-executable"
                         visible: slot.index !== dock.hiddenIconIndex
-                        opacity: slot.windowState === "active" ? dock.opacityActive
-                            : slot.windowState === "minimized" ? dock.opacityMinimized
-                            : dock.opacityInactive
+                        opacity: dock.iconOpacity
                     }
                 }
 
@@ -459,11 +463,14 @@ Item {
                         width: parent.width - 2
                         height: parent.height - 2
                         text: (slot.modelData.badge ?? 0) > 99 ? "99+" : String(slot.modelData.badge ?? 0)
-                        color: Kirigami.Theme.highlightedTextColor
-                        font.pixelSize: Math.max(1, parent.height * 0.55)
-                        font.bold: true
+                        color: BadgeTextColor.choose(parent.color,
+                                                     Kirigami.Theme.highlightedTextColor)
+                        renderType: Text.QtRendering
+                        font.pixelSize: Math.max(1, parent.height * 0.55
+                                                 * dock.badgeTextSizePercent / 100)
+                        font.weight: dock.badgeFontWeight
                         fontSizeMode: Text.Fit
-                        minimumPixelSize: 4
+                        minimumPixelSize: 4 * dock.badgeTextSizePercent / 100
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         Accessible.ignored: true

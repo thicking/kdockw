@@ -10,9 +10,11 @@
 #include "kdockw.h"
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_approx.hpp>
 
 #include <KConfig>
 #include <KConfigGroup>
+#include <KSharedConfig>
 
 #include <QMetaProperty>
 #include <QTemporaryDir>
@@ -212,10 +214,36 @@ TEST_CASE("Running indicator preferences persist independently", "[settings][run
     CHECK(restarted.contentPaddingLeft() == settings.contentPaddingLeft());
 }
 
+TEST_CASE("Badge typography defaults and preferences persist independently", "[settings][badge]")
+{
+    const ScopedConfigHome home;
+    KDockWSettings settings;
+    settings.load();
+
+    REQUIRE(settings.badgeFontWeight() == 500);
+    REQUIRE(settings.badgeTextSizePercent() == 100);
+    REQUIRE(settings.badgeDisplayMode() == 0);
+
+    QObject context;
+    kdockw::Application::connectSettingsAutoSave(&settings, &context);
+    // A user-selected value that matches the old factory default must survive
+    // an application update that changes the new-install default to Medium.
+    settings.setBadgeFontWeight(700);
+    settings.setBadgeTextSizePercent(115);
+
+    KDockWSettings restarted;
+    restarted.load();
+    CHECK(restarted.badgeFontWeight() == 700);
+    CHECK(restarted.badgeTextSizePercent() == 115);
+    CHECK(restarted.iconSize() == settings.iconSize());
+    CHECK(restarted.badgeDisplayMode() == settings.badgeDisplayMode());
+}
+
 TEST_CASE("First-run settings match the validated KDockW appearance", "[settings][defaults]")
 {
     const ScopedConfigHome home;
     KDockWSettings settings;
+    settings.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
     settings.load();
 
     CHECK(settings.language() == QStringLiteral("system"));
@@ -226,10 +254,11 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.contentPaddingTop() == 8);
     CHECK(settings.contentPaddingBottom() == 0);
     CHECK(settings.contentAlignment() == 1);
+    CHECK(settings.iconOpacity() == 1.0);
     CHECK(settings.iconOpacityActive() == 1.0);
-    CHECK(settings.iconOpacityInactive() == 0.9);
+    CHECK(settings.iconOpacityInactive() == 1.0);
     CHECK(settings.iconOpacityMinimized() == 1.0);
-    CHECK(settings.maxZoomFactor() == 1.7);
+    CHECK(settings.maxZoomFactor() == Catch::Approx(1.7));
     CHECK(settings.zoomStyle() == 0);
     CHECK(settings.cornerRadius() == 17);
     CHECK(settings.floating());
@@ -248,7 +277,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.shadowLightY() == -82);
     CHECK(settings.shadowLightZ() == 500);
     CHECK(settings.shadowLightRadius() == 5.5);
-    CHECK(settings.shadowIntensity() == 0.6);
+    CHECK(settings.shadowIntensity() == Catch::Approx(0.6));
     CHECK(settings.previewEnabled());
     CHECK_FALSE(settings.cpuOnlyPreviewCapture());
     CHECK(settings.attentionAnimation() == 2);
@@ -279,4 +308,36 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
     CHECK(settings.runningIndicatorSize() == 9);
     CHECK(settings.iconSpacing() == 13);
     CHECK(settings.contentPaddingBottom() == 0);
+}
+
+TEST_CASE("Preview redesign defaults preserve existing thumbnail preferences", "[settings][preview][migration]")
+{
+    const ScopedConfigHome home;
+    {
+        // This represents an existing config file written before the new
+        // layout settings existed. Its configured width must remain intact.
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        config.group(QStringLiteral("General")).writeEntry(QStringLiteral("PreviewThumbnailSize"), 260);
+        config.sync();
+    }
+
+    KDockWSettings settings;
+    settings.load();
+    CHECK(settings.previewThumbnailSize() == 260);
+    CHECK(settings.previewMaximumHeight() == 180);
+    CHECK(settings.previewCardPadding() == 8);
+    CHECK(settings.previewDockGap() == 8);
+
+    settings.setPreviewMaximumHeight(240);
+    settings.setPreviewCardPadding(12);
+    settings.setPreviewDockGap(16);
+    settings.save();
+
+    KDockWSettings restarted;
+    restarted.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
+    restarted.load();
+    CHECK(restarted.previewThumbnailSize() == 260);
+    CHECK(restarted.previewMaximumHeight() == 240);
+    CHECK(restarted.previewCardPadding() == 12);
+    CHECK(restarted.previewDockGap() == 16);
 }

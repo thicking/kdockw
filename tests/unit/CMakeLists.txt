@@ -13,12 +13,17 @@ add_executable(kdockw_unit_tests
     test_background_opacity.cpp
     test_background_effects.cpp
     test_settings_autosave.cpp
+    test_application_config.cpp
+    test_dock_visibility_geometry.cpp
     test_settings_migration.cpp
     test_language_setting.cpp
     test_taskiconprovider.cpp
+    test_icondiag.cpp
     test_desktop_actions.cpp
     test_about_data.cpp
     test_preview_capture_mode.cpp
+    test_rounded_clip_geometry.cpp
+    test_pipewire_clip_tree.cpp
 )
 
 target_compile_definitions(kdockw_unit_tests PRIVATE

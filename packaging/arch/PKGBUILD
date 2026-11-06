@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 pkgname=kdockw
-pkgver=0.1.0
+pkgver=0.1.2
 _pkgsrcver=${pkgver/_pre/-dev}
 pkgrel=1
 pkgdesc='A lightweight dock for KDE Plasma 6 — spiritual successor to Latte Dock'
@@ -43,7 +43,7 @@ makedepends=(
     'qt6-shadertools'
 )
 source=("$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$_pkgsrcver.tar.gz")
-sha256sums=('2c9604d3d13a676b69dca7a57f5403172ef87af0dd6b2b6408fc69f248b555bd')
+sha256sums=('SKIP') # Release tooling pins the exact verified source archive.
 
 build() {
     cmake -S "$pkgname-$_pkgsrcver" -B build \

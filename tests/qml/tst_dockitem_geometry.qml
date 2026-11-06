@@ -164,7 +164,7 @@ Item {
             return [
                 { tag: "active", roles: { IsActive: true }, opacity: 1.0 },
                 { tag: "minimized", roles: { IsMinimized: true }, opacity: 1.0 },
-                { tag: "background", roles: {}, opacity: 0.9 },
+                { tag: "background", roles: {}, opacity: 1.0 },
             ]
         }
 
@@ -174,19 +174,63 @@ Item {
             tryCompare(icon, "opacity", data.opacity)
         }
 
-        function test_iconOpacityFollowsSettings_data() {
+        function test_iconOpacityIsUnifiedAcrossStates_data() {
             return [
-                { tag: "active", roles: { IsActive: true }, key: "iconOpacityActive", opacity: 0.6 },
-                { tag: "minimized", roles: { IsMinimized: true }, key: "iconOpacityMinimized", opacity: 0.25 },
-                { tag: "background", roles: {}, key: "iconOpacityInactive", opacity: 0.4 },
+                { tag: "active", roles: { IsActive: true } },
+                { tag: "inactive", roles: {} },
+                { tag: "minimized", roles: { IsMinimized: true } },
             ]
         }
 
-        function test_iconOpacityFollowsSettings(data) {
+        function test_iconOpacityIsUnifiedAcrossStates(data) {
+            // Persisted legacy values must have no rendering effect.
+            DockSettings.iconOpacityActive = 0.6
+            DockSettings.iconOpacityInactive = 0.4
+            DockSettings.iconOpacityMinimized = 0.25
+            DockSettings.iconOpacity = 1.0
             let roles = Object.assign({ display: "App", IsWindow: true }, data.roles)
             let icon = T.iconImage(makeRow([roles]).itemAt(0))
-            DockSettings[data.key] = data.opacity
-            tryCompare(icon, "opacity", data.opacity)
+            const item = icon.parent
+
+            for (const opacity of [1.0, 0.9, 0.5]) {
+                DockSettings.iconOpacity = opacity
+                for (const zoom of [1.0, 1.3, 1.5, 1.7]) {
+                    item.zoomScale = zoom
+                    tryCompare(item, "currentScale", zoom)
+                    tryCompare(icon, "opacity", opacity)
+                }
+            }
+        }
+
+        function test_masterIconOpacityIsLiveAndOnlyAffectsImage() {
+            DockSettings.iconOpacity = 1.0
+            DockSettings.iconOpacityActive = 0.6
+            DockSettings.iconOpacityInactive = 0.4
+            DockSettings.iconOpacityMinimized = 0.25
+            DockSettings.runningIndicatorStyle = 0
+            const item = makeRow([{ display: "App", AppId: "org.kde.dolphin", IsWindow: true }]).itemAt(0)
+            const icon = T.iconImage(item)
+            const badge = T.badge(item)
+            const indicator = T.indicatorDots(item)[0]
+            NotificationTracker.setUnread("org.kde.dolphin", 8)
+            tryCompare(icon, "opacity", 1.0)
+            verify(badge.visible)
+            const badgeOpacity = badge.opacity
+            const indicatorOpacity = indicator.opacity
+
+            DockSettings.iconOpacity = 0.5
+            tryCompare(icon, "opacity", 0.5)
+            compare(item.opacity, 1.0)
+            compare(badge.opacity, badgeOpacity)
+            compare(indicator.opacity, indicatorOpacity)
+
+            for (const zoom of [1.0, 1.3, 1.5, 1.7]) {
+                item.zoomScale = zoom
+                tryCompare(item, "currentScale", zoom)
+                tryCompare(icon, "opacity", 0.5)
+                compare(badge.opacity, badgeOpacity)
+                compare(indicator.opacity, indicatorOpacity)
+            }
         }
 
         function test_dragSourceIsDimmed() {

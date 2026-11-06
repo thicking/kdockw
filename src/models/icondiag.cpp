@@ -4,6 +4,7 @@
 #include "icondiag.h"
 
 #include <QDebug>
+#include <QIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QQuickWindow>
@@ -12,12 +13,104 @@
 #include <QVariant>
 
 #include <algorithm>
+#include <optional>
 
 namespace kdockw {
 
 namespace {
 bool envIsOne(const char *name) {
   return qEnvironmentVariable(name) == QLatin1String("1");
+}
+
+struct DiagnosticSwitches {
+  bool debug = false;
+  bool testHiDpi = false;
+  bool testBadgeLayerOff = false;
+  bool testBadgeShadowOff = false;
+  bool testBadgeCrisp = false;
+  bool testBadgeCrispStable = false;
+  bool testBadgeMetrics = false;
+  bool testBadgeSeparate = false;
+  bool testBadgeOverlay = false;
+  bool testBadgeTextQt = false;
+  bool testBadgeTextNative = false;
+  QString previewClipMode;
+  QString previewSourceMode;
+  bool previewSceneGraphTrace = false;
+};
+
+DiagnosticSwitches readDiagnosticSwitches() {
+  DiagnosticSwitches switches;
+  switches.debug = envIsOne("KDOCKW_ICON_DEBUG");
+  switches.testHiDpi = switches.debug && envIsOne("KDOCKW_ICON_TEST_HIDPI");
+  switches.testBadgeLayerOff =
+      switches.debug &&
+      qEnvironmentVariable("KDOCKW_ICON_TEST_BADGE_LAYER") == QLatin1String("0");
+  switches.testBadgeShadowOff =
+      switches.debug &&
+      qEnvironmentVariable("KDOCKW_ICON_TEST_BADGE_SHADOW") == QLatin1String("0");
+  switches.testBadgeCrisp =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_CRISP");
+  switches.testBadgeCrispStable =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_CRISP_STABLE");
+  switches.testBadgeMetrics =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_METRICS");
+  switches.testBadgeSeparate =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_SEPARATE");
+  switches.testBadgeOverlay =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_OVERLAY");
+  switches.testBadgeTextQt =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_TEXT_QT");
+  switches.testBadgeTextNative =
+      switches.debug && envIsOne("KDOCKW_ICON_TEST_BADGE_TEXT_NATIVE");
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+  const QString previewClipMode = qEnvironmentVariable("KDOCKW_PREVIEW_CLIP_TEST");
+  if (previewClipMode == QLatin1String("raw") || previewClipMode == QLatin1String("center50")
+      || previewClipMode == QLatin1String("rectangular") || previewClipMode == QLatin1String("rounded")) {
+    switches.previewClipMode = previewClipMode == QLatin1String("rectangular")
+        ? QStringLiteral("center50") : previewClipMode;
+  }
+  const QString sourceMode = qEnvironmentVariable("KDOCKW_PREVIEW_SOURCE_TEST");
+  if (sourceMode == QLatin1String("pipewire") || sourceMode == QLatin1String("image")) {
+    switches.previewSourceMode = sourceMode;
+  }
+  switches.previewSceneGraphTrace = envIsOne("KDOCKW_PREVIEW_SG_TRACE");
+#endif
+
+  if (switches.testBadgeTextQt && switches.testBadgeTextNative) {
+    qWarning() << "Conflicting badge text renderers requested; using the default renderer";
+    switches.testBadgeTextQt = false;
+    switches.testBadgeTextNative = false;
+  }
+  return switches;
+}
+
+std::optional<DiagnosticSwitches> s_processSwitches;
+
+DiagnosticSwitches switchesForInstance() {
+  return s_processSwitches ? *s_processSwitches : readDiagnosticSwitches();
+}
+
+void clearDiagnosticSwitchEnvironment() {
+  static constexpr const char *names[] = {
+      "KDOCKW_ICON_DEBUG",
+      "KDOCKW_ICON_TEST_HIDPI",
+      "KDOCKW_ICON_TEST_BADGE_LAYER",
+      "KDOCKW_ICON_TEST_BADGE_SHADOW",
+      "KDOCKW_ICON_TEST_BADGE_CRISP",
+      "KDOCKW_ICON_TEST_BADGE_CRISP_STABLE",
+      "KDOCKW_ICON_TEST_BADGE_METRICS",
+      "KDOCKW_ICON_TEST_BADGE_SEPARATE",
+      "KDOCKW_ICON_TEST_BADGE_OVERLAY",
+      "KDOCKW_ICON_TEST_BADGE_TEXT_QT",
+      "KDOCKW_ICON_TEST_BADGE_TEXT_NATIVE",
+      "KDOCKW_PREVIEW_CLIP_TEST",
+      "KDOCKW_PREVIEW_SOURCE_TEST",
+      "KDOCKW_PREVIEW_SG_TRACE",
+  };
+  for (const char *name : names) {
+    qunsetenv(name);
+  }
 }
 
 QString graphicsApiName(QSGRendererInterface::GraphicsApi api) {
@@ -52,22 +145,52 @@ void emitRecord(QJsonObject object) {
 } // namespace
 
 IconDiagnostics::IconDiagnostics(QObject *parent)
-    : QObject(parent), m_debugEnabled(envIsOne("KDOCKW_ICON_DEBUG")),
-      m_testHiDpiEnabled(m_debugEnabled && envIsOne("KDOCKW_ICON_TEST_HIDPI")),
-      m_testBadgeLayerOff(
-          m_debugEnabled &&
-          qEnvironmentVariable("KDOCKW_ICON_TEST_BADGE_LAYER") ==
-              QLatin1String("0")),
-      m_testBadgeSeparate(m_debugEnabled &&
-                          envIsOne("KDOCKW_ICON_TEST_BADGE_SEPARATE")) {
+    : QObject(parent) {
+  const DiagnosticSwitches switches = switchesForInstance();
+  m_debugEnabled = switches.debug;
+  m_testHiDpiEnabled = switches.testHiDpi;
+  m_testBadgeLayerOff = switches.testBadgeLayerOff;
+  m_testBadgeShadowOff = switches.testBadgeShadowOff;
+  m_testBadgeCrisp = switches.testBadgeCrisp;
+  m_testBadgeCrispStable = switches.testBadgeCrispStable;
+  m_testBadgeMetrics = switches.testBadgeMetrics;
+  m_testBadgeSeparate = switches.testBadgeSeparate;
+  m_testBadgeOverlay = switches.testBadgeOverlay;
+  m_testBadgeTextQt = switches.testBadgeTextQt;
+  m_testBadgeTextNative = switches.testBadgeTextNative;
+  m_previewClipMode = switches.previewClipMode;
+  m_previewSourceMode = switches.previewSourceMode;
+  m_previewSceneGraphTrace = switches.previewSceneGraphTrace;
+
   if (m_debugEnabled) {
     QJsonObject record{
         {QStringLiteral("event"), QStringLiteral("debug-mode")},
         {QStringLiteral("testHiDpi"), m_testHiDpiEnabled},
         {QStringLiteral("testBadgeLayerOff"), m_testBadgeLayerOff},
-        {QStringLiteral("testBadgeSeparate"), m_testBadgeSeparate}};
+        {QStringLiteral("testBadgeShadowOff"), m_testBadgeShadowOff},
+        {QStringLiteral("testBadgeCrisp"), m_testBadgeCrisp},
+        {QStringLiteral("testBadgeCrispStable"), m_testBadgeCrispStable},
+        {QStringLiteral("testBadgeMetrics"), m_testBadgeMetrics},
+        {QStringLiteral("testBadgeSeparate"), m_testBadgeSeparate},
+        {QStringLiteral("testBadgeOverlay"), m_testBadgeOverlay},
+        {QStringLiteral("testBadgeTextQt"), m_testBadgeTextQt},
+        {QStringLiteral("testBadgeTextNative"), m_testBadgeTextNative},
+        {QStringLiteral("previewClipMode"), m_previewClipMode}};
+    record.insert(QStringLiteral("previewSourceMode"), m_previewSourceMode);
+    record.insert(QStringLiteral("previewSceneGraphTrace"), m_previewSceneGraphTrace);
     emitRecord(record);
   }
+}
+
+void IconDiagnostics::prepareProcessEnvironment() {
+  if (!s_processSwitches) {
+    s_processSwitches = readDiagnosticSwitches();
+  }
+  clearDiagnosticSwitchEnvironment();
+}
+
+bool IconDiagnostics::previewSceneGraphTraceEnabled() {
+  return switchesForInstance().previewSceneGraphTrace;
 }
 
 bool IconDiagnostics::debugEnabled() const { return m_debugEnabled; }
@@ -76,7 +199,31 @@ bool IconDiagnostics::testHiDpiEnabled() const { return m_testHiDpiEnabled; }
 
 bool IconDiagnostics::testBadgeLayerOff() const { return m_testBadgeLayerOff; }
 
+bool IconDiagnostics::testBadgeShadowOff() const {
+  return m_testBadgeShadowOff;
+}
+
+bool IconDiagnostics::testBadgeCrisp() const { return m_testBadgeCrisp; }
+
+bool IconDiagnostics::testBadgeCrispStable() const {
+  return m_testBadgeCrispStable;
+}
+
+bool IconDiagnostics::testBadgeMetrics() const { return m_testBadgeMetrics; }
+
 bool IconDiagnostics::testBadgeSeparate() const { return m_testBadgeSeparate; }
+
+bool IconDiagnostics::testBadgeOverlay() const { return m_testBadgeOverlay; }
+
+bool IconDiagnostics::testBadgeTextQt() const { return m_testBadgeTextQt; }
+
+bool IconDiagnostics::testBadgeTextNative() const { return m_testBadgeTextNative; }
+
+QString IconDiagnostics::previewClipMode() const { return m_previewClipMode; }
+
+QString IconDiagnostics::previewSourceMode() const { return m_previewSourceMode; }
+
+bool IconDiagnostics::previewSceneGraphTrace() const { return m_previewSceneGraphTrace; }
 
 qreal IconDiagnostics::windowDevicePixelRatio() const {
   return m_windowDpr.load(std::memory_order_relaxed);
@@ -148,6 +295,7 @@ void IconDiagnostics::logEnvironment(const QString &reason) const {
       {QStringLiteral("event"), QStringLiteral("environment")},
       {QStringLiteral("reason"), reason},
       {QStringLiteral("qtVersion"), QString::fromLatin1(qVersion())},
+      {QStringLiteral("iconTheme"), QIcon::themeName()},
       {QStringLiteral("windowDpr"), windowDevicePixelRatio()},
       {QStringLiteral("qtQuickBackend"), QQuickWindow::sceneGraphBackend()}};
   if (m_window) {
@@ -259,6 +407,8 @@ void IconDiagnostics::logBadge(const QString &appId, int count,
                                const QString &source, const QRectF &geometry,
                                qreal fontPixelSize, qreal zoom,
                                bool layerEnabled, bool layerSmooth,
+                               bool shadowEnabled, bool crispPrototypeEnabled,
+                               bool crispStablePrototypeEnabled,
                                const QSize &requestedLayerTextureSize) const {
   if (!m_debugEnabled) {
     return;
@@ -278,6 +428,10 @@ void IconDiagnostics::logBadge(const QString &appId, int count,
       {QStringLiteral("zoom"), zoom},
       {QStringLiteral("layerEnabled"), layerEnabled},
       {QStringLiteral("layerSmooth"), layerSmooth},
+      {QStringLiteral("shadowEnabled"), shadowEnabled},
+      {QStringLiteral("crispPrototypeEnabled"), crispPrototypeEnabled},
+      {QStringLiteral("crispStablePrototypeEnabled"),
+       crispStablePrototypeEnabled},
       {QStringLiteral("requestedLayerTextureSize"),
        requestedLayerTextureSize.isEmpty()
            ? QJsonValue(QStringLiteral("implicit"))
@@ -286,6 +440,89 @@ void IconDiagnostics::logBadge(const QString &appId, int count,
                             .arg(requestedLayerTextureSize.height()))},
       {QStringLiteral("actualLayerTexturePixels"),
        QStringLiteral("unavailable via public QML API")}};
+  emitRecord(record);
+}
+
+void IconDiagnostics::logBadgeMetrics(
+    const QString &reason, const QString &appId, int count, qreal zoom,
+    const QPointF &badgeCenter, const QPointF &labelCenter,
+    const QRectF &labelGeometry, qreal implicitWidth, qreal implicitHeight,
+    qreal contentWidth, qreal contentHeight, qreal baselineOffset,
+    qreal fontPixelSize, qreal minimumPixelSize, qreal counterScale) const {
+  if (!m_debugEnabled || !m_testBadgeMetrics) {
+    return;
+  }
+
+  const QPointF centerDelta = labelCenter - badgeCenter;
+  QJsonObject record{
+      {QStringLiteral("event"), QStringLiteral("badge-metrics")},
+      {QStringLiteral("reason"), reason},
+      {QStringLiteral("appId"), appId},
+      {QStringLiteral("count"), count},
+      {QStringLiteral("zoom"), zoom},
+      {QStringLiteral("badgeCenterDockLogical"),
+       QStringLiteral("%1,%2").arg(badgeCenter.x()).arg(badgeCenter.y())},
+      {QStringLiteral("labelCenterDockLogical"),
+       QStringLiteral("%1,%2").arg(labelCenter.x()).arg(labelCenter.y())},
+      {QStringLiteral("centerDeltaDockLogical"),
+       QStringLiteral("%1,%2").arg(centerDelta.x()).arg(centerDelta.y())},
+      {QStringLiteral("labelGeometry"), QStringLiteral("%1x%2+%3+%4")
+                                            .arg(labelGeometry.width())
+                                            .arg(labelGeometry.height())
+                                            .arg(labelGeometry.x())
+                                            .arg(labelGeometry.y())},
+      {QStringLiteral("implicitSize"),
+       QStringLiteral("%1x%2").arg(implicitWidth).arg(implicitHeight)},
+      {QStringLiteral("contentSize"),
+       QStringLiteral("%1x%2").arg(contentWidth).arg(contentHeight)},
+      {QStringLiteral("baselineOffset"), baselineOffset},
+      {QStringLiteral("fontPixelSize"), fontPixelSize},
+      {QStringLiteral("minimumPixelSize"), minimumPixelSize},
+      {QStringLiteral("counterScale"), counterScale}};
+  emitRecord(record);
+}
+
+void IconDiagnostics::logBadgeOverlayRenderMetrics(
+    const QString &appId, int count, const QString &renderType, qreal zoom,
+    qreal requestedFontPixelSize, qreal fontPixelSize,
+    qreal resolvedFontPixelSize, qreal baselineOffset, qreal contentWidth,
+    qreal contentHeight, const QRectF &localGeometry,
+    const QRectF &rootGeometry, bool textLayerEnabled,
+    bool overlayLayerEnabled, qreal textScale, qreal overlayScale,
+    qreal windowDpr) const {
+  if (!m_debugEnabled || !m_testBadgeMetrics) {
+    return;
+  }
+
+  QJsonObject record{
+      {QStringLiteral("event"), QStringLiteral("badge-overlay-render")},
+      {QStringLiteral("appId"), appId},
+      {QStringLiteral("count"), count},
+      {QStringLiteral("renderType"), renderType},
+      {QStringLiteral("zoom"), zoom},
+      {QStringLiteral("requestedFontPixelSize"), requestedFontPixelSize},
+      {QStringLiteral("fontPixelSize"), fontPixelSize},
+      {QStringLiteral("resolvedFontPixelSize"), resolvedFontPixelSize},
+      {QStringLiteral("baselineOffset"), baselineOffset},
+      {QStringLiteral("contentSize"),
+       QStringLiteral("%1x%2").arg(contentWidth).arg(contentHeight)},
+      {QStringLiteral("textGeometryLocal"),
+       QStringLiteral("%1x%2+%3+%4")
+           .arg(localGeometry.width())
+           .arg(localGeometry.height())
+           .arg(localGeometry.x())
+           .arg(localGeometry.y())},
+      {QStringLiteral("textGeometryRoot"),
+       QStringLiteral("%1x%2+%3+%4")
+           .arg(rootGeometry.width())
+           .arg(rootGeometry.height())
+           .arg(rootGeometry.x())
+           .arg(rootGeometry.y())},
+      {QStringLiteral("textLayerEnabled"), textLayerEnabled},
+      {QStringLiteral("overlayLayerEnabled"), overlayLayerEnabled},
+      {QStringLiteral("textScale"), textScale},
+      {QStringLiteral("overlayScale"), overlayScale},
+      {QStringLiteral("windowDpr"), windowDpr}};
   emitRecord(record);
 }
 

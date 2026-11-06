@@ -809,31 +809,11 @@ SettingsPage {
         FormCard.FormDelegateSeparator {}
 
         SliderDelegate {
-            text: i18n("Active window icon opacity")
-            from: 0.1; to: 1.0; stepSize: 0.05
-            value: DockSettings.iconOpacityActive
+            text: i18n("Icon opacity")
+            from: 0.5; to: 1.0; stepSize: 0.05
+            value: DockSettings.iconOpacity
             valueText: i18nc("@label percent", "%1%", Math.round(value * 100))
-            onMoved: (value) => DockSettings.iconOpacityActive = value
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        SliderDelegate {
-            text: i18n("Inactive window and launcher icon opacity")
-            from: 0.1; to: 1.0; stepSize: 0.05
-            value: DockSettings.iconOpacityInactive
-            valueText: i18nc("@label percent", "%1%", Math.round(value * 100))
-            onMoved: (value) => DockSettings.iconOpacityInactive = value
-        }
-
-        FormCard.FormDelegateSeparator {}
-
-        SliderDelegate {
-            text: i18n("Minimized window icon opacity")
-            from: 0.1; to: 1.0; stepSize: 0.05
-            value: DockSettings.iconOpacityMinimized
-            valueText: i18nc("@label percent", "%1%", Math.round(value * 100))
-            onMoved: (value) => DockSettings.iconOpacityMinimized = value
+            onMoved: (value) => DockSettings.iconOpacity = value
         }
     }
 }

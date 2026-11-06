@@ -29,6 +29,11 @@ Item {
 
         function init() {
             KDockWMocks.resetAll()
+            IconDiagnostics.debugEnabled = false
+            IconDiagnostics.testBadgeOverlay = false
+            IconDiagnostics.testBadgeMetrics = false
+            IconDiagnostics.testBadgeTextQt = false
+            IconDiagnostics.testBadgeTextNative = false
             // Keep hover timers short so condition waits finish quickly.
             DockSettings.previewHoverDelay = 50
         }
@@ -69,6 +74,10 @@ Item {
             return T.findFirst(dock, o => o.objectName === "dockTooltip")
         }
 
+        function badgeOverlayLabel(dock) {
+            return T.findFirst(dock, o => o.objectName === "badgeOverlayLabel")
+        }
+
         function items(dock) {
             return T.findAll(dock, T.isDockItem).sort((a, b) => a.index - b.index)
         }
@@ -95,6 +104,69 @@ Item {
             settleDeferredCallbacks()
             tryVerify(() => DockVisibility.panelRect.width > 0)
             return dock
+        }
+
+        function test_badgeOverlayTextRendererAndGeometry_data() {
+            return [
+                { tag: "default-qt", forceQt: false, forceNative: false, expected: Text.QtRendering },
+                { tag: "qt", forceQt: true, forceNative: false, expected: Text.QtRendering },
+                { tag: "native", forceQt: false, forceNative: true, expected: Text.NativeRendering },
+            ]
+        }
+
+        function test_badgeOverlayTextRendererAndGeometry(data) {
+            DockSettings.iconSize = 40
+            DockSettings.maxZoomFactor = 1.7
+            DockSettings.badgeDisplayMode = 0
+            IconDiagnostics.debugEnabled = true
+            IconDiagnostics.testBadgeOverlay = true
+            IconDiagnostics.testBadgeMetrics = true
+            IconDiagnostics.testBadgeTextQt = data.forceQt
+            IconDiagnostics.testBadgeTextNative = data.forceNative
+
+            DockModel.tasksModel.addTask({
+                display: "Badge render test",
+                AppId: "org.kde.dolphin",
+                IsWindow: true,
+            })
+            NotificationTracker.setUnread("org.kde.dolphin", 8)
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            tryVerify(() => item.badgeOverlayVisible, 2000,
+                      "source badge did not become eligible for overlay")
+            const label = badgeOverlayLabel(dock)
+            tryVerify(() => label && label.visible, 2000,
+                      "diagnostic overlay text did not become visible")
+
+            compare(label.renderType, data.expected)
+            const overlay = label.parent
+            verify(overlay)
+            verify(!label.layer.enabled, "text must not be baked into its own layer texture")
+            verify(!overlay.layer.enabled, "overlay delegate must not be baked into a layer texture")
+            compare(label.scale, 1)
+            compare(overlay.scale, 1)
+            compare(overlay.transform.length, 0)
+            compare(overlay.parent, dock)
+            verify(Math.abs(label.x + label.width / 2 - overlay.width / 2) < 0.01)
+            verify(Math.abs(label.y + label.height / 2 - overlay.height / 2) < 0.01)
+
+            const restFontSize = label.font.pixelSize
+            const restBaseline = label.baselineOffset
+            mouseMove(stage, -1, -1)
+            tryCompare(item, "currentScale", 1.0)
+            hoverItem(item)
+            tryCompare(dock, "hoveredIndex", item.index)
+            tryCompare(item, "currentScale", DockSettings.maxZoomFactor)
+            wait(100)
+            const mappedBadge = item.badgeOverlayRectIn(dock)
+            verify(Math.abs(overlay.width - mappedBadge.width) < 0.5)
+            verify(Math.abs(overlay.height - mappedBadge.height) < 0.5)
+            verify(Math.abs(label.x + label.width / 2 - overlay.width / 2) < 0.01)
+            verify(Math.abs(label.y + label.height / 2 - overlay.height / 2) < 0.01)
+            verify(label.font.pixelSize >= restFontSize)
+            verify(label.baselineOffset > 0)
+            verify(label.baselineOffset >= restBaseline)
+            verify(Math.round(label.font.pixelSize) === label.font.pixelSize)
         }
 
         // Item center in stage coordinates (valid while the item is at rest scale 1).
@@ -739,6 +811,92 @@ Item {
             tryVerify(() => T.findFirst(dock, o => o.text === "KDockW Launcher Fixture" && o.visible) !== null,
                       2000, "tooltip with the app name never appeared")
             verify(!PreviewController.visible)
+        }
+
+        function test_appNameTooltipClearsTheZoomedIcon_data() {
+            const cases = []
+            for (const edge of [0, 1, 2, 3]) {
+                for (const state of ["launcher", "inactive-window", "active-window"]) {
+                    cases.push({ tag: edge + "-" + state, edge, state })
+                }
+            }
+            return cases
+        }
+
+        function test_appNameTooltipClearsTheZoomedIcon(data) {
+            DockView.edge = data.edge
+            DockSettings.previewEnabled = false
+            DockSettings.previewHoverDelay = 0
+            if (data.state === "launcher") {
+                DockModel.tasksModel.addTask({
+                    display: "Tooltip launcher",
+                    IsWindow: false,
+                    IsLauncher: true,
+                })
+            } else {
+                addTasks(["Tooltip window"], {
+                    IsActive: data.state === "active-window",
+                })
+            }
+
+            let dock = makeDock(1)
+            let item = items(dock)[0]
+            hoverItem(item)
+            tryCompare(item, "currentScale", DockSettings.maxZoomFactor)
+            let tooltip = dockTooltip(dock)
+            tryCompare(tooltip, "visible", true)
+            compare(PreviewController.visible, false)
+
+            const bounds = drawnBounds(item, dock)
+            const gap = tooltip.gapForItem(item)
+            verify(gap > Kirigami.Units.largeSpacing,
+                   "the tooltip clearance should grow with the zoomed icon")
+            if (data.edge === 0) {
+                verify(tooltip.y >= bounds.y + bounds.height,
+                       "top dock tooltip must clear the enlarged icon below the dock")
+            } else if (data.edge === 1) {
+                verify(tooltip.y + tooltip.height <= bounds.y,
+                       "bottom dock tooltip must clear the enlarged icon above the dock")
+            } else if (data.edge === 2) {
+                verify(tooltip.x >= bounds.x + bounds.width,
+                       "left dock tooltip must clear the enlarged icon")
+            } else {
+                verify(tooltip.x + tooltip.width <= bounds.x,
+                       "right dock tooltip must clear the enlarged icon")
+            }
+            verify(tooltip.x >= 0 && tooltip.y >= 0
+                   && tooltip.x + tooltip.width <= dock.width
+                   && tooltip.y + tooltip.height <= dock.height,
+                   "the complete tooltip rectangle must stay inside the dock surface")
+            const expectedCrossExtent = data.edge === 2 || data.edge === 3
+                ? tooltip.maxSideWidth
+                : tooltip.height
+            verify(DockView.tooltipReserve >= expectedCrossExtent
+                   + tooltip.maximumGap + tooltip.shadowOverflow,
+                   "the layer-shell reserve must include tooltip, max zoom gap and shadow")
+        }
+
+        function test_tooltipPlacementClampsPrimaryAxisAtScreenEdges() {
+            DockSettings.previewEnabled = false
+            DockSettings.previewHoverDelay = 0
+            addTasks(["A", "B", "C"])
+            for (const edge of [0, 1, 2, 3]) {
+                DockView.edge = edge
+                let dock = makeDock(3)
+                const edgeIndices = edge === 0 || edge === 1 ? [0, 2] : [0, 2]
+                for (const index of edgeIndices) {
+                    hoverItem(items(dock)[index])
+                    tryCompare(dockTooltip(dock), "visible", true)
+                    const tooltip = dockTooltip(dock)
+                    verify(tooltip.x >= 0 && tooltip.y >= 0
+                           && tooltip.x + tooltip.width <= dock.width
+                           && tooltip.y + tooltip.height <= dock.height,
+                           "tooltip at a dock endpoint must remain within the layer surface")
+                    mouseMove(stage, -1, -1)
+                    tryCompare(tooltip, "visible", false)
+                }
+                dock.destroy()
+            }
         }
 
         function test_windowHoverOpensPreview() {

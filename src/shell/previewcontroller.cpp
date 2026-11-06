@@ -23,6 +23,7 @@
 #include <QQmlEngine>
 #include <QQuickView>
 #include <QScreen>
+#include <QPainterPath>
 #include <qpa/qplatformnativeinterface.h>
 
 Q_LOGGING_CATEGORY(lcPreview, "kdockw.shell.preview")
@@ -55,6 +56,13 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
                 Q_EMIT captureModeChanged();
             }
         });
+        connect(m_settings, &KDockWSettings::PreviewDockGapChanged, this, [this]() {
+            applyEdgeLayout();
+        });
+        const auto updateBackground = [this]() { updateInputRegion(); };
+        connect(m_settings, &KDockWSettings::BackgroundStyleChanged, this, updateBackground);
+        connect(m_settings, &KDockWSettings::BackgroundOpacityChanged, this, updateBackground);
+        connect(m_settings, &KDockWSettings::CornerRadiusChanged, this, updateBackground);
     }
 
     m_hideTimer.setSingleShot(true);
@@ -532,9 +540,11 @@ void PreviewController::updateEdge()
         return;
     }
     applyEdgeLayout();
-    if (m_previewView->isVisible()) {
-        m_previewView->update();
+    if (m_visible) {
+        updateInputRegion();
     }
+    if (m_previewView->isVisible())
+        m_previewView->update();
 }
 
 void PreviewController::applyEdgeLayout()
@@ -558,7 +568,8 @@ void PreviewController::applyEdgeLayout()
     const bool dockReservesPanelBar =
         visibility && visibility->mode() == static_cast<int>(DockPlatform::VisibilityMode::AlwaysVisible) && m_settings->reserveScreenSpace();
     const int zoomOverflow = static_cast<int>(std::ceil(m_settings->iconSize() * (m_settings->maxZoomFactor() - 1.0)));
-    const int dockMargin = (dockReservesPanelBar ? 0 : m_dockView->panelBarHeight()) + zoomOverflow + 4;
+    const int dockMargin = (dockReservesPanelBar ? 0 : m_dockView->panelBarHeight())
+        + zoomOverflow + 4 + m_settings->previewDockGap();
 
     const QRect screenGeo = m_dockView->dockScreen() ? m_dockView->dockScreen()->geometry() : QRect(0, 0, 1920, 1080);
 
@@ -686,6 +697,8 @@ void PreviewController::updateInputRegion()
         return;
     }
 
+    applyPreviewBackgroundEffect();
+
     QRegion inputRegion;
     if (!m_visible) {
         // Hidden: block all meaningful input with a 1x1 region in the corner.
@@ -717,6 +730,61 @@ void PreviewController::updateInputRegion()
     m_previewView->setMask(inputRegion);
     m_inputRegion = inputRegion;
     commitInputRegion();
+}
+
+void PreviewController::applyPreviewBackgroundEffect()
+{
+    if (!m_previewView || !m_settings) {
+        return;
+    }
+
+    const auto type = static_cast<BackgroundStyleType>(m_settings->backgroundStyle());
+    if (!m_visible || m_contentWidth <= 0 || m_contentHeight <= 0
+        || (styleUsesBlur(type) && qFuzzyIsNull(m_settings->backgroundOpacity()))) {
+        removeBackgroundFromWindow(m_previewView.get());
+        m_backgroundEffectPlan = {};
+        return;
+    }
+
+    // Match the rounded card. The popup's reported bounds include a small
+    // shadow margin, so the compositor effect region follows the same bounds
+    // and radius as the visible surface without affecting the full overlay.
+    QRegion region;
+    QRectF cardRect;
+    switch (m_dockView->platform()->edge()) {
+    case DockPlatform::Edge::Top:
+        cardRect = QRectF(m_contentX, 0, m_contentWidth, m_contentHeight);
+        break;
+    case DockPlatform::Edge::Bottom:
+        cardRect = QRectF(m_contentX, m_previewView->height() - m_contentHeight,
+                          m_contentWidth, m_contentHeight);
+        break;
+    case DockPlatform::Edge::Left:
+        cardRect = QRectF(0, m_contentY, m_contentWidth, m_contentHeight);
+        break;
+    case DockPlatform::Edge::Right:
+        cardRect = QRectF(m_previewView->width() - m_contentWidth, m_contentY,
+                          m_contentWidth, m_contentHeight);
+        break;
+    }
+    const qreal radius = qMin<qreal>(m_settings->cornerRadius(), qMin(cardRect.width(), cardRect.height()) / 2.0);
+    if (radius > 0) {
+        QPainterPath path;
+        path.addRoundedRect(cardRect, radius, radius);
+        region = QRegion(path.toFillPolygon().toPolygon());
+    } else {
+        region = QRegion(cardRect.toAlignedRect());
+    }
+
+    if (region.isEmpty()) {
+        removeBackgroundFromWindow(m_previewView.get());
+        m_backgroundEffectPlan = {};
+        return;
+    }
+
+    const BackgroundEffectPlan plan = backgroundEffectPlan(type, region);
+    applyBackgroundToWindow(m_previewView.get(), plan, m_backgroundEffectPlan);
+    m_backgroundEffectPlan = plan;
 }
 
 } // namespace kdockw

@@ -181,21 +181,19 @@ bool DockView::isVertical() const
     return m_edge == DockPlatform::Edge::Left || m_edge == DockPlatform::Edge::Right;
 }
 
-int DockView::sideTooltipReserve() const
+int DockView::tooltipReserve() const
 {
-    return m_sideTooltipReserve;
+    return m_tooltipReserve;
 }
 
-void DockView::setSideTooltipReserve(int reserve)
+void DockView::setTooltipReserve(int reserve)
 {
-    if (m_sideTooltipReserve == reserve) {
+    if (m_tooltipReserve == reserve) {
         return;
     }
-    m_sideTooltipReserve = reserve;
-    if (isVertical()) {
-        updateSize();
-    }
-    Q_EMIT sideTooltipReserveChanged();
+    m_tooltipReserve = reserve;
+    updateSize();
+    Q_EMIT tooltipReserveChanged();
 }
 
 void DockView::setEdge(DockPlatform::Edge edge)
@@ -289,9 +287,9 @@ void DockView::updateSize()
     const int crossPaddingLeading = isVertical() ? m_settings->contentPaddingLeft() : m_settings->contentPaddingTop();
     const int crossPaddingTrailing = isVertical() ? m_settings->contentPaddingRight()
                                                   : m_settings->contentPaddingBottom();
-    // Horizontal docks open the tooltip above/below the panel (fits s_tooltipReserve);
-    // vertical docks open it beside the panel, so the reserve must fit its full width.
-    const int tooltipReserve = isVertical() ? std::max(s_tooltipReserve, m_sideTooltipReserve) : s_tooltipReserve;
+    // The tooltip is rendered inside this layer-shell surface on every edge.
+    // Reserve its full extent plus zoom gap and shadow, not a fixed strip.
+    const int tooltipReserve = std::max(s_tooltipReserve, m_tooltipReserve);
     const int h = kdockw::surfaceHeight(iconSize,
                                         crossPaddingLeading,
                                         crossPaddingTrailing,

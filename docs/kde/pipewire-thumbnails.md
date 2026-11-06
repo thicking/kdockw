@@ -212,3 +212,21 @@ onVisibleChanged: {
 4. **Resource management**: Set `nodeId = 0` or `resetFd()` to stop the stream and free resources
 5. **Screencast permission**: KWin's screencast may require portal permission on Flatpak
 6. **Frame timing**: `presentationTimestamp` allows frame-accurate presentation
+
+## Scene-graph clipping
+
+The installed `/usr/include/KPipeWire/pipewiresourceitem.h` declares
+`PipeWireSourceItem::updatePaintNode(QSGNode *, UpdatePaintNodeData *)` as a
+public virtual override. A subclass may call that override and wrap the exact
+node it returns in a public `QSGClipNode`, provided it preserves KPipeWire's
+returned node as the wrapper's child on subsequent updates. The base override
+expects to receive its own previous returned node, not the outer clip wrapper.
+
+Do not assume that a `QSGClipNode` returned from a different QQuickItem's
+`updatePaintNode()` will contain that item's QML children. Qt 6 stores custom
+paint nodes separately from the child-item scene-graph container; use the
+built-in `QQuickItem::clip` for its supported rectangular clip, or wrap the
+PipeWire item's own returned node when a custom rounded clip is required.
+Avoid Qt private QQuickItem internals. The live QSG tree still needs inspection
+on the target renderer because headless mocks cannot establish KPipeWire's
+runtime frame-node topology.

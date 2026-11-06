@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 import com.thicking.kdockw 1.0
+import "../BadgeTextColor.js" as BadgeTextColor
 
 SettingsPage {
     id: page
@@ -41,31 +42,40 @@ SettingsPage {
         property bool shown: true
         property string appIcon: "org.kde.dolphin"
         property string appFallback: "system-file-manager"
-        property string windowTitle: i18nc("@title sample window title in the preview mockup", "Home — Dolphin")
+        property string appName: i18nc("@title application name in the preview mockup", "Dolphin")
+        property string windowTitle: i18nc("@title sample window title in the preview mockup", "Home")
 
         /// The thumbnail bounds, for the stage's measurement overlay.
         readonly property alias thumbnailItem: thumbnail
 
         readonly property bool verticalEdge: edge === 2 || edge === 3
         // Popup size in real screen pixels (unit-independent), mirroring the
-        // layout below: 2x largeSpacing padding, a small-icon header row, two
-        // smallSpacing gaps, the separator and the 0.7-aspect thumbnail. The
+        // layout below: configured card padding, a compact app header, and the
+        // window title and thumbnail. The
         // stage uses it to pick a unit that keeps the popup inside the frame.
-        readonly property real realHeight: 2 * Kirigami.Units.largeSpacing
-            + Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing * 2 + 1
-            + DockSettings.previewThumbnailSize * 0.7
+        readonly property real realHeight: 2 * DockSettings.previewCardPadding
+            + Kirigami.Units.iconSizes.small + Kirigami.Units.smallSpacing * 2
+            + Math.min(DockSettings.previewMaximumHeight, DockSettings.previewThumbnailSize / 1.6)
+            + Kirigami.Theme.defaultFont.pixelSize + Kirigami.Units.smallSpacing
         readonly property real realWidth: Math.max(DockSettings.previewThumbnailSize, 140)
-            + 2 * Kirigami.Units.largeSpacing
-        readonly property real pad: Kirigami.Units.largeSpacing * unit
+            + 2 * DockSettings.previewCardPadding
+        readonly property real pad: DockSettings.previewCardPadding * unit
         readonly property real spacing: Kirigami.Units.smallSpacing * unit
         // Same aspect as the real thumbnail (PreviewThumbnail.qml).
-        readonly property real thumbWidth: DockSettings.previewThumbnailSize * unit
-        readonly property real thumbHeight: thumbWidth * 0.7
-        // Gap between the popup and the screen edge, like the dock's own margin.
-        readonly property real edgeGap: Kirigami.Units.smallSpacing * unit
+        readonly property real thumbWidth: Math.min(
+            DockSettings.previewThumbnailSize,
+            DockSettings.previewMaximumHeight * 1.6) * unit
+        readonly property real thumbHeight: thumbWidth / 1.6
+        // Configured gap between the popup and dock.
+        readonly property real edgeGap: DockSettings.previewDockGap * unit
         // Miniature scale used for the drawing inside the thumbnail: 1/50 of
         // the real thumbnail width (so ~4 px at the default 200 px).
         readonly property real s: Math.max(0.05, thumbWidth / 50)
+        readonly property color surfaceColor: DockView.backgroundColor.a > 0
+            ? DockView.backgroundColor
+            : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
+        readonly property color foregroundColor: BadgeTextColor.choose(
+            surfaceColor, Kirigami.Theme.textColor)
 
         readonly property bool _iconOk: anchorIcon !== null
         // `anchorIcon` center in this item's parent (the miniature screen).
@@ -119,13 +129,17 @@ SettingsPage {
             id: box
             width: popupLayout.implicitWidth + popup.pad * 2
             height: popupLayout.implicitHeight + popup.pad * 2
-            radius: Kirigami.Units.cornerRadius
-            color: Kirigami.Theme.backgroundColor
+            radius: Math.min(DockSettings.cornerRadius * popup.unit, width / 2, height / 2)
+            color: popup.surfaceColor
             border.width: 1
-            border.color: Qt.alpha(Kirigami.Theme.textColor, 0.25)
-            shadow.size: Kirigami.Units.gridUnit * 0.4
-            shadow.yOffset: 1
-            shadow.color: Qt.alpha(Qt.darker(Kirigami.Theme.backgroundColor, 4.0), 0.35)
+            border.color: Qt.alpha(popup.foregroundColor, 0.27)
+            shadow.size: DockSettings.shadowEnabled
+                ? DockSettings.shadowLightRadius * 2 * popup.unit : 0
+            shadow.xOffset: -DockSettings.shadowLightX * DockSettings.shadowElevation
+                / Math.max(1, DockSettings.shadowLightZ) * popup.unit
+            shadow.yOffset: -DockSettings.shadowLightY * DockSettings.shadowElevation
+                / Math.max(1, DockSettings.shadowLightZ) * popup.unit
+            shadow.color: Qt.alpha(DockSettings.shadowColor, DockSettings.shadowIntensity)
 
             Kirigami.Theme.colorSet: Kirigami.Theme.Window
             Kirigami.Theme.inherit: false
@@ -136,7 +150,7 @@ SettingsPage {
                 anchors.margins: popup.pad
                 spacing: popup.spacing
 
-                // Header: app icon + window title + close button.
+                // Header: app name, matching the actual popup.
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: popup.spacing
@@ -149,31 +163,23 @@ SettingsPage {
                     }
                     QQC2.Label {
                         Layout.fillWidth: true
-                        text: popup.windowTitle
+                        text: popup.appName
                         font.pixelSize: Math.max(4, Kirigami.Theme.defaultFont.pixelSize * popup.unit)
                         font.weight: Font.Bold
                         elide: Text.ElideRight
+                        color: popup.foregroundColor
                         Accessible.ignored: true
-                    }
-                    // Close button: circle with the real window-close icon.
-                    Rectangle {
-                        readonly property real d: Math.max(4, Kirigami.Units.iconSizes.small * popup.unit)
-                        implicitWidth: d
-                        implicitHeight: d
-                        radius: d / 2
-                        color: Qt.alpha(Kirigami.Theme.textColor, 0.12)
-
-                        Kirigami.Icon {
-                            anchors.centerIn: parent
-                            width: parent.width * 0.7
-                            height: width
-                            source: "window-close"
-                        }
                     }
                 }
 
-                Kirigami.Separator {
+                QQC2.Label {
                     Layout.fillWidth: true
+                    text: popup.windowTitle
+                    font.pixelSize: Math.max(4, Kirigami.Theme.defaultFont.pixelSize * popup.unit)
+                    elide: Text.ElideRight
+                    color: popup.foregroundColor
+                    opacity: 0.75
+                    Accessible.ignored: true
                 }
 
                 // Thumbnail: a miniature app window (title bar with window
@@ -341,7 +347,7 @@ SettingsPage {
             // Real pixels of screen edge the hovered icon reaches (floating
             // margin + padding + zoomed icon) plus the popup gap.
             readonly property real _iconSpanReal: 8 + Kirigami.Units.largeSpacing
-                + dock.iconSize * Math.max(1, dock.maxZoomFactor) + Kirigami.Units.smallSpacing
+                + dock.iconSize * Math.max(1, dock.maxZoomFactor) + DockSettings.previewDockGap
             // Scale that keeps the hovered icon, the gap and the whole popup
             // inside the frame with a margin. Real-pixel sizes only, so it
             // does not depend on `unit` (no binding loop). Horizontal dock:
@@ -352,7 +358,7 @@ SettingsPage {
                 const across = dock.vertical ? width : height
                 const along = dock.vertical ? height : width
                 const acrossReal = dock.vertical
-                    ? Kirigami.Units.smallSpacing + popup.realWidth
+                    ? DockSettings.previewDockGap + popup.realWidth
                     : _iconSpanReal + popup.realHeight
                 const alongReal = dock.vertical ? popup.realHeight : popup.realWidth
                 return Math.min((across - m) / Math.max(1, acrossReal),
@@ -435,7 +441,7 @@ SettingsPage {
     }
 
     FormCard.FormHeader {
-        title: i18n("Settings")
+            title: i18n("Settings")
     }
 
     FormCard.FormCard {
@@ -447,6 +453,39 @@ SettingsPage {
             valueText: i18nc("@label pixels", "%1 px", value)
             enabled: page.popupInUse
             onMoved: (value) => DockSettings.previewThumbnailSize = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            text: i18n("Maximum thumbnail height (px)")
+            from: 80; to: 300; stepSize: 10
+            value: DockSettings.previewMaximumHeight
+            valueText: i18nc("@label pixels", "%1 px", value)
+            enabled: page.popupInUse
+            onMoved: (value) => DockSettings.previewMaximumHeight = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            text: i18n("Card inner padding (px)")
+            from: 4; to: 24; stepSize: 1
+            value: DockSettings.previewCardPadding
+            valueText: i18nc("@label pixels", "%1 px", value)
+            enabled: page.popupInUse
+            onMoved: (value) => DockSettings.previewCardPadding = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            text: i18n("Gap between preview and dock (px)")
+            from: 0; to: 32; stepSize: 1
+            value: DockSettings.previewDockGap
+            valueText: i18nc("@label pixels", "%1 px", value)
+            enabled: page.popupInUse
+            onMoved: (value) => DockSettings.previewDockGap = value
         }
 
         FormCard.FormDelegateSeparator {}

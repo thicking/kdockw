@@ -10,6 +10,8 @@
 #include <QRegion>
 #include <QTimer>
 
+#include "style/backgroundstyle.h"
+
 class KDockWSettings;
 class QQuickView;
 
@@ -144,6 +146,7 @@ Q_SIGNALS:
 
 private:
     void updateInputRegion();
+    void applyPreviewBackgroundEffect();
     void commitInputRegion();
     void applyEdgeLayout();
 
@@ -161,6 +164,7 @@ private:
     bool m_overrideCpuCaptureOnly = false;
     std::unique_ptr<QQuickView> m_previewView;
     QRegion m_inputRegion;
+    BackgroundEffectPlan m_backgroundEffectPlan;
 
     bool m_visible = false;
     bool m_previewHovered = false;

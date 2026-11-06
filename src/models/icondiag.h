@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointF>
 #include <QPointer>
 #include <QRectF>
 #include <QSize>
@@ -21,7 +22,19 @@ class IconDiagnostics final : public QObject {
   Q_PROPERTY(bool debugEnabled READ debugEnabled CONSTANT)
   Q_PROPERTY(bool testHiDpiEnabled READ testHiDpiEnabled CONSTANT)
   Q_PROPERTY(bool testBadgeLayerOff READ testBadgeLayerOff CONSTANT)
+  Q_PROPERTY(bool testBadgeShadowOff READ testBadgeShadowOff CONSTANT)
+  Q_PROPERTY(bool testBadgeCrisp READ testBadgeCrisp CONSTANT)
+  Q_PROPERTY(bool testBadgeCrispStable READ testBadgeCrispStable CONSTANT)
+  Q_PROPERTY(bool testBadgeMetrics READ testBadgeMetrics CONSTANT)
   Q_PROPERTY(bool testBadgeSeparate READ testBadgeSeparate CONSTANT)
+  Q_PROPERTY(bool testBadgeOverlay READ testBadgeOverlay CONSTANT)
+  Q_PROPERTY(bool testBadgeTextQt READ testBadgeTextQt CONSTANT)
+  Q_PROPERTY(bool testBadgeTextNative READ testBadgeTextNative CONSTANT)
+  Q_PROPERTY(QString previewClipMode READ previewClipMode CONSTANT)
+  Q_PROPERTY(QString previewSourceMode READ previewSourceMode CONSTANT)
+  Q_PROPERTY(bool previewSceneGraphTrace READ previewSceneGraphTrace CONSTANT)
+  Q_PROPERTY(qreal windowDevicePixelRatio READ windowDevicePixelRatio NOTIFY
+                 iconDprChanged)
 
 public:
   explicit IconDiagnostics(QObject *parent = nullptr);
@@ -29,8 +42,23 @@ public:
   [[nodiscard]] bool debugEnabled() const;
   [[nodiscard]] bool testHiDpiEnabled() const;
   [[nodiscard]] bool testBadgeLayerOff() const;
+  [[nodiscard]] bool testBadgeShadowOff() const;
+  [[nodiscard]] bool testBadgeCrisp() const;
+  [[nodiscard]] bool testBadgeCrispStable() const;
+  [[nodiscard]] bool testBadgeMetrics() const;
   [[nodiscard]] bool testBadgeSeparate() const;
+  [[nodiscard]] bool testBadgeOverlay() const;
+  [[nodiscard]] bool testBadgeTextQt() const;
+  [[nodiscard]] bool testBadgeTextNative() const;
+  [[nodiscard]] QString previewClipMode() const;
+  [[nodiscard]] QString previewSourceMode() const;
+  [[nodiscard]] bool previewSceneGraphTrace() const;
   [[nodiscard]] qreal windowDevicePixelRatio() const;
+
+  /// Cache opt-in diagnostic switches, then remove them before launch actions
+  /// can pass this process environment to child applications.
+  static void prepareProcessEnvironment();
+  [[nodiscard]] static bool previewSceneGraphTraceEnabled();
 
   void attachWindow(QQuickWindow *window);
   void logEnvironment(const QString &reason) const;
@@ -52,8 +80,24 @@ public:
   Q_INVOKABLE void logBadge(const QString &appId, int count,
                             const QString &source, const QRectF &geometry,
                             qreal fontPixelSize, qreal zoom, bool layerEnabled,
-                            bool layerSmooth,
+                            bool layerSmooth, bool shadowEnabled,
+                            bool crispPrototypeEnabled,
+                            bool crispStablePrototypeEnabled,
                             const QSize &requestedLayerTextureSize) const;
+  Q_INVOKABLE void logBadgeMetrics(
+      const QString &reason, const QString &appId, int count, qreal zoom,
+      const QPointF &badgeCenter, const QPointF &labelCenter,
+      const QRectF &labelGeometry, qreal implicitWidth, qreal implicitHeight,
+      qreal contentWidth, qreal contentHeight, qreal baselineOffset,
+      qreal fontPixelSize, qreal minimumPixelSize, qreal counterScale) const;
+  Q_INVOKABLE void logBadgeOverlayRenderMetrics(
+      const QString &appId, int count, const QString &renderType, qreal zoom,
+      qreal requestedFontPixelSize, qreal fontPixelSize,
+      qreal resolvedFontPixelSize, qreal baselineOffset, qreal contentWidth,
+      qreal contentHeight, const QRectF &localGeometry,
+      const QRectF &rootGeometry, bool textLayerEnabled,
+      bool overlayLayerEnabled, qreal textScale, qreal overlayScale,
+      qreal windowDpr) const;
 
 Q_SIGNALS:
   void iconDprChanged();
@@ -67,7 +111,17 @@ private:
   bool m_debugEnabled = false;
   bool m_testHiDpiEnabled = false;
   bool m_testBadgeLayerOff = false;
+  bool m_testBadgeShadowOff = false;
+  bool m_testBadgeCrisp = false;
+  bool m_testBadgeCrispStable = false;
+  bool m_testBadgeMetrics = false;
   bool m_testBadgeSeparate = false;
+  bool m_testBadgeOverlay = false;
+  bool m_testBadgeTextQt = false;
+  bool m_testBadgeTextNative = false;
+  QString m_previewClipMode;
+  QString m_previewSourceMode;
+  bool m_previewSceneGraphTrace = false;
 };
 
 } // namespace kdockw

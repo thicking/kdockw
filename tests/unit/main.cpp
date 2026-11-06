@@ -5,6 +5,7 @@
 
 #include "app/application.h"
 #include "kdockw.h"
+#include "models/icondiag.h"
 
 #include <KAboutData>
 #include <KLocalizedString>
@@ -23,6 +24,43 @@
 
 int main(int argc, char *argv[])
 {
+    if (argc == 2 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-icon-diagnostic-environment")) {
+        QCoreApplication app(argc, argv);
+        kdockw::IconDiagnostics::prepareProcessEnvironment();
+        const kdockw::IconDiagnostics diagnostics;
+        const QStringList names{
+            QStringLiteral("KDOCKW_ICON_DEBUG"),
+            QStringLiteral("KDOCKW_ICON_TEST_BADGE_OVERLAY"),
+            QStringLiteral("KDOCKW_ICON_TEST_BADGE_METRICS"),
+            QStringLiteral("KDOCKW_ICON_TEST_BADGE_TEXT_NATIVE"),
+            QStringLiteral("KDOCKW_PREVIEW_CLIP_TEST"),
+            QStringLiteral("KDOCKW_PREVIEW_SOURCE_TEST"),
+            QStringLiteral("KDOCKW_PREVIEW_SG_TRACE"),
+        };
+        for (const QString &name : names) {
+            if (qEnvironmentVariableIsSet(name.toLocal8Bit().constData())) {
+                return 1;
+            }
+        }
+        const bool expectedClipMode =
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+            diagnostics.previewClipMode() == QLatin1String("rounded");
+        const bool expectedSourceMode = diagnostics.previewSourceMode() == QLatin1String("image");
+        const bool expectedSceneGraphTrace = diagnostics.previewSceneGraphTrace();
+#else
+            diagnostics.previewClipMode().isEmpty();
+        const bool expectedSourceMode = diagnostics.previewSourceMode().isEmpty();
+        const bool expectedSceneGraphTrace = !diagnostics.previewSceneGraphTrace();
+#endif
+        return diagnostics.debugEnabled() && diagnostics.testBadgeOverlay() &&
+                       diagnostics.testBadgeMetrics() &&
+                       diagnostics.testBadgeTextNative() &&
+                       !diagnostics.testBadgeTextQt() && expectedClipMode &&
+                       expectedSourceMode && expectedSceneGraphTrace
+            ? 0
+            : 2;
+    }
+
     if (argc == 3 && QString::fromLocal8Bit(argv[1]) == QLatin1String("--verify-preview-capture-mode")) {
         QCoreApplication app(argc, argv);
         KDockWSettings settings;

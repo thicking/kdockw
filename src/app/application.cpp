@@ -3,12 +3,14 @@
 
 #include "application.h"
 
+#include "config/applicationconfig.h"
 #include "kdockw.h"
 #include "models/dockactions.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
 #include "models/taskiconprovider.h"
+#include "scenegraph/clippedpipewiresourceitem.h"
 #include "shell/dockshell.h"
 #include "shell/dockview.h"
 #include "shell/dockvisibilitycontroller.h"
@@ -122,6 +124,7 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::ContentPaddingTopChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ContentPaddingBottomChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ContentAlignmentChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::IconOpacityChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityActiveChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityInactiveChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconOpacityMinimizedChanged, context, saveSettings);
@@ -146,6 +149,9 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::CpuOnlyPreviewCaptureChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SingleWindowClickActionChanged, context, saveSettings);
     connect(settings, &KDockWSettings::PreviewThumbnailSizeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewMaximumHeightChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewCardPaddingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::PreviewDockGapChanged, context, saveSettings);
     connect(settings, &KDockWSettings::PreviewHoverDelayChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ActivateWindowOnExternalDragChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ExternalDragActivationDelayChanged, context, saveSettings);
@@ -170,6 +176,8 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::IconScaleChanged, context, saveSettings);
     connect(settings, &KDockWSettings::AttentionAnimationDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BadgeDisplayModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BadgeFontWeightChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::BadgeTextSizePercentChanged, context, saveSettings);
     connect(settings, &KDockWSettings::RunningIndicatorStyleChanged, context, saveSettings);
     connect(settings, &KDockWSettings::RunningIndicatorPositionChanged, context, saveSettings);
     connect(settings, &KDockWSettings::RunningIndicatorSizeChanged, context, saveSettings);
@@ -241,11 +249,29 @@ int Application::run(const KAboutData &aboutData)
     // Opt into the layer-shell platform plugin. Equivalent to the deprecated
     // LayerShellQt::Shell::useLayerShell() (it only sets this variable); must
     // happen before the first QWindow is created.
+    const bool hadShellIntegration = qEnvironmentVariableIsSet("QT_WAYLAND_SHELL_INTEGRATION");
+    const QByteArray previousShellIntegration = qgetenv("QT_WAYLAND_SHELL_INTEGRATION");
     qputenv("QT_WAYLAND_SHELL_INTEGRATION", "layer-shell");
 
     // Load settings from KConfig (~/.config/kdockwrc)
     m_settings = std::make_unique<KDockWSettings>();
+    m_settings->setSharedConfig(applicationConfig());
     m_settings->load();
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    // Keep the user's launcher/window associations in a fresh diagnostic
+    // config without redirecting Plasma's XDG paths. The production config is
+    // read-only here; all subsequent writes go to the diagnostic file.
+    if (!diagnosticConfigPath().isEmpty()) {
+        KConfigGroup diagnosticGeneral(m_settings->config(), QStringLiteral("General"));
+        if (!diagnosticGeneral.hasKey(QStringLiteral("PinnedLaunchers"))) {
+            const KConfigGroup userGeneral(KSharedConfig::openConfig(QStringLiteral("kdockwrc")), QStringLiteral("General"));
+            if (userGeneral.hasKey(QStringLiteral("PinnedLaunchers"))) {
+                m_settings->setPinnedLaunchers(userGeneral.readEntry(QStringLiteral("PinnedLaunchers"), QStringList{}));
+                m_settings->save();
+            }
+        }
+    }
+#endif
     applyLanguagePreference(m_settings->language());
     migrateLegacySettings(m_settings.get());
 
@@ -281,6 +307,7 @@ int Application::run(const KAboutData &aboutData)
         QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
         return launcherEntries;
     });
+    qmlRegisterType<ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
 
     // Create and initialize the multi-dock manager (creates DockShell(s) based on monitor mode).
     // Placement uses the Plasma primary output (kde_output_order_v1); wait for
@@ -325,8 +352,13 @@ int Application::run(const KAboutData &aboutData)
     });
 
     // The dock window is now created with layer-shell.
-    // Unset the env var so child processes (launched apps) don't inherit it.
-    qunsetenv("QT_WAYLAND_SHELL_INTEGRATION");
+    // Restore the original environment before child processes (launched apps)
+    // can inherit it.
+    if (hadShellIntegration) {
+        qputenv("QT_WAYLAND_SHELL_INTEGRATION", previousShellIntegration);
+    } else {
+        qunsetenv("QT_WAYLAND_SHELL_INTEGRATION");
+    }
 
     // Register global shortcuts (KGlobalAccel)
     registerGlobalShortcuts();

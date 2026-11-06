@@ -373,6 +373,60 @@ def test_prev006_single_window_preview(kdockw: KDockW, apps: TestWindows) -> Non
     wait_until(lambda: not kdockw.preview_visible(), message="preview to close after activation")
 
 
+# ---------------------------------------------------------------- PREV-012
+
+
+def test_prev012_minimized_window_keeps_last_frame_and_group_frames_stay_bound(
+    kdockw: KDockW, apps: TestWindows
+) -> None:
+    """Keep each window's last delivered PipeWire frame through minimize."""
+    _require_capture()
+    red, blue = _open_group(apps, ["Minimized Red", "Minimized Blue"], ["red", "blue"])
+    kdockw.wait_for_item(APP)
+    kdockw.move_away()
+    pv.open_by_hover(kdockw, APP)
+    wait_until(lambda: set(pv.thumb_titles(kdockw)) == {"Minimized Red", "Minimized Blue"},
+               message="both grouped windows in the preview")
+    _wait_thumbnail_color(kdockw, "Minimized Red", pv.is_red, "prev012-red-before-minimize")
+    _wait_thumbnail_color(kdockw, "Minimized Blue", pv.is_blue, "prev012-blue-before-minimize")
+
+    # Keep the preview open under the pointer while changing the task state.
+    pv.glide_into(kdockw, _thumb_center(kdockw, "Minimized Red"))
+    kwin.set_minimized(red.internal_id, True)
+    wait_until(lambda: (state := red.refresh()) is not None and state.minimized,
+               message="red window to be minimized")
+    assert (blue_state := blue.refresh()) is not None and not blue_state.minimized
+    wait_until(lambda: "Minimized" in kdockw.find(pv.thumb_xpath("Minimized Red")).get_attribute("name"),
+               message="preview accessibility state to report minimized")
+
+    # The pixel oracle rejects the app icon/placeholder and also detects if
+    # the neighboring window's blue frame was assigned to the minimized item.
+    _wait_thumbnail_color(kdockw, "Minimized Red", pv.is_red, "prev012-red-minimized")
+    _wait_thumbnail_color(kdockw, "Minimized Blue", pv.is_blue, "prev012-blue-while-red-minimized")
+
+    kwin.set_minimized(red.internal_id, False)
+    wait_until(lambda: (state := red.refresh()) is not None and not state.minimized,
+               message="red window to be restored")
+    _wait_thumbnail_color(kdockw, "Minimized Red", pv.is_red, "prev012-red-restored")
+
+    # Repeated fast state changes must not replace one group's source with the
+    # other window's content or leave a stale placeholder.
+    for iteration in range(2):
+        kwin.set_minimized(red.internal_id, True)
+        wait_until(lambda: (state := red.refresh()) is not None and state.minimized,
+                   message=f"rapid minimize {iteration + 1}")
+        _wait_thumbnail_color(kdockw, "Minimized Red", pv.is_red, f"prev012-red-fast-minimize-{iteration + 1}")
+        kwin.set_minimized(red.internal_id, False)
+        wait_until(lambda: (state := red.refresh()) is not None and not state.minimized,
+                   message=f"rapid restore {iteration + 1}")
+        _wait_thumbnail_color(kdockw, "Minimized Red", pv.is_red, f"prev012-red-fast-restore-{iteration + 1}")
+
+    apps.close(red)
+    wait_until(lambda: pv.thumb_titles(kdockw) == ["Minimized Blue"],
+               message="closing red window to release its thumbnail and leave blue")
+    _wait_thumbnail_color(kdockw, "Minimized Blue", pv.is_blue, "prev012-blue-after-red-close")
+
+
 # ---------------------------------------------------------------- PREV-007
 
 

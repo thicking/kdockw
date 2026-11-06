@@ -78,7 +78,8 @@ SettingsPage {
 
     // Apps for the display-mode tiles: current-desktop windows first, then
     // the other desktops' windows — full opacity for "show all", dimmed via
-    // opacityMinimized for "dim others" and dropped for "current only".
+    // the separate other-desktop mode setting for "dim others", and dropped
+    // for "current only".
     function desktopApps(mode) {
         const current = [
             { icon: "org.kde.konsole", fallback: "utilities-terminal", state: "active", badge: 0, padding: 1.0 },
@@ -89,8 +90,8 @@ SettingsPage {
         }
         const otherState = mode === 1 ? "minimized" : "inactive"
         return current.concat([
-            { icon: "firefox", fallback: "internet-web-browser", state: otherState, badge: 0, padding: 1.0 },
-            { icon: "org.kde.kate", fallback: "accessories-text-editor", state: otherState, badge: 0, padding: 1.0 }
+            { icon: "firefox", fallback: "internet-web-browser", state: otherState, otherDesktop: mode === 1, badge: 0, padding: 1.0 },
+            { icon: "org.kde.kate", fallback: "accessories-text-editor", state: otherState, otherDesktop: mode === 1, badge: 0, padding: 1.0 }
         ])
     }
 
@@ -155,9 +156,8 @@ SettingsPage {
         property bool active: page.windowActive
         property bool dockPulse: false
         property var apps: page.stageApps
-        /// Opacity of "minimized"-state icons (display-mode tiles use the
-        /// other-desktop opacity here).
-        property real otherOpacity: DockSettings.iconOpacityMinimized
+        /// Dimming applied to windows on other virtual desktops.
+        property real otherDesktopOpacity: DockSettings.otherDesktopOpacity
         /// Bound the screen height by the item's height (picker tiles).
         property bool fitHeight: false
         /// Upper bound for drawing the dock larger than its real proportion;
@@ -344,7 +344,7 @@ SettingsPage {
                                     backdrop: miniStage.backdrop
                                     active: arrange.active
                                     apps: arrange.apps
-                                    opacityMinimized: arrange.otherOpacity
+                                    otherDesktopOpacity: arrange.otherDesktopOpacity
                                     pulse: arrange.dockPulse
                                 }
                             }
@@ -478,8 +478,7 @@ SettingsPage {
             backdrop: tile.backdrop
             active: tile.active
             apps: page.desktopApps(tile.desktopMode)
-            // Other desktops' windows ride the "minimized" opacity slot.
-            opacityMinimized: DockSettings.otherDesktopOpacity
+            otherDesktopOpacity: DockSettings.otherDesktopOpacity
         }
     }
 

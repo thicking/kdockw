@@ -54,8 +54,7 @@ Kirigami.AbstractApplicationWindow {
             keywords: [i18n("Icon size"), i18n("Icon spacing"), i18n("Content layout"), i18n("Icon alignment"),
                 i18n("Left padding (px)"), i18n("Right padding (px)"), i18n("Top padding (px)"), i18n("Bottom padding (px)"),
                 i18n("Zoom factor"), i18n("Zoom style"), i18n("Zoom animation"),
-                i18n("Icon size normalization"), i18n("Icon scale"), i18n("Active window icon opacity"),
-                i18n("Inactive window and launcher icon opacity"), i18n("Minimized window icon opacity")]
+                i18n("Icon size normalization"), i18n("Icon scale"), i18n("Icon opacity")]
         },
         {
             moduleId: "layout",
@@ -85,7 +84,8 @@ Kirigami.AbstractApplicationWindow {
             text: i18n("Animations & Badges"),
             iconName: "preferences-desktop-notification",
             group: "",
-            keywords: [i18n("Attention animation"), i18n("Badge display"), i18n("Running indicators"),
+            keywords: [i18n("Attention animation"), i18n("Badge display"), i18n("Badge text weight"),
+                i18n("Badge text size"), i18n("Running indicators"),
                 i18n("Indicator style"), i18n("Indicator position"), i18n("Indicator size (logical px)"),
                 i18n("Indicator color"), i18n("Screen edge"), i18n("Dock interior"), i18n("Automatic (theme)"), i18n("Custom")]
         },
