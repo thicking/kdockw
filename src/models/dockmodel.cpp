@@ -3,6 +3,7 @@
 
 #include "dockmodel.h"
 
+#include "config/applicationconfig.h"
 #include "shell/outputordermonitor.h"
 #include "taskiconprovider.h"
 
@@ -18,6 +19,9 @@
 #include <QVariant>
 #include <QScreen>
 #include <QSet>
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+#include <QTimer>
+#endif
 
 #include <utility>
 
@@ -140,6 +144,52 @@ DockModel::DockModel(QObject *parent)
     // NOW activate internal source models (launcher model, window model, etc.)
     // All properties are set, so the backends will correctly discover running windows.
     m_tasksModel->componentComplete();
+
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    if (diagnosticTaskLoggingEnabled()) {
+        const auto logSnapshot = [this](const QString &reason) {
+            int windows = 0;
+            int launchers = 0;
+            int startups = 0;
+            const auto logRows = [this, &windows, &launchers, &startups](const QModelIndex &parent, const auto &self) -> void {
+                const int count = m_tasksModel->rowCount(parent);
+                for (int row = 0; row < count; ++row) {
+                    const QModelIndex index = m_tasksModel->index(row, 0, parent);
+                    const bool isWindow = index.data(TaskManager::AbstractTasksModel::IsWindow).toBool();
+                    const bool isLauncher = index.data(TaskManager::AbstractTasksModel::IsLauncher).toBool();
+                    const bool isStartup = index.data(TaskManager::AbstractTasksModel::IsStartup).toBool();
+                    windows += isWindow;
+                    launchers += isLauncher;
+                    startups += isStartup;
+                    qCInfo(lcModel).noquote() << "Task diagnostic row"
+                        << "path=" << (parent.isValid() ? QStringLiteral("child") : QStringLiteral("root"))
+                        << row
+                        << "AppId=" << index.data(TaskManager::AbstractTasksModel::AppId).toString()
+                        << "launcher=" << index.data(TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl().toString()
+                        << "window=" << isWindow
+                        << "startup=" << isStartup
+                        << "launcherTask=" << isLauncher
+                        << "hasLauncher=" << index.data(TaskManager::AbstractTasksModel::HasLauncher).toBool()
+                        << "windowIds=" << index.data(TaskManager::AbstractTasksModel::WinIdList).toList();
+                    if (index.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
+                        self(index, self);
+                    }
+                }
+            };
+            logRows({}, logRows);
+            qCInfo(lcModel) << "Task diagnostic snapshot:" << reason
+                << "rows=" << m_tasksModel->rowCount()
+                << "windows=" << windows << "launchers=" << launchers << "startups=" << startups;
+        };
+        const auto queueSnapshot = [this, logSnapshot](const QString &reason) {
+            QTimer::singleShot(0, this, [logSnapshot, reason]() { logSnapshot(reason); });
+        };
+        queueSnapshot(QStringLiteral("initial"));
+        connect(m_tasksModel.get(), &QAbstractItemModel::rowsInserted, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("rows inserted")); });
+        connect(m_tasksModel.get(), &QAbstractItemModel::rowsRemoved, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("rows removed")); });
+        connect(m_tasksModel.get(), &QAbstractItemModel::modelReset, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("model reset")); });
+    }
+#endif
 
     // Track desktop/activity changes so the model stays up to date.
     connect(m_virtualDesktopInfo.get(), &TaskManager::VirtualDesktopInfo::currentDesktopChanged, this, [this]() {

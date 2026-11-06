@@ -77,16 +77,19 @@ tracked separately as technical debt. No measurements are marked complete; see
   targeting across monitor removal, reconnection, reordering, mixed scaling,
   and primary-screen changes in a real Wayland session.
 
-## v0.3.0 — Window Appearance & Interactions (planned) ⬅️ Next feature-development priority
+## v0.3.0 — Window Appearance & Interactions (in progress) ⬅️ Current feature-development priority
 
 ### P0 — Window Preview for Minimized Windows (accepted by owner)
 
-- [ ] Keep showing the last available authorized thumbnail frame after minimize;
+- [x] Keep showing the last available authorized thumbnail frame after minimize;
   prefer current frames when KWin continues to provide them.
-- [ ] Resume live capture on restore, keep frames tied to their window UUID, and
+- [x] Resume live capture on restore, keep frames tied to their window UUID, and
   release resources when a window closes. Never persist window content to disk.
-- [ ] Verify grouped windows, rapid minimize/restore, CPU-only and DMA-BUF paths,
-  Wayland behavior, memory use, and multiple monitors.
+- [x] Verify open and minimized previews in the accepted CPU-only Plasma 6 /
+  Wayland session.
+- [ ] Validate DMA-BUF/auto capture, memory use, rapid lifecycle changes, and
+  exhaustive multi-monitor configurations; these remain unverified technical
+  debt.
 
 Owner manual acceptance on KDE Plasma 6 / Wayland confirmed open and minimized
 previews in CPU-only mode. DMA-BUF/auto, RAM/VRAM profiling, and exhaustive
@@ -112,25 +115,56 @@ and exhaustive multi-monitor validation are not claimed. It depends on accepted
 v0.2.0 geometry.
 
 Follow-up refinement ([[11.7-Window-Preview-Spacing-And-Sharpness]], `review`):
-the factory dock gap is reduced while preserving zoom clearance. Capture-size/DPR metrics are opt-in in the diagnostic
-build; source-resolution adequacy and any sharpness improvement still require
-measurements from the owner’s live preview.
+the owner accepted the fixed maximum-Classic-Zoom anchor and the latest preview
+position. The earlier Wayland coordinate mix was fixed by keeping icon anchors
+local to the dock surface and deriving output-edge margins from that surface
+plus its floating margin. Invalid pre-frame PipeWire dimensions cannot expand
+Cover geometry. A 1581×904 CPU frame at DPR 1 was downsampled to a 196×121
+viewport; the sampling filter and remaining visual softness are still under
+investigation, so this follow-up remains open. KWin 6.6.6 fixes the window
+stream size to the source texture size and advertises an exact SPA rectangle;
+client-selected smaller stream resolutions are unsupported. Diagnostic
+Baseline/Linear comparison remains pending. Source review found that
+KPipeWire 6.6.4 does not set the QSGImageNode filter; Qt 6.10.2 defaults to
+Nearest and disables mipmap filtering for that node. A diagnostic Linear A/B is
+available, but its visual quality and resource/performance effects remain
+unmeasured.
 
-### P0 — Application Name Tooltip
+### P0 — Window Preview Size Presets (review)
 
-- [ ] Show a compact application-name tooltip when no preview card is visible.
-- [ ] Put the application name in the preview-card header while the card is
+- [x] Add Compact 180×113, Standard 220×138, Enlarged 260×163, and Large
+  320×200 logical-pixel presets on top of the existing width/height settings.
+- [x] Keep custom values and existing defaults unchanged until the user selects
+  a preset; preserve live updates and saved values.
+- [ ] Complete owner visual verification for DPR, grouped windows, screen
+  bounds, and all four dock edges.
+
+Card: [[11.8-Window-Preview-Size-Presets]] (`review`). Existing saved values
+remain as-is; visual acceptance is pending.
+
+### P0 — Application Name Tooltip (implemented and accepted)
+
+- [x] Show a compact application-name tooltip when no preview card is visible.
+- [x] Put the application name in the preview-card header while the card is
   visible; suppress the separate tooltip.
-- [ ] Transition smoothly between tooltip and card without overlap or flicker,
-  including grouped windows.
+- [x] Verify transitions do not overlap or flicker, including grouped windows;
+  implementation tests passed and the owner accepted the functionality.
 
-### P0 — Toggle Minimize on Click
+Card: [[11.5-Application-Name-Tooltip]] (`done`). The source and QML tests cover
+the implementation and tooltip bounds; the owner previously accepted the
+functionality. No release publication is implied.
 
-- [ ] Provide **Activate only** and **Minimize on second click** settings.
-- [ ] First click activates or restores a window; a second click on the active
-  window minimizes it.
-- [ ] Support grouped windows without changing existing window-switching
-  behavior; verify KDE Plasma 6 / Wayland / KWin behavior.
+### P0 — Toggle Minimize on Click (implemented; owner review pending)
+
+- [x] Provide the single-window and grouped-window activate/minimize settings.
+- [x] Activate or restore a window unless it is already active, in which case
+  it is minimized.
+- [x] Handle grouped windows in the action implementation and automated tests.
+- [ ] Complete owner acceptance in a running KDE Plasma 6 / Wayland session.
+
+The implementation is in `DockActions::activateOrMinimize`; QML and KWin
+integration tests cover settings dispatch and grouped-window behavior. Passing
+automated tests does not establish live-session acceptance.
 
 **Priority order:** Window Preview for Minimized Windows → Window Preview Redesign
 → Application Name Tooltip → Toggle Minimize on Click. This is an implementation
@@ -154,10 +188,10 @@ surface/input-region geometry. Launch and attention animation remains independen
 
 ## v0.5.0 — Dock Interactions (planned)
 
-- [ ] Add pinned folder stacks with a Grid view, file opening and drag-and-drop,
+- [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
   animation, and usable handling of long lists. Consider Fan only if technically
   justified.
-- [ ] Improve drag-and-drop to new and running applications, including Dolphin;
+- [ ] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin;
   handle cancellation and unsupported data safely.
 
 ## v0.6.0 — Visual Effects & KWin Integration (planned)
@@ -178,19 +212,30 @@ surface/input-region geometry. Launch and attention animation remains independen
 - [ ] Optimize only after a repeatable profile confirms a bottleneck; preserve
   Classic zoom mathematics, geometry, input regions, and Wayland behavior.
 
-## P3 — Future exploration
+## P3 — Unversioned future exploration and accepted work
 
-- **Badge Appearance (in review):** use `#FF3B30` red with `#FFFFFF` text by
-  default and provide independent settings for both colors. Visual acceptance
-  remains pending.
+- **Badge Appearance (implemented and owner accepted):** default badge colors
+  are `#FF3B30` and `#FFFFFF`; independent saved colors, reset, preview, and
+  contrast feedback are available. This work is not assigned to a published
+  release.
 - **Badge Startup Synchronization:** investigate why a Telegram counter can be
   absent when Telegram starts before KDockW, while restarting Telegram restores
   it and restarting KDockW does not.
-- **Preview Close Button (in review):** use a KDE-themed close button that
-  remains readable without hover. Visual acceptance remains pending.
+- **Preview Close Button (placement review):** the accepted idle/hover/pressed
+  appearance remains; the button is in the top-right of the card header,
+  opposite the app icon, and awaits visual verification. This work is not
+  assigned to a published release.
 - **GitHub Release Update Checker:** check for stable GitHub Releases in the
   background, send KDE notifications, offer manual checks and settings, and
   never install updates automatically.
+- **Settings Preview Consistency:** align the settings mini-dock with runtime
+  appearance and behavior: badge colors, parabolic zoom direction, and the
+  discoverability of the “Hover” switch. Tracked in Obsidian as an unversioned
+  `todo`; no release assignment is implied.
+- **Adaptive Inactive Preview Border (`review`):** add a subtle one-pixel
+  outline that adapts to the configured preview-card surface while preserving
+  the active KDE accent. No release assignment is implied; visual acceptance
+  remains pending.
 
 - [ ] Define and evaluate a small built-in dock-widget model before committing
   to a public extension API; then consider left, center, and right slots plus

@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 """Portable KDockW release CLI.
 
-  prepare  verify a signed vX.Y.Z tag and write a release context (source
+  prepare  verify a signed vX.Y.Z or kdockw-vX.Y.Z tag and write a release context (source
            tree, kdockw-X.Y.Z.tar.gz, notes.md, context.json) outside the repo
   gate     inspect the full Distro E2E matrix for the tagged commit
   status   read-only per-channel publication report

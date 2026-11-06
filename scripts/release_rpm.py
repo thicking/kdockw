@@ -77,7 +77,9 @@ OBS_FAILED_CODES = frozenset({"failed", "unresolvable", "broken"})
 OBS_IGNORED_CODES = frozenset({"disabled", "excluded", "locked"})
 
 SEMVER_RE = re.compile(r"(\d+)\.(\d+)\.(\d+)")
-TAG_RE = re.compile(r"v(\d+\.\d+\.\d+)")
+TAG_RE = re.compile(
+    r"^(?:kdockw-)?v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$"
+)
 CREATED_BUILD_RE = re.compile(r"Created builds?:\s*([\d\s]+)")
 
 
@@ -99,11 +101,11 @@ def version_key(version: str) -> tuple[int, int, int]:
 
 
 def tag_version(ref: str | None) -> str | None:
-    """'v0.10.0' -> '0.10.0'; None for branches and other refs."""
+    """Return a version from a legacy or namespaced KDockW tag."""
     if not ref:
         return None
     match = TAG_RE.fullmatch(ref.strip())
-    return match[1] if match else None
+    return ".".join(match.groups()) if match else None
 
 
 def _owner(ctx: ReleaseContext) -> str:
@@ -201,6 +203,7 @@ def build_obs_inputs(
     version: str,
     debian_revision: str,
     clone_url: str,
+    source_archive: bytes | None = None,
 ) -> dict[str, bytes]:
     """Package inputs for OBS from the tagged source tree.
 
@@ -231,6 +234,21 @@ def build_obs_inputs(
     )
     if tarball != f"{PACKAGE}-{version}.tar.gz":
         raise ReleaseError(f"tagged kdockw.dsc DEBTRANSFORM-TAR is {tarball!r}")
+    if source_archive is not None:
+        checksum = hashlib.md5(source_archive).hexdigest()
+        entry = f"Files:\n {checksum} {len(source_archive)} {tarball}\n"
+        files_match = re.search(r"^Files:\s*\n(?:[ \t].*\n)*", dsc, re.MULTILINE)
+        if files_match:
+            dsc = dsc[: files_match.start()] + entry + dsc[files_match.end() :]
+        else:
+            dsc = re.sub(
+                r"^(DEBTRANSFORM-TAR:\s*[^\n]+\n)",
+                lambda match: match[1] + entry,
+                dsc,
+                count=1,
+                flags=re.MULTILINE,
+            )
+        inputs["kdockw.dsc"] = dsc.encode("utf-8")
     top = re.match(r"kdockw \(([^)]+)\)", texts["debian.changelog"])
     if top is None or top[1] != full:
         raise ReleaseError(f"tagged debian.changelog top entry is not {full}")
@@ -461,12 +479,17 @@ def _obs_remote(osc: list[str], project: str) -> ObsRemote:
 
 
 def _obs_inputs(ctx: ReleaseContext) -> dict[str, bytes]:
+    try:
+        source_archive = ctx.archive.read_bytes()
+    except OSError as exc:
+        raise ReleaseError(f"verified source archive is unreadable: {exc}") from None
     return build_obs_inputs(
         ctx.source_dir,
         tag=ctx.tag,
         version=ctx.version,
         debian_revision=ctx.debian_revision,
         clone_url=_clone_url(ctx),
+        source_archive=source_archive,
     )
 
 

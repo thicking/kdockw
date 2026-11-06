@@ -205,6 +205,13 @@ SettingsWindow::SettingsWindow(KDockWSettings *settings, QObject *parent)
     : QObject(parent)
     , m_settings(settings)
 {
+    const auto updatePreviewBackground = [this] { Q_EMIT previewBackgroundColorChanged(); };
+    connect(m_settings, &KDockWSettings::BackgroundStyleChanged, this, updatePreviewBackground);
+    connect(m_settings, &KDockWSettings::BackgroundOpacityChanged, this, updatePreviewBackground);
+    connect(m_settings, &KDockWSettings::TintColorChanged, this, updatePreviewBackground);
+    connect(m_settings, &KDockWSettings::UseAccentColorChanged, this, updatePreviewBackground);
+    connect(m_settings, &KDockWSettings::UseSystemColorChanged, this, updatePreviewBackground);
+
     // KCoreAddons' QML Core.AboutData singleton snapshots applicationData()
     // when the QML engine first requests it. Queue a notification for the
     // settings UI after Application has rebuilt and installed localized data.
@@ -270,6 +277,15 @@ QVariantList SettingsWindow::availableScreens() const
 QVariantMap SettingsWindow::aboutData() const
 {
     return aboutDataMap(KAboutData::applicationData());
+}
+
+QColor SettingsWindow::previewBackgroundColor() const
+{
+    return computeBackgroundColor(static_cast<BackgroundStyleType>(m_settings->backgroundStyle()),
+                                  m_settings->tintColor(),
+                                  m_settings->backgroundOpacity(),
+                                  m_settings->useAccentColor(),
+                                  m_settings->useSystemColor());
 }
 
 bool SettingsWindow::hasSelectedMonitorFallback() const

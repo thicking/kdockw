@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "utils/inputregion.h"
+#include "utils/layershellpolicy.h"
 
 TEST_CASE("Dock input region computation", "[input-region]")
 {
@@ -220,4 +221,87 @@ TEST_CASE("Preview surface margin follows configured visible gap", "[input-regio
     REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, 0, false) == 88);
     REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, 4, true) == 60);
     REQUIRE(kdockw::computePreviewSurfaceMargin(32, 56, -4, false) == 88);
+}
+
+TEST_CASE("Preview surface margin uses dock-surface coordinates on every edge", "[input-region][preview]")
+{
+    // Coordinates are local to the dock layer surface; no screen origin or
+    // reserved-panel offset is mixed into the layer-shell margin.
+    REQUIRE(kdockw::computePreviewSurfaceMarginForIcon(0, 50, 100, 6, 4, 8) == 52);
+    REQUIRE(kdockw::computePreviewSurfaceMarginForIcon(1, 80, 100, 6, 4, 8) == 22);
+    REQUIRE(kdockw::computePreviewSurfaceMarginForIcon(2, 50, 100, 6, 4, 8) == 52);
+    REQUIRE(kdockw::computePreviewSurfaceMarginForIcon(3, 90, 100, 6, 4, 8) == 12);
+    REQUIRE(kdockw::computePreviewSurfaceMarginForIcon(99, 20, 100, 0, 4, 8) == 0);
+}
+
+TEST_CASE("Bottom-dock preview stays two pixels from zoomed icon on a 1080px output", "[input-region][preview]")
+{
+    constexpr qreal screenHeight = 1080;
+    constexpr qreal dockSurfaceHeight = 120;
+    constexpr qreal dockEdgeMargin = 8;
+    constexpr qreal iconUpperEdgeInSurface = 50;
+    constexpr qreal gap = 2;
+    constexpr qreal shadow = 8;
+    const int previewMargin = kdockw::computePreviewSurfaceMarginForIcon(
+        1, iconUpperEdgeInSurface, dockSurfaceHeight, dockEdgeMargin, gap, shadow);
+    REQUIRE(previewMargin == 72);
+
+    const qreal iconRestEdge = screenHeight - dockEdgeMargin
+        - (dockSurfaceHeight - iconUpperEdgeInSurface);
+    for (const qreal zoomOverflow : {0.0, 24.0}) {
+        const qreal iconTop = iconRestEdge - zoomOverflow;
+        const qreal cardBodyBottom = screenHeight - previewMargin - zoomOverflow - shadow;
+        REQUIRE(iconTop - cardBodyBottom == gap);
+    }
+}
+
+TEST_CASE("Preview bypasses dock reservation and uses the actual LayerShell margin", "[input-region][preview][layer-shell]")
+{
+    REQUIRE(kdockw::previewLayerShellExclusiveZone == -1);
+
+    constexpr qreal screenHeight = 1080;
+    constexpr qreal dockSurfaceHeight = 136;
+    constexpr qreal iconRestEdgeInSurface = 83;
+    constexpr qreal actualDockLayerShellMargin = 0;
+    constexpr qreal floatingInsetInsideDockSurface = 3;
+    constexpr qreal gap = 2;
+    constexpr qreal shadowInset = 8;
+    const int previewMargin = kdockw::computePreviewSurfaceMarginForIcon(
+        1, iconRestEdgeInSurface, dockSurfaceHeight,
+        actualDockLayerShellMargin, gap, shadowInset);
+    REQUIRE(previewMargin == 47);
+
+    // Floating padding is already represented by the icon's surface-local
+    // edge. Adding it as another output margin would add it to the gap twice.
+    REQUIRE(floatingInsetInsideDockSurface > actualDockLayerShellMargin);
+    for (const qreal zoomOverflow : {0.0, 34.92}) {
+        const qreal iconTop = screenHeight - (dockSurfaceHeight - iconRestEdgeInSurface) - zoomOverflow;
+        const qreal cardBodyBottom = screenHeight - previewMargin - zoomOverflow - shadowInset;
+        REQUIRE(iconTop - cardBodyBottom == gap);
+    }
+}
+
+TEST_CASE("Preview input region follows the zoomed popup edge inset", "[input-region][preview]")
+{
+    kdockw::PreviewInputRegionParams p{};
+    p.surfaceWidth = 1000;
+    p.surfaceHeight = 600;
+    p.contentX = 100;
+    p.contentY = 150;
+    p.contentWidth = 300;
+    p.contentHeight = 180;
+    p.edgeOffset = 10;
+
+    p.edge = 0;
+    REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(100, 10, 300, 180));
+    p.edge = 1;
+    REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(100, 410, 300, 180));
+    p.edge = 2;
+    REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(10, 150, 300, 180));
+    p.edge = 3;
+    REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(690, 150, 300, 180));
+
+    p.edge = 1;
+    p.shadowMargin = 8;
+    REQUIRE(kdockw::computePreviewInputRegion(p) == QRegion(108, 418, 284, 164));
 }

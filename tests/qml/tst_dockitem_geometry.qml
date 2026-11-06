@@ -103,6 +103,48 @@ Item {
             compare(icon.height, data.size)
         }
 
+        function test_previewAnchorGeometryTracksTheRealIconBounds_data() {
+            return [
+                { tag: "top-after", edge: 0, indicator: 0 },
+                { tag: "bottom-before", edge: 1, indicator: 1 },
+                { tag: "left-after", edge: 2, indicator: 0 },
+                { tag: "right-before", edge: 3, indicator: 1 },
+            ]
+        }
+
+        function test_previewAnchorGeometryTracksTheRealIconBounds(data) {
+            DockSettings.iconSize = 48
+            DockSettings.maxZoomFactor = 1.7
+            DockSettings.runningIndicatorPosition = data.indicator
+            DockView.edge = data.edge
+            let item = makeRow([{ display: "Dolphin", IsWindow: true }]).itemAt(0)
+            item.zoomScale = 1.0
+            const rest = item.previewAnchorGeometry()
+            compare(rest.coordinateSpace, "dock-surface-logical")
+            compare(rest.zoomOverflow, 0)
+            verify(Number.isFinite(rest.restEdgeInSurface))
+            verify(rest.maxZoomOverflow > 0)
+            verify(rest.iconBoundsInSurface.x >= 0)
+            verify(rest.iconBoundsInSurface.y >= 0)
+            item.zoomScale = 1.5
+            const zoomed = item.previewAnchorGeometry()
+            verify(zoomed.zoomOverflow > 0,
+                   "the expanded edge must be measured from mapped icon corners")
+            verify(zoomed.zoomOverflow <= zoomed.maxZoomOverflow)
+            compare(zoomed.restEdgeInSurface, rest.restEdgeInSurface,
+                    "surface-local resting edge remains fixed while the icon grows")
+            compare(zoomed.maxZoomOverflow, rest.maxZoomOverflow,
+                    "the fixed preview anchor is independent of animated zoom scale")
+
+            item.zoomScale = 1.7
+            const maximum = item.previewAnchorGeometry()
+            compare(maximum.maxZoomOverflow, rest.maxZoomOverflow)
+            DockSettings.maxZoomFactor = 1.0
+            item.zoomScale = 1.0
+            compare(item.previewAnchorGeometry().maxZoomOverflow, 0,
+                    "disabling Classic Zoom removes its reserved anchor extension")
+        }
+
         function test_iconSizeChangeResizesLiveItems() {
             let item = makeRow([{ display: "Dolphin", IsWindow: true }]).itemAt(0)
             compare(item.width, DockSettings.iconSize)

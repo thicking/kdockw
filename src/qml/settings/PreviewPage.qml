@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.formcard as FormCard
 import com.thicking.kdockw 1.0
 import "../BadgeTextColor.js" as BadgeTextColor
+import "PreviewSizePresets.js" as PreviewSizePresets
 
 SettingsPage {
     id: page
@@ -20,6 +21,16 @@ SettingsPage {
     // stay meaningful in that case.
     readonly property bool groupedClickShowsPreviews: DockSettings.groupedWindowClickAction === 1
     readonly property bool popupInUse: DockSettings.previewEnabled || groupedClickShowsPreviews
+
+    function thumbnailPresetIndex() {
+        const index = PreviewSizePresets.indexFor(
+            DockSettings.previewThumbnailSize, DockSettings.previewMaximumHeight)
+        return index < 0 ? 0 : index + 1
+    }
+
+    function applyThumbnailSizePreset(index) {
+        return PreviewSizePresets.apply(index - 1, DockSettings)
+    }
 
     // The preview popup drawn on the stage: a miniature of PreviewPopup.qml /
     // PreviewThumbnail.qml — a rounded popup in theme colors with a header
@@ -71,8 +82,8 @@ SettingsPage {
         // Miniature scale used for the drawing inside the thumbnail: 1/50 of
         // the real thumbnail width (so ~4 px at the default 200 px).
         readonly property real s: Math.max(0.05, thumbWidth / 50)
-        readonly property color surfaceColor: DockView.backgroundColor.a > 0
-            ? DockView.backgroundColor
+        readonly property color surfaceColor: SettingsWindow.previewBackgroundColor.a > 0
+            ? SettingsWindow.previewBackgroundColor
             : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
         readonly property color foregroundColor: BadgeTextColor.choose(
             surfaceColor, Kirigami.Theme.textColor)
@@ -445,8 +456,23 @@ SettingsPage {
     }
 
     FormCard.FormCard {
+        FormCard.FormComboBoxDelegate {
+            id: thumbnailSizePreset
+            objectName: "thumbnailSizePreset"
+            text: i18n("Thumbnail size preset")
+            description: i18n("Choose a ready-made size. Custom width and height values remain available below.")
+            model: [i18n("Custom size"), i18n("Compact (180 × 113 px)"), i18n("Standard (220 × 138 px)"),
+                    i18n("Enlarged (260 × 163 px)"), i18n("Large (320 × 200 px)")]
+            currentIndex: page.thumbnailPresetIndex()
+            enabled: page.popupInUse
+            onActivated: index => page.applyThumbnailSizePreset(index)
+        }
+
+        FormCard.FormDelegateSeparator {}
+
         SliderDelegate {
             id: thumbnailWidthSlider
+            objectName: "thumbnailWidthSlider"
             text: i18n("Thumbnail width (px)")
             from: 120; to: 320; stepSize: 20
             value: DockSettings.previewThumbnailSize
@@ -458,6 +484,7 @@ SettingsPage {
         FormCard.FormDelegateSeparator {}
 
         SliderDelegate {
+            objectName: "thumbnailHeightSlider"
             text: i18n("Maximum thumbnail height (px)")
             from: 80; to: 300; stepSize: 10
             value: DockSettings.previewMaximumHeight

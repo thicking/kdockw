@@ -681,7 +681,7 @@ window's identity and frame geometry.
 
 **Expected:**
 - The gap follows the slider immediately on all four edges, from 1 to 32 px
-  (default 3, updated from the previous fixed gap); no restart is needed.
+  (default 2, updated from the previous fixed gap); no restart is needed.
 - With reservation on, the reserved strip is the panel bar plus the margin,
   and existing maximized windows reflow live.
 - With "Floating" off the gap is 0 whatever the saved margin; the slider is

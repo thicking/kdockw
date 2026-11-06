@@ -70,7 +70,7 @@ QtObject {
     property int previewThumbnailSize: 200
     property int previewMaximumHeight: 180
     property int previewCardPadding: 8
-    property int previewDockGap: 4
+    property int previewDockGap: 2
     property int previewHideDelay: 200
     property int monitorMode: 0
     property int followActiveTrigger: 1

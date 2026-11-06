@@ -8,19 +8,24 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
-The current local candidate targets v0.1.2. It has not been published.
+## [0.3.0] - 2026-11-06
 
-### Changed
-
-- Set the local application and package metadata version to 0.1.2. This
-  candidate has not been published.
+KDockW 0.3.0 brings rounded live previews for open and minimized windows, flexible preview sizing, and clearer icon and badge presentation in a KDE Plasma 6 Wayland dock.
 
 ### Added
 
+- Added a compact application-name tooltip for launcher hover and reused the
+  preview-card header for window names while the preview is visible.
 - Added live, saved window-preview layout controls: thumbnail width, maximum
   thumbnail height with source aspect-ratio preservation, card padding, and the
-  dock gap. New defaults are 200 px, 180 px, 8 px, and 4 px; existing saved
+  dock gap. New defaults are 200 px, 180 px, 8 px, and 2 px; existing saved
   thumbnail widths remain intact.
+- Added Compact, Standard, Enlarged, and Large preview size presets using the
+  existing saved width and height settings. Existing custom values and defaults
+  remain unchanged until a preset is selected.
+- Added a one-pixel neutral outline to inactive window previews. Its shade
+  adapts to the configured card background and KDE surface; the active window
+  keeps its KDE accent outline.
 - Redesigned the preview as a compact, rounded, translucent card with a thin
   border, soft shadow, application header, and per-window title. The popup has
   no arrow and fades in and out.
@@ -49,12 +54,27 @@ The current local candidate targets v0.1.2. It has not been published.
 
 - Changed the factory badge text weight from Bold (700) to Medium (500). The
   text size remains 100%, and Number remains the default notification style.
+- Moved the preview close button from the image to the top-right of the card
+  header, aligned with the app icon; retained its accepted appearance and
+  per-window close behavior for grouped previews.
 
 ### Fixed
 
-- Reduced the preview's default visible gap to the dock from 12 px to 4 px by
-  removing an extra fixed surface offset and lowering the saved-setting default;
+- Reduced the preview's default visible gap to the dock to 2 px by removing
+  extra fixed offsets and positioning the card from the measured icon edge;
   the popup remains beyond the dock's maximum zoom envelope.
+- Anchored the preview LayerShell surface to output geometry instead of KWin's
+  reduced work area, and used the dock's actual LayerShell margin. This avoids
+  adding the dock's reserved panel area and internal floating inset to the
+  visible preview gap.
+- Positioned the preview using dock-surface icon geometry so Wayland's
+  unavailable top-level global position cannot turn a local icon offset into a
+  screen-sized layer-shell margin.
+- Fixed the preview card at the configured maximum-zoom anchor so it no longer
+  moves perpendicular to the dock as icons animate. The anchor is refreshed
+  when icon geometry, zoom settings, or dock edge changes.
+- Ignored unready or implausible PipeWire stream dimensions when calculating
+  Cover crop, preserving the last valid aspect ratio until a valid frame arrives.
 - Applied rounded clipping to the PipeWire frame's own scene-graph subtree,
   instead of placing a clip node beside the QML child that needed clipping.
 - Fixed rounded preview clipping on Qt 6 scene-graph backends by replacing

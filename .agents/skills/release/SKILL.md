@@ -6,6 +6,8 @@ description: Release a new KDockW version end to end when the user asks — vers
 # Release KDockW
 
 Optional argument: an explicit version (`x.y.z`). Otherwise the version is derived from `CHANGELOG.md`.
+New KDockW releases use the permanent `kdockw-vX.Y.Z` tag form. Historical
+Krema `vX.Y.Z` tags remain unchanged; tooling continues to recognize both.
 
 Which distro releases get packaged follows the Distribution Support Policy in `AGENTS.md`: never drop a target because it is EOL.
 
@@ -22,7 +24,7 @@ All tools are Python standard-library scripts in `scripts/`. The agent runs them
 
 | Command | Purpose | Writes externally |
 |---|---|---|
-| `python3 scripts/release.py prepare --tag vX.Y.Z --output DIR` | Verify the tag and source metadata; write a source directory, `kdockw-X.Y.Z.tar.gz`, `notes.md` and `context.json` under `DIR` (outside the repository) | No |
+| `python3 scripts/release.py prepare --tag kdockw-vX.Y.Z --output DIR` | Verify the tag and source metadata; write a source directory, `kdockw-X.Y.Z.tar.gz`, `notes.md` and `context.json` under `DIR` (outside the repository) | No |
 | `python3 scripts/release.py gate --context DIR/context.json` | Inspect Distro E2E for the tagged commit; reports `ready`, `pending`, `failed` or `blocked` | No |
 | `python3 scripts/release.py gate --context DIR/context.json --execute` | Same, and dispatch the existing `distro-e2e.yml` once if no full run for that commit exists. Never publishes | Workflow dispatch only |
 | `python3 scripts/release.py status --context DIR/context.json [--channel C]` | Read-only per-channel publication report | No |
@@ -34,7 +36,7 @@ All tools are Python standard-library scripts in `scripts/`. The agent runs them
 
 `--repository` defaults to `thicking/kdockw`; `--repo-root` defaults to the current checkout. `prepare`, `gate` and `publish` accept `--signer FINGERPRINT` (repeatable) for the allowed tag signers; always pass the pinned `90798370719E91DDE1D5028AAA660B7C5AB258E7`. `context.json` (schema version 1) holds `repository`, `tag`, `version`, `commit`, `source_dir`, `archive`, `sha256`, `source_url`, `work_dir`, `notes_path` and `debian_revision`. It never contains credentials. Every later command re-validates it against the tag, commit and archive hash, so a stale or edited context fails instead of publishing the wrong bytes. `notes.md` is checked the same way: it must equal the text generated from the tagged CHANGELOG section byte for byte, so an edited `notes.md` fails with `notes_path does not match` or `notes changed after context validation`.
 
-The archive recorded in a context is the byte sequence every channel later checks against `source_url`. For a tag with no published GitHub release (none, or only a draft), `prepare` builds it deterministically from the signed tag and reports `archive_origin` `generated`. For a tag whose release is already published, `prepare` reuses the source bytes GitHub already serves for that tag: the uploaded `kdockw-X.Y.Z.tar.gz` asset when the release carries one (`published`; the named asset always wins), otherwise the tag's automatic source archive from `https://github.com/OWNER/REPO/archive/refs/tags/vX.Y.Z.tar.gz` (`autoarchive`), downloaded anonymously over HTTPS. Reused bytes are trusted only when the archive's recorded commit equals the signed tag commit, it has a single safe `kdockw-X.Y.Z/` root, and its full file manifest (paths, SHA-256, executable bits, symlinks) equals the deterministic archive of that commit; any mismatch fails `prepare` with no fallback. Reuse keeps an already published version's checksums identical across reruns instead of recompressing to different bytes, which is what lets the AUR, OBS, PPA and KDE Store compare the context against what they already hold. `source_url` stays the named release asset URL in every case. A new or draft-only tag always gets the generated archive; this tooling never substitutes other bytes for a genuinely new release.
+The archive recorded in a context is the byte sequence every channel later checks against `source_url`. For a tag with no published GitHub release (none, or only a draft), `prepare` builds it deterministically from the signed tag and reports `archive_origin` `generated`. For a tag whose release is already published, `prepare` reuses the source bytes GitHub already serves for that tag: the uploaded `kdockw-X.Y.Z.tar.gz` asset when the release carries one (`published`; the named asset always wins), otherwise the tag's automatic source archive from `https://github.com/OWNER/REPO/archive/refs/tags/TAG.tar.gz` (`autoarchive`), downloaded anonymously over HTTPS. Reused bytes are trusted only when the archive's recorded commit equals the signed tag commit, it has a single safe `kdockw-X.Y.Z/` root, and its full file manifest (paths, SHA-256, executable bits, symlinks) equals the deterministic archive of that commit; any mismatch fails `prepare` with no fallback. Reuse keeps an already published version's checksums identical across reruns instead of recompressing to different bytes, which is what lets the AUR, OBS, PPA and KDE Store compare the context against what they already hold. `source_url` stays the named release asset URL in every case. A new or draft-only tag always gets the generated archive; this tooling never substitutes other bytes for a genuinely new release.
 
 Every channel result uses one status:
 
@@ -93,7 +95,7 @@ Read the canonical version from `set(KDOCKW_VERSION "x.y.z")` in `CMakeLists.txt
 | `### Added` | minor |
 | only `### Fixed` / `### Changed` | patch |
 
-If the user named the version, use it. Otherwise show the category counts and the proposed version, and wait for confirmation: the version defines the release scope. Then make sure `git tag -l vx.y.z` is empty and `gh release view vx.y.z` fails.
+If the user named the version, use it. Otherwise show the category counts and the proposed version, and wait for confirmation: the version defines the release scope. Then make sure `git tag -l kdockw-vx.y.z` is empty and `gh release view kdockw-vx.y.z` fails.
 
 ## 3. Release commit
 
@@ -101,7 +103,7 @@ Version bumps stay manual: the tooling only reads them, and `prepare` rejects a 
 
 - `CMakeLists.txt`: `KDOCKW_VERSION` is the canonical app version; keep the derived numeric `project(kdockw VERSION ...)` core in sync.
 - `packaging/obs/kdockw.spec`: `Version:`.
-- `packaging/obs/kdockw.dsc`: `Version:`, `DEBTRANSFORM-TAR:` and `Files:`. The tarball is `kdockw-x.y.z.tar.gz`.
+- `packaging/obs/kdockw.dsc`: `Version:`, `DEBTRANSFORM-TAR:` and `DEBTRANSFORM-TAR:`; the release adapter generates the `Files:` MD5 and size from the verified context archive rather than keeping a stale checksum in the source template. The tarball is `kdockw-x.y.z.tar.gz`.
 - `packaging/obs/debian.changelog`: prepend an entry. Copy the maintainer line from the existing entries. Its Debian revision (`-1` for a new upstream version) becomes `debian_revision` in the context and the PPA version.
   ```
   kdockw (x.y.z-1) unstable; urgency=medium
@@ -112,7 +114,7 @@ Version bumps stay manual: the tooling only reads them, and `prepare` rejects a 
    -- <maintainer from existing entries>  <RFC 2822 date>
   ```
 - Dependency audit: compare `find_package()` in `CMakeLists.txt` and `target_link_libraries()` in `src/CMakeLists.txt` with `BuildRequires` in `kdockw.spec`, `Build-Depends` in `debian.control`, and `depends`/`makedepends` in `packaging/arch/PKGBUILD`. Fix mismatches before continuing.
-- `packaging/arch/PKGBUILD`: leave `pkgver` and `sha256sums` alone. The AUR adapter copies the tagged PKGBUILD to a scratch directory and sets both from the context, so the repository copy may lag one version behind; that is expected. There is no second "update PKGBUILD" commit any more.
+- `packaging/arch/PKGBUILD`: set `pkgver` and keep `.SRCINFO` synchronized. The checked-in checksum is not used for publication: the AUR adapter copies the tagged PKGBUILD to scratch and replaces its source URL and SHA-256 from the verified context archive before any package is submitted. Never publish the checked-in template directly.
 - `CHANGELOG.md`: move every `[Unreleased]` entry into `## [x.y.z] - YYYY-MM-DD` directly below it, keeping the categories, and put the one- or two-sentence lead paragraph directly under that heading, before the first `###`. Leave `## [Unreleased]` empty, without category headers. This section becomes the GitHub release notes verbatim (section 5), so write it to those rules now.
 - `ROADMAP.md`: verify the current (⬅️) milestone's items against the code and tick what is implemented. If the milestone is complete, mark it ✅ and move ⬅️ to the next one.
 - `src/com.thicking.kdockw.metainfo.xml`: add a `<release>` at the top of `<releases>`. Never skip this.
@@ -153,14 +155,14 @@ Always dispatch `targets=all`. `release.py gate` derives the expected job set fr
 Then create a signed, annotated tag with the pinned key. `prepare`, `gate` and `publish` refuse unsigned tags and tags signed by any key other than the `--signer` fingerprints, even one the local keyring trusts.
 
 ```bash
-git tag -s -u 90798370719E91DDE1D5028AAA660B7C5AB258E7 -m "KDockW vx.y.z" vx.y.z
-git tag -v vx.y.z
+git tag -s -u 90798370719E91DDE1D5028AAA660B7C5AB258E7 -m "KDockW vx.y.z" kdockw-vx.y.z
+git tag -v kdockw-vx.y.z
 ```
 
 Pushing the tag completes the source step; publication through the release CLI still requires the explicit invocation in section 6. Only push it once the notes in the CHANGELOG section are final (section 5).
 
 ```bash
-git push origin vx.y.z
+git push origin kdockw-vx.y.z
 ```
 
 Never move or re-push a pushed tag. Every command re-checks the tag against the context commit, so a tag that later points elsewhere fails closed for every channel.
@@ -197,12 +199,12 @@ The banner is a Git LFS file, so it is linked through `media.githubusercontent.c
 Before pushing the tag, show the user the notes and get approval. Render them from the local signed tag without publishing anything:
 
 ```bash
-python3 scripts/release.py prepare --tag vx.y.z --output "$(mktemp -d)/vx.y.z" \
+python3 scripts/release.py prepare --tag kdockw-vx.y.z --output "$(mktemp -d)/kdockw-vx.y.z" \
   --signer 90798370719E91DDE1D5028AAA660B7C5AB258E7
 # then show <output>/notes.md
 ```
 
-`notes.md` is generated, not edited: `publish` refuses a `notes.md` that differs from the tagged CHANGELOG section. It is used only when the GitHub release does not exist yet; an existing published release body is never changed. So fix wording before pushing the tag: delete the unpushed local tag (`git tag -d vx.y.z`), fix the CHANGELOG in a new commit, rerun the gate on it, sign the tag again and run `prepare` again.
+`notes.md` is generated, not edited: `publish` refuses a `notes.md` that differs from the tagged CHANGELOG section. It is used only when the GitHub release does not exist yet; an existing published release body is never changed. So fix wording before pushing the tag: delete the unpushed local tag (`git tag -d kdockw-vx.y.z`), fix the CHANGELOG in a new commit, rerun the gate on it, sign the tag again and run `prepare` again.
 
 ## 6. Publication
 
@@ -212,8 +214,8 @@ Publish only the version the user's release request names. Tag pushes, existing 
 
 ```bash
 KEY=90798370719E91DDE1D5028AAA660B7C5AB258E7
-OUT=$(mktemp -d)/vx.y.z
-python3 scripts/release.py prepare --tag vx.y.z --output "$OUT" --signer "$KEY"
+OUT=$(mktemp -d)/kdockw-vx.y.z
+python3 scripts/release.py prepare --tag kdockw-vx.y.z --output "$OUT" --signer "$KEY"
 CTX="$OUT/context.json"
 python3 scripts/release.py gate --context "$CTX" --execute --signer "$KEY"
 python3 scripts/release.py publish --context "$CTX" --channel github --signer "$KEY"
@@ -224,7 +226,7 @@ python3 scripts/release.py status --context "$CTX"
 ```
 
 1. `prepare` verifies the tag signature against the pinned signer and the source metadata, then writes the archive, its hash and the notes into the context. The archive is generated deterministically for a new tag, or the published GitHub source bytes for a tag whose release already exists; both cases are described under Tools and never change what the tag points to. Use this one context for the rest of the release.
-2. `gate --execute` reports `ready` when a full Distro E2E run on the tagged commit passed; normally that is the section 4 run. Without one, it dispatches `distro-e2e.yml --ref vX.Y.Z -f targets=all` once and records the dispatch in `gate-dispatch.json` in the context's work directory. If `gh` refuses the dispatch, the record is removed and the gate reports `failed`; a dispatched run that never shows up within an hour also turns the gate `failed`. Never publish on `pending`, `failed` or `blocked`.
+2. `gate --execute` reports `ready` when a full Distro E2E run on the tagged commit passed; normally that is the section 4 run. Without one, it dispatches `distro-e2e.yml --ref kdockw-vX.Y.Z -f targets=all` once and records the dispatch in `gate-dispatch.json` in the context's work directory. If `gh` refuses the dispatch, the record is removed and the gate reports `failed`; a dispatched run that never shows up within an hour also turns the gate `failed`. Never publish on `pending`, `failed` or `blocked`.
 3. `publish --channel github --execute` downloads and verifies the package artifacts from the full green Distro E2E run for the exact tagged commit, creates the GitHub release as a draft, and attaches the immutable `kdockw-X.Y.Z.tar.gz`, one target-labelled package per distro target, and a `SHA256SUMS` covering the source and all packages. It publishes only after every asset matches. A published release missing assets can be completed from the same verified context without editing its title, body, or existing assets. The remote tag is checked against the context commit before the draft is created and again immediately before publication; a mismatch leaves the draft unpublished and fails the channel. Other native channels use the source asset's URL and hash, so GitHub always goes first.
 4. `publish --channel all --execute` reports GitHub as `already_published` and publishes `aur`, `obs`, `copr` and `ppa`. Each channel is independent: one failure does not stop the others, and a channel already `published`, `already_published` or `submitted` is not sent again.
 5. `status` reports each channel. Report `submitted` as submitted, not published, until a later `status` shows the build finished.
@@ -258,7 +260,7 @@ When a KDockW PPA exists, the adapter checks any existing orig tarball for the t
 
 These are enforced by the adapters; know them when reading a `blocked` or `failed` result.
 
-- **GitHub** (`scripts/release_github.py`): creates the release for the existing tag as a draft, downloads the exact green Distro E2E package artifacts, and uploads `kdockw-X.Y.Z.tar.gz`, one target-labelled binary package per target, and `SHA256SUMS` covering all files. Every package manifest binds the bytes to the tag commit, canonical version, target, and package format. A retry resumes a draft whose notes and target commit match the context exactly (reported as `planned` before `--execute`); any other draft for the tag is `blocked` and is never edited or deleted, so publish or delete it by hand. If the published release or an asset already exists, its hash must match the context or the channel fails; when only assets are missing, `--execute` uploads them from the verified context without editing the release title, body or existing assets. GitHub has no compare-and-swap for tags, so a tag moved after the last check is detected only by the post-publication check, which fails the channel with `remote tag vX.Y.Z moved during publication`; stop and report it to the user as an integrity problem. The context's `source_url` is this asset (`https://github.com/thicking/kdockw/releases/download/vX.Y.Z/kdockw-X.Y.Z.tar.gz`), so `release.py` refuses `--execute` for any other channel until the source and package assets are verified.
+- **GitHub** (`scripts/release_github.py`): creates the release for the existing tag as a draft, downloads the exact green Distro E2E package artifacts, and uploads `kdockw-X.Y.Z.tar.gz`, one target-labelled binary package per target, and `SHA256SUMS` covering all files. Every package manifest binds the bytes to the tag commit, canonical version, target, and package format. A retry resumes a draft whose notes and target commit match the context exactly (reported as `planned` before `--execute`); any other draft for the tag is `blocked` and is never edited or deleted, so publish or delete it by hand. If the published release or an asset already exists, its hash must match the context or the channel fails; when only assets are missing, `--execute` uploads them from the verified context without editing the release title, body or existing assets. GitHub has no compare-and-swap for tags, so a tag moved after the last check is detected only by the post-publication check, which fails the channel with `remote tag kdockw-vX.Y.Z moved during publication`; stop and report it to the user as an integrity problem. The context's `source_url` is this asset (`https://github.com/thicking/kdockw/releases/download/TAG/kdockw-X.Y.Z.tar.gz`), so `release.py` refuses `--execute` for any other channel until the source and package assets are verified.
 - **AUR** (`scripts/release_aur.py`): stages the tagged `packaging/arch/PKGBUILD` in scratch, sets `pkgver`, the source URL and `sha256sums` from the context, regenerates `.SRCINFO` with `makepkg --printsrcinfo` (in an `archlinux` container on the Mac), and pushes to `ssh://aur@aur.archlinux.org/kdockw.git` over BatchMode SSH with strict host keys. It never edits the checkout and no longer uses `git subtree`. An identical remote state means `already_published`.
 - **OBS** (`scripts/release_rpm.py`, `home:thicking/kdockw`): uploads only `_service`, `kdockw.spec`, `kdockw.dsc`, `debian.changelog`, `debian.control`, `debian.rules` and `debian.copyright` from the tag, with `_service`'s `revision` pinned to the tag instead of `main`. `project.config`, `project.meta.xml` and `apply-project-config.sh` configure the OBS project and are never uploaded, and no repository is removed. Uses the existing `osc` configuration through `uvx --from osc osc`.
 - **COPR** (`scripts/release_rpm.py`, `thicking/kdockw`): targets the KDockW SCM package `kdockw` at the tag (`packaging/obs/kdockw.spec`). This project has not been created; status reports `blocked` with setup instructions until the owner creates it and confirms the matching Fedora account. The adapter never edits chroots or webhooks.
@@ -293,7 +295,7 @@ Only verified destinations may receive a per-release update. The schemas in the 
 Tagged media are Git LFS files, so the extracted source tree holds pointers. The kit resolves each referenced pointer into a separate stage, `work_dir/submission-kit-lfs/`, fetching the object from the tagged commit on `media.githubusercontent.com` without credentials and checking it against the pointer's SHA-256 and size. Only verified bytes are copied into the packet; the source tree and the context archive stay untouched, and any missing or mismatching object stops the kit. `release_stores.py prepare` is still a dry run as defined under Tools: it writes only inside its output and work directories and sends nothing to any store.
 
 ```bash
-STORES=$(mktemp -d)/stores-vx.y.z
+STORES=$(mktemp -d)/stores-kdockw-vx.y.z
 python3 scripts/release_stores.py prepare --context "$CTX" --output "$STORES"
 python3 scripts/release_stores.py status --context "$CTX"
 ```
@@ -324,7 +326,7 @@ New channels are not registered as part of a release. Candidate channels and the
 
 Report the version, the release commit, the tag's commit and signer, the Distro E2E run URL, and each channel's status from `release.py status` and `release_stores.py status`, with the detail for anything other than `published`/`already_published`. Link:
 
-- https://github.com/thicking/kdockw/releases/tag/vx.y.z
+- https://github.com/thicking/kdockw/releases/tag/kdockw-vx.y.z
 - https://aur.archlinux.org/packages/kdockw
 - https://copr.fedorainfracloud.org/coprs/thicking/kdockw/builds/
 - https://build.opensuse.org/package/show/home:thicking/kdockw

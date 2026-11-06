@@ -34,6 +34,7 @@ class IconDiagnostics final : public QObject {
   Q_PROPERTY(QString previewSourceMode READ previewSourceMode CONSTANT)
   Q_PROPERTY(bool previewSceneGraphTrace READ previewSceneGraphTrace CONSTANT)
   Q_PROPERTY(bool previewCaptureMetrics READ previewCaptureMetrics CONSTANT)
+  Q_PROPERTY(QString previewFilterTest READ previewFilterTest CONSTANT)
   Q_PROPERTY(qreal windowDevicePixelRatio READ windowDevicePixelRatio NOTIFY
                  iconDprChanged)
 
@@ -55,12 +56,15 @@ public:
   [[nodiscard]] QString previewSourceMode() const;
   [[nodiscard]] bool previewSceneGraphTrace() const;
   [[nodiscard]] bool previewCaptureMetrics() const;
+  [[nodiscard]] QString previewFilterTest() const;
   [[nodiscard]] qreal windowDevicePixelRatio() const;
 
   /// Cache opt-in diagnostic switches, then remove them before launch actions
   /// can pass this process environment to child applications.
   static void prepareProcessEnvironment();
   [[nodiscard]] static bool previewSceneGraphTraceEnabled();
+  [[nodiscard]] static bool previewCaptureMetricsEnabled();
+  [[nodiscard]] static QString previewFilterTestMode();
 
   void attachWindow(QQuickWindow *window);
   void logEnvironment(const QString &reason) const;
@@ -125,6 +129,7 @@ private:
   QString m_previewSourceMode;
   bool m_previewSceneGraphTrace = false;
   bool m_previewCaptureMetrics = false;
+  QString m_previewFilterTest;
 };
 
 } // namespace kdockw

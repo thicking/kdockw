@@ -19,6 +19,7 @@
 #include "shell/edgetrigger.h"
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
+#include "scenegraph/clippedpipewiresourceitem.h"
 #include "utils/zoomcalculator.h"
 
 #include "config/screensettings.h"
@@ -127,6 +128,10 @@ App &app()
                                                                   QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
                                                                   return launcherEntries;
                                                               });
+        // Application::run() registers this production QML type before the
+        // SettingsWindow creates its separate QQmlEngine. Mirror that setup
+        // here so the real PreviewPage and PreviewThumbnail can be loaded.
+        qmlRegisterType<kdockw::ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
         return a;
     }();
     return *instance;

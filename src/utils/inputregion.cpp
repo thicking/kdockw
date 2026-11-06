@@ -89,6 +89,36 @@ int computePreviewSurfaceMargin(int panelBarHeight, int zoomOverflow,
         + std::max(0, zoomOverflow) + std::max(0, previewDockGap);
 }
 
+int computePreviewSurfaceMarginForIcon(int edge, qreal iconRestEdgeInSurface,
+                                       qreal dockSurfaceExtent,
+                                       int dockSurfaceEdgeMargin,
+                                       int previewDockGap, qreal shadowMargin)
+{
+    const qreal gap = std::max(0, previewDockGap);
+    const qreal shadow = std::max<qreal>(0.0, shadowMargin);
+    qreal distanceFromDockSurfaceEdge = 0.0;
+    switch (edge) {
+    case 0: // Top
+    case 2: // Left
+        distanceFromDockSurfaceEdge = iconRestEdgeInSurface;
+        break;
+    case 1: // Bottom
+    case 3: // Right
+        distanceFromDockSurfaceEdge = dockSurfaceExtent - iconRestEdgeInSurface;
+        break;
+    default:
+        return 0;
+    }
+
+    // Layer-shell margins are relative to the output edge. The dock surface
+    // itself may have a floating margin, so include it once, then translate
+    // from the local icon edge to the preview surface edge. The shadow bounds
+    // are already inside the popup item and must be subtracted here.
+    const qreal margin = std::max(0, dockSurfaceEdgeMargin)
+        + distanceFromDockSurfaceEdge + gap - shadow;
+    return std::max(0, qRound(margin));
+}
+
 QRect computeDockScreenRect(const DockScreenRectParams &p)
 {
     int surfaceX = 0;
@@ -118,23 +148,29 @@ QRect computeDockScreenRect(const DockScreenRectParams &p)
 
 QRegion computePreviewInputRegion(const PreviewInputRegionParams &p)
 {
-    // Mirror PreviewPopup.qml's popup placement: flush with the surface edge
-    // facing the dock, positioned along the dock axis by contentX/contentY.
+    // Mirror PreviewPopup.qml's placement: the popup moves inward from the
+    // dock-facing edge by edgeOffset as the icon zooms outward.
     QRectF popup(0, 0, p.contentWidth, p.contentHeight);
     switch (p.edge) {
     case 0: // Top: popup at the top of the surface
-        popup.moveTopLeft(QPointF(p.contentX, 0));
+        popup.moveTopLeft(QPointF(p.contentX, p.edgeOffset));
         break;
     case 1: // Bottom: popup at the bottom of the surface
-        popup.moveTopLeft(QPointF(p.contentX, p.surfaceHeight - p.contentHeight));
+        popup.moveTopLeft(QPointF(p.contentX,
+                                  p.surfaceHeight - p.contentHeight - p.edgeOffset));
         break;
     case 2: // Left: popup at the left of the surface
-        popup.moveTopLeft(QPointF(0, p.contentY));
+        popup.moveTopLeft(QPointF(p.edgeOffset, p.contentY));
         break;
     case 3: // Right: popup at the right of the surface
-        popup.moveTopLeft(QPointF(p.surfaceWidth - p.contentWidth, p.contentY));
+        popup.moveTopLeft(QPointF(p.surfaceWidth - p.contentWidth - p.edgeOffset,
+                                  p.contentY));
         break;
     }
+
+    const qreal shadowInset = std::clamp(p.shadowMargin, 0.0,
+                                          std::min(popup.width(), popup.height()) / 2.0);
+    popup.adjust(shadowInset, shadowInset, -shadowInset, -shadowInset);
 
     const QRect rect = popup.toAlignedRect().intersected(QRect(0, 0, p.surfaceWidth, p.surfaceHeight));
     if (rect.isEmpty()) {

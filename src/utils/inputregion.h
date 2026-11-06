@@ -36,6 +36,14 @@ QRegion computeDockInputRegion(const InputRegionParams &p);
 int computePreviewSurfaceMargin(int panelBarHeight, int zoomOverflow,
                                 int previewDockGap, bool panelBarReserved);
 
+/// Place the preview surface from an icon edge in dock-surface coordinates.
+/// edge uses the same values as PreviewInputRegionParams (0=top, 1=bottom,
+/// 2=left, 3=right). No compositor/global window coordinates are involved.
+int computePreviewSurfaceMarginForIcon(int edge, qreal iconRestEdgeInSurface,
+                                       qreal dockSurfaceExtent,
+                                       int dockSurfaceEdgeMargin,
+                                       int previewDockGap, qreal shadowMargin);
+
 struct DockScreenRectParams {
     int screenX;
     int screenY;
@@ -60,6 +68,8 @@ struct PreviewInputRegionParams {
     qreal contentY; // popup y along a vertical dock (surface-local)
     qreal contentWidth;
     qreal contentHeight;
+    qreal edgeOffset = 0; // inset from the surface edge facing the dock
+    qreal shadowMargin = 0; // exclude transparent shadow bounds from hit testing
     int edge; // 0=Top, 1=Bottom, 2=Left, 3=Right
 };
 

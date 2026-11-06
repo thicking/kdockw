@@ -12,6 +12,7 @@
 #include <QSGImageNode>
 #include <QSGOpacityNode>
 #include <QSGTransformNode>
+#include <QSet>
 #include <QDebug>
 
 #include <algorithm>
@@ -74,6 +75,19 @@ QString nodeTypeName(const QSGNode *node)
     return QStringLiteral("QSGNode/container");
 }
 
+QString filterName(QSGTexture::Filtering filter)
+{
+    switch (filter) {
+    case QSGTexture::None:
+        return QStringLiteral("none");
+    case QSGTexture::Nearest:
+        return QStringLiteral("nearest");
+    case QSGTexture::Linear:
+        return QStringLiteral("linear");
+    }
+    return QStringLiteral("unknown");
+}
+
 void dumpNode(const QSGNode *node, const QString &path, QStringList &lines)
 {
     if (!node) {
@@ -83,6 +97,20 @@ void dumpNode(const QSGNode *node, const QString &path, QStringList &lines)
     lines.append(QStringLiteral("%1%2 children=%3")
                      .arg(path, nodeTypeName(node))
                      .arg(node->childCount()));
+    if (const auto *image = dynamic_cast<const QSGImageNode *>(node)) {
+        const QSGTexture *texture = image->texture();
+        const QRectF rect = image->rect();
+        const QRectF sourceRect = image->sourceRect();
+        const QSize textureSize = texture ? texture->textureSize() : QSize();
+        lines.append(QStringLiteral("%1image rect=%2 sourceRect=%3 filtering=%4 mipmapFiltering=%5 textureSize=%6 hasMipmaps=%7")
+                         .arg(path)
+                         .arg(QStringLiteral("[%1,%2 %3x%4]").arg(rect.x()).arg(rect.y()).arg(rect.width()).arg(rect.height()))
+                         .arg(QStringLiteral("[%1,%2 %3x%4]").arg(sourceRect.x()).arg(sourceRect.y()).arg(sourceRect.width()).arg(sourceRect.height()))
+                         .arg(filterName(image->filtering()))
+                         .arg(filterName(image->mipmapFiltering()))
+                         .arg(texture ? QStringLiteral("%1x%2").arg(textureSize.width()).arg(textureSize.height()) : QStringLiteral("none"))
+                         .arg(texture && texture->hasMipmaps()));
+    }
     for (const QSGNode *child = node->firstChild(); child; child = child->nextSibling()) {
         dumpNode(child, path + QStringLiteral("  "), lines);
     }
@@ -175,6 +203,21 @@ QSGNode *ClippedPipeWireSourceItem::updatePaintNode(QSGNode *oldNode, UpdatePain
         clip->appendChildNode(sourceTree);
     }
 
+    const QString filterMode = IconDiagnostics::previewFilterTestMode();
+    if (filterMode == QLatin1String("linear")) {
+        // KPipeWire 6.6.4 does not set QSGImageNode filtering. Its Qt 6.10
+        // default image material therefore stays Nearest. This opt-in
+        // diagnostic override changes only the screen image node; it adds no
+        // render target or image-processing pass.
+        QSGNode *node = sourceTree->firstChild();
+        while (node && !dynamic_cast<QSGImageNode *>(node)) {
+            node = node->firstChild();
+        }
+        if (auto *image = dynamic_cast<QSGImageNode *>(node)) {
+            image->setFiltering(QSGTexture::Linear);
+        }
+    }
+
     const bool center50 = m_clipMode == QLatin1String("center50");
     const QRectF rect = center50
         ? QRectF(width() / 4, height() / 4, width() / 2, height() / 2)
@@ -189,6 +232,7 @@ QSGNode *ClippedPipeWireSourceItem::updatePaintNode(QSGNode *oldNode, UpdatePain
                           << "sourcePosition=" << QPointF(x(), y())
                           << "clipRect=" << rect
                           << "radius=" << m_clipRadius
+                          << "filterTest=" << (filterMode.isEmpty() ? QStringLiteral("baseline") : filterMode)
                           << "clipParent=" << nodeTypeName(clip->parent())
                           << "sourceParent=" << nodeTypeName(sourceTree->parent())
                           << "transformNode=" << nodeTypeName(data ? data->transformNode : nullptr);
@@ -201,7 +245,13 @@ void ClippedPipeWireSourceItem::logNodeTree(const char *stage, const QSGNode *no
 {
     QStringList lines;
     dumpNode(node, QString(), lines);
-    qInfo().noquote() << "[kdockw.preview.sg]" << stage << lines.join(QStringLiteral(" | "));
+    const QString description = QStringLiteral("%1 %2").arg(QLatin1String(stage), lines.join(QStringLiteral(" | ")));
+    static QSet<QString> loggedStates;
+    if (loggedStates.contains(description)) {
+        return;
+    }
+    loggedStates.insert(description);
+    qInfo().noquote() << "[kdockw.preview.sg]" << description;
 }
 
 } // namespace kdockw

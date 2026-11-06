@@ -230,3 +230,31 @@ PipeWire item's own returned node when a custom rounded clip is required.
 Avoid Qt private QQuickItem internals. The live QSG tree still needs inspection
 on the target renderer because headless mocks cannot establish KPipeWire's
 runtime frame-node topology.
+
+## Window stream resolution negotiation (Plasma 6.6.6)
+
+The resolution option in `PipeWireSourceStream` is consumer-side format
+acceptance, not a capture-size request. The public API has no target-size setter;
+its format builder advertises supported video dimensions and `streamSize()`
+reports the received frame size.
+
+KWin 6.6.6 initializes `ScreenCastStream::m_resolution` from
+`source->textureSize()`. Its SPA format builder publishes
+`SPA_FORMAT_VIDEO_size` as one fixed `SPA_POD_Rectangle(resolution)`, not as a
+range containing smaller dimensions. When the source size changes, KWin rebuilds
+that format from `m_source->textureSize()`. Consequently a client cannot make a
+window stream emit 790×452, 640×360, or 480×270 by changing its own SPA format
+preferences. The producer's window capture/render path would have to be changed
+to downsample before publishing the PipeWire buffers.
+
+Sources: [KWin 6.6.6 `ScreenCastStream`](https://github.com/KDE/kwin/blob/v6.6.6/src/plugins/screencast/screencaststream.cpp)
+and [KPipeWire 6.6.4 `PipeWireSourceStream`](https://github.com/KDE/kpipewire/blob/v6.6.4/src/pipewiresourcestream.cpp).
+
+KDockW's diagnostic `pipeWireFramePixels` metric reads `PipeWireSourceItem.streamSize`
+after frames arrive, so it records the actual received dimensions. Baseline and
+Linear sampling experiments remain available. No resized-source variants were
+added because KWin does not expose them through this window-stream negotiation.
+If source-side scaling is needed later, evaluate KWin changes separately; the
+application-side alternative is a quality-filtered downsample in the existing
+render path, measured against the direct Baseline and Linear paths before
+adoption. No performance or visual-quality improvement is claimed here.

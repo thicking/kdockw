@@ -120,6 +120,11 @@ void WaylandDockPlatform::setMargin(int margin)
     }
 }
 
+int WaylandDockPlatform::margin() const
+{
+    return m_margin;
+}
+
 void WaylandDockPlatform::setVisibilityMode(VisibilityMode mode)
 {
     m_visibilityMode = mode;

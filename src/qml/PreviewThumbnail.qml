@@ -9,12 +9,14 @@ import org.kde.pipewire as PipeWire
 import org.kde.taskmanager as TaskManager
 import com.thicking.kdockw 1.0
 import "BadgeTextColor.js" as BadgeTextColor
+import "PreviewBorderColor.js" as PreviewBorderColor
 
 /**
  * A single window thumbnail in the preview popup.
  *
  * Uses PipeWire + ScreencastingRequest for GPU-accelerated live thumbnails.
- * Shows close button on hover, click to activate window.
+ * Tracks pointer/focus selection for the preview header's close control and
+ * activates the window on click.
  */
 Item {
     id: root
@@ -26,6 +28,7 @@ Item {
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
+    readonly property bool pointerHovered: thumbnailHover.hovered
     property bool forceCpuCapture: false
     property var captureWinId: undefined
     readonly property var captureItem: captureLoader.item ? captureLoader.item.sourceItem : null
@@ -51,10 +54,7 @@ Item {
     Accessible.focused: isKeyboardFocused
     Accessible.onPressAction: thumbnailMouseArea.clicked(null)
 
-    readonly property real sourceAspectRatio: {
-        const size = root.captureItem ? root.captureItem.streamSize : null
-        return size && size.width > 0 && size.height > 0 ? size.width / size.height : 1.6
-    }
+    property real sourceAspectRatio: 1.6
     // Keep a stable 16:10 preview slot for every app. The image fills the
     // inner card area and a scene-graph clip rounds its visible corners.
     readonly property real thumbnailWidth: Math.min(
@@ -75,6 +75,8 @@ Item {
         : Qt.alpha(Kirigami.Theme.backgroundColor, DockSettings.backgroundOpacity)
     readonly property color panelForeground: BadgeTextColor.choose(
         panelColor, Kirigami.Theme.textColor)
+    readonly property color inactiveBorderColor: PreviewBorderColor.colorForSurface(
+        panelColor, Kirigami.Theme.backgroundColor, thumbnailHover.hovered)
 
     implicitWidth: thumbnailWidth
     implicitHeight: thumbnailHeight + titleLabel.implicitHeight + Kirigami.Units.smallSpacing
@@ -97,6 +99,26 @@ Item {
             screencastRequest.uuid = ""
             screencastRequest.uuid = root.winId ?? ""
         }
+    }
+
+    function updateSourceAspectRatio() {
+        const capture = root.captureItem
+        if (!capture || !capture.ready)
+            return
+
+        const size = capture.streamSize
+        const maxDimension = 32768
+        const maxPixels = 268435456
+        if (!size || size.width < 1 || size.height < 1
+                || size.width > maxDimension || size.height > maxDimension
+                || size.width * size.height > maxPixels)
+            return
+
+        const ratio = size.width / size.height
+        if (!Number.isFinite(ratio) || ratio < 1 / 32 || ratio > 32)
+            return
+
+        root.sourceAspectRatio = ratio
     }
 
     function captureRectInViewport(capture) {
@@ -133,11 +155,16 @@ Item {
         // Destroy the old source so its last texture can never be shown for the
         // new window while ScreencastingRequest resolves the replacement node.
         forceCpuCapture = false
+        sourceAspectRatio = 1.6
         captureLoader.active = false
         Qt.callLater(function() { captureLoader.active = true })
     }
 
-    Component.onCompleted: captureWinId = winId
+    onCaptureItemChanged: updateSourceAspectRatio()
+    Component.onCompleted: {
+        captureWinId = winId
+        updateSourceAspectRatio()
+    }
     onWinIdChanged: {
         if (captureWinId === undefined) {
             captureWinId = winId
@@ -165,6 +192,9 @@ Item {
             console.info("[kdockw.preview.metrics]", JSON.stringify({
                 event: reason,
                 pipeWireFramePixels: { width: stream.width, height: stream.height },
+                frameReady: capture.ready,
+                streamState: capture.state,
+                acceptedSourceAspectRatio: root.sourceAspectRatio,
                 windowDpr: dpr,
                 thumbnailSlotLogical: { width: root.thumbnailWidth, height: root.thumbnailHeight },
                 viewportLogical: { width: viewport.width, height: viewport.height },
@@ -239,9 +269,8 @@ Item {
         radius: root.thumbnailRadius
         color: root.panelColor
 
-        // Passive hover detection — not affected by ToolButton z-order.
-        // MouseArea.containsMouse goes false when ToolButton appears on top,
-        // but HoverHandler stays hovered because it uses passive grab.
+        // The popup uses the hovered thumbnail to retain the exact grouped
+        // window target when the pointer moves to the shared header control.
         HoverHandler {
             id: thumbnailHover
         }
@@ -386,8 +415,14 @@ Item {
                 target: root.captureItem
                 ignoreUnknownSignals: true
                 function onStateChanged() { root.logCaptureState("state-changed") }
-                function onReadyChanged() { root.logCaptureState("ready-changed") }
-                function onStreamSizeChanged() { root.logCaptureState("stream-size-changed") }
+                function onReadyChanged() {
+                    root.updateSourceAspectRatio()
+                    root.logCaptureState("ready-changed")
+                }
+                function onStreamSizeChanged() {
+                    root.updateSourceAspectRatio()
+                    root.logCaptureState("stream-size-changed")
+                }
                 function onUsingDmaBufChanged() { root.logCaptureState("dma-buf-changed") }
             }
 
@@ -462,45 +497,19 @@ Item {
             }
         }
 
-        // Close button (top-right corner, always visible)
-        QQC2.ToolButton {
-            id: closeButton
-            objectName: "previewCloseButton"
-            anchors.top: parent.top
-            anchors.right: parent.right
-            anchors.margins: Kirigami.Units.smallSpacing
-            width: Kirigami.Units.iconSizes.smallMedium
-            height: Kirigami.Units.iconSizes.smallMedium
-            hoverEnabled: true
-            z: 10
-
-            contentItem: Text {
-                objectName: "previewCloseCross"
-                anchors.fill: parent
-                text: "×"
-                color: "#351010"
-                font.pixelSize: 14
-                font.weight: Font.DemiBold
-                horizontalAlignment: Text.AlignHCenter
-                verticalAlignment: Text.AlignVCenter
-                renderType: Text.QtRendering
-                visible: closeButton.hovered || closeButton.down
-            }
-
-            Accessible.name: i18n("Close %1", root.title)
-
-            onClicked: {
-                // childIndex < 0 = single window (parent row IS the window)
-                let modelIndex = (root.childIndex < 0)
-                    ? DockModel.tasksModel.index(root.parentIndex, 0)
-                    : DockModel.tasksModel.makeModelIndex(root.parentIndex, root.childIndex)
-                DockModel.tasksModel.requestClose(modelIndex)
-            }
-
-            background: Rectangle {
-                radius: width / 2
-                color: closeButton.down ? "#E6534D" : "#FF5F57"
-            }
+        // Keep the inactive outline above the PipeWire frame without adding
+        // capture insets, changing the fixed thumbnail size, or allocating an
+        // offscreen layer. The active KDE accent border remains on the parent.
+        Rectangle {
+            objectName: "previewInactiveBorder"
+            anchors.fill: parent
+            radius: root.thumbnailRadius
+            color: "transparent"
+            border.color: root.inactiveBorderColor
+            border.width: 1
+            antialiasing: true
+            visible: !root.isActive
+            Accessible.ignored: true
         }
 
         // Click to activate window

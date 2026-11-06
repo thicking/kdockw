@@ -152,6 +152,9 @@ Item {
             let item = thumbnailRepeater.itemAt(i)
             if (item) item.retryScreencast()
         }
+
+        if (!popup.closeTargetEntry())
+            popup.selectDefaultCloseTarget()
     }
 
     Connections {
@@ -159,6 +162,7 @@ Item {
         function onParentIndexChanged() {
             if (PreviewController.parentIndex >= 0) {
                 // Different app = different PipeWire streams, must recreate delegates
+                popup.closeTargetWinId = null
                 childWindowModel.clear()
             }
             root.rebuildChildModel()
@@ -202,6 +206,7 @@ Item {
     // placement clamping and the Wayland input region account for the effect.
     Item {
         id: popup
+        objectName: "previewCardPopup"
         readonly property bool requestedVisible: PreviewController.visible && PreviewController.parentIndex >= 0
         readonly property real cardPadding: DockSettings.previewCardPadding
         readonly property real shadowMargin: Kirigami.Units.smallSpacing * 2
@@ -213,6 +218,45 @@ Item {
         readonly property color foregroundColor: BadgeTextColor.choose(
             surfaceColor, Kirigami.Theme.textColor)
         readonly property color outlineColor: Qt.alpha(foregroundColor, 0.27)
+        // The header close button keeps the last hovered window as its target.
+        // This preserves per-window close behavior in grouped previews while
+        // allowing the pointer to travel from a thumbnail to the header.
+        property var closeTargetWinId: null
+
+        function closeTargetEntry() {
+            if (PreviewController.previewKeyboardActive) {
+                const focusedIndex = PreviewController.focusedThumbnailIndex
+                if (focusedIndex >= 0 && focusedIndex < childWindowModel.count)
+                    return childWindowModel.get(focusedIndex)
+            }
+            for (let i = 0; i < childWindowModel.count; i++) {
+                const entry = childWindowModel.get(i)
+                if (entry.winId === closeTargetWinId)
+                    return entry
+            }
+            for (let i = 0; i < childWindowModel.count; i++) {
+                const entry = childWindowModel.get(i)
+                if (entry.isActive)
+                    return entry
+            }
+            return childWindowModel.count > 0 ? childWindowModel.get(0) : null
+        }
+
+        function selectDefaultCloseTarget() {
+            const entry = closeTargetEntry()
+            closeTargetWinId = entry ? entry.winId : null
+        }
+
+        function closeSelectedWindow() {
+            const entry = closeTargetEntry()
+            if (!entry)
+                return
+            const modelIndex = entry.childIndex < 0
+                ? DockModel.tasksModel.index(PreviewController.parentIndex, 0)
+                : DockModel.tasksModel.makeModelIndex(
+                    PreviewController.parentIndex, entry.childIndex)
+            DockModel.tasksModel.requestClose(modelIndex)
+        }
 
         visible: requestedVisible || opacity > 0.01
         opacity: requestedVisible ? 1 : 0
@@ -228,20 +272,42 @@ Item {
         width: implicitWidth
         height: implicitHeight
 
+        function logPosition(stage) {
+            if (typeof IconDiagnostics === "undefined" || !IconDiagnostics.previewCaptureMetrics)
+                return
+            console.info("[kdockw.preview.position.qml]", JSON.stringify({
+                stage: stage,
+                coordinateSpace: "preview-surface-logical",
+                edge: DockView.edge,
+                popupRect: { x: x, y: y, width: width, height: height },
+                cardBodyRect: {
+                    x: x + shadowMargin, y: y + shadowMargin,
+                    width: width - 2 * shadowMargin,
+                    height: height - 2 * shadowMargin
+                },
+                fixedAnchorOffset: PreviewController.previewAnchorOffset,
+                surfaceSize: { width: parent.width, height: parent.height }
+            }))
+        }
+
         Accessible.role: Accessible.PopupMenu
         Accessible.name: PreviewController.appName
             ? i18n("Preview for %1", PreviewController.appName)
             : ""
         x: {
-            if (DockView.edge === 2) return 0                            // Left → left edge
-            if (DockView.edge === 3) return parent.width - width         // Right → right edge
+            if (DockView.edge === 2) return PreviewController.previewAnchorOffset // Left
+            if (DockView.edge === 3) return parent.width - width
+                - PreviewController.previewAnchorOffset                 // Right
             return PreviewController.contentX                            // Top/Bottom → centered
         }
         y: {
-            if (DockView.edge === 0) return 0                            // Top → top edge
-            if (DockView.edge === 1) return parent.height - height       // Bottom → bottom edge
+            if (DockView.edge === 0) return PreviewController.previewAnchorOffset // Top
+            if (DockView.edge === 1) return parent.height - height
+                - PreviewController.previewAnchorOffset                 // Bottom
             return PreviewController.contentY                            // Left/Right → centered
         }
+        onXChanged: logPosition("x-changed")
+        onYChanged: logPosition("y-changed")
         // Report size to controller for input region + positioning
         onWidthChanged: PreviewController.setContentSize(width, height)
         onHeightChanged: PreviewController.setContentSize(width, height)
@@ -274,26 +340,37 @@ Item {
             // Compact app header. The app name is part of this card, so the
             // dock's separate app-name tooltip must stay hidden while it is open.
             RowLayout {
+                id: headerRow
+                objectName: "previewHeader"
                 Layout.fillWidth: true
                 Layout.maximumWidth: groupedRow.implicitWidth
                 Layout.alignment: Qt.AlignHCenter
                 spacing: Kirigami.Units.smallSpacing
 
                 Item {
+                    objectName: "previewAppIconSlot"
                     readonly property string iconName: DockModel.iconName(PreviewController.parentIndex)
                         || "application-x-executable"
                     readonly property bool rawIcon: iconName.startsWith("raw:")
-                    Layout.preferredWidth: Kirigami.Units.iconSizes.small
-                    Layout.preferredHeight: Kirigami.Units.iconSizes.small
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 22
+                    Layout.minimumWidth: 22
+                    Layout.maximumWidth: 22
+                    Layout.minimumHeight: 22
+                    Layout.maximumHeight: 22
 
                     Kirigami.Icon {
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.iconSizes.small
+                        height: width
                         source: parent.rawIcon ? "" : parent.iconName
                         visible: !parent.rawIcon
                         Accessible.ignored: true
                     }
                     Image {
-                        anchors.fill: parent
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.iconSizes.small
+                        height: width
                         source: parent.rawIcon
                             ? "image://icon/" + parent.iconName + "?v=" + DockView.iconCacheVersion
                             : ""
@@ -305,11 +382,48 @@ Item {
                 }
 
                 QQC2.Label {
+                    objectName: "previewAppName"
                     Layout.fillWidth: true
+                    Layout.minimumWidth: 0
                     text: PreviewController.appName
                         color: popup.foregroundColor
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
+                    verticalAlignment: Text.AlignVCenter
+                }
+
+                QQC2.ToolButton {
+                    id: closeButton
+                    objectName: "previewCloseButton"
+                    Layout.preferredWidth: 22
+                    Layout.preferredHeight: 22
+                    Layout.minimumWidth: 22
+                    Layout.maximumWidth: 22
+                    Layout.minimumHeight: 22
+                    Layout.maximumHeight: 22
+                    padding: 0
+                    hoverEnabled: true
+
+                    contentItem: Text {
+                        objectName: "previewCloseCross"
+                        text: "×"
+                        color: "#351010"
+                        font.pixelSize: 14
+                        font.weight: Font.DemiBold
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        renderType: Text.QtRendering
+                        visible: closeButton.hovered || closeButton.down
+                    }
+
+                    Accessible.name: i18n("Close %1",
+                        popup.closeTargetEntry()?.title || PreviewController.appName)
+                    onClicked: popup.closeSelectedWindow()
+
+                    background: Rectangle {
+                        radius: width / 2
+                        color: closeButton.down ? "#E6534D" : "#FF5F57"
+                    }
                 }
             }
 
@@ -334,6 +448,10 @@ Item {
                         isActive: model.isActive
                         parentIndex: PreviewController.parentIndex
                         childIndex: model.childIndex
+                        onPointerHoveredChanged: {
+                            if (pointerHovered)
+                                popup.closeTargetWinId = winId
+                        }
                         // Focus ring driven by C++ PreviewController state
                         isKeyboardFocused: PreviewController.previewKeyboardActive
                             && PreviewController.focusedThumbnailIndex === index

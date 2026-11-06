@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
             QStringLiteral("KDOCKW_PREVIEW_SOURCE_TEST"),
             QStringLiteral("KDOCKW_PREVIEW_SG_TRACE"),
             QStringLiteral("KDOCKW_PREVIEW_METRICS"),
+            QStringLiteral("KDOCKW_PREVIEW_FILTER_TEST"),
         };
         for (const QString &name : names) {
             if (qEnvironmentVariableIsSet(name.toLocal8Bit().constData())) {

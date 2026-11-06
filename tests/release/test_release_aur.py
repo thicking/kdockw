@@ -80,7 +80,7 @@ class RenderPkgbuildTest(unittest.TestCase):
 
     def test_multiline_array_and_quoted_parentheses_are_replaced(self) -> None:
         multiline = TEMPLATE.replace(
-            "source=(\"$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/v$_pkgsrcver.tar.gz\")",
+            "source=(\"$pkgname-$_pkgsrcver.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/kdockw-v$_pkgsrcver.tar.gz\")",
             "source=(\n  \"old (source)\" # previous source\n)",
         ).replace(
             "sha256sums=('SKIP') # No independent KDockW release archive exists yet.",

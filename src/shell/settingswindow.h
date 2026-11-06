@@ -4,6 +4,7 @@
 #pragma once
 
 #include <QList>
+#include <QColor>
 #include <QObject>
 #include <QPointer>
 #include <QSize>
@@ -37,6 +38,7 @@ class SettingsWindow : public QObject
 
     Q_PROPERTY(QVariantList availableScreens READ availableScreens NOTIFY availableScreensChanged)
     Q_PROPERTY(QVariantMap aboutData READ aboutData NOTIFY aboutDataChanged)
+    Q_PROPERTY(QColor previewBackgroundColor READ previewBackgroundColor NOTIFY previewBackgroundColorChanged)
     Q_PROPERTY(bool hasSelectedMonitorFallback READ hasSelectedMonitorFallback NOTIFY hasSelectedMonitorFallbackChanged)
     /// Current Plasma wallpaper image of the primary screen (empty if unknown).
     Q_PROPERTY(QUrl wallpaperUrl READ wallpaperUrl NOTIFY wallpaperUrlChanged)
@@ -63,6 +65,7 @@ public:
     /// disconnected selections remain present until the user removes them.
     [[nodiscard]] QVariantList availableScreens() const;
     [[nodiscard]] QVariantMap aboutData() const;
+    [[nodiscard]] QColor previewBackgroundColor() const;
     [[nodiscard]] bool hasSelectedMonitorFallback() const;
     [[nodiscard]] QUrl wallpaperUrl() const;
     [[nodiscard]] qreal screenAspect() const;
@@ -102,6 +105,7 @@ Q_SIGNALS:
     void availableScreensChanged();
     void hasSelectedMonitorFallbackChanged();
     void aboutDataChanged();
+    void previewBackgroundColorChanged();
     void wallpaperUrlChanged();
     void screenGeometryChanged();
 

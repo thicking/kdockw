@@ -20,6 +20,7 @@ public:
     void setEdge(Edge edge) override { m_edge = edge; }
     void setExclusiveZone(int) override { }
     void setMargin(int) override { }
+    [[nodiscard]] int margin() const override { return currentMargin; }
     void setVisibilityMode(VisibilityMode) override { }
     void setSize(const QSize &) override { }
     void setInputRegion(const QRegion &region) override
@@ -31,6 +32,7 @@ public:
     void setKeyboardInteractivity(bool) override { }
 
     int inputRegionUpdates = 0;
+    int currentMargin = 0;
     QRegion lastInputRegion;
 
 private:

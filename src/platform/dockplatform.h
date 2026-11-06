@@ -52,8 +52,11 @@ public:
     /// retain their -1 no-reservation policy.
     virtual void setExclusiveZone(int zone) = 0;
 
-    /// Set the gap between the dock and the screen edge (floating mode).
+    /// Set the LayerShell margin from the dock's anchored output edge.
     virtual void setMargin(int margin) = 0;
+
+    /// Current layer-shell margin from the dock's anchored output edge.
+    [[nodiscard]] virtual int margin() const = 0;
 
     /// Switch between always-visible and auto-hide modes.
     virtual void setVisibilityMode(VisibilityMode mode) = 0;

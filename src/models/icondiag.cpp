@@ -38,6 +38,7 @@ struct DiagnosticSwitches {
   QString previewSourceMode;
   bool previewSceneGraphTrace = false;
   bool previewCaptureMetrics = false;
+  QString previewFilterTest;
 };
 
 DiagnosticSwitches readDiagnosticSwitches() {
@@ -77,6 +78,10 @@ DiagnosticSwitches readDiagnosticSwitches() {
   }
   switches.previewSceneGraphTrace = envIsOne("KDOCKW_PREVIEW_SG_TRACE");
   switches.previewCaptureMetrics = envIsOne("KDOCKW_PREVIEW_METRICS");
+  const QString filterTest = qEnvironmentVariable("KDOCKW_PREVIEW_FILTER_TEST");
+  if (filterTest == QLatin1String("linear")) {
+    switches.previewFilterTest = filterTest;
+  }
 #endif
 
   if (switches.testBadgeTextQt && switches.testBadgeTextNative) {
@@ -110,6 +115,7 @@ void clearDiagnosticSwitchEnvironment() {
       "KDOCKW_PREVIEW_SOURCE_TEST",
       "KDOCKW_PREVIEW_SG_TRACE",
       "KDOCKW_PREVIEW_METRICS",
+      "KDOCKW_PREVIEW_FILTER_TEST",
   };
   for (const char *name : names) {
     qunsetenv(name);
@@ -165,6 +171,7 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
   m_previewSourceMode = switches.previewSourceMode;
   m_previewSceneGraphTrace = switches.previewSceneGraphTrace;
   m_previewCaptureMetrics = switches.previewCaptureMetrics;
+  m_previewFilterTest = switches.previewFilterTest;
 
   if (m_debugEnabled) {
     QJsonObject record{
@@ -183,6 +190,7 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
     record.insert(QStringLiteral("previewSourceMode"), m_previewSourceMode);
     record.insert(QStringLiteral("previewSceneGraphTrace"), m_previewSceneGraphTrace);
     record.insert(QStringLiteral("previewCaptureMetrics"), m_previewCaptureMetrics);
+    record.insert(QStringLiteral("previewFilterTest"), m_previewFilterTest);
     emitRecord(record);
   }
 }
@@ -196,6 +204,18 @@ void IconDiagnostics::prepareProcessEnvironment() {
 
 bool IconDiagnostics::previewSceneGraphTraceEnabled() {
   return switchesForInstance().previewSceneGraphTrace;
+}
+
+bool IconDiagnostics::previewCaptureMetricsEnabled() {
+  return switchesForInstance().previewCaptureMetrics;
+}
+
+QString IconDiagnostics::previewFilterTestMode() {
+  return switchesForInstance().previewFilterTest;
+}
+
+QString IconDiagnostics::previewFilterTest() const {
+  return m_previewFilterTest;
 }
 
 bool IconDiagnostics::debugEnabled() const { return m_debugEnabled; }

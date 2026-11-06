@@ -71,7 +71,7 @@ CONTEXT_FIELDS = (
     "debian_revision",
 )
 
-TAG_RE = re.compile(r"^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
+TAG_RE = re.compile(r"^(?:kdockw-)?v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 REPOSITORY_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,100}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -397,11 +397,13 @@ def result(channel: str, status: str, detail: str, **extra: Any) -> dict:
 
 
 def parse_tag(tag: str) -> str:
-    """Return ``X.Y.Z`` for a ``vX.Y.Z`` tag, or raise."""
+    """Return ``X.Y.Z`` for a legacy or namespaced KDockW release tag."""
     match = TAG_RE.match(tag)
     if not match:
-        raise ReleaseError(f"tag {tag!r} is not a vX.Y.Z semantic version tag")
-    return tag[1:]
+        raise ReleaseError(
+            f"tag {tag!r} is not a vX.Y.Z or kdockw-vX.Y.Z semantic version tag"
+        )
+    return ".".join(match.groups())
 
 
 def asset_name(version: str) -> str:

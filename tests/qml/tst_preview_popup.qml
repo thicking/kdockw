@@ -6,10 +6,12 @@
 // PipeWire/ScreencastingRequest are inert mocks (no live frames).
 import QtQuick
 import QtTest
+import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import kdockw.test 1.0
 import "../../src/qml" as KDockW
 import "../../src/qml/BadgeTextColor.js" as BadgeTextColor
+import "../../src/qml/PreviewBorderColor.js" as PreviewBorderColor
 import "TestUtils.js" as T
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
@@ -100,6 +102,10 @@ Item {
             return T.findFirst(container(popup), c => c.radius !== undefined && c.shadow !== undefined)
         }
 
+        function rgbHex(color) {
+            return color.toString().slice(-6).toLowerCase()
+        }
+
         function test_hiddenUntilControllerShows() {
             let popup = makePopup()
             verify(!container(popup).visible)
@@ -120,6 +126,56 @@ Item {
             compare(t.childIndex, -1)
             compare(t.winId, "kate-1")
             compare(t.parentIndex, 0)
+        }
+
+        function test_popupEdgeOffsetTracksClassicZoomWithoutChangingCardSize_data() {
+            return [
+                { tag: "top", edge: 0 }, { tag: "bottom", edge: 1 },
+                { tag: "left", edge: 2 }, { tag: "right", edge: 3 },
+            ]
+        }
+
+        function test_popupAnchorIsFixedAtConfiguredMaximumZoomAcrossAnimation_data() {
+            return [
+                { tag: "top", edge: 0 }, { tag: "bottom", edge: 1 },
+                { tag: "left", edge: 2 }, { tag: "right", edge: 3 },
+            ]
+        }
+
+        function test_popupAnchorIsFixedAtConfiguredMaximumZoomAcrossAnimation(data) {
+            DockView.edge = data.edge
+            let preview = makePopup()
+            show(0, "Kate")
+            waitThumbs(preview, 1)
+            let cardPopup = T.findFirst(preview, o => o.objectName === "previewCardPopup")
+            verify(cardPopup)
+            const width = cardPopup.width
+            const height = cardPopup.height
+
+            PreviewController.updatePreviewAnchorGeometry(100, 48, 80, 24, 8)
+            const maxZoomX = cardPopup.x
+            const maxZoomY = cardPopup.y
+            if (data.edge === 0) compare(maxZoomY, 24)
+            else if (data.edge === 1) compare(maxZoomY, cardPopup.parent.height - height - 24)
+            else if (data.edge === 2) compare(maxZoomX, 24)
+            else compare(maxZoomX, cardPopup.parent.width - width - 24)
+
+            // Partial and zero zoom are transient icon states. They must not
+            // change the popup's cross-axis anchor from the maximum-zoom edge.
+            for (const animatedOverflow of [0, 12, 24]) {
+                PreviewController.simulatedCurrentZoomOverflow = animatedOverflow
+                compare(cardPopup.x, maxZoomX)
+                compare(cardPopup.y, maxZoomY)
+            }
+
+            compare(cardPopup.width, width)
+            compare(cardPopup.height, height)
+
+            // Settings may change while the popup is visible; a fresh maximum
+            // geometry moves it directly to the newly configured anchor.
+            PreviewController.updatePreviewAnchorGeometry(100, 48, 80, 0, 8)
+            if (data.edge === 0 || data.edge === 1) compare(cardPopup.y, data.edge === 0 ? 0 : cardPopup.parent.height - height)
+            else compare(cardPopup.x, data.edge === 2 ? 0 : cardPopup.parent.width - width)
         }
 
         function test_cpuOnlyModeDisablesDmaBufFromCaptureCreation() {
@@ -247,6 +303,73 @@ Item {
             compare(ts.map(t => t.isMinimized), [false, false, true])
             let header = T.findFirst(popup, o => o.text === "Konsole" && o.font !== undefined)
             verify(header && header.visible, "app name header missing")
+        }
+
+        function test_inactiveBordersAdaptLiveAndPreserveActiveAccent() {
+            let popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const frames = ts.map(t => T.findFirst(t,
+                o => o.objectName === "previewThumbnailContainer"))
+            const borders = ts.map(t => T.findFirst(t,
+                o => o.objectName === "previewInactiveBorder"))
+            verify(frames.every(Boolean) && borders.every(Boolean))
+
+            const cornerRadius = DockSettings.cornerRadius
+            const initialSize = ts.map(t => [t.thumbnailWidth, t.thumbnailHeight])
+            DockView.backgroundColor = "#22262c"
+            tryVerify(() => rgbHex(borders[1].border.color)
+                === PreviewBorderColor.colorForSurface(
+                    ts[1].panelColor, Kirigami.Theme.backgroundColor, false).slice(-6))
+
+            verify(borders[1].visible && borders[2].visible,
+                   "all inactive grouped windows, including minimized, need an outline")
+            compare(borders[1].border.width, 1)
+            compare(borders[1].radius, ts[1].thumbnailRadius)
+            compare(frames[0].border.width, 2)
+            compare(frames[0].border.color, Kirigami.Theme.highlightColor,
+                    "the active window keeps the KDE accent border")
+            compare(borders[0].visible, false)
+
+            const darkColor = borders[1].border.color.toString()
+            DockView.backgroundColor = "#f2efe9"
+            tryVerify(() => borders[1].border.color.toString() !== darkColor)
+            const lightExpected = PreviewBorderColor.colorForSurface(
+                ts[1].panelColor, Kirigami.Theme.backgroundColor, false)
+            compare(rgbHex(borders[1].border.color), lightExpected.slice(-6))
+
+            DockView.backgroundColor = Qt.rgba(0.18, 0.25, 0.35, 0.38)
+            const translucentExpected = PreviewBorderColor.colorForSurface(
+                ts[1].panelColor, Kirigami.Theme.backgroundColor, false)
+            tryVerify(() => rgbHex(borders[1].border.color)
+                === translucentExpected.slice(-6))
+            compare(frames[0].border.color, Kirigami.Theme.highlightColor)
+            compare(DockSettings.cornerRadius, cornerRadius)
+            compare(ts.map(t => [t.thumbnailWidth, t.thumbnailHeight]), initialSize)
+        }
+
+        function test_inactiveBorderHoverOnlyStrengthensNeutralContrast() {
+            let popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const inactive = ts[1]
+            const border = T.findFirst(inactive,
+                o => o.objectName === "previewInactiveBorder")
+            verify(border && border.visible)
+
+            DockView.backgroundColor = "#30343a"
+            const restingRatio = PreviewBorderColor.surfaceContrastRatio(
+                border.border.color, inactive.panelColor, Kirigami.Theme.backgroundColor)
+            const center = inactive.mapToItem(stage,
+                inactive.thumbnailWidth / 2, inactive.thumbnailHeight / 2)
+            mouseMove(stage, center.x, center.y)
+            tryCompare(inactive, "pointerHovered", true)
+            const hoveredRatio = PreviewBorderColor.surfaceContrastRatio(
+                border.border.color, inactive.panelColor, Kirigami.Theme.backgroundColor)
+            verify(hoveredRatio > restingRatio)
+            compare(border.border.color.r, border.border.color.g)
+            compare(border.border.color.g, border.border.color.b)
+            compare(border.border.width, 1)
         }
 
         function test_minimizedWindowRetainsItsReadyThumbnail() {
@@ -407,11 +530,15 @@ Item {
         function test_closeButtonClosesThatWindow() {
             let popup = makePopup()
             show(1, "Konsole")
-            waitThumbs(popup, 3)
-            let t = thumbs(popup)[2]
-            let close = T.findFirst(t, o => o.objectName === "previewCloseButton")
+            const ts = waitThumbs(popup, 3)
+            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
+            const thumbnailCenter = ts[2].mapToItem(stage,
+                ts[2].thumbnailWidth / 2, ts[2].thumbnailHeight / 2)
+            mouseMove(stage, thumbnailCenter.x, thumbnailCenter.y)
+            tryCompare(ts[2], "pointerHovered", true)
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
+            mouseMove(stage, closeCenter.x, closeCenter.y)
             mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
@@ -423,8 +550,7 @@ Item {
             let popup = makePopup()
             show(1, "Konsole")
             waitThumbs(popup, 3)
-            const t = thumbs(popup)[2]
-            const close = T.findFirst(t, o => o.objectName === "previewCloseButton")
+            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
             const background = close.background
             const cross = T.findFirst(close, o => o.objectName === "previewCloseCross")
@@ -464,7 +590,88 @@ Item {
             mouseRelease(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
-            compare(DockModel.tasksModel.lastRequestChild, 2)
+            compare(DockModel.tasksModel.lastRequestChild, 0,
+                    "without a hovered or keyboard-focused target, close the active group window")
+        }
+
+        function test_closeButtonIsAnchoredToTopRightHeader() {
+            let popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const header = T.findFirst(popup, o => o.objectName === "previewHeader")
+            const iconSlot = T.findFirst(popup, o => o.objectName === "previewAppIconSlot")
+            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
+            verify(close, "close button not found")
+            verify(header && iconSlot, "header app icon or row missing")
+            compare(iconSlot.x, 0)
+            compare(close.x + close.width, header.width)
+            compare(close.y + close.height / 2, iconSlot.y + iconSlot.height / 2)
+            compare(iconSlot.x, header.width - close.x - close.width,
+                    "the app icon and close control have symmetric side insets")
+            compare(close.width, 22)
+            compare(close.height, 22)
+            const frame = T.findFirst(ts[0], o => o.objectName === "previewThumbnailContainer")
+            verify(frame && header.mapToItem(popup, 0, header.height).y
+                   <= frame.mapToItem(popup, 0, 0).y,
+                   "the close control must remain in the header above the window image")
+        }
+
+        function test_closeButtonPositionAndHeaderHeightAcrossSizePresets_data() {
+            const sizes = [
+                { tag: "compact", width: 180, height: 113 },
+                { tag: "standard", width: 220, height: 138 },
+                { tag: "enlarged", width: 260, height: 163 },
+                { tag: "large", width: 320, height: 200 },
+            ]
+            const edges = ["top", "bottom", "left", "right"]
+            const rows = []
+            for (const size of sizes) {
+                for (let edge = 0; edge < edges.length; edge++) {
+                    rows.push({
+                        tag: size.tag + "-" + edges[edge],
+                        width: size.width,
+                        height: size.height,
+                        edge,
+                    })
+                }
+            }
+            return rows
+        }
+
+        function test_closeButtonPositionAndHeaderHeightAcrossSizePresets(data) {
+            DockView.edge = data.edge
+            DockSettings.previewThumbnailSize = data.width
+            DockSettings.previewMaximumHeight = data.height
+            const popup = makePopup()
+            show(0, "A very long application title that must be shortened")
+            const ts = waitThumbs(popup, 1)
+            const header = T.findFirst(popup, o => o.objectName === "previewHeader")
+            const appName = T.findFirst(popup, o => o.objectName === "previewAppName")
+            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
+            verify(header && appName && close)
+            tryCompare(header, "height", 22)
+            tryVerify(() => header.width > 0, 2000,
+                      "header layout must settle to the preview card content width")
+            compare(close.x + close.width, header.width)
+            verify(appName.x + appName.width <= close.x,
+                   "elided application title must not overlap the close button")
+            compare(ts[0].thumbnailWidth, data.width)
+            compare(ts[0].thumbnailHeight, data.width / 1.6)
+        }
+
+        function test_closeButtonTargetsKeyboardFocusedGroupedWindow() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            waitThumbs(popup, 3)
+            PreviewController.previewKeyboardActive = true
+            PreviewController.focusedThumbnailIndex = 1
+            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
+            verify(close)
+            const center = close.mapToItem(stage, close.width / 2, close.height / 2)
+            mouseClick(stage, center.x, center.y)
+            tryCompare(DockModel.tasksModel, "closeRequests", 1)
+            compare(DockModel.tasksModel.lastRequestRow, 1)
+            compare(DockModel.tasksModel.lastRequestChild, 1)
         }
 
         function test_thumbnailSizeFollowsSetting() {
@@ -485,6 +692,45 @@ Item {
             tryVerify(() => PreviewController.contentHeight === container(popup).height)
         }
 
+        function test_readyMadeThumbnailSizesUseExistingSettingsImmediately_data() {
+            const sizes = [
+                { name: "compact", width: 180, maximumHeight: 113, expectedHeight: 112.5 },
+                { name: "standard", width: 220, maximumHeight: 138, expectedHeight: 137.5 },
+                { name: "enlarged", width: 260, maximumHeight: 163, expectedHeight: 162.5 },
+                { name: "large", width: 320, maximumHeight: 200, expectedHeight: 200 },
+            ]
+            const edges = ["top", "bottom", "left", "right"]
+            let rows = []
+            for (const size of sizes) {
+                for (let edge = 0; edge < edges.length; ++edge) {
+                    rows.push({
+                        tag: size.name + "-" + edges[edge],
+                        width: size.width,
+                        maximumHeight: size.maximumHeight,
+                        expectedHeight: size.expectedHeight,
+                        edge,
+                    })
+                }
+            }
+            return rows
+        }
+
+        function test_readyMadeThumbnailSizesUseExistingSettingsImmediately(data) {
+            DockView.edge = data.edge
+            DockSettings.previewThumbnailSize = data.width
+            DockSettings.previewMaximumHeight = data.maximumHeight
+            const popup = makePopup()
+            show(0, "Kate")
+            const thumbnail = waitThumbs(popup, 1)[0]
+            compare(thumbnail.thumbnailWidth, data.width)
+            compare(thumbnail.thumbnailHeight, data.expectedHeight)
+            compare(thumbnail.captureViewportWidth, data.width - 2 * thumbnail.captureBorderWidth)
+            compare(thumbnail.captureViewportHeight, data.expectedHeight - 2 * thumbnail.captureBorderWidth)
+            const frame = T.findFirst(thumbnail, item => item.objectName === "previewThumbnailContainer")
+            verify(frame)
+            compare(frame.width, data.width)
+        }
+
         function test_thumbnailUsesFixedViewportAndCoverGeometry() {
             DockSettings.previewThumbnailSize = 320
             DockSettings.previewMaximumHeight = 180
@@ -493,6 +739,7 @@ Item {
             let t = waitThumbs(popup, 1)[0]
             t.isActive = false
             tryVerify(() => t.captureItem !== null)
+            t.captureItem.ready = true
             compare(t.thumbnailWidth, 288)
             compare(t.thumbnailHeight, 180)
             compare(t.captureViewportWidth, 288)
@@ -541,6 +788,7 @@ Item {
             let popup = makePopup()
             show(1, "Konsole")
             let ts = waitThumbs(popup, 3)
+            ts.forEach(item => item.captureItem.ready = true)
             ts[0].captureItem.streamSize = Qt.size(1920, 1080)
             ts[1].captureItem.streamSize = Qt.size(1080, 1920)
             ts[2].captureItem.streamSize = Qt.size(1000, 1000)
@@ -644,6 +892,7 @@ Item {
             let ts = waitThumbs(popup, 3)
             let t = ts[1]
             compare(t.winId, "k-2", "cover geometry remains attached to the child window UUID")
+            t.captureItem.ready = true
             t.captureItem.streamSize = data.size
             tryVerify(() => t.sourceAspectRatio === data.size.width / data.size.height)
 
@@ -661,6 +910,39 @@ Item {
                    "source aspect and dock edge never alter card dimensions")
             verify(ts.every(item => item.captureItem && item.captureItem.visible),
                    "all grouped PipeWire sources remain active across dock edges")
+        }
+
+        function test_coverCropIgnoresUntrustedPipeWireSizesUntilAValidFrame() {
+            let popup = makePopup()
+            show(0, "Kate")
+            let t = waitThumbs(popup, 1)[0]
+            tryVerify(() => t.captureItem !== null)
+            compare(t.sourceAspectRatio, 1.6)
+
+            t.captureItem.streamSize = Qt.size(3801189, 2097152)
+            compare(t.sourceAspectRatio, 1.6, "unready format dimensions must not resize the cover item")
+            t.captureItem.streamSize = Qt.size(116, 7929972)
+            compare(t.sourceAspectRatio, 1.6, "pathological portrait dimensions must be rejected")
+            verify(t.captureContentHeight < 1000, "invalid dimensions cannot create an offscreen-sized item")
+
+            t.captureItem.ready = true
+            t.captureItem.streamSize = Qt.size(1581, 904)
+            tryVerify(() => Math.abs(t.sourceAspectRatio - 1581 / 904) < 0.000001)
+            const acceptedRatio = t.sourceAspectRatio
+            t.captureItem.ready = false
+            t.captureItem.streamSize = Qt.size(116, 7929972)
+            compare(t.sourceAspectRatio, acceptedRatio,
+                    "a paused stream retains its last valid aspect ratio")
+
+            t.captureItem.ready = true
+            t.captureItem.streamSize = Qt.size(3801189, 2097152)
+            compare(t.sourceAspectRatio, acceptedRatio,
+                    "oversized negotiated dimensions cannot replace a valid ratio")
+            t.captureItem.streamSize = Qt.size(116, 7929972)
+            compare(t.sourceAspectRatio, acceptedRatio,
+                    "invalid aspect ratios cannot resize the live preview")
+            t.captureItem.streamSize = Qt.size(900, 1600)
+            tryCompare(t, "sourceAspectRatio", 900 / 1600)
         }
 
         function test_cardTracksPanelColorAndAdaptiveText() {

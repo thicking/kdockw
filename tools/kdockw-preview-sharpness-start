@@ -16,9 +16,13 @@ fail() {
     exit 1
 }
 
-[[ $# -le 1 ]] || fail "usage: $0 [auto|cpu-only] (trace metrics are enabled)"
+[[ $# -le 2 ]] || fail "usage: $0 [auto|cpu-only] [baseline|linear]"
 mode="${1:-cpu-only}"
 [[ "$mode" == auto || "$mode" == cpu-only ]] || fail "capture mode must be auto or cpu-only"
+filter_mode="${2:-baseline}"
+[[ "$filter_mode" == baseline || "$filter_mode" == linear ]] || fail "filter mode must be baseline or linear"
+filter_override=""
+[[ "$filter_mode" == linear ]] && filter_override=linear
 [[ -x "$binary" ]] || fail "diagnostic binary is missing or not executable: $binary"
 [[ -x "$metadata_checker" ]] || fail "KService metadata checker is missing: $metadata_checker"
 [[ -f "${build_dir}/CMakeCache.txt" ]] || fail "diagnostic CMake cache is missing"
@@ -55,7 +59,7 @@ for xdg_name in XDG_CONFIG_HOME XDG_CONFIG_DIRS XDG_DATA_HOME XDG_DATA_DIRS XDG_
 done
 grep -Fxq 'KWIN_WAYLAND_NO_PERMISSION_CHECKS=1' <<<"$manager_env" \
     && fail "KWin permission checks are disabled in the user systemd manager"
-if grep -Eq '^(KDOCKW_DIAGNOSTIC_CONFIG|KDOCKW_PREVIEW_CAPTURE_MODE|KDOCKW_PREVIEW_CLIP_TEST|KDOCKW_PREVIEW_SOURCE_TEST|KDOCKW_PREVIEW_SG_TRACE|KDOCKW_PREVIEW_METRICS|QT_LOGGING_RULES|QT_LOGGING_CONF)=' <<<"$manager_env"; then
+if grep -Eq '^(KDOCKW_DIAGNOSTIC_CONFIG|KDOCKW_TASK_DIAGNOSTICS|KDOCKW_PREVIEW_CAPTURE_MODE|KDOCKW_PREVIEW_CLIP_TEST|KDOCKW_PREVIEW_SOURCE_TEST|KDOCKW_PREVIEW_SG_TRACE|KDOCKW_PREVIEW_METRICS|KDOCKW_PREVIEW_FILTER_TEST|QT_LOGGING_RULES|QT_LOGGING_CONF)=' <<<"$manager_env"; then
     fail "user systemd manager contains a pre-existing KDockW or Qt experiment variable"
 fi
 
@@ -90,9 +94,11 @@ systemd-run --user --no-block --collect --unit="$service" \
     --setenv="KDOCKW_PREVIEW_CAPTURE_MODE=${mode}" \
     --setenv=KDOCKW_PREVIEW_CLIP_TEST=rounded \
     --setenv=KDOCKW_PREVIEW_SOURCE_TEST=pipewire \
+    --setenv=KDOCKW_PREVIEW_SG_TRACE=1 \
     --setenv=KDOCKW_PREVIEW_METRICS=1 \
+    --setenv="KDOCKW_PREVIEW_FILTER_TEST=${filter_override}" \
     "$binary"
 
-printf 'Started %s: capture=%s, rounded PipeWire preview, size/DPR metrics enabled.\n' "$service" "$mode"
+printf 'Started %s: capture=%s, rounded PipeWire preview, filter=%s.\n' "$service" "$mode" "$filter_mode"
 printf 'Binary: %s\nDesktop metadata: %s\nIsolated settings: %s\nLog: %s\n' \
     "$canonical_binary" "$desktop_file" "$config_file" "$log_file"

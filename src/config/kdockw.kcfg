@@ -314,7 +314,7 @@
 
     <entry name="PreviewDockGap" type="Int">
       <label>Gap between preview card and dock</label>
-      <default>4</default>
+      <default>2</default>
       <min>0</min>
       <max>32</max>
     </entry>

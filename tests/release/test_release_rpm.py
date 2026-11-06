@@ -104,6 +104,26 @@ class ObsInputs(unittest.TestCase):
         self.assertEqual(rpm.service_revision(service), "v1.2.3")
         self.assertIn("@PARENT_TAG@", service)
 
+    def test_dsc_source_checksum_is_generated_from_verified_archive_bytes(self) -> None:
+        archive = b"verified source archive"
+        dsc_path = self.root / "packaging" / "obs" / "kdockw.dsc"
+        dsc_path.write_text(
+            dsc_path.read_text() + "Files:\n deadbeef 999 kdockw-1.2.3.tar.gz\n"
+        )
+        staged = rpm.build_obs_inputs(
+            self.root,
+            tag="kdockw-v1.2.3",
+            version="1.2.3",
+            debian_revision="1",
+            clone_url=CLONE,
+            source_archive=archive,
+        )
+        dsc = staged["kdockw.dsc"].decode()
+        expected = hashlib.md5(archive).hexdigest()
+        self.assertIn(f"Files:\n {expected} {len(archive)} kdockw-1.2.3.tar.gz", dsc)
+        self.assertNotIn("deadbeef", dsc)
+        self.assertNotIn("999 kdockw-1.2.3.tar.gz", dsc)
+
     def test_staging_is_deterministic(self) -> None:
         self.assertEqual(rpm.md5_map(inputs(self.root)), rpm.md5_map(inputs(self.root)))
 
@@ -388,6 +408,8 @@ class Versions(unittest.TestCase):
     def test_branch_is_not_tag_version(self) -> None:
         self.assertIsNone(rpm.tag_version("master"))
         self.assertEqual(rpm.tag_version("v0.10.0"), "0.10.0")
+        self.assertEqual(rpm.tag_version("kdockw-v0.3.0"), "0.3.0")
+        self.assertIsNone(rpm.tag_version("kdockw-v01.2.3"))
 
     def test_md5_matches_obs_entry_format(self) -> None:
         self.assertEqual(rpm.md5_map({"a": b"x"})["a"], hashlib.md5(b"x").hexdigest())

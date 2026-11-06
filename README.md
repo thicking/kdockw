@@ -121,7 +121,7 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 KDockW source builds are available. KDockW v0.1.0 is published as the first independent stable release. Source and verified release files are available from [GitHub Releases](https://github.com/thicking/kdockw/releases). See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
-The working tree prepares local candidate v0.1.2 for verification. It has not
+The working tree prepares local candidate v0.3.0 for verification. It has not
 been published; release downloads below remain the verified v0.1.0 assets.
 
 ### Linux package targets

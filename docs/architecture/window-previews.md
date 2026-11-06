@@ -28,17 +28,18 @@ include the visual effect. The initial visual review found the card had used
 independently of the dock. The card, thumbnail backing, and existing
 Firefox/app-name tooltip use `DockView.backgroundColor` (the resolved panel
 style, tint/accent, and opacity) with a theme fallback only when the panel color
-is transparent. The close control uses `Kirigami.Icon` with the active theme's
-`window-close-symbolic` asset as a color mask. This avoids selecting a theme's
-`window-close` variant that may be a filled traffic-light control with a cutout
-cross. The resting glyph uses the contrast-selected panel foreground without a
-second background disc; hover adds the theme's negative-color surface and
-selects a contrasting glyph color. QML tests verify that the symbolic icon
-resolves, is mask-tinted, remains contrast-readable at rest and hover, and
-retains grouped-window close behavior. Card text and its thin outline select a
-foreground with at least 4.5:1 contrast against the resolved panel surface.
-Radius and soft shadow use existing dock settings. The tooltip change is
-styling only; the
+is transparent. Inactive thumbnails have a separate one-logical-pixel neutral
+outline; its grayscale shade is selected from sRGB relative luminance of the
+configured card color composited over the known KDE window surface. This is a
+stable estimate for translucent cards, not a reading of wallpaper or the
+actual blurred compositor output. Hover modestly increases contrast without
+changing the neutral hue. The active window keeps the existing two-pixel
+`Kirigami.Theme.highlightColor` outline. The inactive border is a lightweight
+rounded Rectangle over the frame; it does not change capture viewport geometry
+or add an offscreen layer. Card text retains its contrast-selected foreground,
+and radius and soft shadow use existing dock settings. The close control uses
+the approved red-circle state in the top-right of the shared header. The
+tooltip change is styling only; the
 separate Application Name Tooltip task still owns its behavior and switching
 rules.
 
@@ -119,19 +120,59 @@ node. Neither test tier claims GPU stencil or KWin visual acceptance.
 
 The saved settings are `PreviewThumbnailSize` (120–320 px, default 200),
 `PreviewMaximumHeight` (80–300 px, default 180), `PreviewCardPadding` (4–24 px,
-default 8), and `PreviewDockGap` (0–32 px, default 4). Width and height define
+default 8), and `PreviewDockGap` (0–32 px, default 2). Width and height define
 the stable 16:10 outer preview; stream dimensions only change the centered Cover
 rectangle. Before stream dimensions arrive, sizing uses the 1.6:1 fallback.
 The previous thumbnail-width key is unchanged, so old user values remain
 effective. These settings are saved through KConfig and the dock gap reapplies
 the existing layer-shell margins live.
 
-The preview layer-shell margin now equals the non-reserved panel-bar extent,
-maximum zoom overflow, and configured `PreviewDockGap`. The shadow bounds are
-already inside the preview surface; an extra fixed four-pixel term previously
-increased the visible separation and has been removed. The new factory setting
-reduces the outer shadow gap from 12 px to 4 px while preserving the zoom
-clearance. Existing explicitly saved gap values remain unchanged.
+The icon, QML scene, popup, and preview input/blur regions use logical
+coordinates local to their own layer-shell surface. QML maps the image and
+delegate to the dock scene with `mapToItem(null, ...)`; preview placement does
+not treat `mapToGlobal()` or a top-level window position as an output
+coordinate. This matters on Wayland, where clients may not know a top-level
+surface's global position ([Qt window positioning](https://doc.qt.io/qt-6/application-windows.html)).
+
+For the edge facing the preview, let `d` be the icon's resting distance from
+the corresponding edge of the dock surface, `m` the dock's actual LayerShell
+margin, `g` the configured gap, and `s` the popup's shadow inset. The preview
+margin is `M = m + d + g - s`; for top/left, `d` is the local icon edge, and
+for bottom/right, it is the dock surface extent minus that edge. Floating
+padding is already inside the dock surface and its icon-local geometry; it is
+not an additional output-edge margin. The popup is positioned inside its
+transparent surface using a fixed maximum-zoom anchor, keeping the card clear
+of the icon without following its animation.
+
+The preview surface uses LayerShell exclusive zone `-1`. KWin 6.6.6's
+`LayerShellV1Integration::rearrangeLayer()` anchors negative-zone surfaces to
+the output geometry; zone `0` instead uses the evolving work area. KWin first
+applies positive exclusive zones, including the dock's reservation, then lays
+out zone-zero surfaces. The old preview zone `0` therefore moved the whole
+preview surface away from the dock's reserved area, while the application also
+applied its icon-derived margin. That reservation was the systematic extra
+gap. The protocol documents `-1` as opting out of movement to accommodate
+other surfaces' exclusive zones ([wlr-layer-shell protocol](https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-layer-shell-unstable-v1.xml)); the corresponding [KWin 6.6.6 layout code](https://github.com/KDE/kwin/blob/v6.6.6/src/layershellv1integration.cpp) uses output geometry for negative zones and work-area geometry otherwise.
+
+For the observed 1920×1080 output, 136 px dock surface, icon rest edge 83 px,
+34.92 px zoom overflow, and 2 px requested gap, the actual dock LayerShell
+margin is 0 px; the 3 px floating inset is inside the dock surface. Using the
+actual margin gives preview margin `M = 0 + (136 - 83) + 2 - 8 = 47 px`.
+The prior `M=50 px` also counted the floating inset, while zone zero let KWin
+shift the preview to its reduced work area.
+
+The popup's cross-axis offset is fixed at the maximum expected zoom overflow,
+not the animated per-frame overflow. On bottom/right edges this positions the
+card for the largest icon from the moment it appears; on top/left it uses the
+corresponding outward edge. The card no longer follows the icon during
+zoom-in/zoom-out. Along-axis centering may still change when the hovered task
+changes. The fixed anchor is refreshed when icon geometry, zoom settings, or
+dock edge changes. If zoom is disabled (`maxZoomFactor == 1`), the overflow
+and extra anchor offset are zero. At the maximum expected zoom, the visible gap
+matches the configured `PreviewDockGap` after accounting for the card shadow;
+at lesser animated scales the preview deliberately remains at that maximum
+anchor. Geometry tests cover all four edges; real compositor placement still
+requires owner verification.
 
 ## Preview sharpness and pixel scale
 
@@ -142,21 +183,54 @@ one proportional logical-size scale; the QQuickWindow then maps that geometry
 to output pixels using the screen DPR. Rounded clipping does not create a
 second texture pass.
 
-KPipeWire exposes `streamSize`, the source frame size after the first frame.
-The viewport has fixed logical dimensions, while its physical output extent is
-the logical size multiplied by the preview window DPR. Sharpness depends on the
-ratio of these values: a larger output than the captured frame requires
-upsampling. The current owner-visible logs did not contain a frame size and DPR
-pair, so the source-resolution limitation has not been established for the
-reported blur. No filter or capture-mode change is justified without that
-measurement.
+KPipeWire exposes `streamSize`, but diagnostics observed transient dimensions
+while the source was not ready and still connecting. The values included
+3801189×2097152 and 116×7929972; the latter produced a Cover item over 13.6
+million logical pixels high. Both occurred with `ready=false` before a valid
+frame. Cover now keeps the 1.6:1 fallback until a frame is ready, then accepts
+only positive dimensions up to 32768 per side, at most 268435456 pixels, and
+an aspect ratio in [1/32, 32]. Invalid updates retain the last valid ratio;
+changing UUID resets it for the new window.
+
+For the recorded valid CPU-only example, the PipeWire frame was 1581×904 pixels,
+the viewport 196×121 logical pixels, and DPR 1. The Cover content was about
+211.62×121 physical pixels, so the frame was downsampled about 7.5× in each
+axis after centered horizontal cropping. This establishes substantial source
+downscaling for that sample; it does not establish the cause of the remaining
+visual softness or justify changing the production sampling filter. Production
+filtering remains unchanged; a diagnostic-only Linear override is available for
+controlled visual A/B.
+
+Source inspection of KPipeWire 6.6.4 and Qt 6.10.2 established the sampler
+baseline: `PipeWireSourceItem::updatePaintNode()` creates a `QSGImageNode` but
+does not call `setFiltering()` or `setMipmapFiltering()`. Qt's default image
+node uses `Nearest` filtering and `None` for mipmap filtering. CPU frames are
+wrapped with `QQuickWindow::createTextureFromImage()` without a mipmap option;
+the DMA-BUF path also imports a texture without mip levels. This explains the
+configured sampling behavior, but does not prove that it causes the reported
+softness. The diagnostic candidate can override the screen image node to
+`Linear` without introducing another texture or processing pass. No visual,
+performance, or memory comparison has yet been measured. Mipmap A/B is not
+available on these current textures because they report no mip levels.
+
+Preview size choices are Compact 180×113, Standard 220×138, Enlarged 260×163,
+and Large 320×200 logical pixels. They write the existing
+`PreviewThumbnailSize` and `PreviewMaximumHeight` keys. No new key or default
+migration is introduced; existing custom values remain custom until a preset
+is selected. The 16:10 slot, Cover crop, and card sizing remain driven by the
+same runtime properties.
 
 In a diagnostic build only, opt-in `KDOCKW_PREVIEW_METRICS=1` logs
 size-only capture metrics: PipeWire frame pixels, window DPR, logical and
 physical viewport/Cover sizes, mapped source bounds, `paintedRect`, and whether
 DMA-BUF is active. It records no window/app names, UUIDs, frame pixels, or
 screenshots. The safe sharpness-test launcher enables this flag explicitly; normal builds and
-other diagnostic runs do not emit these records.
+other diagnostic runs do not emit these records. The review launcher can
+compare the current sampler and Linear mode with
+`tools/kdockw-preview-sharpness-start cpu-only baseline` and
+`tools/kdockw-preview-sharpness-start cpu-only linear`. Its opt-in Scene Graph
+trace reports the image node's geometry, filter, mipmap filter, texture size,
+and mipmap availability once per distinct state. It stores no frames.
 
 ## Minimized-window lifecycle
 

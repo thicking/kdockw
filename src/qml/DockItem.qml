@@ -258,9 +258,13 @@ Item {
     Timer {
         id: delegateGeometryTimer
         interval: 0
-        onTriggered: dockItem.publishDelegateGeometry()
+        onTriggered: {
+            dockItem.publishDelegateGeometry()
+            dockItem.previewAnchorGeometryChanged()
+        }
     }
     signal delegateGeometryChanged()
+    signal previewAnchorGeometryChanged()
 
     // Position changes may be animated by the Flow. Let the dock debounce
     // those changes before refreshing all settled delegate slots.
@@ -273,6 +277,8 @@ Item {
     }
     onWidthChanged: scheduleDelegateGeometryPublication()
     onHeightChanged: scheduleDelegateGeometryPublication()
+    onIconSizeChanged: scheduleDelegateGeometryPublication()
+    onMaxZoomFactorChanged: scheduleDelegateGeometryPublication()
 
     property bool _noOpOverride: false
     property bool _waitingForWindow: false
@@ -427,6 +433,88 @@ Item {
     // styles ease in/out through main.qml's global zoomAmount, so nothing here
     // animates or retargets per mouse move.
     readonly property real currentScale: zoomScale
+
+    // Return the icon's cross-axis bounds in the dock QML scene (surface-local
+    // logical pixels), plus its resting edge. Do not use mapToGlobal here:
+    // Wayland does not provide reliable global positions for layer surfaces.
+    function previewAnchorGeometry() {
+        const localCorners = [
+            iconImage.mapToItem(dockItem, 0, 0),
+            iconImage.mapToItem(dockItem, iconImage.width, 0),
+            iconImage.mapToItem(dockItem, 0, iconImage.height),
+            iconImage.mapToItem(dockItem, iconImage.width, iconImage.height)
+        ]
+        const surfaceCorners = [
+            iconImage.mapToItem(null, 0, 0),
+            iconImage.mapToItem(null, iconImage.width, 0),
+            iconImage.mapToItem(null, 0, iconImage.height),
+            iconImage.mapToItem(null, iconImage.width, iconImage.height)
+        ]
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+        let surfaceMinX = Infinity, surfaceMaxX = -Infinity
+        let surfaceMinY = Infinity, surfaceMaxY = -Infinity
+        let localMinX = Infinity, localMaxX = -Infinity
+        let localMinY = Infinity, localMaxY = -Infinity
+        for (let i = 0; i < 4; ++i) {
+            minX = Math.min(minX, surfaceCorners[i].x)
+            maxX = Math.max(maxX, surfaceCorners[i].x)
+            minY = Math.min(minY, surfaceCorners[i].y)
+            maxY = Math.max(maxY, surfaceCorners[i].y)
+            surfaceMinX = Math.min(surfaceMinX, surfaceCorners[i].x)
+            surfaceMaxX = Math.max(surfaceMaxX, surfaceCorners[i].x)
+            surfaceMinY = Math.min(surfaceMinY, surfaceCorners[i].y)
+            surfaceMaxY = Math.max(surfaceMaxY, surfaceCorners[i].y)
+            localMinX = Math.min(localMinX, localCorners[i].x)
+            localMaxX = Math.max(localMaxX, localCorners[i].x)
+            localMinY = Math.min(localMinY, localCorners[i].y)
+            localMaxY = Math.max(localMaxY, localCorners[i].y)
+        }
+
+        let restEdgeInSurface, currentEdgeInSurface, maxOverflow, fixedOriginInSurface
+        switch (DockView.edge) {
+        case 0: // Top: preview follows the icon's lower edge.
+            fixedOriginInSurface = dockItem.mapToItem(null, 0, 0).y
+            restEdgeInSurface = fixedOriginInSurface + localMaxY
+            currentEdgeInSurface = maxY
+            maxOverflow = localMaxY * Math.max(0, maxZoomFactor - 1)
+            break
+        case 1: // Bottom: preview follows the icon's upper edge.
+            fixedOriginInSurface = dockItem.mapToItem(null, 0, height).y
+            restEdgeInSurface = fixedOriginInSurface + localMinY - height
+            currentEdgeInSurface = minY
+            maxOverflow = (height - localMinY) * Math.max(0, maxZoomFactor - 1)
+            break
+        case 2: // Left: preview follows the icon's right edge.
+            fixedOriginInSurface = dockItem.mapToItem(null, 0, 0).x
+            restEdgeInSurface = fixedOriginInSurface + localMaxX
+            currentEdgeInSurface = maxX
+            maxOverflow = localMaxX * Math.max(0, maxZoomFactor - 1)
+            break
+        default: // Right: preview follows the icon's left edge.
+            fixedOriginInSurface = dockItem.mapToItem(null, width, 0).x
+            restEdgeInSurface = fixedOriginInSurface + localMinX - width
+            currentEdgeInSurface = minX
+            maxOverflow = (width - localMinX) * Math.max(0, maxZoomFactor - 1)
+            break
+        }
+
+        const overflow = DockView.edge === 1 || DockView.edge === 3
+            ? restEdgeInSurface - currentEdgeInSurface
+            : currentEdgeInSurface - restEdgeInSurface
+        return {
+            coordinateSpace: "dock-surface-logical",
+            iconBoundsInSurface: {
+                x: surfaceMinX, y: surfaceMinY,
+                width: surfaceMaxX - surfaceMinX,
+                height: surfaceMaxY - surfaceMinY
+            },
+            restEdgeInSurface: restEdgeInSurface,
+            currentEdgeInSurface: currentEdgeInSurface,
+            zoomOverflow: Math.max(0, Math.min(maxOverflow, overflow)),
+            maxZoomOverflow: Math.max(0, maxOverflow)
+        }
+    }
+
     readonly property bool _iconDiagEnabled: typeof IconDiagnostics !== "undefined" && IconDiagnostics.debugEnabled
     readonly property bool _iconDiagCrispBadge: _iconDiagEnabled && IconDiagnostics.testBadgeCrisp
     readonly property bool _iconDiagCrispBadgeStable: _iconDiagEnabled && IconDiagnostics.testBadgeCrispStable
@@ -870,7 +958,10 @@ Item {
                               * dockItem._iconDiagBadgeLabelScale
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
-            width: (parent.width - 2) * dockItem._iconDiagBadgeLabelScale
+            // Preserve one logical pixel of clearance around the glyph. The
+            // previous two-pixel inset clipped "999+" at the smallest badge
+            // size with a large font weight even though Text.Fit was enabled.
+            width: (parent.width - 1) * dockItem._iconDiagBadgeLabelScale
             height: (parent.height - 2) * dockItem._iconDiagBadgeLabelScale
             transform: Scale {
                 id: badgeLabelCounterScale

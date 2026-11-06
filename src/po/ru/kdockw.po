@@ -3,10 +3,10 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.1.2\n"
+"Project-Id-Version: KDockW 0.3.0\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
-"PO-Revision-Date: 2026-11-01 20:00+0500\n"
+"PO-Revision-Date: 2026-11-06 00:00+0500\n"
 "Language-Team: Russian\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -399,6 +399,34 @@ msgstr "Если вместо миниатюр окон отображается
 #: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:434
 msgid "Thumbnail width (px)"
 msgstr "Ширина миниатюры (пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Thumbnail size preset"
+msgstr "Размер миниатюры"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Choose a ready-made size. Custom width and height values remain available below."
+msgstr "Выберите готовый размер. Ниже по-прежнему можно задать ширину и высоту вручную."
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Custom size"
+msgstr "Вручную"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Compact (180 × 113 px)"
+msgstr "Компактный (180 × 113 пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Standard (220 × 138 px)"
+msgstr "Стандартный (220 × 138 пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Enlarged (260 × 163 px)"
+msgstr "Увеличенный (260 × 163 пикс.)"
+
+#: src/qml/settings/PreviewPage.qml
+msgid "Large (320 × 200 px)"
+msgstr "Крупный (320 × 200 пикс.)"
 
 #: src/qml/SettingsDialog.qml:103 src/qml/settings/PreviewPage.qml:445
 msgid "Hover delay (ms)"

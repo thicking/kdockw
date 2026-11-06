@@ -46,6 +46,7 @@ class PreviewController : public QObject
     Q_PROPERTY(qreal contentY READ contentY NOTIFY positionChanged)
     Q_PROPERTY(qreal contentWidth READ contentWidth NOTIFY contentSizeChanged)
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentSizeChanged)
+    Q_PROPERTY(qreal previewAnchorOffset READ previewAnchorOffset NOTIFY previewAnchorOffsetChanged)
     Q_PROPERTY(bool cpuCaptureOnly READ cpuCaptureOnly NOTIFY captureModeChanged)
 
     // Preview keyboard navigation state (driven from dock)
@@ -69,6 +70,7 @@ public:
     [[nodiscard]] qreal contentY() const;
     [[nodiscard]] qreal contentWidth() const;
     [[nodiscard]] qreal contentHeight() const;
+    [[nodiscard]] qreal previewAnchorOffset() const;
     [[nodiscard]] bool cpuCaptureOnly() const;
     [[nodiscard]] bool captureModeOverridden() const;
 
@@ -76,11 +78,19 @@ public:
     [[nodiscard]] int focusedThumbnailIndex() const;
 
     /// Show preview for the task at @p index, positioned near the icon.
-    /// @p itemGlobalPos is the icon's global X (horizontal) or Y (vertical),
-    /// as returned by QML mapToGlobal(); it is converted to dock-surface-local
-    /// coordinates by subtracting the dock window's position.
+    /// @p itemSurfacePos is the icon's X (horizontal) or Y (vertical) in the
+    /// dock QML scene, already local to the dock layer-shell surface.
     /// @p itemExtent is the icon's width (horizontal) or height (vertical).
-    Q_INVOKABLE void showPreview(int index, qreal itemGlobalPos, qreal itemExtent);
+    /// @p iconRestEdgeInSurface is the resting icon edge along the cross axis.
+    Q_INVOKABLE void showPreview(int index, qreal itemSurfacePos, qreal itemExtent,
+                                 qreal iconRestEdgeInSurface, qreal maxZoomOverflow,
+                                 qreal shadowMargin);
+    /// Compatibility entry point for C++ geometry tests that pass window/global coordinates.
+    void showPreview(int index, qreal itemGlobalPos, qreal itemExtent);
+    /// Refresh the fixed anchor after icon size, zoom settings, or dock geometry changes.
+    Q_INVOKABLE void updatePreviewAnchorGeometry(qreal itemSurfacePos, qreal itemExtent,
+                                                 qreal iconRestEdgeInSurface,
+                                                 qreal maxZoomOverflow, qreal shadowMargin);
 
     /// Reconfigure preview surface anchors/margins after edge change.
     void updateEdge();
@@ -140,6 +150,7 @@ Q_SIGNALS:
     void parentIndexChanged();
     void positionChanged();
     void contentSizeChanged();
+    void previewAnchorOffsetChanged();
     void captureModeChanged();
     void previewKeyboardActiveChanged();
     void focusedThumbnailIndexChanged();
@@ -177,6 +188,11 @@ private:
     qreal m_contentHeight = 200;
     qreal m_itemPos = 0; // icon position in dock-surface-local coordinates
     qreal m_itemExtent = 0;
+    qreal m_iconRestEdgeInSurface = 0;
+    qreal m_shadowMargin = 0;
+    qreal m_previewAnchorOffset = 0;
+    qreal m_maxPreviewZoomOverflow = 0;
+    bool m_hasIconGeometry = false;
 
     // Preview keyboard navigation state
     bool m_previewKeyboardActive = false;

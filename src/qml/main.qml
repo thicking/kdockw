@@ -501,13 +501,76 @@ Item {
     }
 
     // Show the preview popup centred on the item's VISUAL (zoomed, pushed)
-    // centre; mapToGlobal includes the item's transforms. The extent passed is
-    // the base icon extent so the popup anchors symmetrically around the icon.
+    // centre in the dock surface's scene coordinates. Global window coordinates
+    // are unavailable/reliable for layer-shell surfaces on Wayland.
+    function logPreviewPositionGeometry(stage, geometry) {
+        if (typeof IconDiagnostics === "undefined" || !IconDiagnostics.previewCaptureMetrics)
+            return
+        console.info("[kdockw.preview.position.qml]", JSON.stringify({
+            stage: stage,
+            coordinateSpace: geometry.coordinateSpace,
+            edge: DockView.edge,
+            dockSurfaceLogical: { width: DockView.width, height: DockView.height },
+            iconBoundsInSurface: geometry.iconBoundsInSurface,
+            iconRestEdgeInSurface: geometry.restEdgeInSurface,
+            iconCurrentEdgeInSurface: geometry.currentEdgeInSurface,
+            zoomOverflow: geometry.zoomOverflow,
+            maxZoomOverflow: geometry.maxZoomOverflow
+        }))
+    }
+
     function showPreviewForItem(index, item) {
-        let centre = item.mapToGlobal(item.width / 2, item.height / 2)
+        let centre = item.mapToItem(null, item.width / 2, item.height / 2)
         let ext = DockView.isVertical ? item.height : item.width
         let pos = (DockView.isVertical ? centre.y : centre.x) - ext / 2
-        PreviewController.showPreview(index, pos, ext)
+        const geometry = item.previewAnchorGeometry()
+        logPreviewPositionGeometry("show", geometry)
+        PreviewController.showPreview(index, pos, ext,
+            geometry.restEdgeInSurface, geometry.maxZoomOverflow,
+            Kirigami.Units.smallSpacing * 2)
+    }
+
+    function refreshPreviewAnchorForItem(index, item) {
+        if (!PreviewController.visible || PreviewController.parentIndex !== index)
+            return
+        const centre = item.mapToItem(null, item.width / 2, item.height / 2)
+        const extent = DockView.isVertical ? item.height : item.width
+        const pos = (DockView.isVertical ? centre.y : centre.x) - extent / 2
+        const geometry = item.previewAnchorGeometry()
+        logPreviewPositionGeometry("anchor-refresh", geometry)
+        PreviewController.updatePreviewAnchorGeometry(
+            pos, extent, geometry.restEdgeInSurface, geometry.maxZoomOverflow,
+            Kirigami.Units.smallSpacing * 2)
+    }
+
+    function refreshVisiblePreviewAnchor() {
+        if (!PreviewController.visible || PreviewController.parentIndex < 0)
+            return
+        const item = dockRepeater.itemAt(PreviewController.parentIndex)
+        if (item)
+            refreshPreviewAnchorForItem(PreviewController.parentIndex, item)
+    }
+
+    Connections {
+        target: DockView
+        function onEdgeChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+    }
+
+    Connections {
+        target: DockSettings
+        function onZoomStyleChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onMaxZoomFactorChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onIconSizeChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onIconScaleChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onIconSpacingChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onRunningIndicatorSizeChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onRunningIndicatorPositionChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onFloatingChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onFloatingMarginChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onContentPaddingLeftChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onContentPaddingRightChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onContentPaddingTopChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onContentPaddingBottomChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
     }
 
     // Scaled extent of an item on the SECONDARY axis, in dockPanel coords.
@@ -1450,7 +1513,10 @@ Item {
                         ? root._primaryRestSlotStart(taskDelegate) + height / 2
                         : root._primaryRestSlotStart(taskDelegate) + width / 2
                     onCurrentOffsetChanged: dockPanel.scheduleHoverUpdate()
-                    onCurrentScaleChanged: dockPanel.scheduleHoverUpdate()
+                    onCurrentScaleChanged: {
+                        dockPanel.scheduleHoverUpdate()
+                    }
+                    onPreviewAnchorGeometryChanged: root.refreshPreviewAnchorForItem(index, taskDelegate)
                     onDelegateGeometryChanged: root.scheduleDelegateGeometryRefresh()
 
 

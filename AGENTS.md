@@ -56,6 +56,7 @@ Rules that apply to every agent working on this repository, regardless of harnes
 ## Obsidian Project Documentation
 
 - After completing each KDockW task, update the corresponding existing Obsidian project note with the work actually completed, relevant commit SHAs, verified test results, and discovered limitations.
+- Keep approved roadmap scope synchronized with PM Compass in the Obsidian vault (`Projects/AGENTS.md` and `KDockW/AGENTS.md`): an approved stage is a parent task with independently verifiable results as subtasks. Check for an existing matching card before creating one.
 - Keep implemented, investigated, planned, and externally blocked work clearly distinguished. Do not record a task as complete unless its result is supported by evidence.
 - Reuse the existing KDockW notes and their structure; do not create a duplicate note when an existing history, status, verification, distribution, or research note is the right place.
 - The Obsidian project guide (`KDockW/AGENTS.md`) owns documentation and PM Compass workflow. This file and `.agents/rules/` own repository implementation and release requirements; keep the scopes aligned without duplicating their detailed technical procedures.

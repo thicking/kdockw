@@ -1090,6 +1090,18 @@ Item {
                       "the held item's preview did not return after the menu closed")
             let calls = PreviewController.callsTo("showPreview")
             compare(calls[calls.length - 1].args[0], 1)
+            const item = s.its[1]
+            const args = calls[calls.length - 1].args
+            const geometry = item.previewAnchorGeometry()
+            const centerInSurface = item.mapToItem(null, item.width / 2, item.height / 2)
+            const extent = DockView.isVertical ? item.height : item.width
+            const expectedSurfacePos = (DockView.isVertical ? centerInSurface.y : centerInSurface.x)
+                - extent / 2
+            compare(args[1], expectedSurfacePos,
+                    "preview along-axis position stays in dock-surface scene coordinates")
+            compare(args[3], geometry.restEdgeInSurface,
+                    "preview cross-axis anchor uses the same dock-surface coordinate space")
+            compare(geometry.coordinateSpace, "dock-surface-logical")
             compare(s.dock.hoveredIndex, 1)
             verify(s.dock._zoomActive)
             compare(s.panel.mouseX, s.anchor.x)

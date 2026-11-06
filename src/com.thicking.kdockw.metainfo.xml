@@ -73,10 +73,10 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
-    <release version="0.1.2" date="2026-11-06">
+    <release version="0.3.0" date="2026-11-06">
       <description>
-        <p>Local release candidate prepared for verification; this version has not been published.</p>
-        <p xml:lang="ru">Локальный кандидат подготовлен для проверки; эта версия не опубликована.</p>
+        <p>Window previews now offer rounded, resizable cards for open and minimized windows, with clearer controls and improved icon and badge rendering.</p>
+        <p xml:lang="ru">Предпросмотр окон получил скруглённые настраиваемые карточки для обычных и свёрнутых окон, более понятные элементы управления и улучшенный рендеринг значков и бейджей.</p>
       </description>
     </release>
     <release version="0.1.0" date="2026-11-03">

@@ -1,3 +1,11 @@
+kdockw (0.3.0-1) unstable; urgency=medium
+
+  * Release KDockW 0.3.0 with rounded previews for open and minimized windows.
+  * Add preview size presets and a right-aligned close control in the card header.
+  * Improve icon and notification badge rendering and preview geometry.
+
+ -- thicking <thicking@gmail.com>  Fri, 06 Nov 2026 00:00:00 +0500
+
 kdockw (0.1.2-1) unstable; urgency=medium
 
   * Prepare an unpublished local 0.1.2 candidate with the accepted window-preview redesign.

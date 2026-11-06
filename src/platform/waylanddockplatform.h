@@ -29,6 +29,7 @@ public:
     void setEdge(Edge edge) override;
     void setExclusiveZone(int zone) override;
     void setMargin(int margin) override;
+    [[nodiscard]] int margin() const override;
     void setVisibilityMode(VisibilityMode mode) override;
     void setSize(const QSize &size) override;
     void setInputRegion(const QRegion &region) override;

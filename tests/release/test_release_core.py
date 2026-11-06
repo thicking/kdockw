@@ -133,7 +133,18 @@ class VersionTests(TempDirTest):
 
     def test_tag_format(self) -> None:
         self.assertEqual(parse_tag("v0.10.0"), "0.10.0")
-        for bad in ("0.10.0", "v0.10", "v01.2.3", "v1.2.3-rc1", "v1.2.3/../x"):
+        self.assertEqual(parse_tag("kdockw-v0.10.0"), "0.10.0")
+        self.assertEqual(parse_tag("kdockw-v0.3.0"), "0.3.0")
+        for bad in (
+            "0.10.0",
+            "v0.10",
+            "v01.2.3",
+            "v1.2.3-rc1",
+            "v1.2.3/../x",
+            "kdockw-0.10.0",
+            "kdockw-v01.2.3",
+            "other-v1.2.3",
+        ):
             with self.assertRaises(ReleaseError, msg=bad):
                 parse_tag(bad)
 
