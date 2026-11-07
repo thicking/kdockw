@@ -189,12 +189,11 @@ def test_prev004_close_button_closes_that_window(kdockw: KDockW, apps: TestWindo
     pv.wait_on_screen(kdockw, popup)
     beta = pv.screen_rect(kdockw, kdockw.wait_for(pv.thumb_xpath("Beta")))
     pv.glide_into(kdockw, beta.center)
-    close = pv.screen_rect(kdockw, kdockw.wait_for(pv.close_xpath("Beta")))
-    # Leave Beta through the gap above its thumbnail. A straight diagonal to
-    # the right-aligned header control can cross Gamma and intentionally retarget
-    # the shared close button to that last hovered window.
-    inp.move_path([(beta.center[0], beta.y - 2), close.center], step_ms=20)
-    wait_until(lambda: kdockw.find(pv.close_xpath("Beta")) is not None, message="header close target remains Beta")
+    close = pv.close_button_center(beta)
+    # Leave Beta through the gap above its thumbnail, then move to Beta's own
+    # close control at the right side of its title row.
+    inp.move_path([(beta.center[0], beta.y - 2), close], step_ms=20)
+    wait_until(lambda: kdockw.find(pv.close_xpath("Beta")) is not None, message="Beta close control remains available")
     assert kdockw.preview_visible(), "preview closed while moving the pointer into it"
     inp.click()
 

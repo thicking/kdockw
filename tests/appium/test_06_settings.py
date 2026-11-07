@@ -1536,7 +1536,10 @@ def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
         kdockw.click_item(env.TEST_APP_NAME)
     wait_until(kdockw.preview_visible, message="preview opens through the enabled interaction")
     wait_until(lambda: set(pv.thumb_titles(kdockw)) == {"Alpha", "Beta"}, message="group preview children")
-    width = wait_stable(lambda: Rect.of(kdockw.wait_for(pv.thumb_xpath("Alpha") + "/label")).width)
+    # The direct child label is the title row, which becomes narrower when its
+    # per-window close button is laid out. Measure the accessible thumbnail
+    # item itself to verify the selected preview slot width.
+    width = wait_stable(lambda: Rect.of(kdockw.wait_for(pv.thumb_xpath("Alpha"))).width)
     assert width == 220, f"UI-selected thumbnail width was not applied to the real popup: {width}"
     started = time.monotonic()
     inp.move(W // 2, 20)

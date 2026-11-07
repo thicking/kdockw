@@ -36,8 +36,8 @@ from .waits import wait_stable, wait_until
 #: Seen under CPU contention (sharded runs) on Ubuntu 25.04 and 26.04.
 UNTYPED_BUFFER_WARNING = "invalid buffer type"
 
-#: Thumbnail buttons expose a title label as a direct child. The close
-#: control in the card header is also a direct button, but has no label child.
+#: Thumbnail buttons expose a title label as a direct child. Each thumbnail's
+#: own close control is a nested button under that row.
 THUMB_XPATH = PREVIEW_XPATH + "/button[label]"
 HEADER_XPATH = PREVIEW_XPATH + "/label"
 SEPARATOR_XPATH = PREVIEW_XPATH + "/separator"
@@ -50,9 +50,8 @@ def thumb_xpath(title: str) -> str:
 
 
 def close_xpath(title: str) -> str:
-    # One close control lives in the card header; the hovered thumbnail selects
-    # which grouped window it targets.
-    return f"{PREVIEW_XPATH}/button[@name={_xpath_str('Close ' + title)}]"
+    """Close control belonging to one thumbnail in a grouped preview."""
+    return f"{thumb_xpath(title)}/button[@name={_xpath_str('Close ' + title)}]"
 
 
 def thumb_titles(kdockw: KDockW) -> list[str]:
@@ -63,6 +62,17 @@ def thumb_titles(kdockw: KDockW) -> list[str]:
 
 def screen_rect(kdockw: KDockW, element: WebElement) -> Rect:
     return kdockw.screen_rect(element, "preview")
+
+
+def close_button_center(thumbnail: Rect) -> tuple[int, int]:
+    """Center of a thumbnail's top-right close control in screen coordinates.
+
+    Qt's AT-SPI bridge exposes the ToolButton but may omit its Component
+    interface, so WebDriver cannot always query its rectangle. PreviewThumbnail
+    keeps the close button at the right edge of its 22 px title row; derive its
+    center from the accessible thumbnail item's stable bounds instead.
+    """
+    return thumbnail.x + thumbnail.width - 11, thumbnail.y + 11
 
 
 def fast_pointer_entry(kdockw: KDockW, item: str, timeout: float = 10.0) -> tuple[Rect, float]:
