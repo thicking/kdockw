@@ -42,7 +42,7 @@ family_runtime() {
 family_build() {
     arch_install \
         extra-cmake-modules cmake ninja gcc git pkgconf \
-        qt6-base qt6-wayland kwindowsystem kcoreaddons \
+        qt6-base qt6-wayland kwindowsystem kcoreaddons knotifications \
         kwayland kpipewire wayland plasma-wayland-protocols libxkbcommon
 }
 

@@ -37,7 +37,7 @@ family_build() {
     fedora_install \
         extra-cmake-modules cmake ninja-build gcc-c++ git pkgconf-pkg-config \
         qt6-qtbase-devel qt6-qtbase-private-devel qt6-qtwayland-devel \
-        kf6-kwindowsystem-devel kf6-kcoreaddons-devel \
+        kf6-kwindowsystem-devel kf6-kcoreaddons-devel kf6-knotifications-devel \
         kwayland-devel kpipewire-devel wayland-devel \
         plasma-wayland-protocols-devel libxkbcommon-devel
 }

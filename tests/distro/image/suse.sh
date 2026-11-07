@@ -54,7 +54,7 @@ family_build() {
     suse_install --force-resolution \
         extra-cmake-modules cmake ninja gcc-c++ git pkgconf \
         qt6-base-devel qt6-base-private-devel qt6-wayland-devel qt6-wayland-private-devel \
-        kf6-kwindowsystem-devel kf6-kcoreaddons-devel \
+        kf6-kwindowsystem-devel kf6-kcoreaddons-devel kf6-knotifications-devel \
         kwayland6-devel kpipewire6-devel wayland-devel \
         plasma-wayland-protocols libxkbcommon-devel
 }

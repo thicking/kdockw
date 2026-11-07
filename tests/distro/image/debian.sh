@@ -57,7 +57,8 @@ family_build() {
         extra-cmake-modules cmake ninja-build g++ git pkg-config \
         qt6-base-dev qt6-base-private-dev qt6-base-dev-tools qt6-wayland-dev qt6-wayland-private-dev \
         $(debian_available qt6-wayland-dev-tools) \
-        libkf6windowsystem-dev libkf6coreaddons-dev kwayland-dev libkpipewire-dev \
+        libkf6windowsystem-dev libkf6coreaddons-dev libkf6notifications-dev \
+        kwayland-dev libkpipewire-dev \
         libwayland-dev plasma-wayland-protocols libxkbcommon-dev
 }
 
