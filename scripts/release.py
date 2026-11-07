@@ -59,7 +59,11 @@ from release_common import (  # noqa: E402
 
 DEFAULT_REPOSITORY = "thicking/kdockw"
 PINNED_SIGNERS = ("90798370719E91DDE1D5028AAA660B7C5AB258E7",)
-CHANNELS = ("github", "aur", "obs", "copr", "ppa")
+# GitHub Releases is the only active KDockW publication channel. The adapters
+# below are retained as inactive experiments for possible future use, but they
+# are deliberately excluded from the public CLI and release gate.
+CHANNELS = ("github",)
+INACTIVE_ADAPTERS = ("aur", "obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"
 GATE_JOB_RE = re.compile(r"^Distro E2E \((?P<target>[^)]+)\)$")
 TARGETS_FILE = "tests/distro/targets.tsv"
@@ -791,6 +795,12 @@ def publish(
     *,
     execute: bool,
 ) -> dict:
+    unsupported = sorted(set(channels) - set(CHANNELS))
+    if unsupported:
+        raise ReleaseError(
+            "inactive publication adapters cannot be selected: "
+            + ", ".join(unsupported)
+        )
     checks = trust_checks(context, root, signers, fresh=execute)
     try:
         decision = evaluate_gate(context)
@@ -892,14 +902,14 @@ def _parser() -> argparse.ArgumentParser:
     root_arg(p)
     signer_arg(p)
 
-    p = sub.add_parser("publish", help="plan or (--execute) publish channels")
+    p = sub.add_parser("publish", help="plan or (--execute) publish to GitHub Releases")
     p.add_argument("--context", required=True, type=Path)
     p.add_argument("--channel", required=True, choices=[*CHANNELS, "all"])
     p.add_argument("--execute", action="store_true", help="perform external writes")
     root_arg(p)
     signer_arg(p)
 
-    p = sub.add_parser("status", help="read-only per-channel publication report")
+    p = sub.add_parser("status", help="read-only GitHub Release status")
     p.add_argument("--context", required=True, type=Path)
     p.add_argument("--channel", choices=[*CHANNELS, "all"], default="all")
     root_arg(p, "; when given, local tag checks are included")

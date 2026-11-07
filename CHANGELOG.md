@@ -8,6 +8,24 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-07
+
+KDockW 0.3.1 adds release notifications and more precise controls to the KDE
+Plasma 6 dock for Wayland.
+
+### Added
+
+- Added an optional checker for stable KDockW GitHub Releases, with KDE
+  notifications, manual checks, and a release-page link. Updates are never
+  downloaded or installed automatically.
+
+### Changed
+
+- Moved update-check preferences and status to Settings → About.
+- Added a separate close button beside each title in grouped previews. Each
+  button closes its matching window; single-window previews retain their
+  existing header control.
+
 ## [0.3.0] - 2026-11-07
 
 KDockW 0.3.0 makes window previews easier to follow and customize, with four preview sizes, clearer badges, and refined dock interactions for KDE Plasma 6 on Wayland.

@@ -1,38 +1,40 @@
 # KDockW versioning
 
-KDockW's first standalone stable version was `0.1.0`. Starting with the
-`0.3.0` release, KDockW release tags use the permanent `kdockw-vX.Y.Z` form
-(for example, `kdockw-v0.3.0`). Historical Krema `v0.x.x` tags and release
-notes remain unchanged and are not renamed or reused. The release tools also
-continue to recognize legacy `vX.Y.Z` tags so existing release records remain
-verifiable.
+KDockW's first standalone stable version was `0.1.0`. Starting with `0.3.0`,
+KDockW release tags use the permanent `kdockw-vX.Y.Z` form (for example,
+`kdockw-v0.3.1`). Historical Krema `v0.x.x` tags and release notes remain
+unchanged and are not renamed or reused. The release tools continue to
+recognize legacy `vX.Y.Z` tags so existing records remain verifiable.
 
-The application version is read from `KDOCKW_VERSION`; package source
-checksums must match the exact immutable archive fetched by each recipe. Do
-not carry forward checksums from an older version or use placeholders.
+The application version is read from `KDOCKW_VERSION`; the release tooling
+binds checksums to the exact immutable source archive and package artifacts
+verified for the GitHub Release. Checksums from older versions are never reused
+for published artifacts.
 
 ## Source of truth
 
 `KDOCKW_VERSION` in the top-level `CMakeLists.txt` is the single product-version
 source. It is compiled into `KAboutData` and the `kdockw --version` output. The
-numeric `project(kdockw VERSION ...)` value is derived from its `x.y.z` core only
+numeric `project(kdockw VERSION ...)` value is derived from its `x.y.z` core
 because CMake requires a numeric project version. AppStream records stable
 releases without the `development` type.
 
 Release tooling checks the canonical value and generated metadata against the
 signed release tag. A stable release is not considered published until its
-tagged source passes the full Distro E2E gate and the GitHub assets are verified.
+tagged source passes the full Distro E2E gate and all GitHub assets are
+verified. GitHub Releases is the only active publication channel; packages
+remain built for every supported distribution target in the matrix.
 
 ## Package version forms
 
-Package formats use their own spelling for this prerelease:
+Package formats use their own spelling for development builds:
 
-| Format | Stable version | Development equivalent | Rule |
+| Format | Stable example | Development equivalent | Rule |
 | --- | --- | --- | --- |
-| AppStream | `0.3.0` | `0.3.0-dev` | Stable releases omit `type="development"`; development builds include it. |
-| Arch | `0.3.0` | `0.3.0_pre` | Arch `pkgver` uses `_pre` for a development build; the source tag is `kdockw-vX.Y.Z`. |
-| RPM | `0.3.0` | `0.3.0~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
-| Debian | `0.3.0-1` | `0.3.0~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
+| AppStream | `0.3.1` | `0.3.1-dev` | Stable releases omit `type="development"`; development builds include it. |
+| Arch | `0.3.1` | `0.3.1_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
+| RPM | `0.3.1` | `0.3.1~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
+| Debian | `0.3.1-1` | `0.3.1~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
 
 These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/PKGBUILD.5),
 [RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html), and
@@ -40,20 +42,21 @@ These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/P
 `development` release type and required date follow its
 [release metadata specification](https://www.freedesktop.org/software/appstream/docs/sect-Metadata-Releases.html).
 
-These are metadata mappings, not by themselves proof that a binary package has
-been published. The Arch release adapter renders a tag-specific PKGBUILD and
-replaces its template checksum with the verified immutable source archive hash.
-The checked-in Arch recipe is a source template; publication uses only the
-rendered, hash-verified recipe and generated `.SRCINFO` from the release
-context.
-The CI Distro E2E matrix builds and installs one package for each listed target;
+These metadata mappings do not prove a binary package has been published. The
+CI Distro E2E matrix builds and installs one package for each listed target;
 only artifacts from the full successful matrix for the exact release commit
-are eligible for GitHub Release uploads.
+are eligible for GitHub Release uploads. `SHA256SUMS` covers the source archive
+and every package asset.
+
+The Arch adapter can render a tag-specific PKGBUILD and `.SRCINFO` using the
+verified archive hash. It is inactive and is not used by the current release
+process; the active GitHub publisher uses the release matrix's verified Arch
+package.
 
 The JSON and research files under `packaging/submissions/` and the local
-Flatpak validation package are retained historical receipts for earlier Krema
-or pre-release source snapshots. Their recorded versions are evidence of those
-past checks, not the current KDockW application version or package source.
+Flatpak validation package are historical receipts for earlier Krema or
+pre-release source snapshots. Their versions are evidence of those past checks,
+not the current KDockW application version or package source.
 
 ## Attribution and licenses
 

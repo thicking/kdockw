@@ -113,6 +113,7 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 - **Индикатор выполнения задачи** — например, показывает ход копирования файлов в Dolphin.
 - **Режим «Не беспокоить»** — когда включён системный DND, анимации внимания приостанавливаются.
 - **Остановка по таймеру** — анимация прекращается через заданное время (по умолчанию — через 5 секунд).
+- **Проверка обновлений** — KDockW проверяет стабильные выпуски на GitHub автоматически или по запросу, показывает уведомление KDE и позволяет открыть страницу релиза. Обновления не скачиваются и не устанавливаются автоматически.
 
 ### Мониторы и рабочие столы
 
@@ -153,17 +154,21 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 
 ## Установка
 
-Текущий стабильный выпуск KDockW — версия 0.3.0 от 2026-11-07.
-[Исходный архив, пакеты дистрибутивов и контрольные суммы](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0)
-доступны на GitHub. Подробнее — в [политике версий](docs/releasing/versioning.md)
-и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
+Подготовка KDockW 0.3.1 к выпуску продолжается. Последняя опубликованная
+стабильная версия — [0.3.0](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0);
+её исходный архив, пакеты дистрибутивов и контрольные суммы доступны на GitHub.
+Подробнее — в [политике версий](docs/releasing/versioning.md)
+и [инструкции по выпуску](docs/releasing/release-process.md), а также в
+[инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
 
 ### Целевые Linux-дистрибутивы
 
 Для каждого дистрибутива из списка ниже собирается отдельный пакет. Его
 устанавливают в тестовый образ дистрибутива и запускают набор E2E-проверок
-дока. Файлы v0.3.0 называются `kdockw-0.3.0-<цель>.<формат>`; все 12 целей
-прошли релизную матрицу на коммите, помеченном подписанным тегом.
+дока. После выпуска файлы v0.3.1 будут называться
+`kdockw-0.3.1-<цель>.<формат>`; все целевые дистрибутивы проверяются в матрице
+GitHub Releases. Публикация
+внешних репозиториев не требуется.
 
 | Формат | Целевые дистрибутивы |
 | --- | --- |
@@ -174,10 +179,10 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 Установите загруженный локальный пакет штатным менеджером:
 
 ```bash
-sudo apt install ./kdockw-0.3.0-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.3.0-fedora-44.rpm
-sudo zypper install ./kdockw-0.3.0-opensuse-tumbleweed.rpm
-sudo pacman -U ./kdockw-0.3.0-arch.pkg.tar.zst
+sudo apt install ./kdockw-0.3.1-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.3.1-fedora-44.rpm
+sudo zypper install ./kdockw-0.3.1-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.3.1-arch.pkg.tar.zst
 ```
 
 ```bash

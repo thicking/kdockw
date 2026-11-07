@@ -108,6 +108,7 @@ For implementation and troubleshooting details, see the [window-preview architec
 - **Task Progress Bar** — Progress indicator on dock icons (e.g. file copy in Dolphin)
 - **Do Not Disturb** — Attention animations suppressed when system DND is active
 - **Auto-Stop** — Attention animations stop after configurable duration (default 5s)
+- **Release Update Checker** — Check stable KDockW GitHub Releases automatically or on demand, receive a KDE notification, and open the release page; updates are never downloaded or installed automatically
 
 ### Multi-Monitor & Virtual Desktops
 - **Multi-Monitor Modes** — Primary monitor only, All monitors, Follow active screen, or Selected monitors
@@ -146,14 +147,16 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW 0.3.0 is the current stable release, published on 2026-11-07. Download the [source archive, distro packages, and checksums](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0) from GitHub. See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW 0.3.1 is being prepared for release. The latest published stable version is [0.3.0](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0); its source archive, distro packages, and checksums are available on GitHub. See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
 The release workflow builds one package for each target below, installs it in
-that distribution's test image, and runs the dock E2E suite. The v0.3.0
-release assets are named `kdockw-0.3.0-<target>.<format>`; all 12 supported
-targets passed the release matrix for the signed commit.
+that distribution's test image, and runs the dock E2E suite. The planned v0.3.1
+release assets will be named `kdockw-0.3.1-<target>.<format>`; all supported
+targets must pass the release matrix for the signed commit. GitHub Releases is
+the only active publication channel; no external package repository is
+required.
 
 | Package | Distribution targets |
 | --- | --- |
@@ -164,10 +167,10 @@ targets passed the release matrix for the signed commit.
 Install a downloaded local package with the system package manager:
 
 ```bash
-sudo apt install ./kdockw-0.3.0-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.3.0-fedora-44.rpm
-sudo zypper install ./kdockw-0.3.0-opensuse-tumbleweed.rpm
-sudo pacman -U ./kdockw-0.3.0-arch.pkg.tar.zst
+sudo apt install ./kdockw-0.3.1-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.3.1-fedora-44.rpm
+sudo zypper install ./kdockw-0.3.1-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.3.1-arch.pkg.tar.zst
 ```
 
 ```bash

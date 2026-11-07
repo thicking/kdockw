@@ -1,8 +1,7 @@
-# Distro targets of tests/distro (package build + Tier 3 E2E), derived from
-# the supported OBS/package matrix.
+# Distro targets for GitHub package builds and Tier 3 E2E.
 #
 # Columns:
-# target_id<TAB>family<TAB>base_image<TAB>base_digest<TAB>obs_repository<TAB>package_glob
+# target_id<TAB>family<TAB>base_image<TAB>base_digest<TAB>legacy_package_id<TAB>package_glob
 #
 # base_digest is the sha256 multi-arch manifest list digest of base_image,
 # locked via tests/distro/update-digests.sh. The literal value `pending` is

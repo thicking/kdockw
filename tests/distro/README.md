@@ -255,13 +255,14 @@ plus `arch`:
 `arch` and `opensuse-slowroll` publish amd64 packages only; on an arm64 host
 they need amd64 emulation (qemu-user binfmt) and are otherwise CI-only.
 
-The target list is `targets.tsv`, one row per repository in
-`packaging/obs/project.meta.xml` (its `obs_repository` column). The weekly
-distro release watcher (`.github/workflows/distro-release-watch.yml`,
-`scripts/check_distro_releases.py`) only compares the OBS/COPR/PPA channels
-with upstream releases and does not read `targets.tsv`: when one of its
-`distro-release` issues adds an OBS repository, add the matching row here too
-(lock the base image with `tests/distro/update-digests.sh`) so Tier 3 runs on it.
+`targets.tsv` is the source of truth for package builds on GitHub. Its fifth
+column is a legacy package identifier retained with the target row; it does not
+select or contact an external repository. The weekly distro release watcher
+(`.github/workflows/distro-release-watch.yml`,
+`scripts/check_distro_releases.py`) compares upstream release dates directly
+with this matrix and opens one issue for a missing target. Add the target here,
+lock the image digest with `tests/distro/update-digests.sh`, and update the
+README installation table after its package build and E2E checks pass.
 
 The pass criterion per target is Tier 2's result for the same suite. A
 difference that only one distro shows is root-caused: harness or image

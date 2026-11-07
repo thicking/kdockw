@@ -124,11 +124,12 @@ position. The earlier Wayland coordinate mix was fixed by keeping icon anchors
 local to the dock surface and deriving output-edge margins from that surface
 plus its floating margin. Invalid pre-frame PipeWire dimensions cannot expand
 Cover geometry. A 1581×904 CPU frame at DPR 1 was downsampled to a 196×121
-viewport; the sampling filter and remaining visual softness are still under
-investigation, so this follow-up remains open. KWin 6.6.6 fixes the window
+viewport; the sampling filter has not been compared, so the remaining softness
+is not isolated. Further filtering experiments are deferred by the owner; this
+follow-up remains open. KWin 6.6.6 fixes the window
 stream size to the source texture size and advertises an exact SPA rectangle;
 client-selected smaller stream resolutions are unsupported. Diagnostic
-Baseline/Linear comparison remains pending. Source review found that
+Baseline/Linear comparison is deferred. Source review found that
 KPipeWire 6.6.4 does not set the QSGImageNode filter; Qt 6.10.2 defaults to
 Nearest and disables mipmap filtering for that node. A diagnostic Linear A/B is
 available, but its visual quality and resource/performance effects remain
@@ -158,17 +159,17 @@ Card: [[11.5-Application-Name-Tooltip]] (`done`). The source and QML tests cover
 the implementation and tooltip bounds; the owner previously accepted the
 functionality. No release publication is implied.
 
-### P0 — Toggle Minimize on Click (implemented; owner review pending)
+### P0 — Toggle Minimize on Click (accepted by owner)
 
 - [x] Provide the single-window and grouped-window activate/minimize settings.
 - [x] Activate or restore a window unless it is already active, in which case
   it is minimized.
 - [x] Handle grouped windows in the action implementation and automated tests.
-- [ ] Complete owner acceptance in a running KDE Plasma 6 / Wayland session.
+- [x] Owner marked the feature done on 2026-11-07.
 
 The implementation is in `DockActions::activateOrMinimize`; QML and KWin
-integration tests cover settings dispatch and grouped-window behavior. Passing
-automated tests does not establish live-session acceptance.
+integration tests cover settings dispatch and grouped-window behavior. The
+owner marked the task done; the v0.3.0 milestone remains in progress.
 
 **Priority order:** Window Preview for Minimized Windows → Window Preview Redesign
 → Application Name Tooltip → Toggle Minimize on Click. This is an implementation
@@ -222,17 +223,27 @@ surface/input-region geometry. Launch and attention animation remains independen
   are `#FF3B30` and `#FFFFFF`; independent saved colors, reset, preview, and
   contrast feedback are available. This work is not assigned to a published
   release.
-- **Badge Startup Synchronization:** investigate why a Telegram counter can be
+- **Badge Startup Synchronization (`research`):** investigate why a Telegram counter can be
   absent when Telegram starts before KDockW, while restarting Telegram restores
   it and restarting KDockW does not.
+- **Classic Zoom Performance Profiling (`research`):** capture frame pacing and
+  QML/CPU/GPU behavior; instrumented measurements have not been run.
+- **Window Preview Spacing and Sharpness (`review`):** accepted positioning is
+  preserved; further filtering experiments are deferred because the remaining
+  softness has not been isolated.
 - **Preview Close Button (placement review):** the accepted idle/hover/pressed
   appearance remains; the button is in the top-right of the card header,
   opposite the app icon, and awaits visual verification. This work is not
   assigned to a published release.
-- **GitHub Release Update Checker:** check for stable GitHub Releases in the
-  background, send KDE notifications, offer manual checks and settings, and
-  never install updates automatically.
-- **Settings Preview Consistency:** align the settings mini-dock with runtime
+- **GitHub Release Update Checker (`done`):** stable-release checks, KDE
+  notifications, manual checks, and settings are implemented and accepted.
+  Settings live under About; updates are never downloaded or installed
+  automatically.
+- **Grouped Window Preview Close Controls (`done`):** each grouped thumbnail
+  has a close button tied to that child's current window UUID; the existing
+  header button remains for a single window. The owner accepted the production
+  behavior.
+- **Settings Preview Consistency (`todo`):** align the settings mini-dock with runtime
   appearance and behavior: badge colors, parabolic zoom direction, and the
   discoverability of the “Hover” switch. Tracked in Obsidian as an unversioned
   `todo`; no release assignment is implied.

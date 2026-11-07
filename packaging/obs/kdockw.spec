@@ -2,13 +2,13 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 Name:           kdockw
-Version:        0.3.0
+Version:        0.3.1
 Release:        1%{?dist}
 Summary:        A lightweight dock for KDE Plasma 6
 
 License:        GPL-3.0-or-later AND MIT-CMU
 URL:            https://github.com/thicking/kdockw/
-%global upstream_version 0.3.0
+%global upstream_version 0.3.1
 Source0:        https://github.com/thicking/%{name}/archive/refs/tags/kdockw-v%{upstream_version}.tar.gz
 
 BuildRequires:  cmake >= 3.22
@@ -30,6 +30,7 @@ BuildRequires:  qt6-qtbase-private-devel >= 6.8.0
 %endif
 BuildRequires:  cmake(Qt6Widgets) >= 6.8.0
 BuildRequires:  cmake(Qt6DBus) >= 6.8.0
+BuildRequires:  cmake(Qt6Network) >= 6.8.0
 BuildRequires:  cmake(Qt6Quick) >= 6.8.0
 BuildRequires:  cmake(Qt6QuickControls2) >= 6.8.0
 BuildRequires:  cmake(Qt6ShaderTools) >= 6.8.0
@@ -53,6 +54,7 @@ BuildRequires:  cmake(KF6XmlGui) >= 6.0.0
 BuildRequires:  cmake(KF6Service) >= 6.0.0
 BuildRequires:  cmake(KF6KIO) >= 6.0.0
 BuildRequires:  cmake(KF6JobWidgets) >= 6.0.0
+BuildRequires:  cmake(KF6Notifications) >= 6.0.0
 BuildRequires:  cmake(KF6Kirigami) >= 6.0.0
 BuildRequires:  cmake(KF6KirigamiAddons)
 
@@ -71,6 +73,7 @@ Requires:       hicolor-icon-theme
 
 %if 0%{?suse_version}
 Requires:       kf6-kirigami%{?_isa}
+Requires:       kf6-knotifications%{?_isa}
 Requires:       kirigami-addons6%{?_isa}
 Requires:       kpipewire6-imports%{?_isa}
 Requires:       qt6-quick3d-imports%{?_isa}
@@ -78,6 +81,7 @@ Requires:       plasma6-workspace%{?_isa}
 Requires:       layer-shell-qt6%{?_isa}
 %else
 Requires:       kf6-kirigami%{?_isa}
+Requires:       kf6-knotifications%{?_isa}
 Requires:       kf6-kirigami-addons%{?_isa}
 Requires:       kpipewire%{?_isa}
 Requires:       qt6-qtquick3d%{?_isa}

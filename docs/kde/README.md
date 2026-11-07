@@ -71,6 +71,7 @@ Verified API documentation from actual KDE headers (`/usr/include/`).
 |----------|-------------|
 | [accessibility-guide.md](accessibility-guide.md) | KDE/Qt accessibility best practices — QML Accessible API, AT-SPI2, keyboard navigation |
 | [accessibility-audit.md](accessibility-audit.md) | KDockW accessibility audit baseline and implementation tracking |
+| [release-update-checker.md](release-update-checker.md) | Qt Network, ETag caching, stable release validation, and KNotifications integration |
 
 ### Settings Window
 

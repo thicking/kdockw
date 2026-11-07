@@ -1,3 +1,10 @@
+kdockw (0.3.1-1) unstable; urgency=medium
+
+  * Add opt-in automatic and manual stable-release checks with KDE notifications.
+  * Add individual close controls to grouped window previews.
+
+ -- thicking <thicking@gmail.com>  Sat, 07 Nov 2026 22:58:10 +0500
+
 kdockw (0.3.0-1) unstable; urgency=medium
 
   * Release KDockW 0.3.0 with rounded previews for open and minimized windows.

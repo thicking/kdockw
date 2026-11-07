@@ -1,4 +1,4 @@
-name: Distro release watch
+name: GitHub package matrix release watch
 
 on:
   schedule:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   check:
-    name: Check for new distro releases
+    name: Check for distro versions missing from the GitHub package matrix
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,7 +34,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Detect missing distro releases and sync issues
+      - name: Detect missing GitHub package targets and sync issues
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}

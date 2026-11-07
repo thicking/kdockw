@@ -60,6 +60,7 @@ jobs:
             CMakeLists.txt
             scripts/release.py
             scripts/release_*.py
+            scripts/check_distro_releases.py
             scripts/prepare_submission_kit.py
             tests/**
             !tests/appium/**

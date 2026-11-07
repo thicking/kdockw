@@ -31,7 +31,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import release  # noqa: E402
 import release_github  # noqa: E402
 from release_common import (  # noqa: E402
-    BANNER_PATH,
+    BANNER_URL,
     CommandError,
     ReleaseError,
     archive_manifest,
@@ -225,9 +225,7 @@ class ContextFixture(TempDirTest):
         archive = work / "kdockw-1.2.3.tar.gz"
         archive.write_bytes(data)
         source = extract_archive(data, "1.2.3", work)
-        banner = None
-        if BANNER_PATH in files:
-            banner = f"https://media.githubusercontent.com/media/thicking/kdockw/v1.2.3/{BANNER_PATH}"
+        banner = BANNER_URL
         notes = work / "notes.md"
         notes.write_text(
             release_notes(files["CHANGELOG.md"], "1.2.3", banner), encoding="utf-8"
@@ -275,17 +273,16 @@ class ContextTests(ContextFixture):
 
     def test_banner_line_follows_the_tagged_tree(self) -> None:
         files = source_files()
-        files[BANNER_PATH] = "png"
-        context = load_context(self.write_context(files))
+        context = load_context(self.write_context())
         self.assertTrue(
             context.notes_path.read_text(encoding="utf-8").startswith(
-                "![KDockW v1.2.3 release banner"
+                f"![KDockW v1.2.3 release banner — lightweight KDE Plasma 6 dock for Wayland]({BANNER_URL})"
             )
         )
 
-        path = self.write_context(files)
+        path = self.write_context()
         (path.parent / "notes.md").write_text(
-            release_notes(files["CHANGELOG.md"], "1.2.3", None), encoding="utf-8"
+            release_notes(source_files()["CHANGELOG.md"], "1.2.3", None), encoding="utf-8"
         )
         self.assert_invalid(path, "notes_path does not match")
 

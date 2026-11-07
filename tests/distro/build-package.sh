@@ -14,8 +14,8 @@
 #
 # The package is built from the CURRENT source tree (the worktree minus VCS
 # and build-output directories), packed as kdockw-<version>.tar.gz with the
-# same root directory layout as the GitHub release tarball that OBS consumes
-# via packaging/obs/_service (tar_scm). The build inside the container needs
+# same root directory layout as the immutable GitHub release source archive.
+# The build inside the container needs
 # no network other than the distro package repositories.
 #
 # Builder image: `tests/distro/build-ci-image.sh --pull builder <target>`

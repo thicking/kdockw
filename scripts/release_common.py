@@ -39,9 +39,11 @@ SCHEMA_VERSION = 1
 PROJECT = "kdockw"
 USER_AGENT = "kdockw-release (https://github.com/thicking/kdockw)"
 
-# Reuse existing KDockW website artwork; the old Krema-branded banner is not
-# suitable for current release notes.
-BANNER_PATH = "website/og-image.png"
+# Existing owner-approved KDockW release banner, hosted by GitHub Attachments.
+BANNER_URL = (
+    "https://github.com/user-attachments/assets/"
+    "47fe4b06-8469-4b48-8fed-cb9d5872ec4e"
+)
 
 STATUSES = frozenset(
     {
@@ -952,12 +954,9 @@ def load_context(path: Path) -> ReleaseContext:
 def expected_notes(context: ReleaseContext) -> bytes:
     """The notes ``release.py prepare`` writes for this exact tagged tree.
 
-    Deterministic: the changelog section of the verified ``source_dir`` plus
-    the banner line iff the tagged tree carries ``BANNER_PATH`` (any member,
-    matching ``git cat-file -e``). Compared byte-for-byte, never rewritten.
+    Deterministic: the changelog section of the verified ``source_dir`` and
+    the stable owner-approved GitHub Attachments banner URL. Compared
+    byte-for-byte, never rewritten.
     """
-    banner_url = None
-    if os.path.lexists(context.source_dir / BANNER_PATH):
-        banner_url = f"https://media.githubusercontent.com/media/{context.repository}/{context.tag}/{BANNER_PATH}"
     changelog = _read_text(context.source_dir, "CHANGELOG.md")
-    return release_notes(changelog, context.version, banner_url).encode()
+    return release_notes(changelog, context.version, BANNER_URL).encode()

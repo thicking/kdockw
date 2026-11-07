@@ -7,7 +7,7 @@
 # `docker buildx imagetools inspect`.
 #
 # Targets file format (TAB-separated):
-#   target_id<TAB>family<TAB>base_image<TAB>base_digest<TAB>obs_repository<TAB>package_glob
+#   target_id<TAB>family<TAB>base_image<TAB>base_digest<TAB>legacy_package_id<TAB>package_glob
 #
 # The base_digest column is the multi-arch manifest list digest even when
 # the target is later run single-platform (for example Slowroll is
@@ -32,7 +32,7 @@ Environment:
 
 Notes:
   - targets.tsv must be in 6-column format
-    (target_id, family, base_image, base_digest, obs_repository, package_glob).
+    (target_id, family, base_image, base_digest, legacy_package_id, package_glob).
   - Use the literal value `pending` (or any non-sha256: string) in the
     base_digest column for rows that have not been locked yet.
   - Comments (#) and blank lines pass through unchanged. Data row order is
@@ -62,10 +62,10 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
         continue
     fi
 
-    IFS=$'\t' read -r target_id family base_image base_digest obs_repository package_glob <<<"$raw_line"
+    IFS=$'\t' read -r target_id family base_image base_digest legacy_package_id package_glob <<<"$raw_line"
 
     if [[ -z "${target_id:-}" || -z "${family:-}" || -z "${base_image:-}" \
-          || -z "${obs_repository:-}" || -z "${package_glob:-}" ]]; then
+          || -z "${legacy_package_id:-}" || -z "${package_glob:-}" ]]; then
         echo "ERROR: malformed row (need 6 TAB-separated columns):" >&2
         printf '  %s\n' "$raw_line" >&2
         exit 65
@@ -74,7 +74,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
     if [[ "$target_filter" != "all" && "$target_filter" != "$target_id" ]]; then
         printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
             "$target_id" "$family" "$base_image" "$base_digest" \
-            "$obs_repository" "$package_glob" >>"$tmp_file"
+            "$legacy_package_id" "$package_glob" >>"$tmp_file"
         continue
     fi
 
@@ -99,7 +99,7 @@ while IFS= read -r raw_line || [[ -n "$raw_line" ]]; do
 
     printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
         "$target_id" "$family" "$base_image" "$resolved" \
-        "$obs_repository" "$package_glob" >>"$tmp_file"
+        "$legacy_package_id" "$package_glob" >>"$tmp_file"
 done <"$targets_file"
 
 if ((matched == 0)); then

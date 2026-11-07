@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.3.0")
+set(KDOCKW_VERSION "0.3.1")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
@@ -46,6 +46,7 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS
     Gui
     Widgets
     DBus
+    Network
     Quick
     QuickControls2
     ShaderTools
@@ -69,6 +70,7 @@ find_package(KF6 ${KF6_MIN_VERSION} REQUIRED COMPONENTS
     Service
     KIO
     JobWidgets
+    Notifications
 )
 find_package(KF6Kirigami ${KF6_MIN_VERSION} REQUIRED)
 find_package(KF6KirigamiAddons REQUIRED)
