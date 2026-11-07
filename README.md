@@ -147,16 +147,14 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW 0.3.1 is being prepared for release. The latest published stable version is [0.3.0](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0); its source archive, distro packages, and checksums are available on GitHub. See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW 0.3.1 is the latest stable release. Download the source archive, distribution packages, and checksums from the [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.1). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
 The release workflow builds one package for each target below, installs it in
-that distribution's test image, and runs the dock E2E suite. The planned v0.3.1
-release assets will be named `kdockw-0.3.1-<target>.<format>`; all supported
-targets must pass the release matrix for the signed commit. GitHub Releases is
-the only active publication channel; no external package repository is
-required.
+that distribution's test image, and runs the dock E2E suite. All 12 targets
+passed the release matrix for v0.3.1. GitHub Releases is the only active
+publication channel; external package repositories are not used.
 
 | Package | Distribution targets |
 | --- | --- |

@@ -27,6 +27,8 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
   belong to Krema history. [v0.1.0 release](https://github.com/thicking/kdockw/releases/tag/v0.1.0)
 - [x] Publish KDockW 0.3.0 with the signed tag, source archive, checksums, and
   packages for all 12 distro targets. [v0.3.0 release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0)
+- [x] Publish KDockW 0.3.1 with the signed tag, source archive, checksums, and
+  packages for all 12 distro targets. [v0.3.1 release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.1)
 - [x] Complete release automation and package smoke checks for the initial
   standalone release. The release contains 12 distro package assets, and the
   tagged release gate passed for all 12 supported distro targets.
