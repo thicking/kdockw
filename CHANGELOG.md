@@ -10,103 +10,46 @@ carried forward from the Krema-based development period.
 
 ## [0.3.0] - 2026-11-07
 
-KDockW 0.3.0 brings rounded live previews for open and minimized windows, flexible preview sizing, and clearer icon and badge presentation in a KDE Plasma 6 Wayland dock.
+KDockW 0.3.0 makes window previews easier to follow and customize, with four preview sizes, clearer badges, and refined dock interactions for KDE Plasma 6 on Wayland.
 
 ### Added
 
-- Added a compact application-name tooltip for launcher hover and reused the
-  preview-card header for window names while the preview is visible.
-- Added live, saved window-preview layout controls: thumbnail width, maximum
-  thumbnail height with source aspect-ratio preservation, card padding, and the
-  dock gap. New defaults are 200 px, 180 px, 8 px, and 2 px; existing saved
-  thumbnail widths remain intact.
-- Added Compact, Standard, Enlarged, and Large preview size presets using the
-  existing saved width and height settings. Existing custom values and defaults
-  remain unchanged until a preset is selected.
-- Added a one-pixel neutral outline to inactive window previews. Its shade
-  adapts to the configured card background and KDE surface; the active window
-  keeps its KDE accent outline.
-- Redesigned the preview as a compact, rounded, translucent card with a thin
-  border, soft shadow, application header, and per-window title. The popup has
-  no arrow and fades in and out.
-- Followed the dock's resolved panel color, opacity, radius, shadow and rounded
-  KWin blur/contrast region in the preview and existing app-name tooltip. Kept a
-  stable preview slot across window shapes, rendered PipeWire frames directly,
-  and used a clipped center-crop Cover viewport without an offscreen effect
-  layer. The app-name tooltip gap now follows icon zoom.
-- Completed the accepted preview redesign with rounded Scene Graph clipping on
-  the PipeWire source subtree, minimized-window previews, a fixed 16:10 card,
-  centered Cover crop, and tooltip bounds that remain clear during icon zoom.
-  CPU-only remains available as a compatibility capture mode.
-
-- Added live, saved badge text weight and size controls, with Medium (500) and
-  100% as factory defaults. Explicitly saved user choices, including Bold (700),
-  continue to take precedence over factory defaults.
-- Added independent, saved badge background and text color settings with the
-  requested red and white defaults, a live badge preview, contrast feedback,
-  and a joint reset action. Existing badge counts and text rendering remain
-  unchanged.
-- Showed a solid red circle on the preview close control at rest, revealed a
-  dark cross on hover, and kept both visible while pressed. Existing button
-  dimensions and grouped window close behavior remain unchanged.
+- Showed live previews for open and minimized windows, with titles and a compact
+  rounded card. Grouped previews stay associated with their individual windows,
+  and the CPU-compatible preview mode remains available.
+- Added Compact, Standard, Enlarged, and Large preview sizes (180×113,
+  220×138, 260×163, and 320×200). Each size sets the preview viewport
+  dimensions.
+- Added controls for preview-card appearance, including its background,
+  opacity, corners, border, spacing, and dock gap. Inactive previews receive a
+  subtle adaptive outline while the active window keeps its KDE accent outline.
+- Added application-name tooltips and saved controls for badge text size,
+  weight, background color, and text color, with a live preview and reset.
+  Badge colors default to red `#FF3B30` and white `#FFFFFF`; settings provide
+  contrast feedback for custom colors.
+- Added a saved icon opacity control that applies equally to active, inactive,
+  and minimized apps, while preserving transparency in source artwork. Refined
+  badge digit rendering during icon magnification and animation.
 
 ### Changed
 
-- Changed the factory badge text weight from Bold (700) to Medium (500). The
-  text size remains 100%, and Number remains the default notification style.
-- Moved the preview close button from the image to the top-right of the card
-  header, aligned with the app icon; retained its accepted appearance and
-  per-window close behavior for grouped previews.
+- Set Medium (500) as the default badge text weight; the text size remains
+  100%, and Number remains the default notification style.
+- Placed the red preview close button at the right side of the card header,
+  aligned with the app icon. Its dark cross appears on hover, and grouped-window
+  close behavior is preserved.
 
 ### Fixed
 
-- Allowed the zoom preset page to scroll when the pointer is over its tab bar.
-- Showed the application icon for an initially minimized window until KWin
-  provides a usable frame, while retaining a real frame through later
-  minimize-and-restore cycles.
-- Started hover hit-testing from the configured maximum zoom envelope when the
-  pointer enters the dock, so reconnected pointer devices can activate the item
-  without relying on a follow-up motion event.
-- Reduced the preview's default visible gap to the dock to 2 px by removing
-  extra fixed offsets and positioning the card from the measured icon edge;
-  the popup remains beyond the dock's maximum zoom envelope.
-- Anchored the preview LayerShell surface to output geometry instead of KWin's
-  reduced work area, and used the dock's actual LayerShell margin. This avoids
-  adding the dock's reserved panel area and internal floating inset to the
-  visible preview gap.
-- Positioned the preview using dock-surface icon geometry so Wayland's
-  unavailable top-level global position cannot turn a local icon offset into a
-  screen-sized layer-shell margin.
-- Fixed the preview card at the configured maximum-zoom anchor so it no longer
-  moves perpendicular to the dock as icons animate. The anchor is refreshed
-  when icon geometry, zoom settings, or dock edge changes.
-- Ignored unready or implausible PipeWire stream dimensions when calculating
-  Cover crop, preserving the last valid aspect ratio until a valid frame arrives.
-- Applied rounded clipping to the PipeWire frame's own scene-graph subtree,
-  instead of placing a clip node beside the QML child that needed clipping.
-- Fixed rounded preview clipping on Qt 6 scene-graph backends by replacing
-  unsupported triangle-fan clip geometry with explicitly triangulated geometry,
-  without adding an offscreen PipeWire texture layer.
-- Filled the inner window-preview area with centered Cover-cropped frames and
-  rounded the viewport through scene-graph clipping, while keeping PipeWire
-  frames on the direct rendering path.
-- Prevented the application-name tooltip from being clipped at the dock's
-  Wayland surface edge by reserving its full size, maximum-zoom clearance, and
-  shadow, and clamping its along-screen position.
-- Owner manual acceptance on KDE Plasma 6 / Wayland confirmed working
-  previews for open and minimized windows in CPU-only mode. DMA-BUF/auto remains
-  technical debt; it is not recorded as verified or as a confirmed cause of the
-  earlier black-preview report.
-- Kept the PipeWire source active for minimized-window previews, retained the
-  last received texture in memory, and bound each grouped thumbnail to its own
-  window UUID. The source keeps its default scene-graph opacity; the app icon
-  covers it until the first frame arrives.
-- Unified icon opacity across active, inactive, and minimized apps with a saved,
-  live 50–100% control that affects icon images only. Legacy per-state opacity
-  keys remain for configuration compatibility but no longer affect rendering.
-- Kept notification badge digits out of the scaled badge texture, rendered them
-  with Qt's text renderer, and selected a theme-aware foreground that meets
-  WCAG AA contrast against opaque badge fills.
+- Kept the preview card close to the dock and fixed its position through Classic
+  Zoom. The card no longer drifts perpendicular to the dock as icons animate.
+- Kept the source frame's proportions and used a centered Cover crop to fill the
+  selected preview viewport without stretching; rounded the image to match the
+  viewport corners.
+- Kept application-name tooltips within the screen during icon magnification
+  and allowed the zoom-preset page to scroll when the pointer is over its tabs.
+- Fixed dock hover activation after pointer reconnection and kept the correct
+  application icon visible until a minimized window's preview frame is ready.
 
 ## [0.1.0] - 2026-11-03
 
