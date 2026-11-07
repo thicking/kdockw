@@ -2,6 +2,9 @@
 
 This is a preparation guide. It makes no account or project changes. Create external projects only when the maintainer separately authorizes that work.
 
+Packaging targets follow the [Distribution Support Policy](distribution-support-policy.md),
+including its rule that EOL alone is not a reason to retire a target.
+
 ## COPR
 
 1. Confirm the Fedora Account System login that the maintainer controls. A GitHub username does not prove the FAS identity.

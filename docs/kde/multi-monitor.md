@@ -227,7 +227,7 @@ Toggle Dock and Meta+number actions use this target through `activeShell()`. Foc
 
 ### Strategy 1: Follow Mouse Cursor
 
-**Verified (SET-008): `QCursor::pos()` is not a global pointer position on Wayland.** QtWayland only knows the pointer while it is over one of the client's own surfaces, and polling is forbidden anyway (`.agents/rules/async-state.md`). The pointer has to enter a mapped surface of the dock on the target screen.
+**Verified (SET-008): `QCursor::pos()` is not a global pointer position on Wayland.** QtWayland only knows the pointer while it is over one of the client's own surfaces. Do not poll for pointer state; respond to compositor-delivered enter/leave events on a mapped surface. The pointer has to enter a mapped surface of the dock on the target screen.
 
 Follow Active unmaps the inactive screens' docks (`setShellVisible(false)` → `QWindow::hide()`), and an unmapped surface receives no `wl_pointer.enter`, so reacting to a hover on the hidden dock (its `DockVisibilityController`) never fires. KDockW instead maps an `EdgeTrigger` (`src/shell/edgetrigger.{h,cpp}`) on every inactive screen while the Mouse or Composite trigger is selected:
 
@@ -432,7 +432,7 @@ op->start();
 3. **DPI differences**: Each screen can have different `devicePixelRatio()` — KDockW's zoom/sizing must scale per-screen
 4. **closeOnDismissed=false**: Already set in KDockW. When output removed, compositor dismisses but window object survives for reassignment.
 5. **Virtual siblings**: `QScreen::virtualSiblings()` returns all screens in the same virtual desktop
-6. **Null screen check**: Always check `screen()` — can be nullptr on virtual compositors (anti-pattern rule in `.agents/rules/wayland-surfaces.md`)
+6. **Null screen check**: Always check `screen()` before dereferencing it; virtual compositors may return `nullptr`.
 7. **Surface recreation after setScreen**: `hide()` + `show()` is required — compositor must create a new layer-shell surface on the new output
 8. **Initialization order**: `setScreen()` must be called BEFORE `show()` for the first showing
 9. **QQuickView subclass**: `DockView` inherits from `QQuickView` which inherits from `QWindow`. `setScreen()` is available directly.

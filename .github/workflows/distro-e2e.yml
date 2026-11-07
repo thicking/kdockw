@@ -32,8 +32,8 @@
 # (through ci.yml, workflow_call; its DISTRO_PATHS hold the path filter
 # below and its required `CI gate` check reports even when this suite does
 # not apply), a weekly schedule to catch rolling-distro drift (arch,
-# opensuse-tumbleweed/slowroll, ...), and manual dispatch, which the release
-# procedure (.agents/skills/release/SKILL.md) runs against the candidate commit before tagging.
+# opensuse-tumbleweed/slowroll, ...), and manual dispatch, which the
+# maintainer's local release procedure runs against the candidate commit before tagging.
 # Path filter: the package is built with BUILD_TESTING=OFF from src/,
 # CMakeLists.txt and packaging/ (plus LICENSES/, which the packages ship);
 # the suite is tests/appium (not its Dockerfile, which only e2e.yml

@@ -56,7 +56,7 @@ from release_common import (  # noqa: E402
     sha256_file,
 )
 
-PLAYBOOK = Path(".agents/skills/release/references/browser-publication.md")
+PLAYBOOK = Path("docs/releasing/browser-publication.md")
 KDE_RECORD = "2376676"
 KDE_LISTING_URL = f"https://store.kde.org/p/{KDE_RECORD}"
 KDE_OCS_URL = f"https://api.kde-look.org/ocs/v1/content/data/{KDE_RECORD}"

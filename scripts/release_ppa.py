@@ -6,7 +6,7 @@ archive ships qt6-base at or above the Qt baseline in the tagged
 packaging/obs/debian.control. Series that Launchpad still accepts uploads for
 are publication targets; Qt-eligible series that Launchpad no longer accepts
 (Obsolete) are reported as platform_blocked and never affect other channels
-(AGENTS.md, Distribution Support Policy).
+(docs/releasing/distribution-support-policy.md).
 
 Per series the exact version `<version>-<debrev>~ppa1~<series>1` is queried
 with getPublishedSources (all statuses, Pending included). Existing uploads

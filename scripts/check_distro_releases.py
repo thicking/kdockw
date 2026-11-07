@@ -88,8 +88,8 @@ LABEL_DESCRIPTION = (
 
 POLICY_LINK = (
     "See the [Distribution Support Policy]"
-    "(https://github.com/thicking/kdockw/blob/main/AGENTS.md"
-    "#distribution-support-policy) in AGENTS.md."
+    "(https://github.com/thicking/kdockw/blob/main/docs/releasing/"
+    "distribution-support-policy.md) in the public maintainer documentation."
 )
 
 MARKER_RE = re.compile(r"<!--\s*distro-release:([\w-]+):([\d.]+):([\w-]+)\s*-->")

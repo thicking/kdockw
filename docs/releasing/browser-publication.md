@@ -10,4 +10,4 @@ KDockW's store/catalog release tooling does not create external projects. It can
 
 A future separately authorized publication task must first verify the exact KDockW destination and account in a normal browser. Update the KDockW schema and public-read verification in the same change before preparing an update packet. Never infer ownership from a similar name, repository login, or historical Krema records.
 
-Only use the existing authorized maintainer account. Do not create a project or listing, upload a package, approve OAuth access, or publish a change under this playbook alone. See [`packaging/submissions/README.md`](../../../packaging/submissions/README.md) and [`docs/releasing/initial-channel-setup.md`](../../../docs/releasing/initial-channel-setup.md) for current channel state.
+Only use the existing authorized maintainer account. Do not create a project or listing, upload a package, approve OAuth access, or publish a change under this playbook alone. See [`packaging/submissions/README.md`](../../packaging/submissions/README.md) and [`initial-channel-setup.md`](initial-channel-setup.md) for current channel state.

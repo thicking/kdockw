@@ -224,13 +224,13 @@ In a diagnostic build only, opt-in `KDOCKW_PREVIEW_METRICS=1` logs
 size-only capture metrics: PipeWire frame pixels, window DPR, logical and
 physical viewport/Cover sizes, mapped source bounds, `paintedRect`, and whether
 DMA-BUF is active. It records no window/app names, UUIDs, frame pixels, or
-screenshots. The safe sharpness-test launcher enables this flag explicitly; normal builds and
-other diagnostic runs do not emit these records. The review launcher can
-compare the current sampler and Linear mode with
-`tools/kdockw-preview-sharpness-start cpu-only baseline` and
-`tools/kdockw-preview-sharpness-start cpu-only linear`. Its opt-in Scene Graph
-trace reports the image node's geometry, filter, mipmap filter, texture size,
-and mipmap availability once per distinct state. It stores no frames.
+screenshots. Local-only diagnostic launchers enabled this flag explicitly;
+normal builds and diagnostic runs without the opt-in do not emit these records.
+The local comparison harness exposed baseline and Linear sampler modes, but no
+visual or performance result established Linear as an improvement. Its
+optional Scene Graph trace reports image-node geometry, filter, mipmap filter,
+texture size, and mipmap availability once per distinct state; it stores no
+frames. The launcher itself is not part of a clean checkout.
 
 ## Minimized-window lifecycle
 

@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=KDockW Preview Sharpness Test
-NoDisplay=true
-Terminal=false
-Exec=/home/stout/Documents/vibecoding/kdockw/build/preview-gap-sharpness-diagnostic/bin/kdockw
-X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,zkde_screencast_unstable_v1

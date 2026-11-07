@@ -279,8 +279,8 @@ harness (`tests/distro/`, `tests/appium/` except its Dockerfile and
 CMakeLists.txt; not Markdown) or the workflow, weekly on a schedule (to
 catch drift in the rolling distros), and on demand (`workflow_dispatch`,
 optional `targets` input: comma/space separated ids, default `all`). The
-release procedure (`.agents/skills/release/SKILL.md`) dispatches it on `master`
-and waits for it to pass before tagging. A newer push to a pull request
+maintainer's local release procedure dispatches it against the candidate
+commit and waits for it to pass before tagging. A newer push to a pull request
 cancels its running jobs; `fail-fast` is off, so one distro's failure does
 not hide another's.
 
