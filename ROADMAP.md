@@ -99,8 +99,10 @@ multi-monitor checks remain technical debt.
 
 ### P0 — Window Preview Redesign (accepted)
 
-- [x] Follow the approved [`концепт.png`](концепт.png): compact card without an
-  arrow, minimal padding, rounded corners, a thin border, and a soft shadow.
+- [x] Follow the approved
+  [window preview concept](docs/design/window-preview-concept.png): compact card
+  without an arrow, minimal padding, rounded corners, a thin border, and a soft
+  shadow.
 - [x] Provide configurable thumbnail width, maximum height with aspect
   preservation, card padding, and dock gap.
 - [x] Show the application name in the compact card header; retain per-window
