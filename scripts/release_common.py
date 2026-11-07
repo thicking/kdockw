@@ -535,6 +535,14 @@ def source_versions(source_dir: Path) -> dict[str, str | None]:
     first_line = debchangelog.splitlines()[0] if debchangelog else ""
     m = re.match(r"^kdockw \(([^)\s]+)\)\s", first_line)
     found["packaging/obs/debian.changelog"] = m.group(1) if m else None
+
+    pkgbuild = _read_text(source_dir, "packaging/arch/PKGBUILD")
+    m = re.search(r"^pkgver=([^\s#]+)\s*$", pkgbuild, re.M)
+    found["packaging/arch/PKGBUILD"] = m.group(1) if m else None
+
+    srcinfo = _read_text(source_dir, "packaging/arch/.SRCINFO")
+    m = re.search(r"^\s*pkgver\s*=\s*([^\s#]+)\s*$", srcinfo, re.M)
+    found["packaging/arch/.SRCINFO"] = m.group(1) if m else None
     return found
 
 
@@ -542,10 +550,10 @@ def check_source_versions(source_dir: Path, version: str) -> str:
     """Require every tagged version field to equal ``version``.
 
     Checks CMake, the CHANGELOG section, the newest metainfo release, the RPM
-    spec, the DSC (version and tarball) and the top debian.changelog entry.
-    The Arch PKGBUILD may lag on purpose (the AUR adapter sets it from the
-    context), so it is not checked. Returns the Debian revision shared by the
-    DSC and debian.changelog.
+    spec, the DSC (version and tarball), the top debian.changelog entry, and
+    both Arch package metadata files. Every supported GitHub package target
+    must describe the tagged source version. Returns the Debian revision shared
+    by the DSC and debian.changelog.
     """
     found = source_versions(source_dir)
     problems: list[str] = []
@@ -558,6 +566,8 @@ def check_source_versions(source_dir: Path, version: str) -> str:
     expect("src/com.thicking.kdockw.metainfo.xml", version)
     expect("packaging/obs/kdockw.spec", version)
     expect("packaging/obs/kdockw.dsc DEBTRANSFORM-TAR", asset_name(version))
+    expect("packaging/arch/PKGBUILD", version)
+    expect("packaging/arch/.SRCINFO", version)
 
     revisions: list[str] = []
     for key in ("packaging/obs/kdockw.dsc", "packaging/obs/debian.changelog"):

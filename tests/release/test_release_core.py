@@ -68,7 +68,8 @@ def source_files(
             f"DEBTRANSFORM-TAR: kdockw-{version}.tar.gz\n"
         ),
         "packaging/obs/debian.changelog": f"kdockw ({version}-{revision}) unstable; urgency=medium\n\n  * x\n",
-        "packaging/arch/PKGBUILD": "pkgver=0.0.1\n",
+        "packaging/arch/PKGBUILD": f"pkgver={version}\n",
+        "packaging/arch/.SRCINFO": f"pkgbase = kdockw\n\tpkgver = {version}\n\tpkgrel = 1\n",
         "tests/distro/targets.tsv": "# comment\nfedora-42\tfedora\tfedora:42\tsha256:x\tFedora_42\t*.rpm\n",
     }
     files.update(overrides)
@@ -148,9 +149,7 @@ class VersionTests(TempDirTest):
             with self.assertRaises(ReleaseError, msg=bad):
                 parse_tag(bad)
 
-    def test_agreeing_source_returns_revision_and_ignores_lagging_pkgbuild(
-        self,
-    ) -> None:
+    def test_agreeing_source_returns_revision(self) -> None:
         self.assertEqual(check_source_versions(self.tree(), "1.2.3"), "1")
 
     def test_each_disagreeing_field_is_rejected(self) -> None:
@@ -161,6 +160,8 @@ class VersionTests(TempDirTest):
             "packaging/obs/kdockw.spec": "Version: 1.2.2\n",
             "packaging/obs/kdockw.dsc": "Version: 1.2.3-1\nDEBTRANSFORM-TAR: kdockw-1.2.2.tar.gz\n",
             "packaging/obs/debian.changelog": "kdockw (1.2.3-2) unstable; urgency=medium\n",
+            "packaging/arch/PKGBUILD": "pkgver=1.2.2\n",
+            "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 1.2.2\n",
         }
         for name, text in cases.items():
             with self.subTest(name=name):
