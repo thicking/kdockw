@@ -38,7 +38,7 @@ KDockW started as a personal project. I wanted a modern, customizable dock with 
 
 Classic Zoom, dock animations, and live window previews:
 
-![](https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf)
+https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 
 ## Screenshots
 

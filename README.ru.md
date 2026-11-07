@@ -39,7 +39,7 @@ KDockW начался как личный проект. Мне нужна был
 
 Classic Zoom, анимации док-панели и живой предпросмотр окон:
 
-![](https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf)
+https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 
 ## Скриншоты
 
