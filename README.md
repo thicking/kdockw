@@ -50,13 +50,11 @@ KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor
 
 ## Project Highlights
 
-| Area | KDockW behavior |
-|---|---|
-| Native KDE Plasma 6 / Wayland | A standalone dock built for KDE Plasma and its Wayland desktop conventions. |
-| Smooth Dock Experience | Classic Zoom, adjustable zoom behavior, launch feedback, and configurable running-app indicators. |
-| Live Window Previews | PipeWire previews for open and minimized windows, grouped app windows, and click-to-activate. |
-| Customizable Appearance | Adjust panel styling, icon opacity, notification badges, and preview-card sizes. |
-| Cross-Distro Packages | Twelve verified release packages for Debian, Ubuntu, Fedora, openSUSE, and Arch Linux. |
+- **Native KDE Plasma 6 / Wayland** — A standalone dock that follows KDE and Wayland desktop conventions.
+- **Smooth dock interaction** — Classic Zoom, adjustable animation, launch feedback, and configurable running-app indicators.
+- **Live window previews** — Preview open and minimized windows, browse grouped apps, and activate a window with a click.
+- **Personalized appearance** — Adjust panel styling, icon opacity, notification badges, and preview-card sizes.
+- **Ready across Linux distributions** — Download verified packages for Debian, Ubuntu, Fedora, openSUSE, and Arch Linux.
 
 For implementation and troubleshooting details, see the [window-preview architecture and diagnostics](docs/architecture/window-previews.md), [KDE TaskManager model notes](docs/kde/taskmanager-models.md), and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md). Optional task-model diagnostics log row and role changes without recording window titles.
 
