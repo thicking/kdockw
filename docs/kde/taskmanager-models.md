@@ -1,5 +1,11 @@
 # KDE TaskManager Models
 
+## KDockW diagnostics
+
+Optional KDockW task-model diagnostics can record model row and role changes
+to help investigate task matching. They do not change KDE TaskManager's
+filtering policy and do not record window titles.
+
 > Source: `/usr/include/taskmanager/` headers (plasma-workspace 6)
 
 ## Model Hierarchy

@@ -485,3 +485,9 @@ available and launch the same executable. The standard desktop ID and
 KWin Wayland-interface declaration must remain intact. Earlier user-created
 `kdockw.service` units can be migrated using
 [`../migration/systemd-to-xdg-autostart.md`](../migration/systemd-to-xdg-autostart.md).
+
+If window tasks or previews do not appear after installing a desktop entry,
+check that KWin resolves the installed application desktop ID and that the
+entry declares the required `org_kde_plasma_window_management` interface.
+Metadata alone does not prove that a particular client received the
+permission; verify behavior in the target Plasma Wayland session.

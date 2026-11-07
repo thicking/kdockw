@@ -28,6 +28,18 @@
 
 KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor to Latte Dock. Written in C++23 with Qt 6 and KDE Frameworks 6, it provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.
 
+KDockW is an independently developed fork of the open-source Krema project, built with help from AI coding agents. I set requirements and make product decisions, then test and review changes on real KDE Plasma / Wayland systems. Krema's Git history and original authorship are preserved; see [Origins and Credits](#origins-and-credits) for details.
+
+## Why KDockW?
+
+KDockW started as a personal project. I wanted a modern, customizable dock with smooth animations and live window previews for KDE Plasma 6 on Wayland, but existing options did not quite suit my needs. I focused on everyday usability, visual quality, KDE integration, and the features I wanted on my own desktop.
+
+## KDockW in Action
+
+Classic Zoom, dock animations, and live window previews:
+
+![](https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf)
+
 ## Screenshots
 
 <p align="center">
@@ -174,10 +186,8 @@ KDockW follows the system language by default. Open **Settings → General → L
 
 ## Known Limitations
 
-- The Russian catalog builds with KI18n. On systems without the Russian catalog, KI18n falls back to the English source strings. A real Wayland-session check is still needed after the new desktop ID is installed to confirm KWin grants the declared interfaces.
-- The no-first-frame CPU-buffer retry is experimental. It is not a confirmed general fix for black previews or cross-GPU DMA-BUF import.
-- File-drag activation was manually verified on Plasma 6.6.6 / Wayland with multiple files from Dolphin; the existing `.desktop` pinning path remains supported. Recheck after installing the renamed desktop entry.
-- TaskManager diagnostics add evidence about model rows and roles but do not change KDE's task filtering.
+- On a hybrid-GPU system, Automatic (DMA-BUF) has produced black previews. If this happens, try **Settings → Window Preview → Compatibility mode (CPU)**; it restored previews on the tested system and may increase CPU usage.
+- If the Russian translation catalog is unavailable, KDockW displays its English source strings.
 
 ## Roadmap
 

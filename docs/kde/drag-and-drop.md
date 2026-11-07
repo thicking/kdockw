@@ -217,6 +217,9 @@ keyboard activation paths; KWin remains responsible for applying its
 activation policy. A QML timer test or a model-level activation test cannot
 prove that a file drag from Dolphin remains continuous through activation in a
 particular live KWin session, so that path still requires Wayland-session QA.
+The owner reported a manual multi-file Dolphin test on Plasma 6.6.6 / Wayland.
+That observation predates the current packaged desktop entry; repeat the live
+check for that entry before treating it as verified for a new release.
 
 ---
 
