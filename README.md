@@ -28,27 +28,44 @@
 
 KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor to Latte Dock. Written in C++23 with Qt 6 and KDE Frameworks 6, it provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/kdockw-classic-zoom.png" alt="KDockW dock with the Firefox icon enlarged by Classic Zoom">
+</p>
+<p align="center"><sub>Classic Zoom magnifies the hovered app while keeping the full dock visible.</sub></p>
+
+<table width="100%">
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/kdockw-window-preview.png" alt="Live Yandex Browser window preview above the KDockW dock" width="560"><br>
+      <sub>Live preview of an open window.</sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/kdockw-dock-overview.png" alt="KDockW dock with pinned apps and notification badges" width="560"><br>
+      <sub>Dock overview with pinned applications and notification badges.</sub>
+    </td>
+  </tr>
+</table>
+
 ## Project Highlights
 
 | Area | KDockW behavior |
 |---|---|
-| Interface language | KI18n language selector: follow the system locale, choose Russian, or choose English; changes apply immediately. |
-| Launch feedback | Launch-icon bounce ends after at most five complete cycles and can finish early after a window appears. |
-| Plasma task-manager drag and drop | Reads the task launch URL MIME type while keeping `.desktop` launcher drops supported. |
-| External file drag hover | Activates an existing app window after a configurable delay without consuming the file drag. |
-| Login startup | Installs one XDG autostart entry that launches the configured KDockW binary directly. |
-| TaskManager diagnostics | Logs task rows and role changes without logging window titles or changing filtering. |
-| PipeWire window previews | Auto (DMA-BUF preferred) is the default; a saved CPU compatibility mode can be selected in Preview settings and applies to existing streams. A process-local environment override remains available for diagnosis. |
-| NVIDIA PRIME guidance | Documents observed behavior on one hybrid-GPU TUXEDO OS / Wayland setup. |
+| Native KDE Plasma 6 / Wayland | A standalone dock built for KDE Plasma and its Wayland desktop conventions. |
+| Smooth Dock Experience | Classic Zoom, adjustable zoom behavior, launch feedback, and configurable running-app indicators. |
+| Live Window Previews | PipeWire previews for open and minimized windows, grouped app windows, and click-to-activate. |
+| Customizable Appearance | Adjust panel styling, icon opacity, notification badges, and preview-card sizes. |
+| Cross-Distro Packages | Twelve verified release packages for Debian, Ubuntu, Fedora, openSUSE, and Arch Linux. |
 
-See the [window-preview architecture and diagnostic procedure](docs/architecture/window-previews.md)
-and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md).
+For implementation and troubleshooting details, see the [window-preview architecture and diagnostics](docs/architecture/window-previews.md), [KDE TaskManager model notes](docs/kde/taskmanager-models.md), and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md). Optional task-model diagnostics log row and role changes without recording window titles.
 
 ## Features
 
 ### Core Dock
 - **Parabolic Zoom** — macOS-style magnification on hover that pushes neighbouring icons aside, with an optional in-place style
 - **Zoom Animation** — Pick a hover zoom preset: Natural (default, eases in and out like the macOS Dock), Quick, Relaxed, or Instant; or switch to Custom to set zoom-in and zoom-out duration and easing separately
+- **Launch Feedback** — The launch icon bounces until a window appears, or for at most five complete cycles
 - **Icon Size Normalization** — Auto-detects icon padding and scales for uniform appearance
 - **Content Padding and Alignment** — Set independent 0–64 px insets on all four sides of the dock and align its icons to the start, center, or end; changes apply immediately and are saved
 - **Running App Indicators** — Configure Dot, Line, Pill, Glow, or Bar markers, their placement, size, and color
@@ -66,7 +83,7 @@ and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-w
 - **Acrylic / Frosted Glass** — Blur + noise texture effect
 
 ### Window Previews
-- **PipeWire Thumbnails** — Live GPU-efficient window previews on hover
+- **PipeWire Thumbnails** — Live window previews on hover
 - **Capture Compatibility** — Keep Auto (DMA-BUF preferred) or enable saved CPU mode if previews appear black; CPU mode may increase processor usage
 - **Multi-Window List** — All windows of grouped apps shown together; the optional grouped click action opens this list even with hover previews off
 - **Preview Card Layout** — Set thumbnail width and maximum height, preserve window proportions, and adjust card padding and its gap from the dock
@@ -100,7 +117,7 @@ In `kdockwrc`, `MonitorMode=3` means `SelectedScreens`; `SelectedOutputs` is a s
 - **Wayland Native** — Built on Layer Shell protocol for proper dock behavior
 - **Smart Visibility** — Always visible, auto-hide, or dodge windows modes
 - **Drag & Drop** — Reorder dock items, drop files onto apps, add launchers by dragging .desktop files, and optionally activate a running app after hovering dragged files over its icon
-- **Settings UI** — Kirigami-based settings dialog (FormCard) for easy customization
+- **Settings UI** — Kirigami-based settings dialog (FormCard) with a system, Russian, or English language selector
 - **Keyboard Accessibility** — Full keyboard navigation with AT-SPI screen reader support
 
 ### Keyboard Shortcuts

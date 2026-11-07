@@ -227,6 +227,8 @@ build/
 # Python bytecode (scripts, CI helpers, tests/appium)
 __pycache__/
 *.py[cod]
+# Pytest cache files are generated locally and are safe to recreate
+.pytest_cache/
 
 # Local MCP server configuration (machine-specific)
 .mcp.json
