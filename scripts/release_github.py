@@ -83,7 +83,23 @@ def _target_formats(context: ReleaseContext) -> dict[str, str]:
             raise ReleaseError(f"duplicate package target in matrix: {fields[0]}")
         targets[fields[0]] = package_format
     targets["arch"] = "arch"
-    return targets
+    gate_path = context.source_dir / "tests/distro/release-targets.txt"
+    if gate_path.is_symlink():
+        raise ReleaseError("release target list must not be a symlink")
+    if not gate_path.exists():
+        # Immutable pre-v0.3.2 tags use the full historical matrix.
+        return targets
+    selected = [
+        line.strip()
+        for line in gate_path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not selected or len(selected) != len(set(selected)):
+        raise ReleaseError("release target list is empty or contains duplicates")
+    unknown = sorted(set(selected) - targets.keys())
+    if unknown:
+        raise ReleaseError("release target list selects targets without package metadata: " + ", ".join(unknown))
+    return {target: targets[target] for target in selected}
 
 
 def _gh_json(args: list[str], *, timeout: int = API_TIMEOUT) -> Any:

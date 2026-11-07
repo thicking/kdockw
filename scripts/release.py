@@ -67,6 +67,7 @@ INACTIVE_ADAPTERS = ("aur", "obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"
 GATE_JOB_RE = re.compile(r"^Distro E2E \((?P<target>[^)]+)\)$")
 TARGETS_FILE = "tests/distro/targets.tsv"
+RELEASE_TARGETS_FILE = "tests/distro/release-targets.txt"
 TARGET_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
 EXTRA_TARGETS = ("arch",)
 DISPATCH_MARKER = "gate-dispatch.json"
@@ -277,12 +278,7 @@ def checks_failed(checks: list[dict], *, strict: bool) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def expected_targets(targets_tsv: str) -> list[str]:
-    """Target ids exactly as distro-e2e.yml resolves them, plus ``arch``.
-
-    Mirrors the workflow: skip comment lines and lines with fewer than four
-    tab-separated fields; the first field is the target id.
-    """
+def _target_ids(targets_tsv: str) -> list[str]:
     targets: list[str] = []
     for line in targets_tsv.splitlines():
         if re.match(r"^\s*#", line):
@@ -294,12 +290,44 @@ def expected_targets(targets_tsv: str) -> list[str]:
         if not TARGET_ID_RE.match(target):
             raise ReleaseError(f"{TARGETS_FILE}: invalid target id {target!r}")
         targets.append(target)
-    targets.extend(EXTRA_TARGETS)
-    if len(targets) == len(EXTRA_TARGETS):
+    if not targets:
         raise ReleaseError(f"{TARGETS_FILE} lists no targets")
     if len(set(targets)) != len(targets):
         raise ReleaseError(f"{TARGETS_FILE} lists a target twice")
     return targets
+
+
+def expected_targets(targets_tsv: str, release_targets: str | None = None) -> list[str]:
+    """Return required release targets, preserving compatibility with old tags.
+
+    Current sources provide a line-oriented release-target allowlist. Older
+    immutable tags predate it and retain their historical full matrix plus
+    Arch gate.
+    """
+    all_targets = _target_ids(targets_tsv)
+    if release_targets is None:
+        return [*all_targets, *EXTRA_TARGETS]
+
+    selected: list[str] = []
+    for line in release_targets.splitlines():
+        target = line.strip()
+        if not target or target.startswith("#"):
+            continue
+        if not TARGET_ID_RE.fullmatch(target):
+            raise ReleaseError(f"{RELEASE_TARGETS_FILE}: invalid target id {target!r}")
+        selected.append(target)
+    allowed = set(all_targets) | set(EXTRA_TARGETS)
+    unknown = sorted(set(selected) - allowed)
+    if unknown:
+        raise ReleaseError(
+            f"{RELEASE_TARGETS_FILE} selects targets missing from {TARGETS_FILE}: "
+            + ", ".join(unknown)
+        )
+    if not selected:
+        raise ReleaseError(f"{RELEASE_TARGETS_FILE} lists no required targets")
+    if len(set(selected)) != len(selected):
+        raise ReleaseError(f"{RELEASE_TARGETS_FILE} lists a target twice")
+    return selected
 
 
 def classify_runs(runs: list[dict], expected: list[str], commit: str) -> dict:
@@ -423,7 +451,17 @@ def evaluate_gate(context: ReleaseContext) -> dict:
     targets_path = context.source_dir / TARGETS_FILE
     if targets_path.is_symlink() or not targets_path.is_file():
         raise ReleaseError(f"tagged source lacks {TARGETS_FILE}")
-    expected = expected_targets(targets_path.read_text(encoding="utf-8"))
+    gate_path = context.source_dir / RELEASE_TARGETS_FILE
+    if gate_path.is_symlink():
+        raise ReleaseError(f"tagged source {RELEASE_TARGETS_FILE} must not be a symlink")
+    gate_targets = (
+        gate_path.read_text(encoding="utf-8")
+        if gate_path.is_file()
+        else None
+    )
+    expected = expected_targets(
+        targets_path.read_text(encoding="utf-8"), gate_targets
+    )
     decision = classify_runs(
         fetch_runs(context.repository, context.commit), expected, context.commit
     )

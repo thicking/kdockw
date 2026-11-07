@@ -2,7 +2,7 @@
 
 Tier 2 (`tests/appium/`) runs the AT-SPI E2E suite against kdockw built from
 source on Fedora. Tier 3 runs **the same suite** against kdockw **installed from
-its distro package** on each supported distribution, with that distribution's
+its distro package** on each required release representative by default, with that distribution's
 own KWin, Qt, KDE Frameworks, Kirigami and PipeWire. It catches what Tier 2
 cannot:
 
@@ -17,9 +17,9 @@ no VM, no `--privileged`, no KVM.
 ## Running
 
 ```sh
-tests/distro/run-distro-e2e.sh fedora-43                    # full suite
+tests/distro/run-distro-e2e.sh fedora-45                    # required Fedora target
 tests/distro/run-distro-e2e.sh debian-13 test_smoke.py -x   # any pytest arguments
-tests/distro/run-distro-e2e.sh opensuse-tumbleweed --shell  # shell in the container
+tests/distro/run-distro-e2e.sh opensuse-tumbleweed --shell  # explicit compatibility run
 ```
 
 Host requirements are Tier 2's (Docker with buildx, optionally `/dev/dri`;
@@ -38,10 +38,10 @@ status.
 
 ### Selected monitor reproduction
 
-Run the installed-package multi-output cases on both targets:
+Run the installed-package multi-output cases on both required targets:
 
 ```sh
-for TARGET in fedora-43 ubuntu-26.04; do
+for TARGET in fedora-45 ubuntu-26.04; do
     KDOCKW_E2E_OUTPUT_COUNT=2 \
     KDOCKW_E2E_ARTIFACTS=tests/appium/artifacts-distro-$TARGET-2out \
         tests/distro/run-distro-e2e.sh "$TARGET" -m outputs -rs \
@@ -194,16 +194,13 @@ What deliberately stays out of the images:
   into.
 
 Freshness: the hash does not change when a distro's repositories move on.
-`.github/workflows/ci-images.yml` rebuilds and re-pushes the images of the
-rolling targets (`fedora-rawhide`, `opensuse-tumbleweed`,
-`opensuse-slowroll`, `arch`) daily and the others weekly. Because kdockw
-links Qt private API, a day-old rolling image plus today's repositories
-would be a partial upgrade, so on those four targets both the builder and
-the runtime container run the full upgrade (`dnf distro-sync`,
-`zypper dup`, `pacman -Syu`) at job time, the runtime one while the package
-builds; the images are upgraded at build time too, which keeps that delta
-small. The stable targets get no job-time upgrade: their builder and runtime
-come from the same repository snapshot.
+`.github/workflows/ci-images.yml` rebuilds and re-pushes the required release
+images on its schedule. Compatibility images are built only when explicitly
+requested; they are not part of the automatic release-image matrix. Rolling
+compatibility targets receive a full job-time upgrade when manually run because
+their repositories can move independently. Stable required targets use the
+pinned builder/runtime snapshot, with package managers resolving and installing
+declared dependencies during the E2E run.
 
 Dependency download happens off the critical path. Right after the runtime
 upgrade, `packages.sh depfetch` downloads the packaging's declared runtime
@@ -234,8 +231,20 @@ build is fast.
 
 ## Targets
 
-Every row of `tests/distro/targets.tsv` (base images pinned by digest there),
-plus `arch`:
+The required GitHub release gate is the three IDs in
+`tests/distro/release-targets.txt`. Package details, including digest-pinned
+base images, are resolved from `targets.tsv`:
+
+| Required release target | Family | Base image |
+| --- | --- | --- |
+| `debian-13` | Debian stable | `debian:13-slim` |
+| `ubuntu-26.04` | Ubuntu LTS | `ubuntu:26.04` |
+| `fedora-45` | Fedora stable | `fedora:45` |
+
+Additional compatibility rows remain in `tests/distro/targets.tsv` for
+explicit manual runs. They are not selected by `targets=all`, scheduled image
+builds, the release gate, or future release assets. The current manual rows
+are:
 
 | Target | Family | Base image | Platforms |
 | --- | --- | --- | --- |
@@ -249,20 +258,16 @@ plus `arch`:
 | `debian-13` | debian | `debian:13-slim` | amd64, arm64 |
 | `ubuntu-25.04` | debian | `ubuntu:25.04` | amd64, arm64 |
 | `ubuntu-25.10` | debian | `ubuntu:25.10` | amd64, arm64 |
-| `ubuntu-26.04` | debian | `ubuntu:26.04` | amd64, arm64 |
 | `arch` | arch | `archlinux:latest` | amd64 |
 
 `arch` and `opensuse-slowroll` publish amd64 packages only; on an arm64 host
 they need amd64 emulation (qemu-user binfmt) and are otherwise CI-only.
 
-`targets.tsv` is the source of truth for package builds on GitHub. Its fifth
-column is a legacy package identifier retained with the target row; it does not
-select or contact an external repository. The weekly distro release watcher
-(`.github/workflows/distro-release-watch.yml`,
-`scripts/check_distro_releases.py`) compares upstream release dates directly
-with this matrix and opens one issue for a missing target. Add the target here,
-lock the image digest with `tests/distro/update-digests.sh`, and update the
-README installation table after its package build and E2E checks pass.
+`release-targets.txt` selects packages for GitHub releases. The fifth column
+of `targets.tsv` is a legacy package identifier and does not select or contact
+an external repository. The release watcher tracks new Debian stable, Ubuntu
+LTS, and Fedora stable representatives; add a package row, lock its image
+digest, validate it, then update `release-targets.txt` and the README.
 
 The pass criterion per target is Tier 2's result for the same suite. A
 difference that only one distro shows is root-caused: harness or image
@@ -272,16 +277,16 @@ reported and only then pinned with a `xfail(strict=True)` conditioned on
 
 ## CI
 
-`.github/workflows/distro-e2e.yml` runs every target as its own job on a
-GitHub-hosted `ubuntu-latest` (amd64) runner, so `arch` and
-`opensuse-slowroll` run natively there. It triggers on pull requests touching
+`.github/workflows/distro-e2e.yml` runs each required target as its own job on a
+GitHub-hosted `ubuntu-latest` (amd64) runner. `targets=all` reads
+`release-targets.txt`; explicit manual dispatch can select any compatibility
+ID from `targets.tsv`. It triggers on pull requests touching
 the product (`src/`, `packaging/`, `CMakeLists.txt`, `LICENSES/`), the
 harness (`tests/distro/`, `tests/appium/` except its Dockerfile and
-CMakeLists.txt; not Markdown) or the workflow, weekly on a schedule (to
-catch drift in the rolling distros), and on demand (`workflow_dispatch`,
-optional `targets` input: comma/space separated ids, default `all`). The
-maintainer's local release procedure dispatches it against the candidate
-commit and waits for it to pass before tagging. A newer push to a pull request
+CMakeLists.txt; not Markdown) or the workflow, weekly on a schedule for the
+required targets, and on demand (`workflow_dispatch`, optional `targets` input,
+default `all`). The release procedure dispatches it against the candidate
+commit and waits for every required target before tagging. A newer push to a pull request
 cancels its running jobs; `fail-fast` is off, so one distro's failure does
 not hide another's.
 
@@ -295,23 +300,23 @@ default-branch runs, which is where Actions caches are shared with every
 pull request). It then runs `tests/distro/run-distro-e2e.sh <target> -rs`
 with `KDOCKW_E2E_SHARDS=2`: two concurrent `kwin_wayland --virtual` sessions
 compositing with OpenGL through llvmpipe on the vgem device, each running
-every second collected test (all targets, including `ubuntu-25.04`; its old
-preview flake was a PipeWire/KWin untyped-buffer race that
-`tests/appium/kdockw_e2e/preview.py` now renegotiates once). The job adds a
+every second collected test on each required target; the older compatibility
+targets are available only through explicit manual selection. A previously
+observed Ubuntu preview flake was a PipeWire/KWin untyped-buffer race that
+`tests/appium/kdockw_e2e/preview.py` now renegotiates once. The job adds a
 JUnit summary of every `junit.xml` (one per shard) to the step summary (a
 skip caused by QPainter compositing or a missing render node fails it) and
 uploads `tests/appium/artifacts-distro-<target>/` as
 `distro-e2e-<target>`.
 
 `.github/workflows/ci-images.yml` is the only workflow with `packages:
-write`. It builds every image with `build-ci-image.sh`, pushes it, and seeds
-each target's ccache with `build-package.sh <target>`: on pushes to
-`master` that change an image input (missing references only), daily for
-the rolling targets, weekly for the others and `ctest`, and on demand.
+write`. It builds the required release images by default, pushes them, and
+seeds each required target's ccache. Explicit compatibility targets can be
+requested manually.
 Pull requests never push; a pull request that changes an image input builds
 the new image in its own jobs.
 
-Back in `distro-e2e.yml`, the `fedora-43` and `ubuntu-26.04` jobs then run
+Back in `distro-e2e.yml`, the `fedora-45` and `ubuntu-26.04` jobs then run
 the two- and three-output legs from
 [Selected monitor reproduction](#selected-monitor-reproduction), adding
 `KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1` to reuse each job's installed package
@@ -320,8 +325,8 @@ artifacts:
 
 | Target | Outputs | JUnit report | Artifact |
 |---|---|---|---|
-| `fedora-43` | 2 | `tests/appium/artifacts-distro-fedora-43-2out/junit.xml` | `distro-e2e-fedora-43-2out` |
-| `fedora-43` | 3 | `tests/appium/artifacts-distro-fedora-43-3out/junit.xml` | `distro-e2e-fedora-43-3out` |
+| `fedora-45` | 2 | `tests/appium/artifacts-distro-fedora-45-2out/junit.xml` | `distro-e2e-fedora-45-2out` |
+| `fedora-45` | 3 | `tests/appium/artifacts-distro-fedora-45-3out/junit.xml` | `distro-e2e-fedora-45-3out` |
 | `ubuntu-26.04` | 2 | `tests/appium/artifacts-distro-ubuntu-26.04-2out/junit.xml` | `distro-e2e-ubuntu-26.04-2out` |
 | `ubuntu-26.04` | 3 | `tests/appium/artifacts-distro-ubuntu-26.04-3out/junit.xml` | `distro-e2e-ubuntu-26.04-3out` |
 

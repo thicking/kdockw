@@ -17,7 +17,7 @@
 #
 # When a ref is (re)built and pushed:
 #   * missing in ghcr.io (a push to main changed an image input: new hash);
-#   * every daily schedule run, for every distro target and the ctest image.
+#   * every daily schedule run, for the required release targets and ctest image.
 #     Stable distros pin their base digest but still ship Qt/KF/Plasma
 #     updates, and the package installed at test time resolves kdockw's
 #     dependencies from the live repositories: with kdockw linking Qt private
@@ -35,8 +35,8 @@
 # pull request are visible only to that pull request; these runs on the
 # default branch are what every pull request's distro-e2e.yml job restores
 # from. Doing it here costs one ~1-2 min package build per target per day;
-# seeding from distro-e2e.yml on every push to main would run all twelve
-# ~8 min suites per merge. Build & tests seeds its own ccache (e2e.yml runs
+# seeding from distro-e2e.yml on every push to main would run the package
+# install and E2E suite for every required target per merge. Build & tests seeds its own ccache (e2e.yml runs
 # on pushes to main), since that job is the build.
 #
 # Retention (job `prune`, schedule and dispatch only): daily rebuilds move
@@ -73,7 +73,7 @@ on:
   workflow_dispatch:
     inputs:
       targets:
-        description: "Images to publish: distro target ids (tests/distro/targets.tsv or 'arch'), 'ctest', 'vgem' (comma/space separated), or 'all'"
+        description: "Images to publish: required release targets with 'all', explicit compatibility target ids, 'ctest', or 'vgem'"
         required: false
         default: all
       force:
@@ -106,7 +106,9 @@ jobs:
         with:
           persist-credentials: false
           lfs: false
-          sparse-checkout: tests/distro/targets.tsv
+          sparse-checkout: |
+            tests/distro/targets.tsv
+            tests/distro/release-targets.txt
           sparse-checkout-cone-mode: false
 
       - name: Resolve image list
@@ -114,14 +116,18 @@ jobs:
         env:
           REQUESTED: ${{ inputs.targets || 'all' }}
         run: |
-          distro="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv; echo arch)"
+          known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv; echo arch)"
+          required="$(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' tests/distro/release-targets.txt)"
+          for t in $required; do
+            grep -qxF -- "$t" <<<"$known" || { echo "::error::required release target '$t' is not in targets.tsv"; exit 1; }
+          done
           if [[ -z ${REQUESTED// } || $REQUESTED == all ]]; then
-            selected="$distro"$'\n'ctest$'\n'vgem
+            selected="$required"$'\n'ctest$'\n'vgem
           else
             selected="$(tr -s ', ' '\n' <<<"$REQUESTED" | sed '/^$/d')"
             for t in $selected; do
-              grep -qxF -- "$t" <<<"$distro"$'\n'ctest$'\n'vgem || {
-                echo "::error::unknown image '$t' (known: $(tr '\n' ' ' <<<"$distro") ctest vgem)"; exit 1; }
+              grep -qxF -- "$t" <<<"$known"$'\n'ctest$'\n'vgem || {
+                echo "::error::unknown image '$t' (required: $(tr '\n' ' ' <<<"$required"); compatibility: $(tr '\n' ' ' <<<"$known"); plus ctest vgem)"; exit 1; }
             done
           fi
           targets="$(grep -vxE 'ctest|vgem' <<<"$selected" || true)"

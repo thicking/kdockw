@@ -18,22 +18,21 @@
 # Azure runner kernel ships none), compositing with OpenGL through llvmpipe.
 # The module for the runner's kernel comes from ghcr.io (ci-images.yml
 # builds it on the runner kernel); on a kernel it has not seen yet, it is
-# built here. fedora-43 and ubuntu-26.04 additionally rerun the
+# built here. fedora-45 and ubuntu-26.04 additionally rerun the
 # @pytest.mark.outputs(2) tests with two virtual outputs and the selected
 # subset test with three; every other target skips the multi-output tests.
 #
 # ccache: the package build compiles through ccache (KDOCKW_CCACHE_DIR),
-# restored per target from the default branch's seed (ci-images.yml runs the
-# package build daily for that). Pull requests only restore: twelve
-# per-push entries would churn the repository's 10 GB Actions cache;
+# restored per required target from the default branch's seed (ci-images.yml
+# builds those daily). Pull requests only restore; they do not save cache entries.
 # scheduled and dispatched runs save.
 #
 # Triggers: pull requests touching what this workflow builds or runs
 # (through ci.yml, workflow_call; its DISTRO_PATHS hold the path filter
 # below and its required `CI gate` check reports even when this suite does
-# not apply), a weekly schedule to catch rolling-distro drift (arch,
-# opensuse-tumbleweed/slowroll, ...), and manual dispatch, which the
-# maintainer's local release procedure runs against the candidate commit before tagging.
+# not apply), a weekly schedule for the required release targets, and manual
+# dispatch. `all` resolves from release-targets.txt; explicit compatibility
+# targets remain selectable from targets.tsv for manual runs.
 # Path filter: the package is built with BUILD_TESTING=OFF from src/,
 # CMakeLists.txt and packaging/ (plus LICENSES/, which the packages ship);
 # the suite is tests/appium (not its Dockerfile, which only e2e.yml
@@ -51,9 +50,10 @@
 # pytest warning.
 #
 # The target list is resolved in a separate job because it comes from
-# tests/distro/targets.tsv and the dispatch input; a static matrix would
-# duplicate targets.tsv and still start a runner for every unselected
-# target. Measured cost of that job: 5-9 s from run start to matrix jobs
+# tests/distro/release-targets.txt and the dispatch input; a static matrix would
+# duplicate the release target list and still start a runner for every unselected
+# target. Explicit manual runs may select compatibility targets from targets.tsv.
+# Measured cost of that job: 5-9 s from run start to matrix jobs
 # being created.
 
 name: Distro E2E
@@ -62,7 +62,7 @@ on:
   workflow_call:
     inputs:
       targets:
-        description: "Targets (comma/space separated ids from tests/distro/targets.tsv or 'arch'), or 'all'"
+        description: "Required release targets with 'all', or explicit target ids from tests/distro/targets.tsv for manual compatibility runs"
         type: string
         required: false
         default: all
@@ -71,7 +71,7 @@ on:
   workflow_dispatch:
     inputs:
       targets:
-        description: "Targets (comma/space separated ids from tests/distro/targets.tsv or 'arch'), or 'all'"
+        description: "Required release targets with 'all', or explicit target ids from tests/distro/targets.tsv for manual compatibility runs"
         required: false
         default: all
       expected_sha:
@@ -100,7 +100,9 @@ jobs:
         with:
           persist-credentials: false
           lfs: false
-          sparse-checkout: tests/distro/targets.tsv
+          sparse-checkout: |
+            tests/distro/targets.tsv
+            tests/distro/release-targets.txt
           sparse-checkout-cone-mode: false
 
       - name: Verify requested candidate commit
@@ -124,8 +126,12 @@ jobs:
           REQUESTED: ${{ inputs.targets || 'all' }}
         run: |
           known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv; echo arch)"
+          required="$(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' tests/distro/release-targets.txt)"
+          for t in $required; do
+            grep -qxF -- "$t" <<<"$known" || { echo "::error::required release target '$t' is not in targets.tsv"; exit 1; }
+          done
           if [[ -z ${REQUESTED// } || $REQUESTED == all ]]; then
-            selected="$known"
+            selected="$required"
           else
             selected="$(tr -s ', ' '\n' <<<"$REQUESTED" | sed '/^$/d')"
             for t in $selected; do
@@ -299,7 +305,7 @@ jobs:
         # explicitly deselected so this session runs only outputs(2) tests.
         # Reuses the package and image the main run built, and runs even when
         # that run failed on a test.
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
           KDOCKW_E2E_OUTPUT_COUNT: "2"
           KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
@@ -309,14 +315,14 @@ jobs:
             --deselect test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts
 
       - name: JUnit summary (${{ matrix.target }}, 2 outputs)
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         run: |
           python3 .github/scripts/junit-summary.py "Distro E2E: $TARGET (2 outputs)" \
             "tests/appium/artifacts-distro-$TARGET-2out/junit.xml" \
             --forbid-skip 'QPainter|render node' >>"$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         with:
           name: distro-e2e-${{ matrix.target }}-2out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-2out
@@ -325,7 +331,7 @@ jobs:
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }}, 3 outputs)
         # Exact node selection avoids rerunning the two-output contracts.
         # Reuse the main run's package and image even if its tests failed.
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
           KDOCKW_E2E_OUTPUT_COUNT: "3"
           KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
@@ -335,14 +341,14 @@ jobs:
             test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts -rs
 
       - name: JUnit summary (${{ matrix.target }}, 3 outputs)
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         run: |
           python3 .github/scripts/junit-summary.py "Distro E2E: $TARGET (3 outputs)" \
             "tests/appium/artifacts-distro-$TARGET-3out/junit.xml" \
             --forbid-skip 'QPainter|render node' >>"$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
-        if: always() && (matrix.target == 'fedora-43' || matrix.target == 'ubuntu-26.04')
+        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         with:
           name: distro-e2e-${{ matrix.target }}-3out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-3out

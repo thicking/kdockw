@@ -22,8 +22,11 @@ releases without the `development` type.
 Release tooling checks the canonical value and generated metadata against the
 signed release tag. A stable release is not considered published until its
 tagged source passes the full Distro E2E gate and all GitHub assets are
-verified. GitHub Releases is the only active publication channel; packages
-remain built for every supported distribution target in the matrix.
+verified. GitHub Releases is the only publication channel. From v0.3.2,
+packages are built for the required targets in
+`tests/distro/release-targets.txt`: current Debian stable, Ubuntu LTS, and
+stable Fedora. Older compatibility rows are not required gates or release
+assets.
 
 ## Package version forms
 
@@ -42,16 +45,15 @@ These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/P
 `development` release type and required date follow its
 [release metadata specification](https://www.freedesktop.org/software/appstream/docs/sect-Metadata-Releases.html).
 
-These metadata mappings do not prove a binary package has been published. The
-CI Distro E2E matrix builds and installs one package for each listed target;
-only artifacts from the full successful matrix for the exact release commit
-are eligible for GitHub Release uploads. `SHA256SUMS` covers the source archive
-and every package asset.
+These metadata mappings do not prove a binary package has been published. From
+v0.3.2, the CI Distro E2E matrix builds and installs one package for each
+required target in `release-targets.txt`; only artifacts from the full
+successful matrix for the exact release commit are eligible for GitHub Release
+uploads. `SHA256SUMS` covers the source archive and every package asset.
 
 The Arch adapter can render a tag-specific PKGBUILD and `.SRCINFO` using the
-verified archive hash. It is inactive and is not used by the current release
-process; the active GitHub publisher uses the release matrix's verified Arch
-package.
+verified archive hash. Arch remains an explicit manual compatibility target,
+but is excluded from required release gates and v0.3.2+ GitHub package assets.
 
 The JSON and research files under `packaging/submissions/` and the local
 Flatpak validation package are historical receipts for earlier Krema or

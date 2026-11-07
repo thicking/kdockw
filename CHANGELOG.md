@@ -8,6 +8,13 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Changed
+
+- Limited v0.3.2 release packages and Distro E2E gates to current Debian
+  stable, Ubuntu LTS, and stable Fedora representatives. Older compatibility
+  targets remain available for explicit manual testing but are excluded from
+  release assets and required gates.
+
 ## [0.3.1] - 2026-11-07
 
 KDockW 0.3.1 adds release notifications and more precise controls to the KDE

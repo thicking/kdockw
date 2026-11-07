@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest import mock
 
@@ -14,18 +15,22 @@ import check_distro_releases as watcher  # noqa: E402
 class GitHubMatrixWatcherTest(unittest.TestCase):
     def test_target_parser_uses_distro_versions_not_external_repo_fields(self) -> None:
         path = ROOT / "tests/distro/targets.tsv"
-        targets = watcher.parse_targets(path)
-        self.assertIn((44,), targets["fedora"])
+        gate_path = ROOT / "tests/distro/release-targets.txt"
+        targets = watcher.parse_targets(gate_path)
+        self.assertIn((45,), targets["fedora"])
         self.assertIn((26, 4), targets["ubuntu"])
         self.assertIn((13,), targets["debian"])
-        self.assertIn((16, 0), targets["opensuse-leap"])
+        self.assertEqual(set(targets), {"fedora", "ubuntu", "debian"})
+        self.assertIn("opensuse-tumbleweed", path.read_text(encoding="utf-8"))
 
     def test_detection_queries_only_upstream_release_dates(self) -> None:
         versions = {
-            "fedora": [{"cycle": "44", "releaseDate": "2026-04-28"}],
-            "ubuntu": [{"cycle": "26.04", "releaseDate": "2026-04-23"}],
+            "fedora": [{"cycle": "45", "releaseDate": "2026-11-03"}],
+            "ubuntu": [
+                {"cycle": "26.04", "releaseDate": "2026-04-23"},
+                {"cycle": "26.10", "releaseDate": "2026-10-15"},
+            ],
             "debian": [{"cycle": "13", "releaseDate": "2025-08-09"}],
-            "opensuse": [{"cycle": "16.0", "releaseDate": "2025-10-01"}],
         }
 
         def fetch(url: str, _what: str):
@@ -34,41 +39,52 @@ class GitHubMatrixWatcherTest(unittest.TestCase):
 
         with mock.patch.object(watcher, "fetch_json", side_effect=fetch) as request:
             targets = {slug: {key} for slug, key in (
-                ("fedora", (44,)), ("ubuntu", (26, 4)),
-                ("debian", (13,)), ("opensuse-leap", (16, 0)),
+                ("fedora", (45,)), ("ubuntu", (26, 4)), ("debian", (13,)),
             )}
             gaps, incomplete = watcher.detect(targets)
 
         self.assertEqual(gaps, [])
         self.assertFalse(incomplete)
         urls = [call.args[0] for call in request.call_args_list]
-        self.assertEqual(urls, [watcher.EOL_API.format(distro=name) for name in ("fedora", "ubuntu", "debian", "opensuse")])
+        self.assertEqual(urls, [watcher.EOL_API.format(distro=name) for name in ("fedora", "ubuntu", "debian")])
         self.assertFalse(any(host in url for url in urls for host in ("opensuse.org", "fedorainfracloud", "launchpad.net")))
 
     def test_new_release_creates_one_github_matrix_gap(self) -> None:
         releases = {
-            "fedora": [{"cycle": "44", "releaseDate": "2026-04-28"}, {"cycle": "45", "releaseDate": "2026-11-01"}],
-            "ubuntu": [{"cycle": "26.04", "releaseDate": "2026-04-23"}],
+            "fedora": [
+                {"cycle": "45", "releaseDate": "2026-11-03"},
+                {"cycle": "46", "releaseDate": "2027-04-20"},
+            ],
+            "ubuntu": [
+                {"cycle": "26.04", "releaseDate": "2026-04-23"},
+                {"cycle": "26.10", "releaseDate": "2026-10-15"},
+                {"cycle": "28.04", "releaseDate": "2028-04-20"},
+            ],
             "debian": [{"cycle": "13", "releaseDate": "2025-08-09"}],
-            "opensuse": [{"cycle": "16.0", "releaseDate": "2025-10-01"}],
         }
 
         def fetch(url: str, _what: str):
             return releases[url.rsplit("/", 1)[-1].removesuffix(".json")]
 
         targets = {slug: {key} for slug, key in (
-            ("fedora", (44,)), ("ubuntu", (26, 4)),
-            ("debian", (13,)), ("opensuse-leap", (16, 0)),
+            ("fedora", (45,)), ("ubuntu", (26, 4)), ("debian", (13,)),
         )}
-        with mock.patch.object(watcher, "fetch_json", side_effect=fetch):
+        with (
+            mock.patch.object(watcher, "fetch_json", side_effect=fetch),
+            mock.patch.object(watcher, "date") as frozen_date,
+        ):
+            frozen_date.today.return_value = date(2028, 6, 1)
             gaps, incomplete = watcher.detect(targets)
 
         self.assertFalse(incomplete)
         self.assertEqual([(gap.distro, gap.version, gap.key) for gap in gaps], [
-            ("Fedora", "45", "fedora:45:github")
+            ("Fedora", "46", "fedora:46:github"),
+            ("Ubuntu", "28.04", "ubuntu:28.04:github"),
         ])
         self.assertIn("GitHub package matrix", gaps[0].title)
-        self.assertIn("tests/distro/targets.tsv", watcher.build_body(gaps[0]))
+        body = watcher.build_body(gaps[0])
+        self.assertIn("tests/distro/release-targets.txt", body)
+        self.assertNotIn("EOL alone", body)
 
     def test_ci_image_source_label_points_to_kdockw_repository(self) -> None:
         script = (ROOT / "tests/distro/build-ci-image.sh").read_text(encoding="utf-8")

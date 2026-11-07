@@ -391,6 +391,13 @@ class GateTests(unittest.TestCase):
             "b\tdebian\timg\tpending\tB\t*.deb\n"
         )
         self.assertEqual(release.expected_targets(tsv), ["a", "b", "arch"])
+        self.assertEqual(release.expected_targets(tsv, "b\na\n"), ["b", "a"])
+        with self.assertRaises(ReleaseError):
+            release.expected_targets(tsv, "missing\n")
+        with self.assertRaises(ReleaseError):
+            release.expected_targets(tsv, "b\nb\n")
+        with self.assertRaises(ReleaseError):
+            release.expected_targets(tsv, "# empty\n")
         with self.assertRaises(ReleaseError):
             release.expected_targets("a\tx\ty\tz\na\tx\ty\tz\n")
         with self.assertRaises(ReleaseError):
@@ -406,6 +413,14 @@ class GateTests(unittest.TestCase):
         self.assertEqual(
             release.expected_targets(tsv)[:-1], [r.split("\t")[0] for r in rows]
         )
+
+    def test_repository_release_gate_is_small_and_uses_current_representatives(self) -> None:
+        tsv = (ROOT / "tests/distro/targets.tsv").read_text()
+        gates = (ROOT / "tests/distro/release-targets.txt").read_text()
+        expected = ["debian-13", "ubuntu-26.04", "fedora-45"]
+        self.assertEqual(release.expected_targets(tsv, gates), expected)
+        self.assertNotIn("arch", expected)
+        self.assertFalse(any(target.startswith("opensuse-") for target in expected))
 
     def test_full_green_run_is_ready(self) -> None:
         decision = release.classify_runs([self.run_(7)], self.EXPECTED, COMMIT)
@@ -953,6 +968,23 @@ class GithubPublishTests(ContextFixture):
         path.write_text("truncated")
         with self.assertRaises(ReleaseError):
             release_github._sums_file(context)
+
+    def test_github_release_assets_use_only_the_required_gate_targets(self) -> None:
+        files = source_files()
+        files["tests/distro/targets.tsv"] = (
+            "debian-13\tdebian\tdebian:13\tsha256:d\tDebian_13\t*.deb\n"
+            "ubuntu-26.04\tdebian\tubuntu:26.04\tsha256:u\txUbuntu_26.04\t*.deb\n"
+            "fedora-45\tfedora\tfedora:45\tsha256:f\tFedora_45\t*.rpm\n"
+            "opensuse-tumbleweed\tsuse\topensuse/tumbleweed:latest\tsha256:o\topenSUSE_Tumbleweed\t*.rpm\n"
+        )
+        files["tests/distro/release-targets.txt"] = (
+            "debian-13\nubuntu-26.04\nfedora-45\n"
+        )
+        context = load_context(self.write_context(files))
+        self.assertEqual(
+            release_github._target_formats(context),
+            {"debian-13": "deb", "ubuntu-26.04": "deb", "fedora-45": "rpm"},
+        )
 
     def test_exact_matrix_package_artifacts_are_verified_and_added_to_checksums(self) -> None:
         context = load_context(self.write_context())

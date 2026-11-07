@@ -33,11 +33,21 @@ class GitHubOnlyReleasePolicyTest(unittest.TestCase):
 
     def test_policy_docs_keep_package_matrix_and_release_channel_distinct(self) -> None:
         runbook = (ROOT / "docs/releasing/release-process.md").read_text(encoding="utf-8")
-        self.assertIn("only active publication channel", runbook)
+        policy = (ROOT / "docs/releasing/distribution-support-policy.md").read_text(encoding="utf-8")
+        self.assertIn("only publication channel", runbook)
         self.assertIn("Distro E2E", runbook)
         self.assertIn("AUR, OBS, COPR, and Launchpad/PPA", runbook)
         matrix = (ROOT / "tests/distro/targets.tsv").read_text(encoding="utf-8")
         self.assertIn("fedora-44", matrix)
+        gate_text = (ROOT / "tests/distro/release-targets.txt").read_text(encoding="utf-8")
+        gates = [
+            line for line in gate_text.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ]
+        self.assertEqual(gates, ["debian-13", "ubuntu-26.04", "fedora-45"])
+        self.assertIn("v0.3.2", policy)
+        self.assertIn("release-targets.txt", runbook)
+        self.assertNotIn("Arch builds remain in scope", runbook)
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("scripts/check_distro_releases.py", ci)
         self.assertIn("GitHub Release", runbook)

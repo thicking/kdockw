@@ -66,7 +66,7 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 - **Smooth dock interaction** — Classic Zoom, adjustable animation, launch feedback, and configurable running-app indicators.
 - **Live window previews** — Preview open and minimized windows, browse grouped apps, and activate a window with a click.
 - **Personalized appearance** — Adjust panel styling, icon opacity, notification badges, and preview-card sizes.
-- **Ready across Linux distributions** — Download verified packages for Debian, Ubuntu, Fedora, openSUSE, and Arch Linux.
+- **Verified Linux packages** — KDockW packages are published on GitHub Releases. Starting with v0.3.2, the required release matrix covers Debian 13, Ubuntu 26.04 LTS, and Fedora 45.
 
 For implementation and troubleshooting details, see the [window-preview architecture and diagnostics](docs/architecture/window-previews.md), [KDE TaskManager model notes](docs/kde/taskmanager-models.md), and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md). Optional task-model diagnostics log row and role changes without recording window titles.
 
@@ -151,10 +151,17 @@ KDockW 0.3.1 is the latest stable release. Download the source archive, distribu
 
 ### Linux package targets
 
-The release workflow builds one package for each target below, installs it in
-that distribution's test image, and runs the dock E2E suite. All 12 targets
-passed the release matrix for v0.3.1. GitHub Releases is the only active
-publication channel; external package repositories are not used.
+The v0.3.1 release below retains its original 12 verified package assets.
+Starting with v0.3.2, required package builds and Distro E2E checks will cover
+Debian 13, Ubuntu 26.04 LTS, and Fedora 45. This does not promise compatibility
+with every Ubuntu LTS release. TUXEDO OS 24.04 with its updated Qt/KF6 stack has
+been confirmed to run the Ubuntu 26.04 DEB; that does not establish support for
+standard Ubuntu 24.04. Older compatibility targets will not be required gates
+or attached as separate packages to future releases. GitHub Releases is the
+only publication channel.
+
+Building KDockW from source requires Qt 6.8 or newer and KDE Frameworks 6.0 or
+newer.
 
 | Package | Distribution targets |
 | --- | --- |

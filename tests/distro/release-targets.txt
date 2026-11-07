@@ -1,0 +1,7 @@
+# Required package and Distro E2E targets for GitHub Releases from v0.3.2.
+# Keep one representative of each supported release family; update when the
+# upstream current stable/LTS release changes. Manual compatibility targets
+# remain listed separately in targets.tsv and are not release assets.
+debian-13
+ubuntu-26.04
+fedora-45

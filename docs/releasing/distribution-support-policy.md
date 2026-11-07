@@ -1,29 +1,52 @@
 # Distribution Support Policy
 
-This policy governs which distribution releases KDockW packages and the
-conditions for retiring a packaging target.
+## Required release targets from v0.3.2
 
-- A distribution release reaching end of life (EOL) is **never** by itself a
-  reason to remove a packaging target. Keep building and uploading it.
-- A target is retired only when its build breaks and cannot reasonably be fixed,
-  or when a product dependency requirement blocks work and the release cannot
-  provide that dependency.
-- Distribution packages are built and tested by the GitHub Actions Distro E2E
-  matrix, then attached to the GitHub Release. A distro is supported when its
-  target is present in `tests/distro/targets.tsv` and passes the package/E2E
-  gate; support does not depend on an external package-hosting account.
-- Add new distribution releases to the package matrix and README after the
-  package build and Distro E2E target have been validated. The scheduled distro
-  watcher tracks gaps in that GitHub package matrix; it does not query or
-  require AUR, OBS, COPR, or Launchpad/PPA.
-- External package repositories are inactive and are not part of the release
-  gate. Optional adapters may remain in the source tree for future use, but
-  they must not block a GitHub Release.
+GitHub Releases is the only publication channel. Starting with KDockW v0.3.2,
+the required package-build and Distro E2E gates cover one current release from
+each supported family:
+
+| Family | Required representative | Selection rule |
+| --- | --- | --- |
+| Debian | Current Debian stable | Update when Debian stable changes. |
+| Ubuntu | Current Ubuntu LTS | Follow LTS releases only; skip interim YY.10 releases. |
+| Fedora | Current stable Fedora | Update when Fedora stable changes; Rawhide is not required. |
+
+The versioned list is `tests/distro/release-targets.txt`; the selected package
+metadata and pinned base image live in `tests/distro/targets.tsv`. At the time
+this policy was adopted, the representatives are Debian 13, Ubuntu 26.04 LTS,
+and Fedora 45. Update the list at release preparation when upstream stable/LTS
+versions change. Do not add separate mandatory packages for older point or
+distribution releases.
+
+`targets.tsv` may retain additional legacy compatibility rows and packaging
+recipes for explicit manual investigation. Those rows are not selected by
+`targets=all`, scheduled image builds, the release gate, or GitHub Release
+assets. Keeping a manual row does not make it a required release target.
+
+## Publication channels and maintenance
+
+- Build and install the three required package targets in the GitHub Actions
+  Distro E2E workflow, then attach only those verified packages, the source
+  archive, and `SHA256SUMS` to the GitHub Release.
+- AUR, OBS, COPR, and Launchpad/PPA are inactive. Do not create accounts,
+  projects, credentials, keys, or publication steps for them. Optional adapters
+  may remain in the repository but must not enter the release gate.
+- An upstream EOL event alone does not delete a packaging recipe or manual
+  compatibility target. It also does not add that target to future release
+  packages. Required representatives are governed by the current stable/LTS
+  selection above.
+- The scheduled distro watcher reports only newly released current-family
+  representatives eligible for the required matrix: Debian stable, Ubuntu
+  LTS, and Fedora stable.
 
 ## Maintainer reporting and retirement records
 
-- Never remove a supported target because it is EOL.
-- When retiring a target, cite the concrete build failure or blocking
-  dependency requirement and update `tests/distro/targets.tsv`, the README
-  installation table, and CHANGELOG (`### Removed`).
-- Report EOL as information, not as a recommendation to drop support.
+- Do not remove a packaging recipe solely because its distribution release is
+  EOL. A release-gate change is not, by itself, a claim that the underlying
+  package recipe was retired.
+- When removing a recipe, cite the concrete unfixable build failure or blocking
+  dependency requirement, and update `tests/distro/targets.tsv`, the README,
+  and CHANGELOG (`### Removed`).
+- Report EOL as lifecycle information, not as the sole rationale for removing
+  packaging code.

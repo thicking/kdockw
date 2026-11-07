@@ -8,6 +8,10 @@ or version promises. See the [Russian roadmap](ROADMAP.ru.md), the
 
 ## P0 — Stability and release readiness
 
+Starting with v0.3.2, required GitHub Release builds and Distro E2E gates cover
+current Debian stable, current Ubuntu LTS, and stable Fedora only. The v0.3.1
+release remains unchanged; see `docs/releasing/distribution-support-policy.md`.
+
 - [ ] Reproduce and resolve black or missing window previews on real Wayland
   sessions, including hybrid-GPU systems. Keep the experimental CPU-buffer
   retry labelled as experimental until hardware testing confirms its scope.

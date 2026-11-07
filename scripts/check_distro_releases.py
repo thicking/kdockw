@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Track new distro versions missing from KDockW's GitHub package matrix.
+"""Track new supported release representatives missing from KDockW's GitHub matrix.
 
-The workflow checks upstream release dates and compares them with
-``tests/distro/targets.tsv``. It does not query or publish to AUR, OBS, COPR or
-Launchpad. Package builds for every supported target are published as assets
-of the GitHub Release after the full Distro E2E matrix passes.
+The workflow checks upstream release dates and compares Debian stable, Ubuntu
+LTS, and Fedora stable with ``tests/distro/release-targets.txt``. Manual
+compatibility targets in ``targets.tsv`` do not create release-watch gaps.
+Packages are published only as GitHub Release assets after the required matrix
+passes; no external package repository is contacted.
 
 The watcher keeps one GitHub issue per missing distro/version. If a required
 data source is unreachable, the run is partial and makes no issue changes.
@@ -25,7 +26,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TARGETS_FILE = ROOT / "tests/distro/targets.tsv"
+TARGETS_FILE = ROOT / "tests/distro/release-targets.txt"
 USER_AGENT = "kdockw-distro-release-watch (https://github.com/thicking/kdockw)"
 HTTP_TIMEOUT = 20
 EOL_API = "https://endoflife.date/api/{distro}.json"
@@ -42,13 +43,11 @@ TARGET_PATTERNS = {
     "fedora": re.compile(r"^fedora-(\d+)$"),
     "ubuntu": re.compile(r"^ubuntu-(\d+(?:\.\d+)*)$"),
     "debian": re.compile(r"^debian-(\d+(?:\.\d+)*)$"),
-    "opensuse-leap": re.compile(r"^opensuse-leap-(\d+(?:\.\d+)*)$"),
 }
 DISTROS = (
     ("fedora", "Fedora", "fedora"),
     ("ubuntu", "Ubuntu", "ubuntu"),
     ("debian", "Debian", "debian"),
-    ("opensuse", "openSUSE Leap", "opensuse-leap"),
 )
 
 
@@ -90,7 +89,9 @@ def eol_candidates(distro: str) -> dict[tuple[int, ...], tuple[str, str]] | None
         released = str(entry.get("releaseDate", ""))
         if not released or released > today:
             continue
-        if distro == "opensuse" and not re.fullmatch(r"\d+(?:\.\d+)*", cycle):
+        # Ubuntu LTS releases use the April YY.04 cadence; interim YY.10
+        # releases are deliberately outside the required package matrix.
+        if distro == "ubuntu" and not re.fullmatch(r"\d+\.04", cycle):
             continue
         key = version_key(cycle)
         if key:
@@ -99,16 +100,13 @@ def eol_candidates(distro: str) -> dict[tuple[int, ...], tuple[str, str]] | None
 
 
 def parse_targets(path: Path) -> dict[str, set[tuple[int, ...]]]:
-    """Read only target IDs; package-selector fields are not publication channels."""
+    """Read required release target IDs, not optional manual targets."""
     versions = {slug: set() for slug in TARGET_PATTERNS}
     for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         stripped = line.strip()
         if not stripped or stripped.startswith("#"):
             continue
-        fields = line.split("\t")
-        if len(fields) < 1:
-            raise ValueError(f"{path}:{line_number}: missing target ID")
-        target_id = fields[0].strip()
+        target_id = stripped
         for slug, pattern in TARGET_PATTERNS.items():
             match = pattern.fullmatch(target_id)
             if match:
@@ -144,12 +142,9 @@ def build_body(gap: Gap) -> str:
             "build a package for it in the GitHub matrix yet.",
             "",
             f"- Upstream release date: {gap.released}",
-            "- Add a digest-pinned target to `tests/distro/targets.tsv` and the "
-            "README installation table.",
-            "- Run the package build and Distro E2E checks before adding the target.",
-            "",
-            "The target remains supported after its upstream EOL; EOL alone is not "
-            "a reason to remove it.",
+            "- Add or update its package metadata row in `tests/distro/targets.tsv`.",
+            "- Add its ID to `tests/distro/release-targets.txt` and update the README.",
+            "- Run package build and Distro E2E before making it a required release target.",
             "",
             gap.marker,
             "",
