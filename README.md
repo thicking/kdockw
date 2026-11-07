@@ -119,17 +119,14 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW source builds are available. KDockW v0.1.0 is published as the first independent stable release. Source and verified release files are available from [GitHub Releases](https://github.com/thicking/kdockw/releases). See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
-
-The working tree prepares local candidate v0.3.0 for verification. It has not
-been published; release downloads below remain the verified v0.1.0 assets.
+KDockW 0.3.0 is the current stable release, published on 2026-11-07. Download the [source archive, distro packages, and checksums](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0) from GitHub. See the [versioning policy](docs/releasing/versioning.md) and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
 The release workflow builds one package for each target below, installs it in
-that distribution's test image, and runs the dock E2E suite. Release assets are
-named `kdockw-0.1.0-<target>.<format>` and are attached only when the full
-matrix succeeds for the signed release commit.
+that distribution's test image, and runs the dock E2E suite. The v0.3.0
+release assets are named `kdockw-0.3.0-<target>.<format>`; all 12 supported
+targets passed the release matrix for the signed commit.
 
 | Package | Distribution targets |
 | --- | --- |
@@ -140,10 +137,10 @@ matrix succeeds for the signed release commit.
 Install a downloaded local package with the system package manager:
 
 ```bash
-sudo apt install ./kdockw-0.1.0-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.1.0-fedora-44.rpm
-sudo zypper install ./kdockw-0.1.0-opensuse-tumbleweed.rpm
-sudo pacman -U ./kdockw-0.1.0-arch.pkg.tar.zst
+sudo apt install ./kdockw-0.3.0-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.3.0-fedora-44.rpm
+sudo zypper install ./kdockw-0.3.0-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.3.0-arch.pkg.tar.zst
 ```
 
 ```bash

@@ -125,18 +125,17 @@ KDockW — независимая док-панель для KDE Plasma 6 и Way
 
 ## Установка
 
-KDockW можно собрать из исходников. KDockW v0.1.0 опубликована как первый самостоятельный стабильный выпуск. Исходный код и проверенные файлы доступны в разделе [GitHub Releases](https://github.com/thicking/kdockw/releases). Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
-
-В рабочей копии готовится локальный кандидат v0.3.0 для проверки. Он не
-опубликован; приведённые ниже ссылки на загрузку относятся к проверенным
-файлам v0.1.0.
+Текущий стабильный выпуск KDockW — версия 0.3.0, опубликованная 2026-11-07.
+[Исходный архив, пакеты дистрибутивов и контрольные суммы](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.0)
+доступны на GitHub. Подробнее — в [политике версий](docs/releasing/versioning.md)
+и [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
 
 ### Целевые Linux-дистрибутивы
 
 Релизный workflow собирает отдельный пакет для каждой цели ниже, устанавливает
-его в тестовый образ дистрибутива и запускает E2E-проверки дока. Файлы
-называются `kdockw-0.1.0-<цель>.<формат>` и попадут в GitHub Release только
-после успешного прохождения всей матрицы для подписанного релизного commit.
+его в тестовый образ дистрибутива и запускает E2E-проверки дока. Файлы v0.3.0
+называются `kdockw-0.3.0-<цель>.<формат>`; все 12 поддерживаемых целей прошли
+релизную матрицу для подписанного commit.
 
 | Формат | Целевые дистрибутивы |
 | --- | --- |
@@ -147,10 +146,10 @@ KDockW можно собрать из исходников. KDockW v0.1.0 опу
 Установите загруженный файл локального пакета штатным менеджером:
 
 ```bash
-sudo apt install ./kdockw-0.1.0-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.1.0-fedora-44.rpm
-sudo zypper install ./kdockw-0.1.0-opensuse-tumbleweed.rpm
-sudo pacman -U ./kdockw-0.1.0-arch.pkg.tar.zst
+sudo apt install ./kdockw-0.3.0-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.3.0-fedora-44.rpm
+sudo zypper install ./kdockw-0.3.0-opensuse-tumbleweed.rpm
+sudo pacman -U ./kdockw-0.3.0-arch.pkg.tar.zst
 ```
 
 ```bash
