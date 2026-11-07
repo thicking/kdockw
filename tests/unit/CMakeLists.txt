@@ -22,6 +22,7 @@ add_executable(kdockw_unit_tests
     test_desktop_actions.cpp
     test_about_data.cpp
     test_preview_capture_mode.cpp
+    test_release_update_checker.cpp
     test_rounded_clip_geometry.cpp
     test_pipewire_clip_tree.cpp
 )

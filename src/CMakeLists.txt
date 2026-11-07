@@ -2,6 +2,9 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 qt_add_resources(QML_RESOURCES qml/qml.qrc)
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    qt6_add_resources(KDOCKW_DIAGNOSTIC_QML_RESOURCES qml/diagnostic.qrc)
+endif()
 
 kconfig_add_kcfg_files(KDOCKW_KCFG_SRCS GENERATE_MOC config/kdockw.kcfgc)
 
@@ -38,6 +41,9 @@ add_library(kdockw_lib STATIC
     shell/outputordermonitor.h
     shell/outputordermonitor.cpp
 
+    update/releaseupdatechecker.h
+    update/releaseupdatechecker.cpp
+
     config/screensettings.h
     config/screensettings.cpp
 
@@ -72,6 +78,7 @@ add_library(kdockw_lib STATIC
 
     ${KDOCKW_KCFG_SRCS}
     ${QML_RESOURCES}
+    ${KDOCKW_DIAGNOSTIC_QML_RESOURCES}
 )
 
 # kde_output_order_v1: KWin's published primary-output order. The XML is
@@ -95,6 +102,7 @@ target_link_libraries(kdockw_lib PUBLIC
     Qt6::Gui
     Qt6::Widgets
     Qt6::DBus
+    Qt6::Network
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::WaylandClient
@@ -112,6 +120,7 @@ target_link_libraries(kdockw_lib PUBLIC
     KF6::Service
     KF6::KIOGui
     KF6::JobWidgets
+    KF6::Notifications
     LayerShellQt::Interface
     PW::LibTaskManager
     PW::LibNotificationManager
@@ -156,6 +165,8 @@ install(
     FILES com.thicking.kdockw.metainfo.xml
     DESTINATION ${KDE_INSTALL_METAINFODIR}
 )
+
+install(FILES kdockw.notifyrc DESTINATION ${KDE_INSTALL_KNOTIFYRCDIR})
 
 include(ECMInstallIcons)
 ecm_install_icons(

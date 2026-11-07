@@ -32,6 +32,8 @@ Item {
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
+    property bool showCloseButton: false
+    signal closeRequested(var uuid)
     readonly property bool pointerHovered: thumbnailHover.hovered
     property bool forceCpuCapture: false
     property var captureWinId: undefined
@@ -269,7 +271,7 @@ Item {
     Rectangle {
         id: thumbnailContainer
         objectName: "previewThumbnailContainer"
-        anchors.top: titleLabel.bottom
+        anchors.top: titleRow.bottom
         anchors.topMargin: Kirigami.Units.smallSpacing / 2
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.thumbnailWidth
@@ -546,17 +548,42 @@ Item {
         }
     }
 
-    // Window title
-    QQC2.Label {
-        id: titleLabel
+    // Keep the title and its per-window close control in one stable row above
+    // the image. The button receives pointer input outside the activation area.
+    RowLayout {
+        id: titleRow
+        objectName: "previewThumbnailTitleRow"
         anchors.top: parent.top
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: root.thumbnailWidth
-        text: root.title
-        color: root.panelForeground
-        horizontalAlignment: Text.AlignLeft
-        elide: Text.ElideRight
-        maximumLineCount: 1
-        font: Kirigami.Theme.smallFont
+        anchors.left: parent.left
+        anchors.right: parent.right
+        spacing: Kirigami.Units.smallSpacing
+        height: 22
+
+        QQC2.Label {
+            id: titleLabel
+            objectName: "previewThumbnailTitle"
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: root.title
+            color: root.panelForeground
+            horizontalAlignment: Text.AlignLeft
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            maximumLineCount: 1
+            font: Kirigami.Theme.smallFont
+        }
+
+        PreviewCloseButton {
+            objectName: "previewThumbnailCloseButton"
+            visible: root.showCloseButton
+            Layout.preferredWidth: root.showCloseButton ? 22 : 0
+            Layout.minimumWidth: root.showCloseButton ? 22 : 0
+            Layout.maximumWidth: root.showCloseButton ? 22 : 0
+            Layout.preferredHeight: 22
+            Layout.minimumHeight: 22
+            Layout.maximumHeight: 22
+            windowTitle: root.title
+            onClicked: root.closeRequested(root.winId)
+        }
     }
 }

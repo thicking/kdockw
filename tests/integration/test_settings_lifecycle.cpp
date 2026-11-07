@@ -20,6 +20,7 @@
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
 #include "scenegraph/clippedpipewiresourceitem.h"
+#include "update/releaseupdatechecker.h"
 #include "utils/zoomcalculator.h"
 
 #include "config/screensettings.h"
@@ -84,6 +85,7 @@ struct App {
     std::unique_ptr<kdockw::DockModel> model;
     std::unique_ptr<kdockw::NotificationTracker> tracker;
     std::unique_ptr<kdockw::LauncherEntryTracker> launcherEntries;
+    std::unique_ptr<kdockw::ReleaseUpdateChecker> updateChecker;
     std::unique_ptr<MultiDockManager> manager;
 };
 
@@ -103,6 +105,7 @@ App &app()
         a->model = std::make_unique<kdockw::DockModel>();
         a->tracker = std::make_unique<kdockw::NotificationTracker>();
         a->launcherEntries = std::make_unique<kdockw::LauncherEntryTracker>();
+        a->updateChecker = std::make_unique<kdockw::ReleaseUpdateChecker>(a->settings.get());
 
         auto *model = a->model.get();
         qmlRegisterSingletonType<kdockw::DockModel>("com.thicking.kdockw", 1, 0, "DockModel", [model](QQmlEngine *, QJSEngine *) -> QObject * {
@@ -113,6 +116,11 @@ App &app()
         qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
             QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
             return settings;
+        });
+        auto *updateChecker = a->updateChecker.get();
+        qmlRegisterSingletonType<kdockw::ReleaseUpdateChecker>("com.thicking.kdockw", 1, 0, "UpdateChecker", [updateChecker](QQmlEngine *, QJSEngine *) -> QObject * {
+            QQmlEngine::setObjectOwnership(updateChecker, QQmlEngine::CppOwnership);
+            return updateChecker;
         });
         auto *tracker = a->tracker.get();
         qmlRegisterSingletonType<kdockw::NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file alias="settings/DiagnosticUpdateNotificationControls.qml">settings/DiagnosticUpdateNotificationControls.qml</file>
+    </qresource>
+</RCC>

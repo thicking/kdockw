@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.kirigamiaddons.delegates as Delegates
 import org.kde.kirigamiaddons.formcard as FormCard
+import com.thicking.kdockw 1.0
 
 // Settings window: a searchable sidebar of pages next to the selected page.
 // Kirigami.AbstractApplicationWindow has no pageStack (Kirigami's
@@ -196,6 +197,93 @@ Kirigami.AbstractApplicationWindow {
         FormCard.AboutPage {
             objectName: "aboutPage"
             aboutData: SettingsWindow.aboutData
+
+            FormCard.FormHeader {
+                objectName: "updateChecksSectionHeader"
+                title: i18n("Update Checks")
+            }
+
+            FormCard.FormCard {
+                FormCard.FormSwitchDelegate {
+                    objectName: "automaticUpdateChecksSwitch"
+                    text: i18n("Automatically check for updates")
+                    description: i18n("Check for stable KDockW releases no more than once every 24 hours.")
+                    checked: UpdateChecker.automaticChecksEnabled
+                    onToggled: UpdateChecker.automaticChecksEnabled = checked
+                }
+
+                FormCard.FormDelegateSeparator {}
+
+                FormCard.FormSwitchDelegate {
+                    objectName: "updateNotificationsSwitch"
+                    text: i18n("Notify about new versions")
+                    description: i18n("Show a KDE notification when a newer stable release is available.")
+                    checked: UpdateChecker.notificationsEnabled
+                    onToggled: UpdateChecker.notificationsEnabled = checked
+                }
+
+                FormCard.FormDelegateSeparator {
+                    visible: UpdateChecker.diagnosticMode
+                }
+
+                FormCard.AbstractFormDelegate {
+                    objectName: "diagnosticUpdateControlsDelegate"
+                    visible: UpdateChecker.diagnosticMode
+                    contentItem: Loader {
+                        active: UpdateChecker.diagnosticMode
+                        width: parent ? parent.width : 0
+                        source: active ? "qrc:/qml/settings/DiagnosticUpdateNotificationControls.qml" : ""
+                    }
+                }
+
+                FormCard.FormDelegateSeparator {}
+
+                FormCard.FormTextDelegate {
+                    objectName: "updateCheckerStatus"
+                    text: UpdateChecker.statusMessage
+                    description: i18n("Installed version: %1", UpdateChecker.installedVersion)
+                }
+
+                FormCard.FormDelegateSeparator {}
+
+                FormCard.FormTextDelegate {
+                    objectName: "lastSuccessfulUpdateCheck"
+                    text: i18n("Last check")
+                    description: UpdateChecker.lastSuccessfulCheck
+                }
+
+                FormCard.FormDelegateSeparator {
+                    visible: UpdateChecker.updateAvailable
+                }
+
+                FormCard.FormTextDelegate {
+                    objectName: "availableRelease"
+                    visible: UpdateChecker.updateAvailable
+                    text: i18n("Version %1 is available", UpdateChecker.latestReleaseVersion)
+                    description: i18n("Only stable KDockW releases are shown.")
+                }
+
+                FormCard.FormDelegateSeparator {}
+
+                FormCard.AbstractFormDelegate {
+                    objectName: "checkForUpdatesDelegate"
+                    contentItem: QQC2.Button {
+                        text: UpdateChecker.checking ? i18n("Checking…") : i18n("Check for updates")
+                        enabled: !UpdateChecker.checking
+                        onClicked: UpdateChecker.checkManually()
+                        Accessible.name: i18n("Check for updates")
+                    }
+                }
+
+                FormCard.AbstractFormDelegate {
+                    objectName: "openReleasePageDelegate"
+                    visible: UpdateChecker.updateAvailable
+                    contentItem: QQC2.Button {
+                        text: i18n("Open release page")
+                        onClicked: UpdateChecker.openReleasePage()
+                    }
+                }
+            }
         }
     }
     Component {

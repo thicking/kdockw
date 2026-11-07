@@ -8,6 +8,7 @@
         <file>SettingsDialog.qml</file>
         <file>PreviewPopup.qml</file>
         <file>PreviewThumbnail.qml</file>
+        <file>PreviewCloseButton.qml</file>
         <file>PreviewBorderColor.js</file>
         <file>settings/ChoiceCard.qml</file>
         <file>settings/SliderDelegate.qml</file>

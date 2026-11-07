@@ -6,6 +6,51 @@
   <kcfgfile name="kdockwrc"/>
 
   <group name="General">
+    <entry name="CheckForUpdatesAutomatically" type="Bool">
+      <label>Check for updates automatically</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="NotifyAboutUpdates" type="Bool">
+      <label>Notify about new versions</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="LastSuccessfulUpdateCheck" type="String">
+      <label>Time of the last successful update check</label>
+      <default></default>
+    </entry>
+
+    <entry name="LastAutomaticUpdateAttempt" type="String">
+      <label>Time of the last automatic update check attempt</label>
+      <default></default>
+    </entry>
+
+    <entry name="ReleasesApiETag" type="String">
+      <label>GitHub Releases API ETag cache validator</label>
+      <default></default>
+    </entry>
+
+    <entry name="CachedReleaseVersion" type="String">
+      <label>Cached latest stable KDockW release version</label>
+      <default></default>
+    </entry>
+
+    <entry name="CachedReleaseUrl" type="String">
+      <label>Cached latest stable KDockW release URL</label>
+      <default></default>
+    </entry>
+
+    <entry name="LastNotifiedReleaseVersion" type="String">
+      <label>Latest release version already announced to the user</label>
+      <default></default>
+    </entry>
+
+    <entry name="ReleaseApiRetryAfter" type="String">
+      <label>GitHub API rate limit retry time</label>
+      <default></default>
+    </entry>
+
     <entry name="Language" type="String">
       <label>Interface language</label>
       <default>system</default>

@@ -58,6 +58,7 @@ Item {
     function rebuildChildModel() {
         let parentIdx = PreviewController.parentIndex
         if (parentIdx < 0) {
+            popup.groupedPreview = false
             // Keep delegates alive so PipeWire streams pause/resume naturally
             // via visibility cascade. Destroying delegates triggers
             // ScreencastingRequest race conditions on reopen.
@@ -74,6 +75,9 @@ Item {
             parentModelIdx, TaskManager.AbstractTasksModel.WinIdList) || []
 
         let childCount = DockModel.childCount(parentIdx)
+        // Keep this state signal-driven by model rebuilds; DockModel.childCount
+        // is a method call and does not itself participate in QML bindings.
+        popup.groupedPreview = childCount > 0
 
         // === Single window (not grouped): parent row IS the window ===
         // KDE TasksModel tree: single window → rowCount(idx) = 0 (no children)
@@ -218,6 +222,7 @@ Item {
         readonly property color foregroundColor: BadgeTextColor.choose(
             surfaceColor, Kirigami.Theme.textColor)
         readonly property color outlineColor: Qt.alpha(foregroundColor, 0.27)
+        property bool groupedPreview: false
         // The header close button keeps the last hovered window as its target.
         // This preserves per-window close behavior in grouped previews while
         // allowing the pointer to travel from a thumbnail to the header.
@@ -247,15 +252,46 @@ Item {
             closeTargetWinId = entry ? entry.winId : null
         }
 
-        function closeSelectedWindow() {
-            const entry = closeTargetEntry()
-            if (!entry)
-                return
-            const modelIndex = entry.childIndex < 0
-                ? DockModel.tasksModel.index(PreviewController.parentIndex, 0)
-                : DockModel.tasksModel.makeModelIndex(
-                    PreviewController.parentIndex, entry.childIndex)
-            DockModel.tasksModel.requestClose(modelIndex)
+        // Resolve the UUID against the live TaskManager tree at click time.
+        // Thumbnail childIndex can become stale while rows are removed or
+        // reordered; the child's own WinIdList is the identity source.
+        function closeWindowByUuid(uuid) {
+            if (uuid === undefined || uuid === null || PreviewController.parentIndex < 0)
+                return false
+
+            const uuidKey = String(uuid)
+            const parentTaskIndex = PreviewController.parentIndex
+            const parentModelIndex = DockModel.tasksModel.index(parentTaskIndex, 0)
+            if (!parentModelIndex.valid)
+                return false
+
+            const childCount = DockModel.childCount(parentTaskIndex)
+            if (childCount === 0) {
+                const parentWinIds = DockModel.tasksModel.data(
+                    parentModelIndex, TaskManager.AbstractTasksModel.WinIdList) || []
+                // A childless parent is a single window only when its own ID
+                // list is singular. During TaskManager regrouping a parent may
+                // briefly retain an aggregate ID list; never close that row.
+                if (parentWinIds.length !== 1 || String(parentWinIds[0]) !== uuidKey)
+                    return false
+                DockModel.tasksModel.requestClose(parentModelIndex)
+                return true
+            }
+
+            for (let i = 0; i < childCount; i++) {
+                const childModelIndex = DockModel.tasksModel.makeModelIndex(parentTaskIndex, i)
+                if (!childModelIndex.valid)
+                    continue
+                const childWinIds = DockModel.tasksModel.data(
+                    childModelIndex, TaskManager.AbstractTasksModel.WinIdList) || []
+                if (childWinIds.length > 0 && String(childWinIds[0]) === uuidKey) {
+                    DockModel.tasksModel.requestClose(childModelIndex)
+                    return true
+                }
+            }
+
+            // The child may have closed between rendering and the click.
+            return false
         }
 
         visible: requestedVisible || opacity > 0.01
@@ -392,38 +428,12 @@ Item {
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                QQC2.ToolButton {
+                PreviewCloseButton {
                     id: closeButton
                     objectName: "previewCloseButton"
-                    Layout.preferredWidth: 22
-                    Layout.preferredHeight: 22
-                    Layout.minimumWidth: 22
-                    Layout.maximumWidth: 22
-                    Layout.minimumHeight: 22
-                    Layout.maximumHeight: 22
-                    padding: 0
-                    hoverEnabled: true
-
-                    contentItem: Text {
-                        objectName: "previewCloseCross"
-                        text: "×"
-                        color: "#351010"
-                        font.pixelSize: 14
-                        font.weight: Font.DemiBold
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                        renderType: Text.QtRendering
-                        visible: closeButton.hovered || closeButton.down
-                    }
-
-                    Accessible.name: i18n("Close %1",
-                        popup.closeTargetEntry()?.title || PreviewController.appName)
-                    onClicked: popup.closeSelectedWindow()
-
-                    background: Rectangle {
-                        radius: width / 2
-                        color: closeButton.down ? "#E6534D" : "#FF5F57"
-                    }
+                    visible: !popup.groupedPreview && childWindowModel.count === 1
+                    windowTitle: popup.closeTargetEntry()?.title || PreviewController.appName
+                    onClicked: popup.closeWindowByUuid(popup.closeTargetEntry()?.winId)
                 }
             }
 
@@ -448,6 +458,10 @@ Item {
                         isActive: model.isActive
                         parentIndex: PreviewController.parentIndex
                         childIndex: model.childIndex
+                        showCloseButton: popup.groupedPreview
+                        onCloseRequested: function(uuid) {
+                            popup.closeWindowByUuid(uuid)
+                        }
                         onPointerHoveredChanged: {
                             if (pointerHovered)
                                 popup.closeTargetWinId = winId

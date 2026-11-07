@@ -1,0 +1,13 @@
+[Global]
+Name=KDockW
+Comment=KDE Dock for Wayland
+IconName=com.thicking.kdockw
+DesktopEntry=com.thicking.kdockw.desktop
+
+[Event/release-update]
+Name=New KDockW release
+Name[ru]=Новая версия KDockW
+Comment=A new stable KDockW release is available
+Comment[ru]=Доступна новая стабильная версия KDockW
+Action=Popup
+Urgency=Low

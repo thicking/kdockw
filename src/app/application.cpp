@@ -10,6 +10,7 @@
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
 #include "models/taskiconprovider.h"
+#include "update/releaseupdatechecker.h"
 #include "scenegraph/clippedpipewiresourceitem.h"
 #include "shell/dockshell.h"
 #include "shell/dockview.h"
@@ -25,6 +26,7 @@
 #include <KGlobalAccel>
 #include <KLocalizedString>
 #include <KSharedConfig>
+#include <KNotification>
 
 #include <QAction>
 #include <QEvent>
@@ -44,6 +46,9 @@ Q_LOGGING_CATEGORY(lcApp, "kdockw.app")
 static void initResources()
 {
     Q_INIT_RESOURCE(qml);
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    Q_INIT_RESOURCE(diagnostic);
+#endif
 }
 
 namespace kdockw
@@ -118,6 +123,8 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
         settings->save();
     };
     connect(settings, &KDockWSettings::IconSizeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::CheckForUpdatesAutomaticallyChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::NotifyAboutUpdatesChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconSpacingChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ContentPaddingLeftChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ContentPaddingRightChanged, context, saveSettings);
@@ -277,6 +284,31 @@ int Application::run(const KAboutData &aboutData)
     applyLanguagePreference(m_settings->language());
     migrateLegacySettings(m_settings.get());
 
+    const bool diagnosticReleaseMock = diagnosticReleaseMockModeEnabled();
+    const QUrl releaseApiEndpoint = diagnosticReleaseMock ? diagnosticReleaseMockApiUrl() : ReleaseUpdateChecker::releasesApiUrl();
+    m_releaseUpdateChecker = std::make_unique<ReleaseUpdateChecker>(m_settings.get(),
+                                                                    QStringLiteral(KDOCKW_VERSION_STRING),
+                                                                    releaseApiEndpoint,
+                                                                    this,
+                                                                    15000,
+                                                                    diagnosticReleaseMock,
+                                                                    diagnosticReleaseOpenLogPath());
+    connect(m_releaseUpdateChecker.get(), &ReleaseUpdateChecker::newReleaseAvailable, this, [this](const QString &version, const QUrl &url) {
+        if (url != canonicalReleaseUrl(version)) {
+            return;
+        }
+        auto *notification = new KNotification(QStringLiteral("release-update"), KNotification::CloseOnTimeout, this);
+        notification->setTitle(i18n("New KDockW version %1 is available", version));
+        notification->setText(i18n("Installed version %1. Open the release page?", m_releaseUpdateChecker->installedVersion()));
+        notification->setIconName(QStringLiteral("com.thicking.kdockw"));
+        if (auto *action = notification->addDefaultAction(i18n("Open release"))) {
+            connect(action, &KNotificationAction::activated, this, [this, url, version] {
+                m_releaseUpdateChecker->openReleasePageForVersion(version, url);
+            });
+        }
+        notification->sendEvent();
+    });
+
     // Create data model
     m_dockModel = std::make_unique<DockModel>();
     m_dockModel->setPinnedLaunchers(m_settings->pinnedLaunchers());
@@ -298,6 +330,11 @@ int Application::run(const KAboutData &aboutData)
     qmlRegisterSingletonType<KDockWSettings>("com.thicking.kdockw", 1, 0, "DockSettings", [settings](QQmlEngine *, QJSEngine *) -> QObject * {
         QQmlEngine::setObjectOwnership(settings, QQmlEngine::CppOwnership);
         return settings;
+    });
+    auto *updateChecker = m_releaseUpdateChecker.get();
+    qmlRegisterSingletonType<ReleaseUpdateChecker>("com.thicking.kdockw", 1, 0, "UpdateChecker", [updateChecker](QQmlEngine *, QJSEngine *) -> QObject * {
+        QQmlEngine::setObjectOwnership(updateChecker, QQmlEngine::CppOwnership);
+        return updateChecker;
     });
     auto *tracker = m_notificationTracker.get();
     qmlRegisterSingletonType<NotificationTracker>("com.thicking.kdockw", 1, 0, "NotificationTracker", [tracker](QQmlEngine *, QJSEngine *) -> QObject * {
@@ -369,6 +406,7 @@ int Application::run(const KAboutData &aboutData)
         KAboutData::setApplicationData(makeAboutData());
     });
 
+    m_releaseUpdateChecker->checkAutomaticallyIfDue();
     return exec();
 }
 

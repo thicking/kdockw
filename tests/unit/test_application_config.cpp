@@ -56,12 +56,25 @@ TEST_CASE("Diagnostic settings use one file without changing the Plasma environm
     settings.setSharedConfig(config);
     settings.load();
     settings.setIconSize(52);
+    settings.setReleasesApiETag(QStringLiteral("\"isolated-etag\""));
+    settings.setLastSuccessfulUpdateCheck(QStringLiteral("2026-11-07T00:00:00.000Z"));
+    settings.setLastAutomaticUpdateAttempt(QStringLiteral("2026-11-07T00:00:01.000Z"));
+    settings.setCachedReleaseVersion(QStringLiteral("0.3.1"));
+    settings.setCachedReleaseUrl(QStringLiteral("https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.1"));
+    settings.setLastNotifiedReleaseVersion(QStringLiteral("0.3.1"));
+    settings.setReleaseApiRetryAfter(QStringLiteral("2026-11-07T01:00:00.000Z"));
     settings.save();
 
     KDockWSettings restarted;
     restarted.setSharedConfig(kdockw::applicationConfig());
     restarted.load();
     CHECK(restarted.iconSize() == 52);
+    CHECK(restarted.releasesApiETag() == QLatin1String("\"isolated-etag\""));
+    CHECK(restarted.lastSuccessfulUpdateCheck() == QLatin1String("2026-11-07T00:00:00.000Z"));
+    CHECK(restarted.lastAutomaticUpdateAttempt() == QLatin1String("2026-11-07T00:00:01.000Z"));
+    CHECK(restarted.cachedReleaseVersion() == QLatin1String("0.3.1"));
+    CHECK(restarted.lastNotifiedReleaseVersion() == QLatin1String("0.3.1"));
+    CHECK(restarted.releaseApiRetryAfter() == QLatin1String("2026-11-07T01:00:00.000Z"));
     CHECK(QFileInfo::exists(configPath));
 
     ScopedEnvironmentVariable taskDiagnostics("KDOCKW_TASK_DIAGNOSTICS", QByteArrayLiteral("1"));
@@ -73,6 +86,20 @@ TEST_CASE("Diagnostic settings use one file without changing the Plasma environm
     CHECK(kdockw::applicationConfig()->name() == configPath);
 #else
     SUCCEED("Diagnostic configuration routing is compiled only in diagnostic builds");
+#endif
+}
+
+TEST_CASE("Production builds ignore diagnostic release API environment overrides", "[settings][diagnostic][updates]")
+{
+#ifndef KDOCKW_DIAGNOSTIC_BUILD
+    ScopedEnvironmentVariable mockMode("KDOCKW_DIAGNOSTIC_RELEASE_MOCK", QByteArrayLiteral("1"));
+    ScopedEnvironmentVariable apiUrl("KDOCKW_DIAGNOSTIC_RELEASE_API_URL", QByteArrayLiteral("http://127.0.0.1:43210/repos/thicking/kdockw/releases"));
+    ScopedEnvironmentVariable openLog("KDOCKW_DIAGNOSTIC_RELEASE_OPEN_LOG", QByteArrayLiteral("/tmp/should-not-be-read.log"));
+    CHECK_FALSE(kdockw::diagnosticReleaseMockModeEnabled());
+    CHECK(kdockw::diagnosticReleaseMockApiUrl().isEmpty());
+    CHECK(kdockw::diagnosticReleaseOpenLogPath().isEmpty());
+#else
+    SUCCEED("Production environment override gate is checked in production builds");
 #endif
 }
 

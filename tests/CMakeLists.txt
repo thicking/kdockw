@@ -4,6 +4,17 @@
 find_package(Catch2 3 REQUIRED)
 include(Catch)
 
+# The manual Update Checker launcher has no third-party Python dependencies.
+# Register its regression suite when a Python 3 interpreter is available, while
+# keeping Python optional for distribution builds that do not run CTest.
+find_program(KDOCKW_PYTHON3_EXECUTABLE NAMES python3)
+if(KDOCKW_PYTHON3_EXECUTABLE)
+    add_test(NAME kdockw_update_checker_launcher_tests
+        COMMAND ${KDOCKW_PYTHON3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_update_checker_launcher.py
+    )
+    set_tests_properties(kdockw_update_checker_launcher_tests PROPERTIES LABELS "diagnostic;launcher" TIMEOUT 30)
+endif()
+
 add_test(NAME kdockw_desktop_entries
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_DIR=${CMAKE_SOURCE_DIR}

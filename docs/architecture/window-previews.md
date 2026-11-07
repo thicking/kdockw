@@ -37,15 +37,20 @@ changing the neutral hue. The active window keeps the existing two-pixel
 `Kirigami.Theme.highlightColor` outline. The inactive border is a lightweight
 rounded Rectangle over the frame; it does not change capture viewport geometry
 or add an offscreen layer. Card text retains its contrast-selected foreground,
-and radius and soft shadow use existing dock settings. The close control uses
-the approved red-circle state in the top-right of the shared header. The
-tooltip change is styling only; the
+and radius and soft shadow use existing dock settings. A single-window preview
+keeps the approved red-circle close control in the top-right of the shared
+header. Grouped previews put one matching control beside each window title and
+omit the shared header close control. The tooltip change is styling only; the
 separate Application Name Tooltip task still owns its behavior and switching
 rules.
 
 The app name is a compact card header; each window title sits immediately above
-its own thumbnail. Existing activation and close actions remain attached to the
-thumbnail. There is no arrow. Opacity animates on show/hide; the controller's
+its own thumbnail. A grouped close action resolves that thumbnail's UUID against
+the live child rows immediately before calling TaskManager, so a stale delegate
+index cannot redirect it to a neighboring window. If the UUID has already
+disappeared, the action does nothing. Thumbnail activation remains separate
+from the close control. There is no arrow. Opacity animates on show/hide; the
+controller's
 existing geometry and edge placement remain in charge of screen bounds. For
 Panel Inherit and Acrylic styles, the existing KWin blur/contrast helpers are
 applied to the rounded card region on the same preview surface and updated when

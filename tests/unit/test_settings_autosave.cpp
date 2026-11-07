@@ -17,6 +17,7 @@
 #include <KSharedConfig>
 
 #include <QMetaProperty>
+#include <QSet>
 #include <QTemporaryDir>
 
 #include <memory>
@@ -27,6 +28,17 @@ namespace
 // Saved by Application::run()'s pinnedLaunchersChanged handler, not by
 // connectSettingsAutoSave().
 const QString kSeparatelySaved = QStringLiteral("PinnedLaunchers");
+// Internal update-check cache fields are written in batches by
+// ReleaseUpdateChecker::save(), not individually through the settings UI.
+const QSet<QString> kCheckerCacheSettings{
+    QStringLiteral("LastSuccessfulUpdateCheck"),
+    QStringLiteral("LastAutomaticUpdateAttempt"),
+    QStringLiteral("ReleasesApiETag"),
+    QStringLiteral("CachedReleaseVersion"),
+    QStringLiteral("CachedReleaseUrl"),
+    QStringLiteral("LastNotifiedReleaseVersion"),
+    QStringLiteral("ReleaseApiRetryAfter"),
+};
 
 QMetaProperty propertyFor(const KDockWSettings &settings, const QString &itemName)
 {
@@ -112,7 +124,7 @@ TEST_CASE("Changing any single setting persists it across a restart", "[settings
         KDockWSettings settings;
         const auto items = settings.items();
         for (const auto *item : items) {
-            if (item->name() != kSeparatelySaved) {
+            if (item->name() != kSeparatelySaved && !kCheckerCacheSettings.contains(item->name())) {
                 itemNames.append(item->name());
             }
         }

@@ -4,6 +4,7 @@
 #include "app/application.h"
 #include "kdockw.h"
 #include "shell/settingswindow.h"
+#include "update/releaseupdatechecker.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -34,6 +35,7 @@ namespace
 {
 
 KDockWSettings *registeredSettings = nullptr;
+kdockw::ReleaseUpdateChecker *registeredUpdateChecker = nullptr;
 
 void registerDockSettingsSingleton(KDockWSettings *settings)
 {
@@ -51,23 +53,50 @@ void registerDockSettingsSingleton(KDockWSettings *settings)
             return registeredSettings;
         });
     Q_UNUSED(registration);
+    static const int updateCheckerRegistration = qmlRegisterSingletonType<kdockw::ReleaseUpdateChecker>(
+        "com.thicking.kdockw",
+        1,
+        0,
+        "UpdateChecker",
+        [](QQmlEngine *, QJSEngine *) -> QObject * {
+            if (!registeredUpdateChecker) {
+                return nullptr;
+            }
+            QQmlEngine::setObjectOwnership(registeredUpdateChecker, QQmlEngine::CppOwnership);
+            return registeredUpdateChecker;
+        });
+    Q_UNUSED(updateCheckerRegistration);
 }
 
 class ScopedDockSettingsRegistration
 {
 public:
-    explicit ScopedDockSettingsRegistration(KDockWSettings *settings)
+    explicit ScopedDockSettingsRegistration(KDockWSettings *settings, bool diagnosticMode = false)
     {
+        const QUrl endpoint(QStringLiteral("http://127.0.0.1:1/repos/thicking/kdockw/releases"));
+        m_updateChecker = std::make_unique<kdockw::ReleaseUpdateChecker>(settings,
+                                                                        QStringLiteral(KDOCKW_VERSION_STRING),
+                                                                        diagnosticMode ? endpoint : kdockw::ReleaseUpdateChecker::releasesApiUrl(),
+                                                                        nullptr,
+                                                                        15000,
+                                                                        diagnosticMode,
+                                                                        QStringLiteral("/tmp/kdockw-test-open-url.log"));
+        registeredUpdateChecker = m_updateChecker.get();
         registerDockSettingsSingleton(settings);
     }
 
     ~ScopedDockSettingsRegistration()
     {
+        registeredUpdateChecker = nullptr;
+        m_updateChecker.reset();
         registeredSettings = nullptr;
     }
 
     ScopedDockSettingsRegistration(const ScopedDockSettingsRegistration &) = delete;
     ScopedDockSettingsRegistration &operator=(const ScopedDockSettingsRegistration &) = delete;
+
+private:
+    std::unique_ptr<kdockw::ReleaseUpdateChecker> m_updateChecker;
 };
 
 class ScopedConfigHome
@@ -194,11 +223,19 @@ TEST_CASE("The General page saves the selected language on user activation", "[s
     settings.load();
     QObject saveContext;
     kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
-    const ScopedDockSettingsRegistration settingsRegistration(&settings);
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    constexpr bool diagnosticTestMode = true;
+#else
+    constexpr bool diagnosticTestMode = false;
+#endif
+    const ScopedDockSettingsRegistration settingsRegistration(&settings, diagnosticTestMode);
 
     // Load the actual General page, including its FormCard combo delegate,
     // rather than simulating a settings setter or using a mock ComboBox.
     Q_INIT_RESOURCE(qml);
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    Q_INIT_RESOURCE(diagnostic);
+#endif
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
     QStringList qmlWarnings;
@@ -208,6 +245,7 @@ TEST_CASE("The General page saves the selected language on user activation", "[s
         }
     });
     QQmlComponent component(&engine, QUrl(QStringLiteral("qrc:/qml/settings/GeneralPage.qml")));
+    INFO(component.errorString().toStdString());
     REQUIRE(component.isReady());
     std::unique_ptr<QObject> page(component.create());
     REQUIRE(page);
@@ -223,6 +261,10 @@ TEST_CASE("The General page saves the selected language on user activation", "[s
 
     QObject *selector = page->findChild<QObject *>(QStringLiteral("languageSelector"));
     REQUIRE(selector);
+    CHECK_FALSE(page->findChild<QObject *>(QStringLiteral("updateChecksSectionHeader")));
+    CHECK_FALSE(page->findChild<QObject *>(QStringLiteral("automaticUpdateChecksSwitch")));
+    CHECK_FALSE(page->findChild<QObject *>(QStringLiteral("diagnosticUpdateNotificationControls")));
+    CHECK(QFile::exists(QStringLiteral(":/qml/settings/DiagnosticUpdateNotificationControls.qml")) == diagnosticTestMode);
     CHECK(selector->property("currentIndex").toInt() == 0);
     int languageChangedCount = 0;
     QObject::connect(&settings, &KDockWSettings::LanguageChanged, &saveContext, [&languageChangedCount]() {
@@ -309,7 +351,12 @@ TEST_CASE("The settings window language selector shows real options and retransl
     settings.load();
     QObject saveContext;
     kdockw::Application::connectSettingsAutoSave(&settings, &saveContext);
-    const ScopedDockSettingsRegistration settingsRegistration(&settings);
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    constexpr bool diagnosticMode = true;
+#else
+    constexpr bool diagnosticMode = false;
+#endif
+    const ScopedDockSettingsRegistration settingsRegistration(&settings, diagnosticMode);
     int languageChangedCount = 0;
     QObject::connect(&settings, &KDockWSettings::LanguageChanged, &saveContext, [&languageChangedCount]() {
         ++languageChangedCount;
@@ -329,6 +376,9 @@ TEST_CASE("The settings window language selector shows real options and retransl
     });
 
     Q_INIT_RESOURCE(qml);
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    Q_INIT_RESOURCE(diagnostic);
+#endif
     QQmlEngine engine;
     KLocalization::setupLocalizedContext(&engine);
     engine.rootContext()->setContextProperty(QStringLiteral("SettingsWindow"), &settingsWindow);
@@ -355,6 +405,8 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QObject *page = pageLoader->property("item").value<QObject *>();
     REQUIRE(page);
     CHECK(page->property("title").toString() == QStringLiteral("Общие"));
+    CHECK_FALSE(page->findChild<QObject *>(QStringLiteral("updateChecksSectionHeader")));
+    CHECK_FALSE(page->findChild<QObject *>(QStringLiteral("automaticUpdateChecksSwitch")));
     CHECK(page->property("subtitle").toString() == QStringLiteral("Основные настройки и язык приложения"));
     CHECK(window->property("title").toString() == QStringLiteral("Параметры"));
     QObject *sectionHeader = page->findChild<QObject *>(QStringLiteral("languageSectionHeader"));
@@ -533,6 +585,36 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QObject *aboutPage = pageLoader->property("item").value<QObject *>();
     REQUIRE(aboutPage);
     CHECK(aboutPage->objectName() == QLatin1String("aboutPage"));
+    QObject *updateChecksHeader = aboutPage->findChild<QObject *>(QStringLiteral("updateChecksSectionHeader"));
+    QObject *automaticUpdateChecks = aboutPage->findChild<QObject *>(QStringLiteral("automaticUpdateChecksSwitch"));
+    QObject *updateNotifications = aboutPage->findChild<QObject *>(QStringLiteral("updateNotificationsSwitch"));
+    REQUIRE(updateChecksHeader);
+    REQUIRE(automaticUpdateChecks);
+    REQUIRE(updateNotifications);
+    CHECK(updateChecksHeader->property("title").toString() == QLatin1String("Update Checks"));
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    CHECK(QFile::exists(QStringLiteral(":/qml/settings/DiagnosticUpdateNotificationControls.qml")));
+    QObject *diagnosticControls = aboutPage->findChild<QObject *>(QStringLiteral("diagnosticUpdateNotificationControls"));
+    REQUIRE(diagnosticControls);
+    CHECK(diagnosticControls->property("visible").toBool());
+    QObject *release031Button = aboutPage->findChild<QObject *>(QStringLiteral("testRelease031Button"));
+    QObject *release032Button = aboutPage->findChild<QObject *>(QStringLiteral("testRelease032Button"));
+    REQUIRE(release031Button);
+    REQUIRE(release032Button);
+    CHECK(release031Button->property("visible").toBool());
+    CHECK(release032Button->property("visible").toBool());
+    auto *release031Item = qobject_cast<QQuickItem *>(release031Button);
+    auto *release032Item = qobject_cast<QQuickItem *>(release032Button);
+    REQUIRE(release031Item);
+    REQUIRE(release032Item);
+    CHECK(release031Item->width() > 0.0);
+    CHECK(release032Item->width() > 0.0);
+#else
+    CHECK_FALSE(QFile::exists(QStringLiteral(":/qml/settings/DiagnosticUpdateNotificationControls.qml")));
+    CHECK_FALSE(aboutPage->findChild<QObject *>(QStringLiteral("diagnosticUpdateNotificationControls")));
+    CHECK_FALSE(aboutPage->findChild<QObject *>(QStringLiteral("testRelease031Button")));
+    CHECK_FALSE(aboutPage->findChild<QObject *>(QStringLiteral("testRelease032Button")));
+#endif
     QVariantMap aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
     CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QLatin1String("(C) 2026 Krema contributors and KDockW contributors. Based on Krema, originally created by Byeonghoon Yoo."));
@@ -555,6 +637,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QCoreApplication::processEvents();
     aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QStringLiteral("Док-панель KDE для Wayland"));
+    CHECK(updateChecksHeader->property("title").toString() == QStringLiteral("Проверка обновлений"));
     CHECK(aboutData.value(QStringLiteral("copyrightStatement")).toString() == QStringLiteral("© 2026 участники Krema и KDockW. KDockW основан на Krema, первоначально созданной Byeonghoon Yoo."));
     authors = aboutData.value(QStringLiteral("authors")).toList();
     REQUIRE(authors.size() == 2);
@@ -564,6 +647,7 @@ TEST_CASE("The settings window language selector shows real options and retransl
     QCoreApplication::processEvents();
     aboutData = aboutPage->property("aboutData").toMap();
     CHECK(aboutData.value(QStringLiteral("shortDescription")).toString() == QLatin1String("KDE Dock for Wayland"));
+    CHECK(updateChecksHeader->property("title").toString() == QLatin1String("Update Checks"));
 
     REQUIRE(QMetaObject::invokeMethod(window, "openModule", Q_ARG(QVariant, QVariant(QStringLiteral("general")))));
     QCoreApplication::processEvents();

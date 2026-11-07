@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.3.1" date="2026-11-07">
+      <description>
+        <p>Stable release checks now notify users about new KDockW versions, and grouped window previews provide a separate close control for each window.</p>
+        <p xml:lang="ru">Проверка стабильных выпусков уведомляет о новых версиях KDockW, а в групповом предпросмотре для каждого окна появилась отдельная кнопка закрытия.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-11-07">
       <description>
         <p>Window previews now offer rounded, resizable cards for open and minimized windows, with clearer controls and improved icon and badge rendering.</p>

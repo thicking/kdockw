@@ -7,6 +7,7 @@
 
 #include <QDir>
 #include <QFileInfo>
+#include <QUrl>
 
 namespace kdockw
 {
@@ -33,15 +34,60 @@ inline bool diagnosticTaskLoggingEnabled()
 #endif
 }
 
+inline bool diagnosticReleaseMockModeEnabled()
+{
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    static const bool enabled = qEnvironmentVariableIntValue("KDOCKW_DIAGNOSTIC_RELEASE_MOCK") == 1;
+    return enabled;
+#else
+    return false;
+#endif
+}
+
+inline QUrl diagnosticReleaseMockApiUrl()
+{
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    static const QUrl url = [] {
+        const QUrl candidate(qEnvironmentVariable("KDOCKW_DIAGNOSTIC_RELEASE_API_URL"), QUrl::StrictMode);
+        const bool loopback = candidate.host() == QLatin1String("127.0.0.1") || candidate.host() == QLatin1String("::1");
+        if (!candidate.isValid() || candidate.scheme() != QLatin1String("http") || !loopback || candidate.port(-1) < 1
+            || !candidate.userInfo().isEmpty() || !candidate.query().isEmpty() || !candidate.fragment().isEmpty()
+            || candidate.path() != QLatin1String("/repos/thicking/kdockw/releases")) {
+            return QUrl{};
+        }
+        return candidate;
+    }();
+    return url;
+#else
+    return {};
+#endif
+}
+
+inline QString diagnosticReleaseOpenLogPath()
+{
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    static const QString path = [] {
+        const QString value = qEnvironmentVariable("KDOCKW_DIAGNOSTIC_RELEASE_OPEN_LOG");
+        return QFileInfo(value).isAbsolute() ? value : QString{};
+    }();
+    return path;
+#else
+    return {};
+#endif
+}
+
 inline void clearDiagnosticLaunchEnvironment()
 {
 #ifdef KDOCKW_DIAGNOSTIC_BUILD
-    // The explicit config path and logging opt-in are consumed and cached by
-    // KDockW before its models or launch actions are created. Remove them from
+    // Diagnostic config, logging, and local release-mock options are consumed
+    // and cached before models or launch actions are created. Remove them from
     // the process environment so applications started through KIO cannot
     // inherit diagnostic-only settings.
     qunsetenv("KDOCKW_DIAGNOSTIC_CONFIG");
     qunsetenv("KDOCKW_TASK_DIAGNOSTICS");
+    qunsetenv("KDOCKW_DIAGNOSTIC_RELEASE_MOCK");
+    qunsetenv("KDOCKW_DIAGNOSTIC_RELEASE_API_URL");
+    qunsetenv("KDOCKW_DIAGNOSTIC_RELEASE_OPEN_LOG");
 #endif
 }
 

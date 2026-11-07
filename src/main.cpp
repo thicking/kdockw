@@ -74,6 +74,9 @@ int main(int argc, char *argv[])
     const KConfigGroup general(kdockw::applicationConfig(), QStringLiteral("General"));
     kdockw::Application::applyLanguagePreference(general.readEntry(QStringLiteral("Language"), QStringLiteral("system")));
     (void)kdockw::diagnosticTaskLoggingEnabled();
+    (void)kdockw::diagnosticReleaseMockModeEnabled();
+    (void)kdockw::diagnosticReleaseMockApiUrl();
+    (void)kdockw::diagnosticReleaseOpenLogPath();
     kdockw::IconDiagnostics::prepareProcessEnvironment();
     kdockw::clearDiagnosticLaunchEnvironment();
     aboutData = kdockw::Application::makeAboutData();

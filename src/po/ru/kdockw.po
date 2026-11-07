@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.3.0\n"
+"Project-Id-Version: KDockW 0.3.1\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-06 00:00+0500\n"
@@ -1379,3 +1379,99 @@ msgstr "соответствует рекомендуемому значению
 #: src/qml/settings/BadgeColorSettings.qml
 msgid "below recommended 4.5:1"
 msgstr "ниже рекомендуемого значения 4,5:1"
+
+#: src/qml/SettingsDialog.qml
+msgid "Update Checks"
+msgstr "Проверка обновлений"
+
+#: src/qml/SettingsDialog.qml
+msgid "Automatically check for updates"
+msgstr "Автоматически проверять обновления"
+
+#: src/qml/SettingsDialog.qml
+msgid "Check for stable KDockW releases no more than once every 24 hours."
+msgstr "Проверять стабильные выпуски KDockW не чаще одного раза в 24 часа."
+
+#: src/qml/SettingsDialog.qml
+msgid "Notify about new versions"
+msgstr "Уведомлять о новых версиях"
+
+#: src/qml/SettingsDialog.qml
+msgid "Show a KDE notification when a newer stable release is available."
+msgstr "Показывать уведомление KDE, когда выйдет более новая стабильная версия."
+
+#: src/qml/SettingsDialog.qml
+msgid "Installed version: %1"
+msgstr "Установленная версия: %1"
+
+#: src/qml/SettingsDialog.qml
+msgid "Last check"
+msgstr "Последняя проверка"
+
+#: src/qml/SettingsDialog.qml
+msgid "Only stable KDockW releases are shown."
+msgstr "Показываются только стабильные выпуски KDockW."
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Check for updates"
+msgstr "Проверить обновления"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Checking…"
+msgstr "Проверка…"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "You are using the latest version"
+msgstr "Установлена последняя версия"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Version %1 is available"
+msgstr "Доступна версия %1"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Could not check for updates"
+msgstr "Не удалось проверить обновления"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Update check has not been run"
+msgstr "Проверка обновлений ещё не выполнялась"
+
+#: src/qml/SettingsDialog.qml src/update/releaseupdatechecker.cpp
+msgid "Never"
+msgstr "Никогда"
+
+#: src/qml/SettingsDialog.qml
+msgid "Open release page"
+msgstr "Открыть страницу релиза"
+
+#: src/app/application.cpp
+msgid "New KDockW version %1 is available"
+msgstr "Доступна новая версия KDockW %1"
+
+#: src/app/application.cpp
+msgid "Installed version %1. Open the release page?"
+msgstr "Установлена версия %1. Открыть страницу выпуска?"
+
+#: src/app/application.cpp
+msgid "Open release"
+msgstr "Открыть выпуск"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Local notification test"
+msgstr "Локальная проверка уведомлений"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Only a loopback mock is used. Opening a release is recorded locally; no browser is started."
+msgstr "Используется только локальный mock-сервер. Нажатие кнопки открытия записывается в файл; браузер не запускается."
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Check mock release 0.3.1"
+msgstr "Проверить mock-выпуск 0.3.1"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Check mock release 0.3.2"
+msgstr "Проверить mock-выпуск 0.3.2"
+
+#: src/qml/settings/GeneralPage.qml
+msgid "Release action log: %1"
+msgstr "Журнал действия «Открыть выпуск»: %1"

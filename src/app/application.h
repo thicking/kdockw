@@ -20,6 +20,7 @@ class DockModel;
 class LauncherEntryTracker;
 class MultiDockManager;
 class NotificationTracker;
+class ReleaseUpdateChecker;
 
 class Application : public QApplication
 {
@@ -59,6 +60,7 @@ private:
     std::unique_ptr<KDockWSettings> m_settings;
     std::unique_ptr<DockModel> m_dockModel;
     std::unique_ptr<NotificationTracker> m_notificationTracker;
+    std::unique_ptr<ReleaseUpdateChecker> m_releaseUpdateChecker;
     std::unique_ptr<LauncherEntryTracker> m_launcherEntryTracker;
     std::unique_ptr<MultiDockManager> m_dockManager;
     KActionCollection *m_actionCollection = nullptr;

@@ -536,27 +536,23 @@ Item {
 
         function test_closeButtonClosesThatWindow() {
             let popup = makePopup()
-            show(1, "Konsole")
-            const ts = waitThumbs(popup, 3)
+            show(0, "Kate")
+            waitThumbs(popup, 1)
             const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
-            const thumbnailCenter = ts[2].mapToItem(stage,
-                ts[2].thumbnailWidth / 2, ts[2].thumbnailHeight / 2)
-            mouseMove(stage, thumbnailCenter.x, thumbnailCenter.y)
-            tryCompare(ts[2], "pointerHovered", true)
             const closeCenter = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseMove(stage, closeCenter.x, closeCenter.y)
             mouseClick(stage, closeCenter.x, closeCenter.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
-            compare(DockModel.tasksModel.lastRequestRow, 1)
-            compare(DockModel.tasksModel.lastRequestChild, 2)
+            compare(DockModel.tasksModel.lastRequestRow, 0)
+            compare(DockModel.tasksModel.lastRequestChild, -1)
             compare(DockModel.tasksModel.activateRequests, 0)
         }
 
         function test_closeButtonUsesApprovedIdleHoverPressedAppearance() {
             let popup = makePopup()
-            show(1, "Konsole")
-            waitThumbs(popup, 3)
+            show(0, "Kate")
+            waitThumbs(popup, 1)
             const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
             const background = close.background
@@ -596,20 +592,21 @@ Item {
 
             mouseRelease(stage, closeCenter.x, closeCenter.y, Qt.LeftButton)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
-            compare(DockModel.tasksModel.lastRequestRow, 1)
-            compare(DockModel.tasksModel.lastRequestChild, 0,
-                    "without a hovered or keyboard-focused target, close the active group window")
+            compare(DockModel.tasksModel.lastRequestRow, 0)
+            compare(DockModel.tasksModel.lastRequestChild, -1)
         }
 
         function test_closeButtonIsAnchoredToTopRightHeader() {
             let popup = makePopup()
-            show(1, "Konsole")
-            const ts = waitThumbs(popup, 3)
+            show(0, "Kate")
+            const ts = waitThumbs(popup, 1)
             const header = T.findFirst(popup, o => o.objectName === "previewHeader")
             const iconSlot = T.findFirst(popup, o => o.objectName === "previewAppIconSlot")
             const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
             verify(close, "close button not found")
             verify(header && iconSlot, "header app icon or row missing")
+            tryVerify(() => header.width > 0, 2000,
+                      "header layout must settle before asserting its close-button alignment")
             compare(iconSlot.x, 0)
             compare(close.x + close.width, header.width)
             compare(close.y + close.height / 2, iconSlot.y + iconSlot.height / 2)
@@ -666,19 +663,149 @@ Item {
             compare(ts[0].thumbnailHeight, data.width / 1.6)
         }
 
-        function test_closeButtonTargetsKeyboardFocusedGroupedWindow() {
+        function test_groupHasOneCloseButtonPerWindow_data() {
+            return [
+                { tag: "two-windows", count: 2 },
+                { tag: "three-windows", count: 3 },
+                { tag: "four-windows", count: 4 },
+            ]
+        }
+
+        function test_groupHasOneCloseButtonPerWindow(data) {
+            if (data.count === 2) {
+                DockModel.tasksModel.removeChildTask(1, 2)
+                DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-1", "k-2"])
+            } else if (data.count === 4) {
+                DockModel.tasksModel.addChildTask(1, { display: "Konsole 4", WinIdList: ["k-4"] })
+                DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-1", "k-2", "k-3", "k-4"])
+            }
             const popup = makePopup()
             show(1, "Konsole")
-            waitThumbs(popup, 3)
-            PreviewController.previewKeyboardActive = true
-            PreviewController.focusedThumbnailIndex = 1
-            const close = T.findFirst(popup, o => o.objectName === "previewCloseButton")
-            verify(close)
+            const ts = waitThumbs(popup, data.count)
+            compare(T.findAll(popup, o => o.objectName === "previewThumbnailCloseButton").length,
+                    data.count)
+            compare(T.findAll(popup, o => o.objectName === "previewCloseButton" && o.visible).length, 0,
+                    "group previews must not keep a shared header close control")
+            for (const thumbnail of ts) {
+                const close = T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailCloseButton")
+                verify(close && close.visible)
+                const title = T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailTitle")
+                verify(title)
+                verify(title.x + title.width <= close.x,
+                    "window title must elide before its close control")
+                compare(T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailTitleRow").height, 22)
+            }
+        }
+
+        function test_groupCloseControlsFitAllPreviewSizes_data() {
+            return [
+                { tag: "compact", width: 180, height: 113 },
+                { tag: "standard", width: 220, height: 138 },
+                { tag: "enlarged", width: 260, height: 163 },
+                { tag: "large", width: 320, height: 200 },
+            ]
+        }
+
+        function test_groupCloseControlsFitAllPreviewSizes(data) {
+            DockSettings.previewThumbnailSize = data.width
+            DockSettings.previewMaximumHeight = data.height
+            const popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            for (const thumbnail of ts) {
+                const titleRow = T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailTitleRow")
+                const title = T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailTitle")
+                const close = T.findFirst(thumbnail,
+                    o => o.objectName === "previewThumbnailCloseButton")
+                verify(titleRow && title && close)
+                compare(titleRow.height, 22)
+                compare(close.x + close.width, data.width)
+                verify(title.x + title.width <= close.x)
+                compare(thumbnail.thumbnailWidth, data.width)
+            }
+        }
+
+        function test_groupCloseButtonClosesExactUuidWithoutActivatingThumbnail() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const close = T.findFirst(ts[2], o => o.objectName === "previewThumbnailCloseButton")
+            verify(close && close.visible)
+            compare(close.windowTitle, "Konsole 3")
             const center = close.mapToItem(stage, close.width / 2, close.height / 2)
             mouseClick(stage, center.x, center.y)
             tryCompare(DockModel.tasksModel, "closeRequests", 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
-            compare(DockModel.tasksModel.lastRequestChild, 1)
+            compare(DockModel.tasksModel.lastRequestChild, 2)
+            compare(DockModel.tasksModel.activateRequests, 0)
+        }
+
+        function test_groupCloseUuidIsResolvedAfterChildRowsReorder() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            // UUID k-1 moves from row 0 to row 2. Simulate the close callback
+            // arriving from a delegate whose cached childIndex is still 0.
+            DockModel.tasksModel.setChildTaskData(1, 0, "WinIdList", ["k-3"])
+            DockModel.tasksModel.setChildTaskData(1, 2, "WinIdList", ["k-1"])
+            tryCompare(ts[0], "winId", "k-3")
+            const cardPopup = T.findFirst(popup, o => o.objectName === "previewCardPopup")
+            verify(cardPopup)
+            compare(cardPopup.closeWindowByUuid("k-1"), true)
+            tryCompare(DockModel.tasksModel, "closeRequests", 1)
+            compare(DockModel.tasksModel.lastRequestChild, 2,
+                    "the live UUID location, not the stale delegate index, determines the target")
+            compare(DockModel.tasksModel.activateRequests, 0)
+        }
+
+        function test_removedWindowUuidIsNotRedirectedToNeighbor() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            waitThumbs(popup, 3)
+            DockModel.tasksModel.removeChildTask(1, 2)
+            DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-1", "k-2"])
+            const cardPopup = T.findFirst(popup, o => o.objectName === "previewCardPopup")
+            verify(cardPopup)
+            compare(cardPopup.closeWindowByUuid("k-3"), false)
+            compare(DockModel.tasksModel.closeRequests, 0)
+            compare(DockModel.tasksModel.activateRequests, 0)
+        }
+
+        function test_childlessParentWithAggregateIdsIsNotClosedAsSingleWindow() {
+            const popup = makePopup()
+            DockModel.tasksModel.removeChildTask(1, 2)
+            DockModel.tasksModel.removeChildTask(1, 1)
+            DockModel.tasksModel.removeChildTask(1, 0)
+            // Simulate the short TaskManager regrouping interval where the
+            // aggregate parent UUID list is still present after children go.
+            show(1, "Konsole")
+            const cardPopup = T.findFirst(popup, o => o.objectName === "previewCardPopup")
+            verify(cardPopup)
+            compare(cardPopup.closeWindowByUuid("k-1"), false)
+            compare(DockModel.tasksModel.closeRequests, 0)
+            compare(DockModel.tasksModel.activateRequests, 0)
+        }
+
+        function test_groupTransitionToSingleRestoresHeaderButton() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            waitThumbs(popup, 3)
+            DockModel.tasksModel.removeChildTask(1, 2)
+            DockModel.tasksModel.removeChildTask(1, 1)
+            DockModel.tasksModel.removeChildTask(1, 0)
+            DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-1"])
+            const ts = waitThumbs(popup, 1)
+            tryVerify(() => {
+                const button = T.findFirst(popup, o => o.objectName === "previewCloseButton")
+                return button && button.visible
+            })
+            compare(T.findAll(popup, o => o.objectName === "previewThumbnailCloseButton").length, 1)
+            verify(!T.findFirst(ts[0], o => o.objectName === "previewThumbnailCloseButton").visible)
         }
 
         function test_thumbnailSizeFollowsSetting() {

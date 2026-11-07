@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
-import org.kde.kirigami as Kirigami
+import QtQuick
 import org.kde.kirigamiaddons.delegates as Delegates
 import org.kde.kirigamiaddons.formcard as FormCard
 import com.thicking.kdockw 1.0
@@ -60,4 +60,5 @@ SettingsPage {
             }
         }
     }
+
 }
