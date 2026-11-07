@@ -115,5 +115,6 @@ previews via PipeWire, and deep integration with KDE Plasma desktop.
 %{_datadir}/applications/com.thicking.kdockw.desktop
 %{_sysconfdir}/xdg/autostart/com.thicking.kdockw.autostart.desktop
 %{_datadir}/metainfo/com.thicking.kdockw.metainfo.xml
+%{_datadir}/knotifications6/kdockw.notifyrc
 %{_datadir}/icons/hicolor/*/apps/com.thicking.kdockw.*
 %{_datadir}/locale/*/LC_MESSAGES/kdockw.mo
