@@ -26,3 +26,12 @@ TEST_CASE("PipeWire frame scene-graph tree is a child of its clip")
 
     delete clip;
 }
+
+TEST_CASE("minimized preview retains only an existing PipeWire scene-graph frame")
+{
+    QSGNode existingFrame;
+
+    CHECK(kdockw::retainedPipeWireFrameNode(false, &existingFrame) == nullptr);
+    CHECK(kdockw::retainedPipeWireFrameNode(true, nullptr) == nullptr);
+    CHECK(kdockw::retainedPipeWireFrameNode(true, &existingFrame) == &existingFrame);
+}

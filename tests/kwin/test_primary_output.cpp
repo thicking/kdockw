@@ -27,6 +27,7 @@
 #include "shell/dockvisibilitycontroller.h"
 #include "shell/multidockmanager.h"
 #include "shell/previewcontroller.h"
+#include "../dockqmltypes.h"
 
 #include <KAboutData>
 #include <LayerShellQt/Window>
@@ -113,6 +114,7 @@ App &app()
                                                                   QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
                                                                   return launcherEntries;
                                                               });
+        registerDockQmlTypes();
         return a;
     }();
     return *instance;

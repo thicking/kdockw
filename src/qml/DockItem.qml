@@ -97,13 +97,13 @@ Item {
         return 0
     }
 
-    // === Notification (transient attention) ===
-    // Sources: Window.IsDemandingAttention, LauncherEntry urgent, SNI NeedsAttention, badgeCount increase
-
-    // → _triggerAttention() → auto-stops after attentionAnimationDuration. Suppressed by DND.
+    // === Window demands attention ===
+    // Only explicit urgency signals animate: TaskManager demandsAttention,
+    // LauncherEntry urgent, and SNI NeedsAttention. Notification badges are
+    // independent and never trigger this animation.
     //
     // API support matrix:
-    //   fd.o RegisterWatcher: notification(badge↑→animation) + inbox(badge count) + clear(focus/menu/SNI)
+    //   fd.o RegisterWatcher: inbox(badge count) + clear(focus/menu/SNI)
     //   Portal: transparent (routed to fd.o)
     //   SNI: notification(NeedsAttention→animation) + clear(→Active clears fd.o)
     //   LauncherEntry: inbox(count→badge, app-managed) + notification(urgent→animation) + progress bar
@@ -117,17 +117,121 @@ Item {
             || (_appId.length > 0 && NotificationTracker.sniNeedsAttention(_appId))
     }
 
-    // Timed attention animation state — triggers on new attention events, auto-clears after duration
+    // The motion is time-limited; the red running marker remains while the
+    // underlying urgency request persists. Launch motion has priority and
+    // pauses this timer, so urgency is still animated after launch feedback.
     property bool _animationActive: false
-    property int _prevBadgeCount: 0
+    readonly property bool _attentionPending: _isDemandingAttention && !_isActive
+    readonly property real _attentionIntensityFactor:
+        Math.max(0.5, Math.min(1.5, DockSettings.attentionAnimationIntensity / 100.0))
+    readonly property real _launchIntensityFactor:
+        Math.max(0.5, Math.min(2.0, DockSettings.launchBounceIntensity / 100.0))
+    readonly property real _launchSpeedFactor:
+        Math.max(0.5, Math.min(1.5, DockSettings.launchBounceSpeed / 100.0))
+    // Click feedback is intentionally a single, shorter impulse. It shares the
+    // icon-only transform with Launch Bounce, so input geometry is unchanged.
+    readonly property real _clickBounceTarget: {
+        const distance = iconSize * 0.12
+        switch (DockView.edge) {
+        case 0: return distance
+        case 1: return -distance
+        case 2: return distance
+        case 3: return -distance
+        }
+        return -distance
+    }
+    readonly property bool clickBounceRunning: clickBounceAnim.running
+    readonly property bool _attentionIndicatorActive:
+        _attentionPending && (!_showAttentionAnim || _attentionType === 5)
 
     function _triggerAttention() {
-        if (NotificationTracker.dndActive) return
+        // Evaluate the source directly: this function is called from the
+        // demands-attention change handler, before dependent QML readonly
+        // bindings such as _attentionPending have necessarily reevaluated.
+        if (!_isDemandingAttention || _isActive || !DockSettings.attentionAnimationEnabled
+                || NotificationTracker.dndActive || launching || clickBounceAnim.running) {
+            _attentionDiagLog("animation-gated")
+            return
+        }
         _animationActive = true
+        _attentionDiagLog("animation-triggered")
         let dur = DockSettings.attentionAnimationDuration
         if (dur > 0) {
             attentionTimer.interval = dur * 1000
             attentionTimer.restart()
+        } else {
+            attentionTimer.stop()
+        }
+    }
+
+    function _clearAttentionAnimation() {
+        attentionTimer.stop()
+        _animationActive = false
+        _attentionDiagLog("animation-cleared")
+    }
+
+    function _attentionDiagLog(phase) {
+        if (typeof IconDiagnostics === "undefined" || !IconDiagnostics.taskDiagnosticsEnabled)
+            return
+        console.info("[KDOCKW_ATTENTION_TRACE] phase=" + phase
+            + " modelDemandingAttention=" + (model.IsDemandingAttention ?? false)
+            + " active=" + _isActive
+            + " pending=" + _attentionPending
+            + " enabled=" + DockSettings.attentionAnimationEnabled
+            + " type=" + DockSettings.attentionAnimation
+            + " duration=" + DockSettings.attentionAnimationDuration
+            + " dnd=" + NotificationTracker.dndActive
+            + " launching=" + launching
+            + " animationActive=" + _animationActive
+            + " launchBounce=" + bounceAnim.running
+            + " clickBounce=" + clickBounceAnim.running
+            + " longDuration=" + Kirigami.Units.longDuration
+            + " blockReason=" + _attentionBlockReason)
+    }
+
+    readonly property string _attentionBlockReason: {
+        if (!_animationActive) return "duration-inactive"
+        if (!_attentionPending) return "request-not-pending"
+        if (!DockSettings.attentionAnimationEnabled) return "setting-disabled"
+        if (NotificationTracker.dndActive) return "do-not-disturb"
+        if (launching) return "launch-in-progress"
+        if (bounceAnim.running) return "launch-bounce-running"
+        if (clickBounceAnim.running) return "click-bounce-running"
+        if (Kirigami.Units.longDuration <= 0) return "theme-duration-zero"
+        if (DockSettings.attentionAnimation <= 0) return "animation-type-disabled"
+        return "none"
+    }
+
+    readonly property real attentionRotationAngle: attentionRotateT.angle
+    readonly property real attentionBounceX: attentionBounceT.x
+    readonly property real attentionBounceY: attentionBounceT.y
+    readonly property real attentionScale: attentionScaleT.xScale
+    readonly property bool attentionAnimationRunning: _attentionType === 1 ? attentionBounceAnim.running
+        : _attentionType === 2 ? attentionWiggleAnim.running
+        : _attentionType === 3 ? attentionPulseAnim.running : false
+    property var attentionBaselineCenter: null
+
+    Timer {
+        id: attentionMotionDiagnostics
+        objectName: "attentionMotionDiagnostics"
+        interval: 100
+        repeat: true
+        running: typeof IconDiagnostics !== "undefined"
+            && IconDiagnostics.taskDiagnosticsEnabled && dockItem._showAttentionAnim
+        onTriggered: {
+            const center = iconImage.mapToItem(null, iconImage.width / 2, iconImage.height / 2)
+            console.info("[KDOCKW_ATTENTION_MOTION] type=" + dockItem._attentionType
+                + " running=" + dockItem.attentionAnimationRunning
+                + " angle=" + dockItem.attentionRotationAngle.toFixed(3)
+                + " offset=" + dockItem.attentionBounceX.toFixed(2) + "," + dockItem.attentionBounceY.toFixed(2)
+                + " scale=" + dockItem.attentionScale.toFixed(4)
+                + " center=" + center.x.toFixed(2) + "," + center.y.toFixed(2)
+                + " delta=" + (dockItem.attentionBaselineCenter
+                    ? (center.x - dockItem.attentionBaselineCenter.x).toFixed(2) + ","
+                        + (center.y - dockItem.attentionBaselineCenter.y).toFixed(2)
+                    : "unknown")
+                + " itemVisible=" + iconImage.visible
+                + " opacity=" + iconImage.opacity.toFixed(3))
         }
     }
 
@@ -136,22 +240,21 @@ Item {
         onTriggered: dockItem._animationActive = false
     }
 
-    // Attention animation won't run during launch bounce or DND
+    // Attention animation won't run during launch bounce or DND.
     readonly property bool _showAttentionAnim:
-        _animationActive && !launching && DockSettings.attentionAnimation > 0
+        _animationActive && _attentionPending && DockSettings.attentionAnimationEnabled
+        && !launching && !bounceAnim.running && !clickBounceAnim.running
+        && Kirigami.Units.longDuration > 0
+        && DockSettings.attentionAnimation > 0
         && !NotificationTracker.dndActive
 
     readonly property int _attentionType: DockSettings.attentionAnimation
 
-    // --- Notification → animation debug logging ---
+    // --- Demand-attention state logging ---
     on_BadgeCountChanged: {
         _iconDiagLogBadge("count-changed")
         console.log("[NOTIF-TRACE] '" + displayName + "' appId=" + _appId
                     + " badgeCount=" + _badgeCount)
-        if (_badgeCount > _prevBadgeCount) {
-            _triggerAttention()
-        }
-        _prevBadgeCount = _badgeCount
     }
     on_IsDemandingAttentionChanged: {
         console.log("[NOTIF-TRACE] '" + displayName + "' appId=" + _appId
@@ -160,8 +263,11 @@ Item {
                     + " | launcherEntry.urgent=" + _launcherUrgent
                     + " | sniNeedsAttention=" + (_appId.length > 0 ? NotificationTracker.sniNeedsAttention(_appId) : false)
                     + " | badgeCount=" + _badgeCount)
+        _attentionDiagLog("delegate-model-state-changed")
         if (_isDemandingAttention) {
             _triggerAttention()
+        } else {
+            _clearAttentionAnimation()
         }
     }
 
@@ -295,12 +401,34 @@ Item {
     function startLaunchBounce() {
         _launchFeedbackHandled = true
         _launchBounceCount = 0
-        _launchBounceSession = true
         _finishingBounce = false
+        clickBounceAnim.stop()
         bounceAnim.stop()
         bounceTranslate.x = 0
         bounceTranslate.y = 0
+        if (!DockSettings.launchBounceEnabled || Kirigami.Units.longDuration <= 0) {
+            _launchBounceSession = false
+            return
+        }
+        _launchBounceSession = true
         bounceAnim.start()
+    }
+
+    function startClickBounce() {
+        if (!DockSettings.clickBounceEnabled || launching || bounceAnim.running
+                || Kirigami.Units.longDuration <= 0) return
+        clickBounceAnim.stop()
+        bounceTranslate.x = 0
+        bounceTranslate.y = 0
+        _clearAttentionAnimation()
+        clickBounceAnim.start()
+    }
+
+    function stopClickBounce() {
+        if (clickBounceAnim.running) clickBounceAnim.stop()
+        bounceTranslate.x = 0
+        bounceTranslate.y = 0
+        if (_attentionPending) _triggerAttention()
     }
 
     function finishLaunchBounce() {
@@ -337,7 +465,10 @@ Item {
     }
 
     on_IsActiveChanged: {
-        if (_isActive && _launchBounceSession) finishLaunchBounce()
+        if (_isActive) {
+            _clearAttentionAnimation()
+            if (_launchBounceSession) finishLaunchBounce()
+        }
         if (_isActive && manualLaunching) manualLaunching = false
         if (_isActive && _waitingForWindow) {
             _waitingForWindow = false
@@ -347,6 +478,8 @@ Item {
         // LauncherEntry count is app-managed (separate source), so always clear fd.o unconditionally.
         if (_isActive && _appId.length > 0) {
             NotificationTracker.clearUnreadNotifications(_appId)
+        } else if (!_isActive && _attentionPending) {
+            _triggerAttention()
         }
     }
 
@@ -618,6 +751,7 @@ Item {
         _prevChildCount = _childCount
         _delegateGeometryReady = true
         scheduleDelegateGeometryPublication()
+        if (_attentionPending) _triggerAttention()
 
         // Debug: log appId for notification matching verification
         Qt.callLater(function() {
@@ -728,15 +862,17 @@ Item {
 
         // Transforms: launch bounce + attention animations
         transform: [
-            Translate { id: bounceTranslate; x: 0; y: 0 },
-            Translate { id: attentionBounceT; x: 0; y: 0 },
+            Translate { id: bounceTranslate; objectName: "launchBounceTranslate"; x: 0; y: 0 },
+            Translate { id: attentionBounceT; objectName: "attentionBounceTransform"; x: 0; y: 0 },
             Rotation {
                 id: attentionRotateT
+                objectName: "attentionRotationTransform"
                 origin.x: iconSize / 2; origin.y: iconSize / 2
                 angle: 0
             },
             Scale {
                 id: attentionScaleT
+                objectName: "attentionScaleTransform"
                 origin.x: iconSize / 2; origin.y: iconSize / 2
                 xScale: 1.0; yScale: xScale
             }
@@ -850,8 +986,8 @@ Item {
         SequentialAnimation on shadowOpacity {
             running: attentionGlow.visible
             loops: Animation.Infinite
-            NumberAnimation { to: 0.85; duration: 800; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 0.15; duration: 800; easing.type: Easing.InOutSine }
+            NumberAnimation { to: Math.min(1.0, 0.85 * dockItem._attentionIntensityFactor); duration: 800 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { to: Math.max(0.05, 0.85 - 0.7 * dockItem._attentionIntensityFactor); duration: 800 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
         }
     }
 
@@ -1024,13 +1160,17 @@ Item {
     // Bounce property/value depends on edge direction
     readonly property string _bounceProp: DockView.isVertical ? "x" : "y"
     readonly property real _bounceTarget: {
+        // Height is proportional to the unzoomed icon. The transform is on
+        // iconImage, so magnification scales the visible impulse naturally.
+        const distance = iconSize * 0.25 * _launchIntensityFactor
+                       * Math.pow(0.72, _launchBounceCount)
         switch (DockView.edge) {
-        case 0: return 8    // Top: bounce down
-        case 1: return -8   // Bottom: bounce up
-        case 2: return 8    // Left: bounce right
-        case 3: return -8   // Right: bounce left
+        case 0: return distance    // Top: bounce down
+        case 1: return -distance   // Bottom: bounce up
+        case 2: return distance   // Left: bounce right
+        case 3: return -distance  // Right: bounce left
         }
-        return -8
+        return -distance
     }
 
     SequentialAnimation {
@@ -1041,16 +1181,16 @@ Item {
             target: bounceTranslate; property: dockItem._bounceProp
             to: dockItem._bounceTarget
             duration: dockItem._finishingBounce
-                ? Kirigami.Units.longDuration * 0.85
-                : Kirigami.Units.longDuration
+                ? Kirigami.Units.longDuration * 0.85 / dockItem._launchSpeedFactor
+                : Kirigami.Units.longDuration / dockItem._launchSpeedFactor
             easing.type: Easing.OutQuad
         }
         NumberAnimation {
             target: bounceTranslate; property: dockItem._bounceProp
             to: 0
             duration: dockItem._finishingBounce
-                ? Kirigami.Units.longDuration * 0.85
-                : Kirigami.Units.longDuration
+                ? Kirigami.Units.longDuration * 0.85 / dockItem._launchSpeedFactor
+                : Kirigami.Units.longDuration / dockItem._launchSpeedFactor
             easing.type: Easing.InQuad
         }
 
@@ -1061,6 +1201,7 @@ Item {
                 dockItem._launchBounceSession = false
                 bounceTranslate.x = 0
                 bounceTranslate.y = 0
+                dockItem._triggerAttention()
             } else if (dockItem._launchBounceSession
                        && dockItem._launchBounceCount + 1 < dockItem._maxLaunchBounces) {
                 dockItem._launchBounceCount += 1
@@ -1070,16 +1211,74 @@ Item {
                 dockItem._launchBounceSession = false
                 bounceTranslate.x = 0
                 bounceTranslate.y = 0
+                if (!dockItem.launching) dockItem._triggerAttention()
             }
+        }
+    }
+
+    SequentialAnimation {
+        id: clickBounceAnim
+        objectName: "clickBounceAnimation"
+        loops: 1
+        NumberAnimation {
+            target: bounceTranslate
+            property: dockItem._bounceProp
+            to: dockItem._clickBounceTarget
+            duration: Math.max(90, Kirigami.Units.shortDuration * 0.7)
+            easing.type: Easing.OutQuad
+        }
+        NumberAnimation {
+            target: bounceTranslate
+            property: dockItem._bounceProp
+            to: 0
+            duration: Math.max(110, Kirigami.Units.shortDuration * 0.9)
+            easing.type: Easing.OutCubic
+        }
+        onFinished: {
+            bounceTranslate.x = 0
+            bounceTranslate.y = 0
+            if (dockItem._attentionPending) dockItem._triggerAttention()
         }
     }
 
     onLaunchingChanged: {
         if (launching) {
+            attentionTimer.stop()
             if (!_launchFeedbackHandled) startLaunchBounce()
         } else {
             finishLaunchBounce()
             _launchFeedbackHandled = false
+            if (!bounceAnim.running) _triggerAttention()
+        }
+    }
+
+    Connections {
+        target: DockSettings
+        function onLaunchBounceEnabledChanged() {
+            if (!DockSettings.launchBounceEnabled) {
+                bounceAnim.stop()
+                dockItem._launchBounceSession = false
+                dockItem._finishingBounce = false
+                bounceTranslate.x = 0
+                bounceTranslate.y = 0
+            } else if (dockItem.launching && !bounceAnim.running) {
+                dockItem.startLaunchBounce()
+            }
+        }
+        function onClickBounceEnabledChanged() {
+            if (!DockSettings.clickBounceEnabled) dockItem.stopClickBounce()
+        }
+        function onAttentionAnimationEnabledChanged() {
+            if (DockSettings.attentionAnimationEnabled) dockItem._triggerAttention()
+            else dockItem._clearAttentionAnimation()
+        }
+    }
+
+    Connections {
+        target: NotificationTracker
+        function onDndActiveChanged() {
+            if (NotificationTracker.dndActive) dockItem._clearAttentionAnimation()
+            else dockItem._triggerAttention()
         }
     }
 
@@ -1087,60 +1286,69 @@ Item {
 
     // Attention bounce target (bigger than launch bounce)
     readonly property real _attentionBounceTarget: {
+        const distance = 14 * _attentionIntensityFactor
         switch (DockView.edge) {
-        case 0: return 14   // Top: down
-        case 1: return -14  // Bottom: up
-        case 2: return 14   // Left: right
-        case 3: return -14  // Right: left
+        case 0: return distance   // Top: down
+        case 1: return -distance  // Bottom: up
+        case 2: return distance   // Left: right
+        case 3: return -distance // Right: left
         }
-        return -14
+        return -distance
     }
+
+    readonly property real _attentionDurationScale: Kirigami.Units.longDuration / 500.0
 
     // Type 1: Bounce
     SequentialAnimation {
+        id: attentionBounceAnim
+        objectName: "attentionBounceAnimation"
         running: dockItem._showAttentionAnim && dockItem._attentionType === 1
-        onRunningChanged: console.log("[ANIM-TRACE] bounceAttentionAnim.running=" + running
-            + " for '" + dockItem.displayName + "'"
-            + " | _attentionType=" + dockItem._attentionType)
+        onRunningChanged: dockItem._attentionDiagLog("bounce-driver-running-" + running)
         loops: Animation.Infinite
         NumberAnimation {
             target: attentionBounceT; property: dockItem._bounceProp
-            to: dockItem._attentionBounceTarget; duration: 300; easing.type: Easing.OutQuad
+            to: dockItem._attentionBounceTarget; duration: 300 * dockItem._attentionDurationScale; easing.type: Easing.OutQuad
         }
         NumberAnimation {
             target: attentionBounceT; property: dockItem._bounceProp
-            to: 0; duration: 300; easing.type: Easing.InBounce
+            to: 0; duration: 300 * dockItem._attentionDurationScale; easing.type: Easing.InBounce
         }
-        PauseAnimation { duration: 800 }
+        PauseAnimation { duration: 1000 * dockItem._attentionDurationScale }
     }
 
     // Type 2: Wiggle
     SequentialAnimation {
+        id: attentionWiggleAnim
+        objectName: "attentionWiggleAnimation"
         running: dockItem._showAttentionAnim && dockItem._attentionType === 2
+        onRunningChanged: dockItem._attentionDiagLog("wiggle-driver-running-" + running)
         loops: Animation.Infinite
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: 5; duration: 80; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: -5; duration: 160; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: 3; duration: 120; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: -3; duration: 120; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: 1; duration: 100; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: -1; duration: 100; easing.type: Easing.InOutSine }
-        NumberAnimation { target: attentionRotateT; property: "angle"; to: 0; duration: 80; easing.type: Easing.InOutSine }
-        PauseAnimation { duration: 2000 }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: 5 * dockItem._attentionIntensityFactor; duration: 80 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: -5 * dockItem._attentionIntensityFactor; duration: 160 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: 3 * dockItem._attentionIntensityFactor; duration: 120 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: -3 * dockItem._attentionIntensityFactor; duration: 120 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: 1 * dockItem._attentionIntensityFactor; duration: 100 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: -1 * dockItem._attentionIntensityFactor; duration: 100 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        NumberAnimation { target: attentionRotateT; property: "angle"; to: 0; duration: 80 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine }
+        PauseAnimation { duration: 2200 * dockItem._attentionDurationScale }
     }
 
     // Type 3: Pulse
     SequentialAnimation {
+        id: attentionPulseAnim
+        objectName: "attentionPulseAnimation"
         running: dockItem._showAttentionAnim && dockItem._attentionType === 3
+        onRunningChanged: dockItem._attentionDiagLog("pulse-driver-running-" + running)
         loops: Animation.Infinite
         NumberAnimation {
             target: attentionScaleT; property: "xScale"
-            to: 1.15; duration: 600; easing.type: Easing.InOutSine
+            to: 1 + 0.15 * dockItem._attentionIntensityFactor; duration: 600 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
         NumberAnimation {
             target: attentionScaleT; property: "xScale"
-            to: 1.0; duration: 600; easing.type: Easing.InOutSine
+            to: 1.0; duration: 600 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
-        PauseAnimation { duration: 400 }
+        PauseAnimation { duration: 800 * dockItem._attentionDurationScale }
     }
 
     // Type 4: Glow — animation is on MultiEffect (attentionGlow) above
@@ -1151,12 +1359,13 @@ Item {
         loops: Animation.Infinite
         NumberAnimation {
             target: dockItem; property: "_dotBlinkOpacity"
-            to: 0.3; duration: 500; easing.type: Easing.InOutSine
+            to: Math.max(0.2, 1 - 0.7 * dockItem._attentionIntensityFactor); duration: 500 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
         NumberAnimation {
             target: dockItem; property: "_dotBlinkOpacity"
-            to: 1.0; duration: 500; easing.type: Easing.InOutSine
+            to: 1.0; duration: 500 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
+        PauseAnimation { duration: 1200 * dockItem._attentionDurationScale }
     }
 
     // Type 6: Blink — animation on _blinkOpacity
@@ -1171,12 +1380,13 @@ Item {
             + " (type: " + typeof dockItem._attentionType + ")")
         NumberAnimation {
             target: dockItem; property: "_blinkOpacity"
-            to: 0.2; duration: 400; easing.type: Easing.InOutSine
+            to: Math.max(0.35, 1 - 0.65 * dockItem._attentionIntensityFactor); duration: 400 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
         NumberAnimation {
             target: dockItem; property: "_blinkOpacity"
-            to: 1.0; duration: 400; easing.type: Easing.InOutSine
+            to: 1.0; duration: 400 * dockItem._attentionDurationScale; easing.type: Easing.InOutSine
         }
+        PauseAnimation { duration: 1200 * dockItem._attentionDurationScale }
     }
 
     // Reset attention properties when animation stops
@@ -1185,8 +1395,17 @@ Item {
                     + " showAttentionAnim=" + _showAttentionAnim
                     + " | isDemandingAttention=" + _isDemandingAttention
                     + " | launching=" + launching
-                    + " | attentionSetting=" + DockSettings.attentionAnimation)
+                    + " | attentionSetting=" + DockSettings.attentionAnimation
+                    + " | animationActive=" + _animationActive
+                    + " | clickBounce=" + clickBounceAnim.running
+                    + " | launchBounce=" + bounceAnim.running
+                    + " | blockReason=" + _attentionBlockReason)
+        if (_showAttentionAnim) {
+            attentionBaselineCenter = iconImage.mapToItem(null, iconImage.width / 2, iconImage.height / 2)
+            _attentionDiagLog("visible-motion-start")
+        }
         if (!_showAttentionAnim) {
+            _attentionDiagLog("visible-motion-stop")
             attentionBounceT.x = 0
             attentionBounceT.y = 0
             attentionRotateT.angle = 0
@@ -1288,6 +1507,7 @@ Item {
             }
 
             Rectangle {
+                objectName: "runningIndicatorDot"
                 readonly property int indicatorStyle: DockSettings.runningIndicatorStyle
                 readonly property int markerSize: dockItem._indicatorSize
                 readonly property int thickness: indicatorStyle === 0 ? (dockItem.model.IsActive ? markerSize : Math.max(2, markerSize - 1))
@@ -1303,13 +1523,14 @@ Item {
                 height: DockView.isVertical ? length : thickness
                 radius: indicatorStyle === 0 || indicatorStyle === 3 ? Math.max(width, height) / 2
                     : indicatorStyle === 2 ? thickness / 2 : Math.min(width, height) / 3
-                color: (dockItem._showAttentionAnim && dockItem._attentionType === 5)
+                color: dockItem._attentionIndicatorActive
                        ? Kirigami.Theme.negativeTextColor
                        : (DockSettings.runningIndicatorColorMode === 1
                           ? DockSettings.runningIndicatorColor : Kirigami.Theme.textColor)
                 opacity: (dockItem._showAttentionAnim && dockItem._attentionType === 5)
                          ? dockItem._dotBlinkOpacity
-                         : (dockItem.model.IsMinimized ? 0.4 : 0.8)
+                         : (dockItem._attentionIndicatorActive ? 0.9
+                            : (dockItem.model.IsMinimized ? 0.4 : 0.8))
 
                 Rectangle {
                     anchors.fill: parent

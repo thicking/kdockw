@@ -5,6 +5,7 @@
 // driven by task model roles and notification sources.
 import QtQuick
 import QtTest
+import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import "TestUtils.js" as T
 import "../../src/qml/BadgeTextColor.js" as BadgeTextColor
@@ -96,9 +97,9 @@ Item {
         function test_activeWindowHasLargerDot() {
             let item = makeItem({ IsWindow: true, IsActive: false })
             let dot = T.indicatorDots(item)[0]
-            compare(dot.width, 4)
+            compare(dot.width, DockSettings.runningIndicatorSize - 1)
             DockModel.tasksModel.setTaskData(0, "IsActive", true)
-            tryCompare(T.indicatorDots(item)[0], "width", 5)
+            tryCompare(T.indicatorDots(item)[0], "width", DockSettings.runningIndicatorSize)
         }
 
         function test_minimizedWindowDimsDot() {
@@ -603,24 +604,61 @@ Item {
             let item = makeItem({ IsWindow: true })
             verify(!item._showAttentionAnim)
             DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
-            tryCompare(item, "_showAttentionAnim", true)
+            compare(item._animationActive, true)
+            if (item._attentionDurationScale > 0) compare(item._showAttentionAnim, true)
+        }
+
+        function test_attentionModesChangeIconTransform_data() {
+            return [
+                { tag: "wiggle", mode: 2 },
+                { tag: "bounce", mode: 1 },
+            ]
+        }
+
+        function test_attentionModesChangeIconTransform(data) {
+            DockSettings.attentionAnimationEnabled = true
+            DockSettings.attentionAnimationDuration = 5
+            DockSettings.attentionAnimation = data.mode
+            const item = makeItem({ IsWindow: true, IsActive: false })
+            const icon = T.iconImage(item)
+            DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
+            tryVerify(() => item._showAttentionAnim)
+            tryVerify(() => item.attentionAnimationRunning, 1500,
+                      "the selected Attention animation driver must start")
+            if (data.mode === 2) {
+                tryVerify(() => Math.abs(item.attentionRotationAngle) > 0.1, 1500,
+                          "Wiggle must change the icon's Rotation transform")
+            } else {
+                tryVerify(() => Math.abs(item.attentionBounceX) + Math.abs(item.attentionBounceY) > 0.5, 1500,
+                          "Bounce must change the icon's Translate transform")
+            }
+            verify(icon.visible && icon.opacity > 0,
+                   "the animated icon must remain renderable while Attention is active")
         }
 
         function test_attentionSourcesTrigger_data() {
-            return [{ tag: "badge-increase" }, { tag: "sni-needs-attention" }, { tag: "launcher-entry-urgent" }]
+            return [{ tag: "sni-needs-attention" }, { tag: "launcher-entry-urgent" }]
         }
 
         function test_attentionSourcesTrigger(data) {
             DockSettings.attentionAnimation = 3
             let item = makeItem({ IsWindow: true })
             verify(!item._showAttentionAnim)
-            if (data.tag === "badge-increase")
-                NotificationTracker.setUnread("org.kde.dolphin", 1)
-            else if (data.tag === "sni-needs-attention")
+            if (data.tag === "sni-needs-attention")
                 NotificationTracker.setSniAttention("org.kde.dolphin", true)
             else
                 LauncherEntryTracker.setEntry(launcherUrl, { urgent: true })
-            tryCompare(item, "_showAttentionAnim", true)
+            compare(item._animationActive, true)
+            if (item._attentionDurationScale > 0) compare(item._showAttentionAnim, true)
+        }
+
+        function test_notificationBadgeDoesNotTriggerAttentionAnimation() {
+            DockSettings.attentionAnimation = 3
+            const item = makeItem({ IsWindow: true })
+            NotificationTracker.setUnread("org.kde.dolphin", 1)
+            tryCompare(item, "_badgeCount", 1)
+            verify(!item._isDemandingAttention)
+            verify(!item._showAttentionAnim)
         }
 
         function test_attentionAnimationDisabledBySetting() {
@@ -641,6 +679,9 @@ Item {
             DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
             tryCompare(item, "_isDemandingAttention", true)
             verify(!item._showAttentionAnim)
+            NotificationTracker.dndActive = false
+            compare(item._animationActive, true)
+            if (item._attentionDurationScale > 0) compare(item._showAttentionAnim, true)
         }
 
         function test_attentionAnimationStopsAfterDuration() {
@@ -648,17 +689,38 @@ Item {
             DockSettings.attentionAnimationDuration = 1
             let item = makeItem({ IsWindow: true })
             DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
-            tryCompare(item, "_showAttentionAnim", true)
-            tryCompare(item, "_showAttentionAnim", false, 3000)
+            compare(item._animationActive, true)
+            if (item._attentionDurationScale > 0) compare(item._showAttentionAnim, true)
+            tryCompare(item, "_animationActive", false, 3000)
+            verify(item._attentionPending)
+            verify(item._attentionIndicatorActive,
+                   "a persistent request must remain visible after motion ends")
+            DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", false)
+            tryCompare(item, "_attentionPending", false)
+            verify(!item._attentionIndicatorActive)
+        }
+
+        function test_attentionStaticMarkerWhenAnimationIsDisabled() {
+            DockSettings.attentionAnimationEnabled = false
+            const item = makeItem({ IsWindow: true })
+            DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
+            tryCompare(item, "_attentionPending", true)
+            verify(!item._showAttentionAnim)
+            verify(item._attentionIndicatorActive)
+            const indicator = T.indicatorDots(item)[0]
+            verify(indicator)
+            tryCompare(indicator, "color", Kirigami.Theme.negativeTextColor)
         }
 
         function test_blinkAnimationRestoresIconOpacity() {
             DockSettings.attentionAnimation = 6
             DockSettings.attentionAnimationDuration = 1
-            let item = makeItem({ IsWindow: true, IsActive: true })
+            let item = makeItem({ IsWindow: true, IsActive: false })
             let icon = T.iconImage(item)
             DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
-            tryVerify(() => item._blinkOpacity < 1.0, 2000, "blink never dimmed the icon")
+            compare(item._animationActive, true)
+            if (item._attentionDurationScale > 0)
+                tryVerify(() => item._blinkOpacity < 1.0, 2000, "blink never dimmed the icon")
             tryCompare(item, "_showAttentionAnim", false, 3000)
             compare(item._blinkOpacity, 1.0)
             tryCompare(icon, "opacity", 1.0)

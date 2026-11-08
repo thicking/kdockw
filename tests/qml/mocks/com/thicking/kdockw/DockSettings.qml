@@ -8,7 +8,7 @@ import QtQuick
 QtObject {
     property string language: "system"
     property int iconSize: 40
-    property int iconSpacing: 13
+    property int iconSpacing: 10
     property int contentPaddingLeft: 8
     property int contentPaddingRight: 8
     property int contentPaddingTop: 8
@@ -48,14 +48,20 @@ QtObject {
     property int hideDelay: 500
     property bool dockShowHideAnimationEnabled: true
     property int dockShowHideAnimationDuration: 220
-    property real backgroundOpacity: 0.9
+    property real backgroundOpacity: 0.85
     property int backgroundStyle: 2
     property bool useAccentColor: false
     property bool useSystemColor: false
     property string tintColor: "#4b4144"
     property bool separateLaunchers: true
     property int attentionAnimation: 2
-    property int attentionAnimationDuration: 5
+    property int attentionAnimationDuration: 3
+    property bool attentionAnimationEnabled: true
+    property int attentionAnimationIntensity: 100
+    property bool launchBounceEnabled: true
+    property int launchBounceIntensity: 150
+    property int launchBounceSpeed: 100
+    property bool clickBounceEnabled: true
     property int badgeDisplayMode: 0
     property color badgeBackgroundColor: "#ffff3b30"
     property color badgeTextColor: "#ffffffff"
@@ -63,7 +69,7 @@ QtObject {
     property int badgeTextSizePercent: 100
     property int runningIndicatorStyle: 0
     property int runningIndicatorPosition: 0
-    property int runningIndicatorSize: 5
+    property int runningIndicatorSize: 4
     property int runningIndicatorColorMode: 1
     property color runningIndicatorColor: "#ffffffff"
     property real otherDesktopOpacity: 0.4
@@ -72,10 +78,10 @@ QtObject {
     property int previewHoverDelay: 500
     property bool activateWindowOnExternalDrag: true
     property int externalDragActivationDelay: 700
-    property int singleWindowClickAction: 0
+    property int singleWindowClickAction: 1
     property int groupedWindowClickAction: 0
-    property int previewThumbnailSize: 200
-    property int previewMaximumHeight: 180
+    property int previewThumbnailSize: 320
+    property int previewMaximumHeight: 200
     property int previewCardPadding: 8
     property int previewDockGap: 2
     property int previewHideDelay: 400
@@ -84,16 +90,16 @@ QtObject {
     property int screenTransition: 0
     property int virtualDesktopMode: 1
     property bool shadowEnabled: true
-    property int shadowElevation: 15
-    property int shadowLightX: -26
-    property int shadowLightY: -82
+    property int shadowElevation: 1
+    property int shadowLightX: 65
+    property int shadowLightY: -132
     property int shadowLightZ: 500
     property real shadowLightRadius: 5.5
     property color shadowColor: "#80000000"
-    property real shadowIntensity: 0.6
+    property real shadowIntensity: 0.2
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "contentPaddingLeft", "contentPaddingRight", "contentPaddingTop", "contentPaddingBottom", "contentAlignment", "iconOpacity", "maxZoomFactor", "zoomStyle", "magnificationMode", "springStiffness", "springDamping", "springSpeed", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "iconNormalization", "cornerRadius", "floating", "floatingMargin", "visibilityMode", "reserveScreenSpace", "dodgeActiveOnly", "edge", "showDelay", "hideDelay", "dockShowHideAnimationEnabled", "dockShowHideAnimationDuration", "backgroundOpacity", "backgroundStyle", "useAccentColor", "useSystemColor", "tintColor", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "badgeDisplayMode", "badgeBackgroundColor", "badgeTextColor", "badgeFontWeight", "badgeTextSizePercent", "runningIndicatorStyle", "runningIndicatorPosition", "runningIndicatorSize", "runningIndicatorColorMode", "runningIndicatorColor", "otherDesktopOpacity", "previewEnabled", "cpuOnlyPreviewCapture", "previewHoverDelay", "previewHideDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "previewMaximumHeight", "previewCardPadding", "previewDockGap", "monitorMode", "followActiveTrigger", "screenTransition", "virtualDesktopMode", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
+    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "contentPaddingLeft", "contentPaddingRight", "contentPaddingTop", "contentPaddingBottom", "contentAlignment", "iconOpacity", "maxZoomFactor", "zoomStyle", "magnificationMode", "springStiffness", "springDamping", "springSpeed", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "iconNormalization", "cornerRadius", "floating", "floatingMargin", "visibilityMode", "reserveScreenSpace", "dodgeActiveOnly", "edge", "showDelay", "hideDelay", "dockShowHideAnimationEnabled", "dockShowHideAnimationDuration", "backgroundOpacity", "backgroundStyle", "useAccentColor", "useSystemColor", "tintColor", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "attentionAnimationEnabled", "attentionAnimationIntensity", "launchBounceEnabled", "launchBounceIntensity", "launchBounceSpeed", "clickBounceEnabled", "badgeDisplayMode", "badgeBackgroundColor", "badgeTextColor", "badgeFontWeight", "badgeTextSizePercent", "runningIndicatorStyle", "runningIndicatorPosition", "runningIndicatorSize", "runningIndicatorColorMode", "runningIndicatorColor", "otherDesktopOpacity", "previewEnabled", "cpuOnlyPreviewCapture", "previewHoverDelay", "previewHideDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "previewMaximumHeight", "previewCardPadding", "previewDockGap", "monitorMode", "followActiveTrigger", "screenTransition", "virtualDesktopMode", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

@@ -961,6 +961,13 @@ Item {
                     idx, TaskManager.AbstractTasksModel.IsWindow)
                 let isGroup = DockModel.tasksModel.data(
                     idx, TaskManager.AbstractTasksModel.IsGroupParent)
+                // A regular click on a running task produces brief feedback.
+                // The explicit group-preview action is navigation only, and
+                // launchers retain their separate Launch Bounce behavior.
+                if (isWindow && !(isGroup && DockSettings.groupedWindowClickAction === 1)) {
+                    let item = dockRepeater.itemAt(root.hoveredIndex)
+                    if (item) item.startClickBounce()
+                }
                 if (isWindow && isGroup && DockSettings.groupedWindowClickAction === 1) {
                     tooltipItem.show = false
                     tooltipTimer.stop()

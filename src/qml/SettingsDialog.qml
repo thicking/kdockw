@@ -85,7 +85,10 @@ Kirigami.AbstractApplicationWindow {
             text: i18n("Animations & Badges"),
             iconName: "preferences-desktop-notification",
             group: "",
-            keywords: [i18n("Attention animation"), i18n("Badge display"), i18n("Badge text weight"),
+            keywords: [i18n("Launch bounce"), i18n("Launch bounce height (% of icon size)"), i18n("Launch bounce speed (%)"),
+                i18n("Click bounce"), i18n("Show a bounce when activating an open app"),
+                i18n("Animate application launches"), i18n("Attention animation"),
+                i18n("Animate apps that demand attention"), i18n("Attention animation intensity (%)"), i18n("Badge display"), i18n("Badge text weight"),
                 i18n("Badge text size"), i18n("Running indicators"),
                 i18n("Indicator style"), i18n("Indicator position"), i18n("Indicator size (logical px)"),
                 i18n("Indicator color"), i18n("Screen edge"), i18n("Dock interior"), i18n("Automatic (theme)"), i18n("Custom")]

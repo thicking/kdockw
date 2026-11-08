@@ -77,6 +77,32 @@ unsuitable because flat colors can replace content incorrectly over
 translucent cards or KWin blur. Each window title remains one elided line
 constrained to the same outer slot.
 
+When TaskManager marks a window minimized after KDockW has received a frame
+while it was visible, `ClippedPipeWireSourceItem` retains its current scene-
+graph subtree for as long as that source item remains alive. KWin can replace a
+minimized window's stream with a placeholder, and `ready` only means a first
+frame arrived; it does not prove that later frames still contain the window.
+The source node alone is therefore not a durable frame cache across hiding or
+recreating the popup.
+
+While a preview row is visible and has received a frame, KDockW snapshots the
+rendered thumbnail at a two-second cadence with `QQuickItem::grabToImage()`.
+Snapshots are scaled to at most 640×400 and retained in a process-local LRU
+cache capped at four images and 4 MiB total, keyed by a hash of the exact
+window UUID. The cached image is shown for that UUID while minimized and after
+the popup is recreated; a reused delegate resets its live source when its UUID
+changes. Closing a task removes its cached entry. The cache is never persisted
+to disk, and an icon remains the fallback if no real frame was received before
+minimization. Capture runs only while the preview row is visible. The Qt grab
+uses an additional render/readback, so its CPU cost still needs measurement in
+the owner's Wayland session.
+
+The preview surface size is derived from its actual content rows rather than
+from a layout that fills the card and would otherwise create a circular
+implicit-size dependency. The thumbnail row explicitly reports its width and
+uses the delegate's measured implicit height. This keeps the card's left,
+right, and bottom insets equal to the configured padding for each size preset.
+
 The first rounded clipping implementation was structurally incorrect. Its
 `RoundedClipItem::updatePaintNode()` returned a custom `QSGClipNode`, assuming
 QML child items would be attached beneath that custom paint node. Qt 6 instead

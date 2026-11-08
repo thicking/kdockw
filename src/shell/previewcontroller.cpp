@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
 #include "previewcontroller.h"
+#include "previewframecache.h"
 
 #include "dockview.h"
 #include "dockvisibilitycontroller.h"
@@ -26,6 +27,8 @@
 #include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QQuickView>
+#include <QQuickImageProvider>
+#include <QPointer>
 #include <QScreen>
 #include <QPainterPath>
 #include <qpa/qplatformnativeinterface.h>
@@ -35,11 +38,40 @@ Q_LOGGING_CATEGORY(lcPreview, "kdockw.shell.preview")
 namespace kdockw
 {
 
+namespace
+{
+
+class PreviewFrameImageProvider final : public QQuickImageProvider
+{
+public:
+    explicit PreviewFrameImageProvider(PreviewFrameCache *cache)
+        : QQuickImageProvider(QQuickImageProvider::Image)
+        , m_cache(cache)
+    {
+    }
+
+    QImage requestImage(const QString &id, QSize *size, const QSize &) override
+    {
+        const QString key = id.section(QLatin1Char('?'), 0, 0);
+        const QImage image = m_cache ? m_cache->imageForKey(key) : QImage{};
+        if (size) {
+            *size = image.size();
+        }
+        return image;
+    }
+
+private:
+    QPointer<PreviewFrameCache> m_cache;
+};
+
+} // namespace
+
 PreviewController::PreviewController(DockModel *model, DockView *dockView, KDockWSettings *settings, QObject *parent)
     : QObject(parent)
     , m_model(model)
     , m_dockView(dockView)
     , m_settings(settings)
+    , m_previewFrameCache(std::make_unique<PreviewFrameCache>())
 {
     const QByteArray captureMode = qgetenv("KDOCKW_PREVIEW_CAPTURE_MODE").trimmed().toLower();
     if (captureMode == "cpu-only") {
@@ -91,6 +123,9 @@ void PreviewController::initialize()
     m_previewView = std::make_unique<QQuickView>(m_dockView->engine(), nullptr);
     m_previewView->setColor(Qt::transparent);
     m_previewView->setResizeMode(QQuickView::SizeRootObjectToView);
+    auto *engine = m_dockView->engine();
+    engine->addImageProvider(QStringLiteral("previewframes"), new PreviewFrameImageProvider(m_previewFrameCache.get()));
+    connect(m_previewFrameCache.get(), &PreviewFrameCache::revisionChanged, this, &PreviewController::previewFramesChanged);
 
     // Layer-shell configuration: overlay above the dock
     auto *layerWindow = LayerShellQt::Window::get(m_previewView.get());
@@ -238,6 +273,31 @@ bool PreviewController::cpuCaptureOnly() const
 bool PreviewController::captureModeOverridden() const
 {
     return m_captureModeOverridden;
+}
+
+quint64 PreviewController::previewFrameRevision() const
+{
+    return m_previewFrameCache->revision();
+}
+
+QString PreviewController::previewFrameUrl(const QString &windowUuid) const
+{
+    return m_previewFrameCache->imageUrl(windowUuid);
+}
+
+bool PreviewController::storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image)
+{
+    return m_previewFrameCache->store(windowUuid, image);
+}
+
+bool PreviewController::removePreviewFrame(const QString &windowUuid)
+{
+    return m_previewFrameCache->remove(windowUuid);
+}
+
+QImage PreviewController::previewFrameByKey(const QString &key) const
+{
+    return m_previewFrameCache->imageForKey(key);
 }
 
 void PreviewController::showPreview(int index, qreal itemGlobalPos, qreal itemExtent)

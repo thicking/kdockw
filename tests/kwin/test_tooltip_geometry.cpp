@@ -21,6 +21,7 @@
 #include "shell/dockshell.h"
 #include "shell/dockview.h"
 #include "shell/multidockmanager.h"
+#include "../dockqmltypes.h"
 
 #include <KAboutData>
 #include <catch2/catch_session.hpp>
@@ -95,6 +96,7 @@ App &app()
                                                                   QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
                                                                   return launcherEntries;
                                                               });
+        registerDockQmlTypes();
         return a;
     }();
     return *instance;

@@ -1,3 +1,11 @@
+kdockw (0.4.0-1) unstable; urgency=medium
+
+  * Add spring magnification, launch bounce, click bounce, and attention animations.
+  * Improve dock visibility transitions and minimized-window previews.
+  * Refine preview-card spacing and preserve recent frames per window.
+
+ -- thicking <thicking@gmail.com>  Mon, 09 Nov 2026 00:00:00 +0500
+
 kdockw (0.3.1-1) unstable; urgency=medium
 
   * Add opt-in automatic and manual stable-release checks with KDE notifications.

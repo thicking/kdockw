@@ -183,7 +183,7 @@ priority sequence; it creates no dependency by itself. Window Preview Redesign
 depends on accepted v0.2.0 geometry. Application Name Tooltip depends on the
 preview card's visibility/header state. Toggle Minimize on Click is independent.
 
-## v0.4.0 — macOS-like Spring Physics (in progress)
+## v0.4.0 — macOS-like Spring Physics (complete)
 
 - [x] **Spring Magnification (`done`):** added time-based spring motion with
   adjustable stiffness, damping, and reaction speed. New configurations use
@@ -198,8 +198,16 @@ preview card's visibility/header state. Toggle Minimize on Click is independent.
 - [x] **Window Preview Hide Delay (`done`):** added an independent 0–1500 ms
   delay (400 ms default) that can be cancelled when the pointer returns. Owner
   accepted the behavior on KDE Plasma/Wayland on 2026-11-08.
-- [ ] Refine launch bounce and separate launch and attention states; verify
-  overlapping events do not leave an item in a stale animation state.
+- [x] **Launch & Attention Animation (`done`):** added launch bounce with
+  decreasing amplitude, adjustable intensity and speed, and separate attention
+  motion driven only by explicit urgency signals. Attention motion is
+  time-limited with a persistent calm marker; launch motion takes priority
+  during overlapping events. Added a short Click Bounce for activating,
+  restoring, or minimizing an already-running app; it is separate from Launch
+  Bounce and does not run on hover. Launch height is configurable as a
+  percentage of icon size. Owner accepted Launch Bounce, Click Bounce, and
+  Attention Animation on Plasma 6.6.6 / Wayland; the new Attention duration
+  default is 3 seconds, while saved values remain unchanged.
 
 **Dependencies:** Spring Magnification follows v0.2.0 geometry and the separate
 Classic zoom performance-profile technical debt. Dock show/hide follows accepted

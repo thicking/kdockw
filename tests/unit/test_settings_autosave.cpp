@@ -204,7 +204,7 @@ TEST_CASE("Running indicator preferences persist independently", "[settings][run
 
     REQUIRE(settings.runningIndicatorStyle() == 0);
     REQUIRE(settings.runningIndicatorPosition() == 0);
-    REQUIRE(settings.runningIndicatorSize() == 5);
+    REQUIRE(settings.runningIndicatorSize() == 4);
     REQUIRE(settings.runningIndicatorColorMode() == 1);
 
     QObject context;
@@ -260,7 +260,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
 
     CHECK(settings.language() == QStringLiteral("system"));
     CHECK(settings.iconSize() == 40);
-    CHECK(settings.iconSpacing() == 13);
+    CHECK(settings.iconSpacing() == 10);
     CHECK(settings.contentPaddingLeft() == 8);
     CHECK(settings.contentPaddingRight() == 8);
     CHECK(settings.contentPaddingTop() == 8);
@@ -284,22 +284,34 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.reserveScreenSpace());
     CHECK(settings.edge() == 1);
     CHECK(settings.backgroundStyle() == 2);
-    CHECK(settings.backgroundOpacity() == 0.9);
+    CHECK(settings.backgroundOpacity() == 0.85);
     CHECK_FALSE(settings.useSystemColor());
     CHECK_FALSE(settings.useAccentColor());
     CHECK(settings.tintColor() == QStringLiteral("#4b4144"));
     CHECK(settings.shadowEnabled());
-    CHECK(settings.shadowLightX() == -26);
-    CHECK(settings.shadowLightY() == -82);
+    CHECK(settings.shadowLightX() == 65);
+    CHECK(settings.shadowLightY() == -132);
     CHECK(settings.shadowLightZ() == 500);
     CHECK(settings.shadowLightRadius() == 5.5);
-    CHECK(settings.shadowIntensity() == Catch::Approx(0.6));
+    CHECK(settings.shadowIntensity() == Catch::Approx(0.2));
     CHECK(settings.previewEnabled());
     CHECK_FALSE(settings.cpuOnlyPreviewCapture());
     CHECK(settings.attentionAnimation() == 2);
+    CHECK(settings.attentionAnimationEnabled());
+    CHECK(settings.attentionAnimationIntensity() == 100);
+    CHECK(settings.launchBounceEnabled());
+    CHECK(settings.launchBounceIntensity() == 150);
+    CHECK(settings.launchBounceSpeed() == 100);
+    CHECK(settings.clickBounceEnabled());
+    CHECK(settings.hideDelay() == 500);
+    CHECK(settings.previewHideDelay() == 400);
+    CHECK(settings.previewThumbnailSize() == 320);
+    CHECK(settings.previewMaximumHeight() == 200);
+    CHECK(settings.singleWindowClickAction() == 1);
+    CHECK(settings.shadowElevation() == 1);
     CHECK(settings.runningIndicatorStyle() == 0);
     CHECK(settings.runningIndicatorPosition() == 0);
-    CHECK(settings.runningIndicatorSize() == 5);
+    CHECK(settings.runningIndicatorSize() == 4);
     CHECK(settings.runningIndicatorColorMode() == 1);
     CHECK(settings.runningIndicatorColor() == QStringLiteral("#ffffffff"));
     CHECK(settings.separateLaunchers());
@@ -314,6 +326,11 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
         general.writeEntry(QStringLiteral("IconSize"), 72);
         general.writeEntry(QStringLiteral("BackgroundStyle"), 3);
         general.writeEntry(QStringLiteral("RunningIndicatorSize"), 9);
+        general.writeEntry(QStringLiteral("IconSpacing"), 12);
+        general.writeEntry(QStringLiteral("MaxZoomFactor"), 1.8);
+        general.writeEntry(QStringLiteral("PreviewHideDelay"), 640);
+        general.writeEntry(QStringLiteral("PreviewThumbnailSize"), 260);
+        general.writeEntry(QStringLiteral("SingleWindowClickAction"), 0);
         config.sync();
     }
 
@@ -322,7 +339,11 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
     CHECK(settings.iconSize() == 72);
     CHECK(settings.backgroundStyle() == 3);
     CHECK(settings.runningIndicatorSize() == 9);
-    CHECK(settings.iconSpacing() == 13);
+    CHECK(settings.iconSpacing() == 12);
+    CHECK(settings.maxZoomFactor() == Catch::Approx(1.8));
+    CHECK(settings.previewHideDelay() == 640);
+    CHECK(settings.previewThumbnailSize() == 260);
+    CHECK(settings.singleWindowClickAction() == 0);
     CHECK(settings.contentPaddingBottom() == 0);
 }
 
@@ -354,6 +375,58 @@ TEST_CASE("Dock and preview visibility defaults preserve explicit user timing", 
     CHECK_FALSE(saved.dockShowHideAnimationEnabled());
     CHECK(saved.dockShowHideAnimationDuration() == 360);
     CHECK(saved.previewHideDelay() == 650);
+}
+
+TEST_CASE("Launch and attention animation settings preserve old and explicit preferences", "[settings][animation][defaults][migration]")
+{
+    const ScopedConfigHome home;
+
+    // Existing configurations without an explicitly saved duration inherit
+    // the current first-run default.
+    KDockWSettings defaults;
+    defaults.load();
+    CHECK(defaults.attentionAnimationDuration() == 3);
+
+    // Configurations created before these controls existed have no new keys;
+    // KConfigXT supplies their defaults without changing existing preferences.
+    {
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        auto general = config.group(QStringLiteral("General"));
+        general.writeEntry(QStringLiteral("AttentionAnimation"), 3);
+        general.writeEntry(QStringLiteral("AttentionAnimationDuration"), 12);
+        general.writeEntry(QStringLiteral("IconSize"), 64);
+        config.sync();
+    }
+
+    KDockWSettings migrated;
+    migrated.load();
+    CHECK(migrated.attentionAnimation() == 3);
+    CHECK(migrated.attentionAnimationDuration() == 12);
+    CHECK(migrated.iconSize() == 64);
+    CHECK(migrated.attentionAnimationEnabled());
+    CHECK(migrated.attentionAnimationIntensity() == 100);
+    CHECK(migrated.launchBounceEnabled());
+    CHECK(migrated.launchBounceIntensity() == 150);
+    CHECK(migrated.launchBounceSpeed() == 100);
+    CHECK(migrated.clickBounceEnabled());
+
+    migrated.setAttentionAnimationEnabled(false);
+    migrated.setAttentionAnimationIntensity(130);
+    migrated.setLaunchBounceEnabled(false);
+    migrated.setLaunchBounceIntensity(80);
+    migrated.setLaunchBounceSpeed(120);
+    migrated.save();
+
+    KDockWSettings reloaded;
+    reloaded.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
+    reloaded.load();
+    CHECK_FALSE(reloaded.attentionAnimationEnabled());
+    CHECK(reloaded.attentionAnimationIntensity() == 130);
+    CHECK_FALSE(reloaded.launchBounceEnabled());
+    CHECK(reloaded.launchBounceIntensity() == 80);
+    CHECK(reloaded.launchBounceSpeed() == 120);
+    CHECK(reloaded.attentionAnimation() == 3);
+    CHECK(reloaded.attentionAnimationDuration() == 12);
 }
 
 TEST_CASE("Existing magnification settings migrate without overwriting saved values", "[settings][migration][zoom]")
@@ -426,7 +499,7 @@ TEST_CASE("Preview redesign defaults preserve existing thumbnail preferences", "
     KDockWSettings settings;
     settings.load();
     CHECK(settings.previewThumbnailSize() == 260);
-    CHECK(settings.previewMaximumHeight() == 180);
+    CHECK(settings.previewMaximumHeight() == 200);
     CHECK(settings.previewCardPadding() == 8);
     CHECK(settings.previewDockGap() == 2);
 

@@ -188,6 +188,28 @@ DockModel::DockModel(QObject *parent)
         connect(m_tasksModel.get(), &QAbstractItemModel::rowsInserted, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("rows inserted")); });
         connect(m_tasksModel.get(), &QAbstractItemModel::rowsRemoved, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("rows removed")); });
         connect(m_tasksModel.get(), &QAbstractItemModel::modelReset, this, [queueSnapshot]() { queueSnapshot(QStringLiteral("model reset")); });
+
+        // Attention-animation diagnostics: trace only the TaskManager role and
+        // row shape. Never include application IDs, URLs, window IDs, or titles.
+        connect(m_tasksModel.get(), &QAbstractItemModel::dataChanged, this,
+            [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
+                if (!roles.isEmpty() && !roles.contains(TaskManager::AbstractTasksModel::IsDemandingAttention)) {
+                    return;
+                }
+                for (int row = topLeft.row(); row <= bottomRight.row(); ++row) {
+                    const QModelIndex index = m_tasksModel->index(row, topLeft.column(), topLeft.parent());
+                    if (!index.isValid()) {
+                        continue;
+                    }
+                    qCInfo(lcModel).noquote()
+                        << "Attention diagnostic: phase=task-model-data-changed"
+                        << "row=" << row
+                        << "isWindow=" << index.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
+                        << "isGroupParent=" << index.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()
+                        << "isActive=" << index.data(TaskManager::AbstractTasksModel::IsActive).toBool()
+                        << "isDemandingAttention=" << index.data(TaskManager::AbstractTasksModel::IsDemandingAttention).toBool();
+                }
+            });
     }
 #endif
 

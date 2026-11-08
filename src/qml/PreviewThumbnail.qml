@@ -29,6 +29,7 @@ Item {
     // usable frame. Retain the app icon until we have observed a frame while
     // the window was visible, then keep that frame through minimize/restore.
     property bool hasFrameWhileVisible: false
+    property bool frameSnapshotPending: false
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
@@ -39,6 +40,10 @@ Item {
     property var captureWinId: undefined
     readonly property var captureItem: captureLoader.item ? captureLoader.item.sourceItem : null
     readonly property var captureViewport: captureLoader.item
+    readonly property string cachedFrameSource: {
+        const revision = PreviewController.previewFrameRevision
+        return PreviewController.previewFrameUrl(root.winId)
+    }
     readonly property string captureClipMode: {
         const requested = typeof IconDiagnostics !== "undefined" ? IconDiagnostics.previewClipMode : ""
         return requested === "raw" || requested === "center50" || requested === "rounded"
@@ -67,6 +72,8 @@ Item {
         DockSettings.previewThumbnailSize,
         DockSettings.previewMaximumHeight * 1.6)
     readonly property real thumbnailHeight: thumbnailWidth / 1.6
+    readonly property real titleToThumbnailSpacing: Kirigami.Units.smallSpacing / 2
+    readonly property real titleRowHeight: titleRow.height
     readonly property real captureBorderWidth: isActive ? 2 : 0
     readonly property real captureViewportWidth: thumbnailWidth - 2 * captureBorderWidth
     readonly property real captureViewportHeight: thumbnailHeight - 2 * captureBorderWidth
@@ -85,7 +92,10 @@ Item {
         panelColor, Kirigami.Theme.backgroundColor, thumbnailHover.hovered)
 
     implicitWidth: thumbnailWidth
-    implicitHeight: thumbnailHeight + titleLabel.implicitHeight + Kirigami.Units.smallSpacing
+    // The image is anchored below the fixed-height title row. Using the
+    // label's smaller implicit height under-reported this item's height and
+    // left a visibly smaller inset below the image than beside it.
+    implicitHeight: titleRow.height + titleToThumbnailSpacing + thumbnailHeight
 
     // PipeWire screencasting: uuid → nodeId
     // Match Plasma's pattern: pass winId directly, let QML engine handle QVariant→QString
@@ -146,12 +156,14 @@ Item {
         console.warn("[kdockw.preview] no frame received while streaming; retrying without DMA-BUF, nodeId:",
             screencastRequest.nodeId)
         forceCpuCapture = true
+        hasFrameWhileVisible = false
         captureLoader.active = false
         Qt.callLater(function() { captureLoader.active = true })
     }
 
     function restartCapture() {
         forceCpuCapture = false
+        hasFrameWhileVisible = false
         captureLoader.active = false
         Qt.callLater(function() { captureLoader.active = true })
     }
@@ -161,15 +173,65 @@ Item {
         // Destroy the old source so its last texture can never be shown for the
         // new window while ScreencastingRequest resolves the replacement node.
         forceCpuCapture = false
+        hasFrameWhileVisible = false
         sourceAspectRatio = 1.6
         captureLoader.active = false
         Qt.callLater(function() { captureLoader.active = true })
     }
 
+    function cacheLastRenderedFrame(reason) {
+        if (frameSnapshotPending || !hasFrameWhileVisible || !captureItem || !captureItem.ready || !captureLoader.visible)
+            return false
+
+        const uuidAtRequest = winId
+        frameSnapshotPending = true
+        const window = root.Window.window
+        const reportedDpr = window ? window.devicePixelRatio : root.Screen.devicePixelRatio
+        const dpr = Number.isFinite(reportedDpr) && reportedDpr > 0 ? reportedDpr : 1
+        const width = Math.max(1, Math.min(640, Math.ceil(captureLoader.width * dpr)))
+        const height = Math.max(1, Math.min(400, Math.ceil(captureLoader.height * dpr)))
+        const accepted = captureLoader.grabToImage(function(result) {
+            root.frameSnapshotPending = false
+            if (root.winId !== uuidAtRequest || !result || !result.image
+                    || result.image.width <= 0 || result.image.height <= 0)
+                return
+            const stored = PreviewController.storeMinimizedPreviewFrame(uuidAtRequest, result.image)
+            if (typeof IconDiagnostics !== "undefined" && IconDiagnostics.taskDiagnosticsEnabled) {
+                console.info("[KDOCKW_PREVIEW_FRAME_CACHE] phase=" + reason
+                    + " stored=" + stored + " imageSize=" + result.image.width + "x" + result.image.height)
+            }
+        }, Qt.size(width, height))
+        if (!accepted)
+            frameSnapshotPending = false
+        if (!accepted && typeof IconDiagnostics !== "undefined" && IconDiagnostics.taskDiagnosticsEnabled)
+            console.warn("[KDOCKW_PREVIEW_FRAME_CACHE] phase=" + reason + " accepted=false")
+        return accepted
+    }
+
+    // Keep a recent in-memory snapshot while this preview is actually visible.
+    // KWin may replace a minimized window's screencast with an app-icon buffer,
+    // and the PipeWire scene-graph node is not a durable cache when the popup is
+    // hidden. The timer is stopped as soon as the row is hidden or minimized.
+    Timer {
+        id: frameSnapshotTimer
+        interval: 2000
+        repeat: true
+        running: captureLoader.visible && root.hasFrameWhileVisible
+            && !root.isMinimized && captureItem !== null && captureItem.ready
+        onTriggered: root.cacheLastRenderedFrame("visible-refresh")
+    }
+
     onCaptureItemChanged: updateSourceAspectRatio()
+    onHasFrameWhileVisibleChanged: {
+        if (hasFrameWhileVisible && !isMinimized)
+            Qt.callLater(function() { root.cacheLastRenderedFrame("first-visible-frame") })
+    }
     onIsMinimizedChanged: {
         if (!isMinimized && captureItem && captureItem.ready)
             hasFrameWhileVisible = true
+        else if (isMinimized && hasFrameWhileVisible
+                 && PreviewController.previewFrameUrl(winId).length === 0)
+            Qt.callLater(function() { root.cacheLastRenderedFrame("minimized") })
     }
     Component.onCompleted: {
         captureWinId = winId
@@ -272,7 +334,7 @@ Item {
         id: thumbnailContainer
         objectName: "previewThumbnailContainer"
         anchors.top: titleRow.bottom
-        anchors.topMargin: Kirigami.Units.smallSpacing / 2
+        anchors.topMargin: root.titleToThumbnailSpacing
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.thumbnailWidth
         height: root.thumbnailHeight
@@ -303,6 +365,10 @@ Item {
                 : root.captureSourceMode === "image" ? roundedImageReferenceComponent
                 : roundedPipeWireCaptureComponent
             onLoaded: Qt.callLater(() => root.logCaptureState("component-loaded"))
+            onVisibleChanged: {
+                if (visible && root.hasFrameWhileVisible && !root.isMinimized)
+                    Qt.callLater(function() { root.cacheLastRenderedFrame("popup-visible") })
+            }
 
             Component {
                 id: pipeWireSourceComponent
@@ -399,6 +465,7 @@ Item {
                         clipRadius: root.captureViewportRadius
                         nodeId: screencastRequest.nodeId
                         allowDmaBuf: !PreviewController.cpuCaptureOnly && !root.forceCpuCapture
+                        freezeFrame: root.isMinimized && root.hasFrameWhileVisible
                         Accessible.ignored: true
                     }
                 }
@@ -469,6 +536,22 @@ Item {
             }
         }
 
+        Image {
+            id: retainedFrameImage
+            objectName: "minimizedCachedFrame"
+            anchors.fill: captureLoader
+            z: 1
+            source: root.cachedFrameSource
+            // `Image.source` is a QUrl in QML, not a JS string, so it has no
+            // reliable `length` property. Test the URL string binding instead.
+            visible: root.isMinimized && root.cachedFrameSource.length > 0
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            mipmap: true
+            cache: false
+            Accessible.ignored: true
+        }
+
         // Fallback: icon until PipeWire has received a frame.
         Item {
             id: fallbackIcon
@@ -482,8 +565,8 @@ Item {
                 return DockModel.iconName(root.parentIndex) || "application-x-executable"
             }
             readonly property bool isRawIcon: iconName.startsWith("raw:")
-            visible: !root.captureItem || !root.captureItem.ready
-                || (root.isMinimized && !root.hasFrameWhileVisible)
+            visible: !root.cachedFrameSource.length && (!root.captureItem || !root.captureItem.ready
+                || (root.isMinimized && !root.hasFrameWhileVisible))
 
             Kirigami.Icon {
                 anchors.fill: parent

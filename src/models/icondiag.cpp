@@ -24,6 +24,7 @@ bool envIsOne(const char *name) {
 
 struct DiagnosticSwitches {
   bool debug = false;
+  bool taskDiagnostics = false;
   bool testHiDpi = false;
   bool testBadgeLayerOff = false;
   bool testBadgeShadowOff = false;
@@ -44,6 +45,9 @@ struct DiagnosticSwitches {
 DiagnosticSwitches readDiagnosticSwitches() {
   DiagnosticSwitches switches;
   switches.debug = envIsOne("KDOCKW_ICON_DEBUG");
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+  switches.taskDiagnostics = envIsOne("KDOCKW_TASK_DIAGNOSTICS");
+#endif
   switches.testHiDpi = switches.debug && envIsOne("KDOCKW_ICON_TEST_HIDPI");
   switches.testBadgeLayerOff =
       switches.debug &&
@@ -101,6 +105,7 @@ DiagnosticSwitches switchesForInstance() {
 void clearDiagnosticSwitchEnvironment() {
   static constexpr const char *names[] = {
       "KDOCKW_ICON_DEBUG",
+      "KDOCKW_TASK_DIAGNOSTICS",
       "KDOCKW_ICON_TEST_HIDPI",
       "KDOCKW_ICON_TEST_BADGE_LAYER",
       "KDOCKW_ICON_TEST_BADGE_SHADOW",
@@ -157,6 +162,7 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
     : QObject(parent) {
   const DiagnosticSwitches switches = switchesForInstance();
   m_debugEnabled = switches.debug;
+  m_taskDiagnosticsEnabled = switches.taskDiagnostics;
   m_testHiDpiEnabled = switches.testHiDpi;
   m_testBadgeLayerOff = switches.testBadgeLayerOff;
   m_testBadgeShadowOff = switches.testBadgeShadowOff;
@@ -219,6 +225,8 @@ QString IconDiagnostics::previewFilterTest() const {
 }
 
 bool IconDiagnostics::debugEnabled() const { return m_debugEnabled; }
+
+bool IconDiagnostics::taskDiagnosticsEnabled() const { return m_taskDiagnosticsEnabled; }
 
 bool IconDiagnostics::testHiDpiEnabled() const { return m_testHiDpiEnabled; }
 

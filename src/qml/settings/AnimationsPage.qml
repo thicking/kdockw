@@ -63,6 +63,8 @@ SettingsPage {
 
         property int animationType: 0
         property bool playing: false
+        property real intensity: 1.0
+        property real durationScale: Kirigami.Units.longDuration / 500.0
         // 0 Top, 1 Bottom, 2 Left, 3 Right (DockSettings.edge order).
         property int edge: 1
         property real baseOpacity: 1.0
@@ -73,7 +75,7 @@ SettingsPage {
         // Dot color animation state (DockItem._dotBlinkOpacity).
         property real dotBlinkOpacity: 1.0
 
-        readonly property real bounceDistance: width * 14 / 48
+        readonly property real bounceDistance: width * 14 / 48 * Math.max(0.5, Math.min(1.5, intensity))
         readonly property bool verticalBounce: edge <= 1
 
         height: width
@@ -116,74 +118,76 @@ SettingsPage {
             shadowOpacity: 0
 
             SequentialAnimation on shadowOpacity {
-                running: sample.playing && sample.animationType === 4
+                running: sample.playing && sample.durationScale > 0 && sample.animationType === 4
                 loops: Animation.Infinite
-                NumberAnimation { to: 0.85; duration: 800; easing.type: Easing.InOutSine }
-                NumberAnimation { to: 0.15; duration: 800; easing.type: Easing.InOutSine }
+            NumberAnimation { to: Math.min(1.0, 0.85 * Math.max(0.5, Math.min(1.5, sample.intensity))); duration: 800 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { to: Math.max(0.05, 0.85 - 0.7 * Math.max(0.5, Math.min(1.5, sample.intensity))); duration: 800 * sample.durationScale; easing.type: Easing.InOutSine }
             }
         }
 
         // Type 1: Bounce — vertical on the top and bottom edges, horizontal
         // on the left and right edges (DockItem._bounceProp).
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 1 && sample.verticalBounce
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 1 && sample.verticalBounce
             loops: Animation.Infinite
             onStopped: bounceT.y = 0
-            NumberAnimation { target: bounceT; property: "y"; to: (sample.edge === 0 ? 1 : -1) * sample.bounceDistance; duration: 300; easing.type: Easing.OutQuad }
-            NumberAnimation { target: bounceT; property: "y"; to: 0; duration: 300; easing.type: Easing.InBounce }
-            PauseAnimation { duration: 800 }
+            NumberAnimation { target: bounceT; property: "y"; to: (sample.edge === 0 ? 1 : -1) * sample.bounceDistance; duration: 300 * sample.durationScale; easing.type: Easing.OutQuad }
+            NumberAnimation { target: bounceT; property: "y"; to: 0; duration: 300 * sample.durationScale; easing.type: Easing.InBounce }
+            PauseAnimation { duration: 1000 * sample.durationScale }
         }
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 1 && !sample.verticalBounce
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 1 && !sample.verticalBounce
             loops: Animation.Infinite
             onStopped: bounceT.x = 0
-            NumberAnimation { target: bounceT; property: "x"; to: (sample.edge === 2 ? 1 : -1) * sample.bounceDistance; duration: 300; easing.type: Easing.OutQuad }
-            NumberAnimation { target: bounceT; property: "x"; to: 0; duration: 300; easing.type: Easing.InBounce }
-            PauseAnimation { duration: 800 }
+            NumberAnimation { target: bounceT; property: "x"; to: (sample.edge === 2 ? 1 : -1) * sample.bounceDistance; duration: 300 * sample.durationScale; easing.type: Easing.OutQuad }
+            NumberAnimation { target: bounceT; property: "x"; to: 0; duration: 300 * sample.durationScale; easing.type: Easing.InBounce }
+            PauseAnimation { duration: 1000 * sample.durationScale }
         }
 
         // Type 2: Wiggle
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 2
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 2
             loops: Animation.Infinite
             onStopped: sample.rotation = 0
-            NumberAnimation { target: sample; property: "rotation"; to: 5; duration: 80; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: -5; duration: 160; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: 3; duration: 120; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: -3; duration: 120; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: 1; duration: 100; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: -1; duration: 100; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "rotation"; to: 0; duration: 80; easing.type: Easing.InOutSine }
-            PauseAnimation { duration: 2000 }
+            NumberAnimation { target: sample; property: "rotation"; to: 5 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 80 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: -5 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 160 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: 3 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 120 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: -3 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 120 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: 1 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 100 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: -1 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 100 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "rotation"; to: 0; duration: 80 * sample.durationScale; easing.type: Easing.InOutSine }
+            PauseAnimation { duration: 2200 * sample.durationScale }
         }
 
         // Type 3: Pulse
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 3
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 3
             loops: Animation.Infinite
             onStopped: sample.scale = 1.0
-            NumberAnimation { target: sample; property: "scale"; to: 1.15; duration: 600; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "scale"; to: 1.0; duration: 600; easing.type: Easing.InOutSine }
-            PauseAnimation { duration: 400 }
+            NumberAnimation { target: sample; property: "scale"; to: 1 + 0.15 * Math.max(0.5, Math.min(1.5, sample.intensity)); duration: 600 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "scale"; to: 1.0; duration: 600 * sample.durationScale; easing.type: Easing.InOutSine }
+            PauseAnimation { duration: 800 * sample.durationScale }
         }
 
         // Type 5: Dot color — animates only the indicator state; the dot is
         // drawn by the tile or MiniDock the sample belongs to.
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 5
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 5
             loops: Animation.Infinite
             onStopped: sample.dotBlinkOpacity = 1.0
-            NumberAnimation { target: sample; property: "dotBlinkOpacity"; to: 0.3; duration: 500; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "dotBlinkOpacity"; to: 1.0; duration: 500; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "dotBlinkOpacity"; to: Math.max(0.2, 1 - 0.7 * Math.max(0.5, Math.min(1.5, sample.intensity))); duration: 500 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "dotBlinkOpacity"; to: 1.0; duration: 500 * sample.durationScale; easing.type: Easing.InOutSine }
+            PauseAnimation { duration: 1200 * sample.durationScale }
         }
 
         // Type 6: Blink
         SequentialAnimation {
-            running: sample.playing && sample.animationType === 6
+            running: sample.playing && sample.durationScale > 0 && sample.animationType === 6
             loops: Animation.Infinite
             onStopped: sample.blinkOpacity = 1.0
-            NumberAnimation { target: sample; property: "blinkOpacity"; to: 0.2; duration: 400; easing.type: Easing.InOutSine }
-            NumberAnimation { target: sample; property: "blinkOpacity"; to: 1.0; duration: 400; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "blinkOpacity"; to: Math.max(0.35, 1 - 0.65 * Math.max(0.5, Math.min(1.5, sample.intensity))); duration: 400 * sample.durationScale; easing.type: Easing.InOutSine }
+            NumberAnimation { target: sample; property: "blinkOpacity"; to: 1.0; duration: 400 * sample.durationScale; easing.type: Easing.InOutSine }
+            PauseAnimation { duration: 1200 * sample.durationScale }
         }
     }
 
@@ -246,7 +250,8 @@ SettingsPage {
             width: Math.min(Kirigami.Units.iconSizes.medium, Math.max(16, tile.height * 0.4))
             edge: tile.edge
             animationType: tile.animationType
-            playing: tile.playing && tile.active
+            intensity: DockSettings.attentionAnimationIntensity / 100.0
+            playing: tile.playing && tile.active && DockSettings.attentionAnimationEnabled
         }
 
         // Running indicator dot under the icon; "Dot color" recolors and
@@ -347,7 +352,8 @@ SettingsPage {
                 baseOpacity: dock.iconOpacity
                 edge: dock.edge
                 animationType: DockSettings.attentionAnimation
-                playing: stage.active
+                intensity: DockSettings.attentionAnimationIntensity / 100.0
+                playing: stage.active && DockSettings.attentionAnimationEnabled
             }
 
             // "Dot color" recolors the focus icon's running indicator: a
@@ -376,14 +382,80 @@ SettingsPage {
         }
     }
 
+    // --- Launch bounce ---
+    FormCard.FormHeader {
+        title: i18n("Launch bounce")
+    }
+
+    FormCard.FormCard {
+        FormCard.FormSwitchDelegate {
+            objectName: "launchBounceEnabledSwitch"
+            text: i18n("Animate application launches")
+            description: i18n("Bounce an app icon while its window is starting")
+            checked: DockSettings.launchBounceEnabled
+            onToggled: DockSettings.launchBounceEnabled = checked
+        }
+
+        FormCard.FormDelegateSeparator { visible: DockSettings.launchBounceEnabled }
+
+        FormCard.FormSpinBoxDelegate {
+            objectName: "launchBounceIntensityControl"
+            visible: DockSettings.launchBounceEnabled
+            label: i18n("Launch bounce height (% of icon size)")
+            from: 50; to: 200; stepSize: 10
+            value: DockSettings.launchBounceIntensity
+            onValueChanged: DockSettings.launchBounceIntensity = value
+        }
+
+        FormCard.FormSpinBoxDelegate {
+            objectName: "launchBounceSpeedControl"
+            visible: DockSettings.launchBounceEnabled
+            label: i18n("Launch bounce speed (%)")
+            from: 50; to: 150; stepSize: 10
+            value: DockSettings.launchBounceSpeed
+            onValueChanged: DockSettings.launchBounceSpeed = value
+        }
+
+        FormCard.FormDelegateSeparator { visible: DockSettings.launchBounceEnabled }
+
+        FormCard.FormSwitchDelegate {
+            objectName: "clickBounceEnabledSwitch"
+            text: i18n("Show a bounce when activating an open app")
+            description: i18n("Briefly bounce an open app icon when it is activated, restored, or minimized")
+            checked: DockSettings.clickBounceEnabled
+            onToggled: DockSettings.clickBounceEnabled = checked
+        }
+    }
+
     // --- Attention ---
     FormCard.FormHeader {
         title: i18n("Attention")
     }
 
     FormCard.FormCard {
+        FormCard.FormSwitchDelegate {
+            objectName: "attentionAnimationEnabledSwitch"
+            text: i18n("Animate apps that demand attention")
+            description: i18n("Use urgency signals from windows and applications; notification counts alone do not trigger animation")
+            checked: DockSettings.attentionAnimationEnabled
+            onToggled: DockSettings.attentionAnimationEnabled = checked
+        }
+
+        FormCard.FormDelegateSeparator { visible: DockSettings.attentionAnimationEnabled }
+
+        FormCard.FormSpinBoxDelegate {
+            objectName: "attentionAnimationIntensityControl"
+            visible: DockSettings.attentionAnimationEnabled
+            label: i18n("Attention animation intensity (%)")
+            from: 50; to: 150; stepSize: 10
+            value: DockSettings.attentionAnimationIntensity
+            onValueChanged: DockSettings.attentionAnimationIntensity = value
+        }
+
         FormCard.AbstractFormDelegate {
             id: attentionPicker
+            objectName: "attentionAnimationPicker"
+            enabled: DockSettings.attentionAnimationEnabled
             background: null
             focusPolicy: Qt.NoFocus
             activeFocusOnTab: false
@@ -454,11 +526,12 @@ SettingsPage {
         }
 
         FormCard.FormDelegateSeparator {
-            visible: DockSettings.attentionAnimation > 0
+            visible: DockSettings.attentionAnimationEnabled && DockSettings.attentionAnimation > 0
         }
 
         FormCard.FormSpinBoxDelegate {
-            visible: DockSettings.attentionAnimation > 0
+            objectName: "attentionAnimationDurationControl"
+            visible: DockSettings.attentionAnimationEnabled && DockSettings.attentionAnimation > 0
             label: i18n("Attention duration (seconds, 0 = infinite)")
             from: 0
             to: 60

@@ -38,6 +38,9 @@ Item {
 
         function init() {
             KDockWMocks.resetAll()
+            DockSettings.previewThumbnailSize = 200
+            DockSettings.previewMaximumHeight = 180
+            DockSettings.previewCardPadding = 8
             IconDiagnostics.previewClipMode = ""
             IconDiagnostics.previewSourceMode = ""
             // Row 0: single-window app. Row 1: grouped app with three windows.
@@ -99,7 +102,7 @@ Item {
         }
 
         function card(popup) {
-            return T.findFirst(container(popup), c => c.radius !== undefined && c.shadow !== undefined)
+            return T.findFirst(container(popup), c => c.objectName === "previewCardSurface")
         }
 
         function rgbHex(color) {
@@ -396,11 +399,103 @@ Item {
             compare(minimized.captureItem, capture, "restore must resume the existing capture")
             tryVerify(() => !fallback.visible, 1000,
                       "restoring a ready stream must uncover the thumbnail")
+            verify(!minimized.captureItem.freezeFrame,
+                   "restoring the window must resume live PipeWire updates")
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
             tryCompare(minimized, "isMinimized", true)
             verify(!fallback.visible, "a frame obtained while visible must be retained when minimized")
             verify(capture.visible)
             compare(capture.opacity, 1)
+            verify(capture.freezeFrame)
+            tryVerify(() => PreviewController.frameStoreRequests.some(request => request.uuid === minimized.winId),
+                      3000, "minimizing a window with a real visible frame must snapshot that same UUID in memory")
+
+            const minimizedUuid = minimized.winId
+            verify(PreviewController.previewFrameUrl(minimizedUuid).length > 0,
+                   "the minimized UUID must have a retrievable process-local frame")
+            PreviewController.visible = false
+            tryVerify(() => !container(popup).visible)
+            popup.destroy()
+
+            // Recreate the QML delegates after the popup was hidden. The
+            // retained image must come from the controller cache, not the old
+            // PipeWire scene-graph node or a neighboring grouped window.
+            const reopened = makePopup()
+            show(1, "Konsole")
+            const reopenedThumbs = waitThumbs(reopened, 3)
+            const reopenedMinimized = reopenedThumbs[2]
+            compare(reopenedMinimized.winId, minimizedUuid)
+            const reopenedImage = T.findFirst(reopenedMinimized,
+                item => item.objectName === "minimizedCachedFrame")
+            tryVerify(() => reopenedImage && reopenedImage.visible
+                && String(reopenedImage.source) === PreviewController.previewFrameUrl(minimizedUuid),
+                2000, "the same window's cached frame must survive popup and delegate recreation")
+            const reopenedFallback = T.findFirst(reopenedMinimized,
+                item => item.objectName === "previewFallbackIcon")
+            verify(reopenedFallback && !reopenedFallback.visible,
+                   "a valid retained frame must suppress the app-icon fallback after reopening")
+        }
+
+        function test_cachedMinimizedFrameSuppressesFallbackForExactWindowUuid() {
+            PreviewController.previewFrameUrls = ({ "kate-1": "image://previewframes/kate-frame?v=1" })
+            DockModel.tasksModel.setTaskData(0, "IsMinimized", true)
+            const popup = makePopup()
+            show(0, "Kate")
+            const thumbnail = waitThumbs(popup, 1)[0]
+            const retained = T.findFirst(thumbnail, item => item.objectName === "minimizedCachedFrame")
+            const fallback = T.findFirst(thumbnail, item => item.objectName === "previewFallbackIcon")
+            tryVerify(() => retained
+                && String(retained.source) === "image://previewframes/kate-frame?v=1")
+            verify(retained.visible, "a prior in-memory frame should be shown after the popup is recreated")
+            verify(fallback && !fallback.visible, "the app icon must not cover a valid cached frame")
+        }
+
+        function test_groupedCachedFramesRemainBoundToTheirOwnUuids() {
+            PreviewController.previewFrameUrls = ({
+                "k-1": "image://previewframes/k1?v=1",
+                "k-2": "image://previewframes/k2?v=1"
+            })
+            DockModel.tasksModel.setChildTaskData(1, 0, "IsMinimized", true)
+            DockModel.tasksModel.setChildTaskData(1, 1, "IsMinimized", true)
+            const popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const images = ts.map(t => T.findFirst(t, item => item.objectName === "minimizedCachedFrame"))
+            compare(String(images[0].source), "image://previewframes/k1?v=1")
+            compare(String(images[1].source), "image://previewframes/k2?v=1")
+            verify(!images[2].visible, "a neighboring UUID without a cached frame must not inherit one")
+        }
+
+        function test_groupedMinimizeFreezesOnlyTheMatchingWindowFrame() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const ts = waitThumbs(popup, 3)
+            const captures = ts.map(t => t.captureItem)
+            captures.forEach(capture => capture.ready = true)
+            verify(ts[0].hasFrameWhileVisible && ts[1].hasFrameWhileVisible
+                   && !ts[2].hasFrameWhileVisible,
+                   "only windows captured while visible may latch a frame")
+
+            DockModel.tasksModel.setChildTaskData(1, 1, "IsMinimized", true)
+            tryCompare(ts[1], "isMinimized", true)
+            verify(captures[1].freezeFrame)
+            verify(!captures[0].freezeFrame && !captures[2].freezeFrame,
+                   "minimizing one child must not freeze neighboring window streams")
+            compare(ts.map(t => t.winId), ["k-1", "k-2", "k-3"])
+        }
+
+        function test_windowIdReuseClearsRetainedFrameState() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const thumbnail = waitThumbs(popup, 3)[1]
+            thumbnail.captureItem.ready = true
+            verify(thumbnail.hasFrameWhileVisible)
+            thumbnail.winId = "replacement-window-uuid"
+            tryVerify(() => thumbnail.captureItem !== null
+                && thumbnail.captureItem.nodeId !== undefined)
+            verify(!thumbnail.hasFrameWhileVisible,
+                   "a delegate reused for another UUID must not retain another window's frame")
+            verify(!thumbnail.captureItem.freezeFrame)
         }
 
         function test_windowIdChangeReplacesSourceBeforeShowingAnotherWindowsFrame() {
@@ -863,6 +958,51 @@ Item {
             const frame = T.findFirst(thumbnail, item => item.objectName === "previewThumbnailContainer")
             verify(frame)
             compare(frame.width, data.width)
+        }
+
+        function test_thumbnailCardInsetsStayEqualAcrossSizePresets_data() {
+            return [
+                { tag: "compact", width: 180, maximumHeight: 113 },
+                { tag: "standard", width: 220, maximumHeight: 138 },
+                { tag: "enlarged", width: 260, maximumHeight: 163 },
+                { tag: "large", width: 320, maximumHeight: 200 },
+            ]
+        }
+
+        function test_thumbnailCardInsetsStayEqualAcrossSizePresets(data) {
+            const previousSize = DockSettings.previewThumbnailSize
+            const previousMaximumHeight = DockSettings.previewMaximumHeight
+            const previousPadding = DockSettings.previewCardPadding
+            DockSettings.previewThumbnailSize = data.width
+            DockSettings.previewMaximumHeight = data.maximumHeight
+            DockSettings.previewCardPadding = 8
+            const popup = makePopup()
+            show(0, "Kate")
+            const thumbnail = waitThumbs(popup, 1)[0]
+            const cardItem = card(popup)
+            const frame = T.findFirst(thumbnail,
+                item => item.objectName === "previewThumbnailContainer")
+            const header = T.findFirst(popup,
+                item => item.objectName === "previewHeader")
+            const row = T.findFirst(popup,
+                item => item.objectName === "previewThumbnailRow")
+            verify(cardItem && frame)
+            tryVerify(() => header && row && row.y >= header.height + Kirigami.Units.smallSpacing,
+                      1000, "the card layout must place thumbnails below the app header")
+
+            const frameTopLeft = frame.mapToItem(cardItem, 0, 0)
+            const left = frameTopLeft.x
+            const right = cardItem.width - frameTopLeft.x - frame.width
+            const bottom = cardItem.height - frameTopLeft.y - frame.height
+            DockSettings.previewThumbnailSize = previousSize
+            DockSettings.previewMaximumHeight = previousMaximumHeight
+            DockSettings.previewCardPadding = previousPadding
+            compare(left, DockSettings.previewCardPadding)
+            compare(right, DockSettings.previewCardPadding)
+            compare(bottom, DockSettings.previewCardPadding)
+            compare(thumbnail.implicitHeight,
+                    thumbnail.titleRowHeight + thumbnail.titleToThumbnailSpacing
+                        + thumbnail.thumbnailHeight)
         }
 
         function test_thumbnailUsesFixedViewportAndCoverGeometry() {

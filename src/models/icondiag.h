@@ -20,6 +20,7 @@ namespace kdockw {
 class IconDiagnostics final : public QObject {
   Q_OBJECT
   Q_PROPERTY(bool debugEnabled READ debugEnabled CONSTANT)
+  Q_PROPERTY(bool taskDiagnosticsEnabled READ taskDiagnosticsEnabled CONSTANT)
   Q_PROPERTY(bool testHiDpiEnabled READ testHiDpiEnabled CONSTANT)
   Q_PROPERTY(bool testBadgeLayerOff READ testBadgeLayerOff CONSTANT)
   Q_PROPERTY(bool testBadgeShadowOff READ testBadgeShadowOff CONSTANT)
@@ -42,6 +43,7 @@ public:
   explicit IconDiagnostics(QObject *parent = nullptr);
 
   [[nodiscard]] bool debugEnabled() const;
+  [[nodiscard]] bool taskDiagnosticsEnabled() const;
   [[nodiscard]] bool testHiDpiEnabled() const;
   [[nodiscard]] bool testBadgeLayerOff() const;
   [[nodiscard]] bool testBadgeShadowOff() const;
@@ -115,6 +117,7 @@ private:
   QPointer<QObject> m_screen;
   std::atomic<qreal> m_windowDpr{1.0};
   bool m_debugEnabled = false;
+  bool m_taskDiagnosticsEnabled = false;
   bool m_testHiDpiEnabled = false;
   bool m_testBadgeLayerOff = false;
   bool m_testBadgeShadowOff = false;

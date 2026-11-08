@@ -31,6 +31,7 @@ class ClippedPipeWireSourceItem : public PipeWireSourceItem
     Q_PROPERTY(QString clipMode READ clipMode WRITE setClipMode NOTIFY clipModeChanged)
     Q_PROPERTY(QRectF clipViewportRect READ clipViewportRect WRITE setClipViewportRect NOTIFY clipViewportRectChanged)
     Q_PROPERTY(qreal clipRadius READ clipRadius WRITE setClipRadius NOTIFY clipRadiusChanged)
+    Q_PROPERTY(bool freezeFrame READ freezeFrame WRITE setFreezeFrame NOTIFY freezeFrameChanged)
 
 public:
     explicit ClippedPipeWireSourceItem(QQuickItem *parent = nullptr);
@@ -41,11 +42,14 @@ public:
     void setClipViewportRect(const QRectF &rect);
     [[nodiscard]] qreal clipRadius() const;
     void setClipRadius(qreal radius);
+    [[nodiscard]] bool freezeFrame() const;
+    void setFreezeFrame(bool freeze);
 
 Q_SIGNALS:
     void clipModeChanged();
     void clipViewportRectChanged();
     void clipRadiusChanged();
+    void freezeFrameChanged();
 
 protected:
     QSGNode *updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data) override;
@@ -56,6 +60,9 @@ private:
     QString m_clipMode = QStringLiteral("rounded");
     QRectF m_clipViewportRect;
     qreal m_clipRadius = 0;
+    bool m_freezeFrame = false;
 };
+
+[[nodiscard]] QSGNode *retainedPipeWireFrameNode(bool freezeFrame, QSGNode *oldSourceTree);
 
 } // namespace kdockw

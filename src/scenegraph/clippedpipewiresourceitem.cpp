@@ -181,14 +181,39 @@ void ClippedPipeWireSourceItem::setClipRadius(qreal radius)
     update();
 }
 
+bool ClippedPipeWireSourceItem::freezeFrame() const
+{
+    return m_freezeFrame;
+}
+
+void ClippedPipeWireSourceItem::setFreezeFrame(bool freeze)
+{
+    if (m_freezeFrame == freeze) {
+        return;
+    }
+    m_freezeFrame = freeze;
+    Q_EMIT freezeFrameChanged();
+    update();
+}
+
+QSGNode *retainedPipeWireFrameNode(bool freezeFrame, QSGNode *oldSourceTree)
+{
+    return freezeFrame ? oldSourceTree : nullptr;
+}
+
 QSGNode *ClippedPipeWireSourceItem::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
 {
     auto *clip = static_cast<QSGClipNode *>(oldNode);
     QSGNode *oldSourceTree = clip ? clip->firstChild() : nullptr;
 
-    // KPipeWire's implementation expects the exact node it returned last
-    // frame. Keep that source node as a child of our outer clip wrapper.
-    QSGNode *sourceTree = PipeWireSourceItem::updatePaintNode(oldSourceTree, data);
+    // A minimized KWin screencast can replace the last window contents with
+    // an application icon. Retain the already-rendered subtree while the
+    // window is minimized; after restore, resume KPipeWire's normal updates.
+    QSGNode *sourceTree = retainedPipeWireFrameNode(m_freezeFrame, oldSourceTree);
+    if (!sourceTree) {
+        // KPipeWire expects the exact node it returned last frame.
+        sourceTree = PipeWireSourceItem::updatePaintNode(oldSourceTree, data);
+    }
     if (!sourceTree) {
         delete clip;
         return nullptr;

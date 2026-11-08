@@ -17,6 +17,11 @@ add_executable(kdockw_qml_tests
 target_compile_definitions(kdockw_qml_tests PRIVATE
     KDOCKW_QML_MOCKS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/mocks"
 )
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    target_compile_definitions(kdockw_qml_tests PRIVATE
+        KDOCKW_DIAGNOSTIC_LOCALE_DIR="${CMAKE_BINARY_DIR}/src/locale"
+    )
+endif()
 
 # utils/zoomcalculator.h (header-only) backs the DockView.zoomLayout() mock.
 target_include_directories(kdockw_qml_tests PRIVATE
@@ -28,6 +33,7 @@ target_link_libraries(kdockw_qml_tests PRIVATE
     Qt6::Qml
     Qt6::Quick
     Qt6::QuickTest
+    KF6::I18n
     KF6::I18nQml
 )
 
@@ -38,6 +44,7 @@ set(KDOCKW_QML_TEST_FILES
     tst_icon_alpha
     tst_badge_color_settings
     tst_icons_page_magnification
+    tst_animation_settings
     tst_settings_mini_dock
     tst_rounded_clip
     tst_dock_main
@@ -68,6 +75,19 @@ set_tests_properties(qml_preview_close_button_states PROPERTIES
     TIMEOUT 120
     ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;LANGUAGE=en_US;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
 )
+
+# Exercise a real translated string from the diagnostic build-local catalog.
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    add_test(NAME qml_animation_settings_ru
+        COMMAND kdockw_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/tst_animation_settings_ru.qml
+            AnimationSettingsRussian::test_translationCatalogIsLoaded
+    )
+    set_tests_properties(qml_animation_settings_ru PROPERTIES
+        LABELS "qml;localization"
+        TIMEOUT 120
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;LANG=ru_RU.UTF-8;LC_MESSAGES=ru_RU.UTF-8;LANGUAGE=ru;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
+    )
+endif()
 
 # Tooltip placement is also checked with fractional/high-DPI surface scales.
 foreach(tooltip_dpr IN ITEMS 1.25 1.5 2.0)

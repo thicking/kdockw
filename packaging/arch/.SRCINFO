@@ -1,6 +1,6 @@
 pkgbase = kdockw
 	pkgdesc = A lightweight dock for KDE Plasma 6 — spiritual successor to Latte Dock
-	pkgver = 0.3.1
+	pkgver = 0.4.0
 	pkgrel = 1
 	url = https://github.com/thicking/kdockw/
 	arch = x86_64
@@ -37,7 +37,7 @@ pkgbase = kdockw
 	depends = kpipewire
 	depends = pipewire
 	depends = wayland>=1.22
-	source = kdockw-0.3.1.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/kdockw-v0.3.1.tar.gz
+	source = kdockw-0.4.0.tar.gz::https://github.com/thicking/kdockw/archive/refs/tags/kdockw-v0.4.0.tar.gz
 	sha256sums = db277ef61a36b760295214725187ca439c3bd81a48a85ec303953db997549f9d
 
 pkgname = kdockw

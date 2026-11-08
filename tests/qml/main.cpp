@@ -18,14 +18,35 @@
 #include "utils/springzoomcontroller.h"
 
 #include <KLocalizedQmlContext>
+#include <KLocalizedString>
 #include <QPointF>
+#include <QColor>
+#include <QQuickImageProvider>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QImage>
 #include <QRectF>
 #include <QSize>
 #include <QString>
 #include <QVariant>
 #include <QtQuickTest>
+
+#include <clocale>
+
+class MockPreviewFrameImageProvider final : public QQuickImageProvider {
+public:
+  MockPreviewFrameImageProvider() : QQuickImageProvider(QQuickImageProvider::Image) {}
+
+  QImage requestImage(const QString &, QSize *size,
+                      const QSize &requestedSize) override {
+    const QSize imageSize = requestedSize.isValid() ? requestedSize : QSize(32, 20);
+    if (size)
+      *size = imageSize;
+    QImage image(imageSize, QImage::Format_ARGB32_Premultiplied);
+    image.fill(QColor(QStringLiteral("#5277aa")));
+    return image;
+  }
+};
 
 class MockIconDiagnostics : public QObject {
   Q_OBJECT
@@ -157,6 +178,16 @@ class KDockWQmlTestSetup : public QObject {
 
 public Q_SLOTS:
   void applicationAvailable() {
+    KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"),
+                                         QStringLiteral(KDOCKW_DIAGNOSTIC_LOCALE_DIR));
+#endif
+    if (qEnvironmentVariable("LANGUAGE").startsWith(QStringLiteral("ru"))) {
+      KLocalizedString::setLanguages({QStringLiteral("ru")});
+      const bool russianLocaleAvailable = std::setlocale(LC_MESSAGES, "ru_RU.UTF-8") != nullptr;
+      qputenv("KDOCKW_TEST_RU_LOCALE_AVAILABLE", russianLocaleAvailable ? QByteArrayLiteral("1") : QByteArrayLiteral("0"));
+    }
     KDockWQmlTest::registerMockTypes();
     qmlRegisterType<kdockw::SpringZoomController>("com.thicking.kdockw", 1,
                                                   0, "SpringZoomController");
@@ -167,12 +198,18 @@ public Q_SLOTS:
     QStringList paths = engine->importPathList();
     paths.prepend(QStringLiteral(KDOCKW_QML_MOCKS_DIR));
     engine->setImportPathList(paths);
+    engine->addImageProvider(QStringLiteral("previewframes"),
+                             new MockPreviewFrameImageProvider);
     engine->rootContext()->setContextProperty(QStringLiteral("IconDiagnostics"),
                                               &iconDiagnostics);
     engine->rootContext()->setContextProperty(QStringLiteral("SettingsWindow"),
                                               &zoomLayoutEngine);
+    engine->rootContext()->setContextProperty(
+        QStringLiteral("testRussianLocaleAvailable"),
+        qEnvironmentVariableIntValue("KDOCKW_TEST_RU_LOCALE_AVAILABLE") == 1);
 
-    KLocalization::setupLocalizedContext(engine);
+    auto *localizedContext = KLocalization::setupLocalizedContext(engine);
+    localizedContext->setTranslationDomain(QStringLiteral("kdockw"));
   }
 
 private:

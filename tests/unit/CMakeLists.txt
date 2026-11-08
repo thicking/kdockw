@@ -26,6 +26,7 @@ add_executable(kdockw_unit_tests
     test_release_update_checker.cpp
     test_rounded_clip_geometry.cpp
     test_pipewire_clip_tree.cpp
+    test_preview_frame_cache.cpp
 )
 
 target_compile_definitions(kdockw_unit_tests PRIVATE

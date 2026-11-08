@@ -9,6 +9,7 @@
 #include <QObject>
 #include <QRegion>
 #include <QTimer>
+#include <QImage>
 
 #include "style/backgroundstyle.h"
 
@@ -20,6 +21,7 @@ namespace kdockw
 
 class DockModel;
 class DockView;
+class PreviewFrameCache;
 
 /**
  * Manages the preview popup window lifecycle.
@@ -48,6 +50,7 @@ class PreviewController : public QObject
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentSizeChanged)
     Q_PROPERTY(qreal previewAnchorOffset READ previewAnchorOffset NOTIFY previewAnchorOffsetChanged)
     Q_PROPERTY(bool cpuCaptureOnly READ cpuCaptureOnly NOTIFY captureModeChanged)
+    Q_PROPERTY(quint64 previewFrameRevision READ previewFrameRevision NOTIFY previewFramesChanged)
 
     // Preview keyboard navigation state (driven from dock)
     Q_PROPERTY(bool previewKeyboardActive READ isPreviewKeyboardActive NOTIFY previewKeyboardActiveChanged)
@@ -73,6 +76,7 @@ public:
     [[nodiscard]] qreal previewAnchorOffset() const;
     [[nodiscard]] bool cpuCaptureOnly() const;
     [[nodiscard]] bool captureModeOverridden() const;
+    [[nodiscard]] quint64 previewFrameRevision() const;
 
     [[nodiscard]] bool isPreviewKeyboardActive() const;
     [[nodiscard]] int focusedThumbnailIndex() const;
@@ -114,6 +118,10 @@ public:
 
     /// Update the content size from QML (after layout).
     Q_INVOKABLE void setContentSize(qreal width, qreal height);
+    Q_INVOKABLE QString previewFrameUrl(const QString &windowUuid) const;
+    Q_INVOKABLE bool storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image);
+    Q_INVOKABLE bool removePreviewFrame(const QString &windowUuid);
+    [[nodiscard]] QImage previewFrameByKey(const QString &key) const;
 
     // --- Preview keyboard navigation (called from dock key handler) ---
 
@@ -152,6 +160,7 @@ Q_SIGNALS:
     void contentSizeChanged();
     void previewAnchorOffsetChanged();
     void captureModeChanged();
+    void previewFramesChanged();
     void previewKeyboardActiveChanged();
     void focusedThumbnailIndexChanged();
 
@@ -174,6 +183,7 @@ private:
     bool m_captureModeOverridden = false;
     bool m_overrideCpuCaptureOnly = false;
     std::unique_ptr<QQuickView> m_previewView;
+    std::unique_ptr<PreviewFrameCache> m_previewFrameCache;
     QRegion m_inputRegion;
     BackgroundEffectPlan m_backgroundEffectPlan;
 

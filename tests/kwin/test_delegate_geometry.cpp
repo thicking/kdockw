@@ -14,6 +14,7 @@
 #include "shell/dockvisibilitycontroller.h"
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
+#include "../dockqmltypes.h"
 #include <taskmanager/abstracttasksmodel.h>
 
 #include <KAboutData>
@@ -98,6 +99,7 @@ App &app()
                                                                   QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
                                                                   return launcherEntries;
                                                               });
+        registerDockQmlTypes();
         return a;
     }();
     return *instance;

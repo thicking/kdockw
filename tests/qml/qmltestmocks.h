@@ -183,6 +183,7 @@ class MockClippedPipeWireSourceItem : public MockPipeWireSourceItem
     Q_PROPERTY(QString clipMode READ clipMode WRITE setClipMode NOTIFY clipModeChanged)
     Q_PROPERTY(QRectF clipViewportRect READ clipViewportRect WRITE setClipViewportRect NOTIFY clipViewportRectChanged)
     Q_PROPERTY(qreal clipRadius READ clipRadius WRITE setClipRadius NOTIFY clipRadiusChanged)
+    Q_PROPERTY(bool freezeFrame MEMBER m_freezeFrame NOTIFY freezeFrameChanged)
 public:
     using MockPipeWireSourceItem::MockPipeWireSourceItem;
     QString clipMode() const { return m_clipMode; }
@@ -195,10 +196,12 @@ Q_SIGNALS:
     void clipModeChanged();
     void clipViewportRectChanged();
     void clipRadiusChanged();
+    void freezeFrameChanged();
 private:
     QString m_clipMode;
     QRectF m_clipViewportRect;
     qreal m_clipRadius = 0;
+    bool m_freezeFrame = false;
 };
 
 class MockPipeWireTracker : public QObject

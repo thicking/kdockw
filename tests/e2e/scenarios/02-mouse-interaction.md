@@ -71,6 +71,25 @@ If the dock is hidden (Auto hide / Dodge windows), show it first (README "Showin
 
 ---
 
+## TC MOUSE-023: Click Feedback for an Open App
+
+**Precondition:** The dock contains an open app with Click Bounce enabled. For a group, choose an action that activates or minimizes windows rather than opening the preview.
+**Steps:**
+1. Click a running app icon to activate or restore its window.
+2. Click the active icon again when the configured action minimizes it.
+3. Repeat with a grouped app whose click action activates or minimizes its windows.
+4. Hover over an icon without clicking.
+
+**Expected:**
+- Each click that activates, restores, or minimizes an open window produces one brief bounce and a smooth return.
+- A group preview action does not bounce because it only opens the preview.
+- Hover alone does not start Click Bounce.
+- Click Bounce remains smaller and shorter than Launch Bounce; Launch Bounce takes priority when the app is starting.
+
+**Automated:** `tests/qml/tst_dock_main.qml::test_runningTaskClickBouncesForActivateAndToggleActions`, `test_groupClickBounceOnlyForActivationOrMinimize`, `test_hoverDoesNotStartClickBounceAndLaunchHasPriority`, and `test_clickBounceDirectionUsesAllDockEdges` cover the input decision and geometry. The visible animation remains subject to owner QA in Plasma/Wayland.
+
+---
+
 ## TC MOUSE-003: Parabolic Zoom on Hover
 
 **Precondition:** Dock visible with multiple items. `ZoomStyle=0` (Parabolic, the default) and `ZoomAnimationPreset=0` (Natural, the default: 180 ms ease in and out on entering, 240 ms on leaving, at normal Plasma animation speed).

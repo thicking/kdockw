@@ -40,7 +40,7 @@ Item {
             const page = makePage()
             const selector = T.findFirst(page, item => item.objectName === "thumbnailSizePreset")
             verify(selector)
-            compare(selector.currentIndex, 0, "old 200×180 defaults display as custom")
+            compare(selector.currentIndex, 4, "the 320×200 default maps to the large preset")
 
             DockSettings.previewThumbnailSize = 260
             DockSettings.previewMaximumHeight = 163

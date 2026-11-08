@@ -24,6 +24,7 @@
 #include "utils/zoomcalculator.h"
 
 #include "config/screensettings.h"
+#include "../dockqmltypes.h"
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
 
@@ -139,7 +140,7 @@ App &app()
         // Application::run() registers this production QML type before the
         // SettingsWindow creates its separate QQmlEngine. Mirror that setup
         // here so the real PreviewPage and PreviewThumbnail can be loaded.
-        qmlRegisterType<kdockw::ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
+        registerDockQmlTypes();
         return a;
     }();
     return *instance;

@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.3.1\n"
+"Project-Id-Version: KDockW 0.4.0\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-06 00:00+0500\n"
@@ -303,6 +303,50 @@ msgstr "Анимация и индикаторы"
 #: src/qml/settings/AnimationsPage.qml:392
 msgid "Attention animation"
 msgstr "Анимация привлечения внимания"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Launch bounce"
+msgstr "Подпрыгивание при запуске"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Animate application launches"
+msgstr "Анимировать запуск приложений"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Bounce an app icon while its window is starting"
+msgstr "Значок приложения подпрыгивает, пока открывается его окно"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Launch bounce height (% of icon size)"
+msgstr "Высота подпрыгивания (% от размера значка)"
+
+#: src/qml/SettingsDialog.qml
+msgid "Click bounce"
+msgstr "Подпрыгивание при нажатии"
+
+#: src/qml/SettingsDialog.qml src/qml/settings/AnimationsPage.qml
+msgid "Show a bounce when activating an open app"
+msgstr "Подпрыгивание при активации открытого приложения"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Briefly bounce an open app icon when it is activated, restored, or minimized"
+msgstr "Значок ненадолго подпрыгивает при активации, восстановлении или сворачивании окна"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Launch bounce speed (%)"
+msgstr "Скорость подпрыгивания (%)"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Animate apps that demand attention"
+msgstr "Анимировать приложения, требующие внимания"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Use urgency signals from windows and applications; notification counts alone do not trigger animation"
+msgstr "Анимацию запускают только сигналы срочности от окон и приложений. Сам по себе счётчик уведомлений её не запускает"
+
+#: src/qml/settings/AnimationsPage.qml
+msgid "Attention animation intensity (%)"
+msgstr "Интенсивность анимации привлечения внимания (%)"
 
 #: src/qml/SettingsDialog.qml:79 src/qml/settings/AnimationsPage.qml:484
 #: src/qml/settings/AnimationsPage.qml:492

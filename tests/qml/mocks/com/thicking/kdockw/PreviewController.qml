@@ -23,6 +23,9 @@ QtObject {
     property bool previewKeyboardActive: false
     property int focusedThumbnailIndex: -1
     property bool cpuCaptureOnly: false
+    property int previewFrameRevision: 0
+    property var previewFrameUrls: ({})
+    property var frameStoreRequests: []
     signal captureModeChanged()
     function setCaptureMode(cpuOnly) {
         if (cpuCaptureOnly === cpuOnly) return
@@ -44,6 +47,26 @@ QtObject {
     function cancelHide() { _record("cancelHide", arguments) }
     function setPreviewHovered(v) { previewHovered = v }
     function setContentSize(w, h) { contentWidth = w; contentHeight = h }
+    function previewFrameUrl(uuid) {
+        const revision = previewFrameRevision
+        return previewFrameUrls[uuid] || ""
+    }
+    function storeMinimizedPreviewFrame(uuid, image) {
+        frameStoreRequests = frameStoreRequests.concat([{ uuid: uuid, imageSize: Qt.size(image.width, image.height) }])
+        let updated = Object.assign({}, previewFrameUrls)
+        updated[uuid] = "image://previewframes/mock/" + uuid + "?v=" + (previewFrameRevision + 1)
+        previewFrameUrls = updated
+        ++previewFrameRevision
+        return true
+    }
+    function removePreviewFrame(uuid) {
+        _record("removePreviewFrame", [uuid])
+        let updated = Object.assign({}, previewFrameUrls)
+        delete updated[uuid]
+        previewFrameUrls = updated
+        ++previewFrameRevision
+        return true
+    }
     function startPreviewKeyboardNav() { _record("startPreviewKeyboardNav", arguments); previewKeyboardActive = true; focusedThumbnailIndex = 0 }
     function endPreviewKeyboardNav() { _record("endPreviewKeyboardNav", arguments); previewKeyboardActive = false }
     function navigatePreviewThumbnail(d) { _record("navigatePreviewThumbnail", arguments) }
@@ -55,7 +78,7 @@ QtObject {
     function previewThumbnailCount() { return 0 }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly"]
+    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly", "previewFrameRevision", "previewFrameUrls", "frameStoreRequests"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

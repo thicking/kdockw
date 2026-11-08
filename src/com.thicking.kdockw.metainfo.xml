@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.4.0" date="2026-11-09">
+      <description>
+        <p>Added spring-based dock magnification, launch and attention animations, animated dock visibility, and smoother window-preview behavior for minimized windows.</p>
+        <p xml:lang="ru">Добавлены увеличение значков на основе физики пружины, анимации запуска и внимания, анимированный показ дока и улучшенный предпросмотр свёрнутых окон.</p>
+      </description>
+    </release>
     <release version="0.3.1" date="2026-11-07">
       <description>
         <p>Stable release checks now notify users about new KDockW versions, and grouped window previews provide a separate close control for each window.</p>

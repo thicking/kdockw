@@ -108,7 +108,7 @@ For implementation and troubleshooting details, see the [window-preview architec
 - **6 Attention Animations** — Bounce, Wiggle, Pulse, Glow, Dot Color, and Blink
 - **Task Progress Bar** — Progress indicator on dock icons (e.g. file copy in Dolphin)
 - **Do Not Disturb** — Attention animations suppressed when system DND is active
-- **Auto-Stop** — Attention animations stop after configurable duration (default 5s)
+- **Auto-Stop** — Attention animations stop after a configurable duration (3s by default)
 - **Release Update Checker** — Check stable KDockW GitHub Releases automatically or on demand, receive a KDE notification, and open the release page; updates are never downloaded or installed automatically
 
 ### Multi-Monitor & Virtual Desktops
@@ -148,35 +148,25 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW 0.3.1 is the latest stable release. Download the source archive, distribution packages, and checksums from the [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.3.1). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW 0.4.0 is the latest stable release. Download the source archive, release packages, and checksums from the [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.0). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
-The v0.3.1 release below retains its original 12 verified package assets.
-Starting with v0.3.2, required package builds and Distro E2E checks will cover
-Debian 13, Ubuntu 26.04 LTS, and Fedora 45. This does not promise compatibility
-with every Ubuntu LTS release. TUXEDO OS 24.04 with its updated Qt/KF6 stack has
-been confirmed to run the Ubuntu 26.04 DEB; that does not establish support for
-standard Ubuntu 24.04. Older compatibility targets will not be required gates
-or attached as separate packages to future releases. GitHub Releases is the
-only publication channel.
+The v0.4.0 release provides packages for Debian 13, Ubuntu 26.04 LTS, and Fedora 45. These are the required package-build and Distro E2E targets; older compatibility recipes are available for manual checks but are not release assets. The previous v0.3.1 release retains its original 12 verified package assets. GitHub Releases is the only publication channel.
 
-Building KDockW from source requires Qt 6.8 or newer and KDE Frameworks 6.0 or
-newer.
+Building KDockW from source requires Qt 6.8 or newer and KDE Frameworks 6.0 or newer.
 
-| Package | Distribution targets |
+| Package | Release target |
 | --- | --- |
-| `.deb` | Debian 13; Ubuntu 25.04, 25.10, 26.04 |
-| `.rpm` | Fedora 42, 43, 44, Rawhide; openSUSE Tumbleweed, Slowroll, Leap 16.0 |
-| `.pkg.tar.zst` | Arch Linux x86_64 |
+| .deb | Debian 13; Ubuntu 26.04 LTS |
+| .rpm | Fedora 45 |
 
-Install a downloaded local package with the system package manager:
+Install a downloaded package with the system package manager:
 
 ```bash
-sudo apt install ./kdockw-0.3.1-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.3.1-fedora-44.rpm
-sudo zypper install ./kdockw-0.3.1-opensuse-tumbleweed.rpm
-sudo pacman -U ./kdockw-0.3.1-arch.pkg.tar.zst
+sudo apt install ./kdockw-0.4.0-debian-13.deb
+sudo apt install ./kdockw-0.4.0-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.4.0-fedora-45.rpm
 ```
 
 ```bash

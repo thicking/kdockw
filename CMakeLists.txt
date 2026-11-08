@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.3.1")
+set(KDOCKW_VERSION "0.4.0")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
@@ -118,8 +118,29 @@ endif()
 add_subdirectory(src)
 
 if(KDOCKW_DIAGNOSTIC_BUILD)
+    # Keep candidate-local translations available without changing the
+    # Plasma session's global locale or data paths. The diagnostic binary
+    # adds this locale directory only to its own KI18n domain lookup.
+    find_program(KDOCKW_MSGFMT_EXECUTABLE msgfmt REQUIRED)
+    set(KDOCKW_DIAGNOSTIC_RU_CATALOG
+        "${CMAKE_BINARY_DIR}/src/locale/ru/LC_MESSAGES/kdockw.mo")
+    add_custom_command(
+        OUTPUT "${KDOCKW_DIAGNOSTIC_RU_CATALOG}"
+        COMMAND "${CMAKE_COMMAND}" -E make_directory
+            "${CMAKE_BINARY_DIR}/src/locale/ru/LC_MESSAGES"
+        COMMAND "${KDOCKW_MSGFMT_EXECUTABLE}" --check
+            -o "${KDOCKW_DIAGNOSTIC_RU_CATALOG}"
+            "${CMAKE_SOURCE_DIR}/src/po/ru/kdockw.po"
+        DEPENDS "${CMAKE_SOURCE_DIR}/src/po/ru/kdockw.po"
+        VERBATIM)
+    add_custom_target(kdockw_diagnostic_ru_catalog
+        DEPENDS "${KDOCKW_DIAGNOSTIC_RU_CATALOG}")
     add_executable(kdockw_diagnostic_metadata_check tools/verify-kdockw-wayland-metadata.cpp)
     target_link_libraries(kdockw_diagnostic_metadata_check PRIVATE Qt6::Core KF6::Service)
+    # A diagnostic candidate is not usable without the KService/KWin preflight
+    # checker. Building the documented `kdockw` target must produce both.
+    add_dependencies(kdockw kdockw_diagnostic_metadata_check)
+    add_dependencies(kdockw kdockw_diagnostic_ru_catalog)
 endif()
 
 option(KDOCKW_E2E_TESTS "Register the Docker-based AT-SPI E2E suite (tests/appium/run-e2e.sh) with CTest" OFF)

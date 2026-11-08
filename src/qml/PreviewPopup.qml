@@ -31,6 +31,11 @@ Item {
             Accessible.Polite)
     }
 
+    function removeCachedFramesForCurrentRows() {
+        for (let i = 0; i < childWindowModel.count; ++i)
+            PreviewController.removePreviewFrame(childWindowModel.get(i).winId)
+    }
+
     // Surface-level hover detection: keep preview visible when mouse is anywhere
     // on this surface. The C++ input region (updateInputRegion) already constrains
     // which events reach this surface to the visible popup rectangle, so detecting
@@ -54,6 +59,8 @@ Item {
     ListModel {
         id: childWindowModel
     }
+
+    Component.onCompleted: root.rebuildChildModel()
 
     function rebuildChildModel() {
         let parentIdx = PreviewController.parentIndex
@@ -97,15 +104,20 @@ Item {
                     childIndex: -1  // sentinel: use parent row directly
                 }
                 if (childWindowModel.count > 0) {
+                    const oldUuid = childWindowModel.get(0).winId
+                    if (oldUuid !== entry.winId)
+                        PreviewController.removePreviewFrame(oldUuid)
                     childWindowModel.set(0, entry)
                 } else {
                     childWindowModel.append(entry)
                 }
                 while (childWindowModel.count > 1) {
+                    PreviewController.removePreviewFrame(childWindowModel.get(childWindowModel.count - 1).winId)
                     childWindowModel.remove(childWindowModel.count - 1)
                 }
             } else {
                 // Launcher only (no windows) — clear model
+                removeCachedFramesForCurrentRows()
                 while (childWindowModel.count > 0) {
                     childWindowModel.remove(childWindowModel.count - 1)
                 }
@@ -145,6 +157,7 @@ Item {
 
             // Remove excess items from the end
             while (childWindowModel.count > maxCount) {
+                PreviewController.removePreviewFrame(childWindowModel.get(childWindowModel.count - 1).winId)
                 childWindowModel.remove(childWindowModel.count - 1)
             }
         }
@@ -198,6 +211,7 @@ Item {
                 let parentIdx = PreviewController.parentIndex
                 let parentModelIdx = DockModel.tasksModel.index(parentIdx, 0)
                 if (!parentModelIdx.valid) {
+                    root.removeCachedFramesForCurrentRows()
                     PreviewController.hidePreview()
                 } else {
                     root.rebuildChildModel()
@@ -303,8 +317,13 @@ Item {
             }
         }
 
-        implicitWidth: popupContent.implicitWidth + 2 * (cardPadding + shadowMargin)
-        implicitHeight: popupContent.implicitHeight + 2 * (cardPadding + shadowMargin)
+        // popupContent fills the card, while the card fills this item; deriving
+        // the item's size from the layout's implicit size creates a circular
+        // zero-width hint. The thumbnail row is the width authority (the app
+        // header is constrained to it), and the two stable rows define height.
+        implicitWidth: groupedRow.implicitWidth + 2 * (cardPadding + shadowMargin)
+        implicitHeight: headerRow.implicitHeight + popupContent.spacing
+            + groupedRow.implicitHeight + 2 * (cardPadding + shadowMargin)
         width: implicitWidth
         height: implicitHeight
 
@@ -350,6 +369,7 @@ Item {
 
         Kirigami.ShadowedRectangle {
             id: card
+            objectName: "previewCardSurface"
             anchors.fill: parent
             anchors.margins: popup.shadowMargin
             radius: Math.min(DockSettings.cornerRadius, width / 2, height / 2)
@@ -438,37 +458,51 @@ Item {
             }
 
             // Grouped windows: horizontal row of thumbnails
-            Row {
+            Item {
                 id: groupedRow
+                objectName: "previewThumbnailRow"
                 Layout.alignment: Qt.AlignHCenter
-                spacing: Kirigami.Units.smallSpacing
+                // Repeater delegates are not included in an enclosing
+                // positioner's implicit size. Publish the fixed thumbnail
+                // geometry here so the card measures the full row.
+                readonly property real thumbnailSlotWidth: Math.min(
+                    DockSettings.previewThumbnailSize, DockSettings.previewMaximumHeight * 1.6)
+                implicitWidth: thumbnailRepeater.count * thumbnailSlotWidth
+                    + Math.max(0, thumbnailRepeater.count - 1) * Kirigami.Units.smallSpacing
+                implicitHeight: thumbnailRepeater.count > 0 && thumbnailRepeater.itemAt(0)
+                    ? thumbnailRepeater.itemAt(0).implicitHeight : 0
                 // Retain thumbnails through the fade-out so the content and
                 // card opacity animate together; source items pause when the
                 // outer popup finishes fading and becomes invisible.
                 visible: popup.visible
 
-                Repeater {
-                    id: thumbnailRepeater
-                    model: childWindowModel
+                Row {
+                    anchors.fill: parent
+                    spacing: Kirigami.Units.smallSpacing
 
-                    PreviewThumbnail {
-                        winId: model.winId
-                        title: model.title
-                        isMinimized: model.isMinimized
-                        isActive: model.isActive
-                        parentIndex: PreviewController.parentIndex
-                        childIndex: model.childIndex
-                        showCloseButton: popup.groupedPreview
-                        onCloseRequested: function(uuid) {
-                            popup.closeWindowByUuid(uuid)
+                    Repeater {
+                        id: thumbnailRepeater
+                        model: childWindowModel
+
+                        PreviewThumbnail {
+                            winId: model.winId
+                            title: model.title
+                            isMinimized: model.isMinimized
+                            isActive: model.isActive
+                            parentIndex: PreviewController.parentIndex
+                            childIndex: model.childIndex
+                            showCloseButton: popup.groupedPreview
+                            onCloseRequested: function(uuid) {
+                                popup.closeWindowByUuid(uuid)
+                            }
+                            onPointerHoveredChanged: {
+                                if (pointerHovered)
+                                    popup.closeTargetWinId = winId
+                            }
+                            // Focus ring driven by C++ PreviewController state
+                            isKeyboardFocused: PreviewController.previewKeyboardActive
+                                && PreviewController.focusedThumbnailIndex === index
                         }
-                        onPointerHoveredChanged: {
-                            if (pointerHovered)
-                                popup.closeTargetWinId = winId
-                        }
-                        // Focus ring driven by C++ PreviewController state
-                        isKeyboardFocused: PreviewController.previewKeyboardActive
-                            && PreviewController.focusedThumbnailIndex === index
                     }
                 }
             }

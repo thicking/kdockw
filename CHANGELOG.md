@@ -8,8 +8,24 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-09
+
+KDockW 0.4.0 adds spring magnification and richer dock and window-preview
+animations for KDE Plasma 6 on Wayland.
+
 ### Added
 
+- Added adjustable launch bounce and attention animations. Launch bounce now
+  decays across a bounded sequence; explicit window/app urgency can animate
+  independently, while notification counts alone do not. Attention motion
+  stops after its configured duration and leaves a calm urgency marker while
+  the request remains active.
+- Added saved controls for launch and attention animation enablement and
+  intensity, plus launch speed.
+- Added a brief Click Bounce when a left-click activates, restores, or minimizes
+  an open app, with an independent toggle.
+- Added a Launch Bounce height control expressed as a percentage of the icon
+  size.
 - Added Spring magnification with adjustable stiffness, damping, and reaction
   speed. Spring is the default for new configurations; saved magnification modes
   and tuning values remain unchanged.
@@ -21,6 +37,13 @@ carried forward from the Krema-based development period.
 
 ### Fixed
 
+- Reused a recent rendered window frame from a bounded in-memory cache when a
+  window is minimized or its preview popup is recreated, instead of showing
+  KWin's minimized-window placeholder. The cache stays scoped to each window
+  UUID and is never written to disk.
+- Balanced the thumbnail's bottom inset with its side insets.
+- Translated the v0.4.0 animation, dock visibility, and preview-delay settings
+  into Russian.
 - Kept a window preview open when the pointer returns to the dock or preview
   before its hide delay expires.
 - Kept application-name tooltips clear of enlarged icons by accounting for the
@@ -31,6 +54,11 @@ carried forward from the Krema-based development period.
 
 ### Changed
 
+- Set the default Attention Animation duration to 3 seconds for new
+  configurations, while preserving a duration already saved by the user.
+- Increased the default Launch Bounce height and aligned shared first-run
+  settings with the configured KDockW 0.3.1 panel while retaining explicitly
+  saved preferences.
 - Set new configurations to Spring magnification with stiffness 170, damping
   0.60, reaction speed 1.0, and a 1.9× maximum zoom factor. Existing saved
   values continue to take precedence, and Classic remains available.

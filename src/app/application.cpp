@@ -142,6 +142,8 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::SpringStiffnessChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SpringDampingChanged, context, saveSettings);
     connect(settings, &KDockWSettings::SpringSpeedChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::DockShowHideAnimationEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::DockShowHideAnimationDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomAnimationPresetChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomInDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomOutDurationChanged, context, saveSettings);
@@ -179,6 +181,12 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::ShadowElevationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::IconNormalizationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::AttentionAnimationChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::AttentionAnimationEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::AttentionAnimationIntensityChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::LaunchBounceEnabledChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::LaunchBounceIntensityChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::LaunchBounceSpeedChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::ClickBounceEnabledChanged, context, saveSettings);
     connect(settings, &KDockWSettings::VirtualDesktopModeChanged, context, saveSettings);
     connect(settings, &KDockWSettings::OtherDesktopOpacityChanged, context, saveSettings);
     connect(settings, &KDockWSettings::MonitorModeChanged, context, saveSettings);

@@ -65,7 +65,7 @@
 
     <entry name="IconSpacing" type="Int">
       <label>Spacing between icons</label>
-      <default>13</default>
+      <default>10</default>
       <min>0</min>
       <max>64</max>
     </entry>
@@ -289,7 +289,7 @@
 
     <entry name="BackgroundOpacity" type="Double">
       <label>Background opacity</label>
-      <default>0.9</default>
+      <default>0.85</default>
       <min>0.0</min>
       <max>1.0</max>
     </entry>
@@ -323,14 +323,14 @@
 
     <entry name="ShadowLightX" type="Int">
       <label>Light source X position relative to panel center</label>
-      <default>-26</default>
+      <default>65</default>
       <min>-300</min>
       <max>300</max>
     </entry>
 
     <entry name="ShadowLightY" type="Int">
       <label>Light source Y position relative to panel center (negative=above)</label>
-      <default>-82</default>
+      <default>-132</default>
       <min>-300</min>
       <max>300</max>
     </entry>
@@ -356,14 +356,14 @@
 
     <entry name="ShadowIntensity" type="Double">
       <label>Shadow intensity (opacity)</label>
-      <default>0.6</default>
+      <default>0.2</default>
       <min>0.0</min>
       <max>1.0</max>
     </entry>
 
     <entry name="ShadowElevation" type="Int">
       <label>Panel elevation above screen surface (for shadow projection)</label>
-      <default>15</default>
+      <default>1</default>
       <min>1</min>
       <max>50</max>
     </entry>
@@ -380,14 +380,14 @@
 
     <entry name="PreviewThumbnailSize" type="Int">
       <label>Preview thumbnail width</label>
-      <default>200</default>
+      <default>320</default>
       <min>120</min>
       <max>320</max>
     </entry>
 
     <entry name="PreviewMaximumHeight" type="Int">
       <label>Maximum preview thumbnail height</label>
-      <default>180</default>
+      <default>200</default>
       <min>80</min>
       <max>300</max>
     </entry>
@@ -432,7 +432,7 @@
 
     <entry name="SingleWindowClickAction" type="Int">
       <label>Single window click action</label>
-      <default>0</default>
+      <default>1</default>
       <min>0</min>
       <max>1</max>
     </entry>
@@ -451,9 +451,45 @@
       <max>6</max>
     </entry>
 
+    <entry name="LaunchBounceEnabled" type="Bool">
+      <label>Animate application launches</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="LaunchBounceIntensity" type="Int">
+      <label>Launch bounce height (percent of icon size)</label>
+      <default>150</default>
+      <min>50</min>
+      <max>200</max>
+    </entry>
+
+    <entry name="ClickBounceEnabled" type="Bool">
+      <label>Show a bounce when activating an open app</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="LaunchBounceSpeed" type="Int">
+      <label>Launch bounce speed (percent)</label>
+      <default>100</default>
+      <min>50</min>
+      <max>150</max>
+    </entry>
+
+    <entry name="AttentionAnimationEnabled" type="Bool">
+      <label>Animate apps that demand attention</label>
+      <default>true</default>
+    </entry>
+
+    <entry name="AttentionAnimationIntensity" type="Int">
+      <label>Attention animation intensity (percent)</label>
+      <default>100</default>
+      <min>50</min>
+      <max>150</max>
+    </entry>
+
     <entry name="AttentionAnimationDuration" type="Int">
       <label>Duration of attention animation in seconds (0 = infinite)</label>
-      <default>5</default>
+      <default>3</default>
       <min>0</min>
       <max>60</max>
     </entry>
@@ -474,7 +510,7 @@
 
     <entry name="RunningIndicatorSize" type="Int">
       <label>Running application indicator size in logical pixels</label>
-      <default>5</default>
+      <default>4</default>
       <min>2</min>
       <max>12</max>
     </entry>

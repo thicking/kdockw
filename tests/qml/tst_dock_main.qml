@@ -600,6 +600,7 @@ Item {
         }
 
         function test_separatedParabolicHoverPreservesGapAndRestProxy(data) {
+            DockSettings.singleWindowClickAction = 0
             DockView.edge = data.edge
             DockSettings.iconSize = 32
             DockSettings.iconSpacing = 7
@@ -657,6 +658,7 @@ Item {
 
         function test_springZoomVisualAndClickGeometryStayTogether() {
             DockSettings.magnificationMode = 1
+            DockSettings.singleWindowClickAction = 0
             addTasks(["A", "B", "C", "D", "E"])
             let dock = makeDock(5)
             let its = items(dock)
@@ -1539,6 +1541,10 @@ Item {
 
         function test_previewClosePreservesPendingHoverDeadline() {
             DockSettings.previewHoverDelay = 1000
+            // Keep the handoff target inside a stable hit region while A is
+            // animating out. This test measures timer preservation, not the
+            // extreme displacement produced by the global maximum zoom.
+            DockSettings.maxZoomFactor = 1.3
             addTasks(["A", "B"])
             let dock = makeDock(2)
             let its = items(dock)
@@ -1786,6 +1792,155 @@ Item {
         }
 
         // --- Launch feedback ---
+
+        function test_launchBounceDirectionAndIntensityForAllEdges_data() {
+            return [
+                { tag: "top", edge: 0, axis: "y", sign: 1 },
+                { tag: "bottom", edge: 1, axis: "y", sign: -1 },
+                { tag: "left", edge: 2, axis: "x", sign: 1 },
+                { tag: "right", edge: 3, axis: "x", sign: -1 }
+            ]
+        }
+
+        function test_launchBounceDirectionAndIntensityForAllEdges(data) {
+            addTasks(["A"])
+            const item = items(makeDock(1))[0]
+            DockView.edge = data.edge
+            compare(item._bounceProp, data.axis)
+            compare(item._bounceTarget, data.sign * 15)
+            DockSettings.launchBounceIntensity = 200
+            compare(item._bounceTarget, data.sign * 20)
+            DockSettings.iconSize = 80
+            compare(item._bounceTarget, data.sign * 40)
+        }
+
+        function test_clickBounceIsShortAndDoesNotChangeHitGeometry() {
+            addTasks(["A"])
+            let item = items(makeDock(1))[0]
+            const x = item.x, y = item.y, width = item.width, height = item.height
+            item.startClickBounce()
+            tryCompare(item, "clickBounceRunning", true)
+            compare(item._clickBounceTarget, -4.8)
+            compare(item.x, x)
+            compare(item.y, y)
+            compare(item.width, width)
+            compare(item.height, height)
+            tryCompare(item, "clickBounceRunning", false, 1000)
+            const translate = findChild(item, "launchBounceTranslate")
+            verify(translate)
+            compare(translate.x, 0)
+            compare(translate.y, 0)
+        }
+
+        function test_clickBounceDirectionUsesAllDockEdges_data() {
+            return [
+                { tag: "top", edge: 0, axis: "y", sign: 1 },
+                { tag: "bottom", edge: 1, axis: "y", sign: -1 },
+                { tag: "left", edge: 2, axis: "x", sign: 1 },
+                { tag: "right", edge: 3, axis: "x", sign: -1 }
+            ]
+        }
+
+        function test_clickBounceDirectionUsesAllDockEdges(data) {
+            addTasks(["A"])
+            const item = items(makeDock(1))[0]
+            DockView.edge = data.edge
+            compare(item._bounceProp, data.axis)
+            compare(item._clickBounceTarget, data.sign * 4.8)
+        }
+
+        function test_runningTaskClickBouncesForActivateAndToggleActions() {
+            addTasks(["A"], { IsActive: false })
+            let dock = makeDock(1)
+            let item = items(dock)[0]
+            let c = centerOf(item)
+            mouseClick(stage, c.x, c.y, Qt.LeftButton)
+            compare(DockActions.callsTo("activate").length, 0)
+            compare(DockActions.callsTo("activateOrMinimize").length, 1)
+            verify(item.clickBounceRunning)
+            wait(500)
+            verify(!item.clickBounceRunning)
+
+            DockActions.reset()
+            DockSettings.singleWindowClickAction = 0
+            c = centerOf(item)
+            mouseClick(stage, c.x, c.y, Qt.LeftButton)
+            compare(DockActions.callsTo("activate").length, 1)
+            verify(item.clickBounceRunning)
+        }
+
+        function test_groupClickBounceOnlyForActivationOrMinimize() {
+            addGroupTask()
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            DockSettings.groupedWindowClickAction = 1
+            let c = centerOf(item)
+            mouseClick(stage, c.x, c.y, Qt.LeftButton)
+            compare(PreviewController.visible, true)
+            verify(!item.clickBounceRunning)
+
+            PreviewController.hidePreview()
+            DockSettings.groupedWindowClickAction = 0
+            c = centerOf(item)
+            mouseClick(stage, c.x, c.y, Qt.LeftButton)
+            verify(item.clickBounceRunning)
+            compare(DockActions.callsTo("activate").length, 1)
+        }
+
+        function test_hoverDoesNotStartClickBounceAndLaunchHasPriority() {
+            addTasks(["A"])
+            const item = items(makeDock(1))[0]
+            hoverItem(item)
+            wait(100)
+            verify(!item.clickBounceRunning)
+            DockActions.taskLaunching(0)
+            item.startClickBounce()
+            verify(item.launching)
+            verify(!item.clickBounceRunning)
+            verify(item._launchBounceSession)
+        }
+
+        function test_clickBounceDefersAttentionAndHonorsDisableSetting() {
+            addTasks(["A"], { IsActive: false, IsDemandingAttention: true })
+            const item = items(makeDock(1))[0]
+            verify(item._attentionPending)
+            item.startClickBounce()
+            verify(item.clickBounceRunning)
+            verify(!item._showAttentionAnim)
+            tryVerify(() => !item.clickBounceRunning && item._showAttentionAnim,
+                      1500, "attention animation should resume after click feedback")
+
+            DockSettings.clickBounceEnabled = false
+            item.startClickBounce()
+            verify(!item.clickBounceRunning)
+        }
+
+        function test_disablingLaunchBounceStopsCurrentMotion() {
+            addTasks(["A"])
+            const item = items(makeDock(1))[0]
+            DockActions.taskLaunching(0)
+            verify(item.launching)
+            DockSettings.launchBounceEnabled = false
+            compare(item._launchBounceSession, false)
+            const translate = findChild(item, "launchBounceTranslate")
+            verify(translate)
+            compare(translate.x, 0)
+            compare(translate.y, 0)
+        }
+
+        function test_attentionWaitsUntilLaunchBounceFinishes() {
+            addTasks(["A"])
+            const item = items(makeDock(1))[0]
+            DockActions.taskLaunching(0)
+            DockModel.tasksModel.setTaskData(0, "IsDemandingAttention", true)
+            verify(item._attentionPending)
+            verify(!item._showAttentionAnim)
+            DockModel.tasksModel.setTaskData(0, "ChildCount", 2)
+            tryCompare(item, "launching", false)
+            tryVerify(() => item._showAttentionAnim
+                || (item._animationActive && item._attentionIndicatorActive),
+                5000, "attention should start or remain visibly pending after launch motion")
+        }
 
         function test_launchSignalBouncesRunningApp() {
             addTasks(["A", "B"])

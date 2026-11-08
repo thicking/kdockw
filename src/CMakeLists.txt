@@ -34,6 +34,8 @@ add_library(kdockw_lib STATIC
     shell/edgetrigger.cpp
     shell/previewcontroller.h
     shell/previewcontroller.cpp
+    shell/previewframecache.h
+    shell/previewframecache.cpp
     shell/dockwidget.h
     shell/dockwidget.cpp
     shell/settingswindow.h

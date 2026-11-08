@@ -18,6 +18,7 @@
 #include "shell/dockview.h"
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
+#include "../dockqmltypes.h"
 
 #include <catch2/catch_session.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -107,6 +108,7 @@ App &app()
                                                            QQmlEngine::setObjectOwnership(launcherEntries, QQmlEngine::CppOwnership);
                                                            return launcherEntries;
                                                        });
+        registerDockQmlTypes();
         return a;
     }();
     return *instance;
