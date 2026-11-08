@@ -104,21 +104,20 @@ Rules that apply to every agent working on this repository, regardless of harnes
 
 ## Releases
 
-- Releases follow the `release` skill (`.agents/skills/release/SKILL.md`) end to end (version choice, document sync, tag, GitHub release, AUR, OBS, COPR, PPA).
+- Releases follow the `release` skill (`.agents/skills/release/SKILL.md`) for versioning, document synchronization, signed tags, required checks, package validation, and GitHub Releases publication.
+- GitHub Releases is the only KDockW publication channel. AUR, OBS, COPR, and Launchpad/PPA are inactive; do not create accounts, projects, credentials, keys, or publication steps for them. Retained adapters and legacy packaging recipes are not release gates or assets.
+- From v0.3.2, the required package and Distro E2E targets are listed in `tests/distro/release-targets.txt` (currently Debian 13, Ubuntu 26.04 LTS, and Fedora 45). Compatibility targets are available only for explicit manual runs.
 - On release, move every `[Unreleased]` entry into a `## [x.y.z] - YYYY-MM-DD` section and leave `[Unreleased]` empty.
 
 ## Distribution Support Policy
 
-- A distro release reaching end of life (EOL) is **never** a reason to remove a packaging target. Keep building and uploading it.
-- A target is retired only when:
-  1. its build breaks and cannot reasonably be fixed, or
-  2. the product needs a newer dependency (Qt, KDE Frameworks, LayerShellQt, etc.) that the release cannot provide and this blocks product work.
-- Platform-forced removal is per channel: when a build service stops offering a release (COPR deletes EOL Fedora chroots, Launchpad rejects uploads to Obsolete Ubuntu series, OBS removes a distro project), that channel simply stops serving the release. Other channels that still offer it keep building it — record the platform action, do not remove the release elsewhere.
-- Add new distro releases promptly to every channel that offers them (OBS `packaging/obs/project.meta.xml`, COPR chroots, Launchpad PPA series, README Installation table).
-- The scheduled workflow `.github/workflows/distro-release-watch.yml` opens one tracking issue per channel, labeled `distro-release`, once that channel offers a distro release (including pre-releases) that KDockW does not build there yet; those issues drive the additions. Releases a channel does not offer yet are only logged, never filed.
+- The required release matrix is defined by `tests/distro/release-targets.txt` and the target metadata in `tests/distro/targets.tsv`. Starting with v0.3.2 it covers Debian 13, Ubuntu 26.04 LTS, and Fedora 45; update the representatives when the current Debian stable, Ubuntu LTS, or Fedora stable release changes.
+- GitHub Releases is the only publication channel. Do not add AUR, OBS, COPR, or Launchpad/PPA to release gates, assets, credentials, or publication instructions.
+- Older compatibility rows and their packaging recipes may remain for explicit manual checks. They are not required build/E2E targets or release assets; do not add separate release packages for obsolete releases.
+- The scheduled workflow `.github/workflows/distro-release-watch.yml` tracks newly available current-family representatives for the required matrix, not every release offered by an external package channel.
 
 ### Agent Rules
 
-- Never propose or perform removal of a target, OBS repository, COPR chroot, or PPA series because it is EOL.
-- When retiring a target, cite the concrete build log or the blocking dependency requirement in the PR/issue, and update `packaging/obs/project.meta.xml`, the README Installation table, and CHANGELOG (`### Removed`) accordingly.
-- When reporting distro status, report EOL as information only, not as a recommendation to drop support.
+- Keep manual compatibility recipes distinct from required release targets. A release-matrix change does not imply that a legacy recipe was removed.
+- When removing a packaging recipe, cite the concrete unfixable build failure or blocking dependency requirement and update `tests/distro/targets.tsv`, the README installation table, and CHANGELOG (`### Removed`).
+- Report EOL as lifecycle information; it does not add an obsolete release to the required matrix or create an external publication obligation.
