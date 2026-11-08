@@ -9,6 +9,7 @@ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS QuickTest)
 
 add_executable(kdockw_qml_tests
     main.cpp
+    ${CMAKE_SOURCE_DIR}/src/utils/springzoomcontroller.cpp
     qmltestmocks.cpp
     qmltestmocks.h
 )
@@ -36,6 +37,7 @@ set(KDOCKW_QML_TEST_FILES
     tst_dockitem_indicators
     tst_icon_alpha
     tst_badge_color_settings
+    tst_icons_page_magnification
     tst_settings_mini_dock
     tst_rounded_clip
     tst_dock_main

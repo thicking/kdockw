@@ -270,8 +270,12 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.iconOpacityActive() == 1.0);
     CHECK(settings.iconOpacityInactive() == 1.0);
     CHECK(settings.iconOpacityMinimized() == 1.0);
-    CHECK(settings.maxZoomFactor() == Catch::Approx(1.7));
+    CHECK(settings.maxZoomFactor() == Catch::Approx(1.9));
     CHECK(settings.zoomStyle() == 0);
+    CHECK(settings.magnificationMode() == 1);
+    CHECK(settings.springStiffness() == Catch::Approx(170.0));
+    CHECK(settings.springDamping() == Catch::Approx(0.60));
+    CHECK(settings.springSpeed() == Catch::Approx(1.0));
     CHECK(settings.cornerRadius() == 17);
     CHECK(settings.floating());
     CHECK(settings.floatingMargin() == 3);
@@ -320,6 +324,62 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
     CHECK(settings.runningIndicatorSize() == 9);
     CHECK(settings.iconSpacing() == 13);
     CHECK(settings.contentPaddingBottom() == 0);
+}
+
+TEST_CASE("Existing magnification settings migrate without overwriting saved values", "[settings][migration][zoom]")
+{
+    const ScopedConfigHome home;
+    {
+        // Older configurations have zoom preferences but no Spring settings.
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        auto general = config.group(QStringLiteral("General"));
+        general.writeEntry(QStringLiteral("IconSize"), 72);
+        general.writeEntry(QStringLiteral("MaxZoomFactor"), 1.7);
+        config.sync();
+    }
+
+    KDockWSettings settings;
+    settings.load();
+    CHECK(settings.iconSize() == 72);
+    CHECK(settings.maxZoomFactor() == Catch::Approx(1.7));
+    CHECK(settings.magnificationMode() == 1);
+    CHECK(settings.springStiffness() == Catch::Approx(170.0));
+    CHECK(settings.springDamping() == Catch::Approx(0.60));
+    CHECK(settings.springSpeed() == Catch::Approx(1.0));
+}
+
+TEST_CASE("Explicit Classic mode and Spring tuning survive updated defaults", "[settings][migration][zoom]")
+{
+    const ScopedConfigHome home;
+    {
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        auto general = config.group(QStringLiteral("General"));
+        general.writeEntry(QStringLiteral("MagnificationMode"), 0);
+        general.writeEntry(QStringLiteral("MaxZoomFactor"), 1.6);
+        general.writeEntry(QStringLiteral("SpringStiffness"), 230.0);
+        general.writeEntry(QStringLiteral("SpringDamping"), 0.85);
+        general.writeEntry(QStringLiteral("SpringSpeed"), 1.4);
+        config.sync();
+    }
+
+    KDockWSettings settings;
+    settings.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
+    settings.load();
+    CHECK(settings.magnificationMode() == 0);
+    CHECK(settings.maxZoomFactor() == Catch::Approx(1.6));
+    CHECK(settings.springStiffness() == Catch::Approx(230.0));
+    CHECK(settings.springDamping() == Catch::Approx(0.85));
+    CHECK(settings.springSpeed() == Catch::Approx(1.4));
+
+    settings.save();
+    KDockWSettings restarted;
+    restarted.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
+    restarted.load();
+    CHECK(restarted.magnificationMode() == 0);
+    CHECK(restarted.maxZoomFactor() == Catch::Approx(1.6));
+    CHECK(restarted.springStiffness() == Catch::Approx(230.0));
+    CHECK(restarted.springDamping() == Catch::Approx(0.85));
+    CHECK(restarted.springSpeed() == Catch::Approx(1.4));
 }
 
 TEST_CASE("Preview redesign defaults preserve existing thumbnail preferences", "[settings][preview][migration]")

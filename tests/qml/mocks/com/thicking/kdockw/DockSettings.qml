@@ -15,9 +15,14 @@ QtObject {
     property int contentPaddingBottom: 0
     property int contentAlignment: 1
     property real iconOpacity: 1.0
-    property real maxZoomFactor: 1.7
+    property real maxZoomFactor: 1.9
     // 0 = Parabolic (neighbours move aside), 1 = InPlace
     property int zoomStyle: 0
+    // 0 = Classic, 1 = Spring.
+    property int magnificationMode: 1
+    property real springStiffness: 170.0
+    property real springDamping: 0.60
+    property real springSpeed: 1.0
     // 0 = Natural, 1 = Quick, 2 = Relaxed, 3 = Instant, 4 = Custom
     property int zoomAnimationPreset: 0
     // Custom preset timing (unscaled ms) and easing indices (see ZoomAnimationProfile).
@@ -86,7 +91,7 @@ QtObject {
     property real shadowIntensity: 0.6
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "contentPaddingLeft", "contentPaddingRight", "contentPaddingTop", "contentPaddingBottom", "contentAlignment", "iconOpacity", "maxZoomFactor", "zoomStyle", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "iconNormalization", "cornerRadius", "floating", "floatingMargin", "visibilityMode", "reserveScreenSpace", "dodgeActiveOnly", "edge", "showDelay", "hideDelay", "backgroundOpacity", "backgroundStyle", "useAccentColor", "useSystemColor", "tintColor", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "badgeDisplayMode", "badgeBackgroundColor", "badgeTextColor", "badgeFontWeight", "badgeTextSizePercent", "runningIndicatorStyle", "runningIndicatorPosition", "runningIndicatorSize", "runningIndicatorColorMode", "runningIndicatorColor", "otherDesktopOpacity", "previewEnabled", "cpuOnlyPreviewCapture", "previewHoverDelay", "previewHideDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "previewMaximumHeight", "previewCardPadding", "previewDockGap", "monitorMode", "followActiveTrigger", "screenTransition", "virtualDesktopMode", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
+    readonly property var _resettable: ["language", "iconSize", "iconSpacing", "contentPaddingLeft", "contentPaddingRight", "contentPaddingTop", "contentPaddingBottom", "contentAlignment", "iconOpacity", "maxZoomFactor", "zoomStyle", "magnificationMode", "springStiffness", "springDamping", "springSpeed", "zoomAnimationPreset", "zoomInDuration", "zoomOutDuration", "zoomInEasing", "zoomOutEasing", "iconOpacityActive", "iconOpacityInactive", "iconOpacityMinimized", "iconScale", "iconNormalization", "cornerRadius", "floating", "floatingMargin", "visibilityMode", "reserveScreenSpace", "dodgeActiveOnly", "edge", "showDelay", "hideDelay", "backgroundOpacity", "backgroundStyle", "useAccentColor", "useSystemColor", "tintColor", "separateLaunchers", "attentionAnimation", "attentionAnimationDuration", "badgeDisplayMode", "badgeBackgroundColor", "badgeTextColor", "badgeFontWeight", "badgeTextSizePercent", "runningIndicatorStyle", "runningIndicatorPosition", "runningIndicatorSize", "runningIndicatorColorMode", "runningIndicatorColor", "otherDesktopOpacity", "previewEnabled", "cpuOnlyPreviewCapture", "previewHoverDelay", "previewHideDelay", "activateWindowOnExternalDrag", "externalDragActivationDelay", "singleWindowClickAction", "groupedWindowClickAction", "previewThumbnailSize", "previewMaximumHeight", "previewCardPadding", "previewDockGap", "monitorMode", "followActiveTrigger", "screenTransition", "virtualDesktopMode", "shadowEnabled", "shadowElevation", "shadowLightX", "shadowLightY", "shadowLightZ", "shadowLightRadius", "shadowColor", "shadowIntensity"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

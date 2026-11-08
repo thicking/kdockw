@@ -115,6 +115,64 @@ msgstr "Масштаб увеличения"
 msgid "Zoom style"
 msgstr "Стиль увеличения"
 
+msgid "Magnification mode"
+msgstr "Режим увеличения"
+
+msgid "Choose the existing Classic animation or spring-based motion"
+msgstr "Выберите классическую анимацию или движение с физикой пружины"
+
+msgid "Classic"
+msgstr "Классический"
+
+msgid "Spring"
+msgstr "Пружина"
+
+msgid "Use the existing preset-based zoom animation"
+msgstr "Использовать существующую анимацию с заданными профилями"
+
+msgid "Icons follow the pointer with damped spring motion"
+msgstr "Значки следуют за указателем с демпфированием"
+
+msgid "Spring stiffness"
+msgstr "Упругость пружины"
+
+msgid "Higher stiffness pulls icons toward the pointer more strongly"
+msgstr "При большей упругости значки сильнее притягиваются к указателю"
+
+msgid "Gentle"
+msgstr "Мягко"
+
+msgid "Firm"
+msgstr "Сильно"
+
+msgid "Spring damping"
+msgstr "Демпфирование пружины"
+
+msgid "Higher damping reduces overshoot and settles sooner"
+msgstr "Сильное демпфирование уменьшает перелёт и ускоряет остановку"
+
+msgid "More bounce"
+msgstr "Больше колебаний"
+
+msgid "Less bounce"
+msgstr "Меньше колебаний"
+
+msgid "Reaction speed"
+msgstr "Скорость отклика"
+
+msgid "Adjust how quickly the spring responds to pointer movement"
+msgstr "Настройте скорость реакции пружины на движение указателя"
+
+msgid "Slow"
+msgstr "Медленно"
+
+msgid "Fast"
+msgstr "Быстро"
+
+msgctxt "multiplier"
+msgid "%1×"
+msgstr "%1×"
+
 #: src/qml/SettingsDialog.qml:47 src/qml/settings/IconsPage.qml:422
 #: src/qml/settings/IconsPage.qml:490
 msgid "Zoom animation"

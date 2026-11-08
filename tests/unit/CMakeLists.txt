@@ -7,6 +7,7 @@ add_executable(kdockw_unit_tests
     main.cpp
     smoke_test.cpp
     test_zoom_calculator.cpp
+    test_spring_zoom_controller.cpp
     test_surface_geometry.cpp
     test_input_region.cpp
     test_output_order.cpp

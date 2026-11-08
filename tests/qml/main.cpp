@@ -15,6 +15,7 @@
 // i18n() is provided by the real KLocalizedContext, exactly as in DockView.
 
 #include "qmltestmocks.h"
+#include "utils/springzoomcontroller.h"
 
 #include <KLocalizedQmlContext>
 #include <QPointF>
@@ -155,7 +156,11 @@ class KDockWQmlTestSetup : public QObject {
   Q_OBJECT
 
 public Q_SLOTS:
-  void applicationAvailable() { KDockWQmlTest::registerMockTypes(); }
+  void applicationAvailable() {
+    KDockWQmlTest::registerMockTypes();
+    qmlRegisterType<kdockw::SpringZoomController>("com.thicking.kdockw", 1,
+                                                  0, "SpringZoomController");
+  }
 
   void qmlEngineAvailable(QQmlEngine *engine) {
     // Prepend so the mock modules shadow any installed real plugins.

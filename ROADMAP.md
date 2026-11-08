@@ -183,11 +183,13 @@ priority sequence; it creates no dependency by itself. Window Preview Redesign
 depends on accepted v0.2.0 geometry. Application Name Tooltip depends on the
 preview card's visibility/header state. Toggle Minimize on Click is independent.
 
-## v0.4.0 — macOS-like Spring Physics (planned)
+## v0.4.0 — macOS-like Spring Physics (in progress)
 
-- [ ] Add a separate Spring magnification mode with damping and configurable
-  stiffness, speed, and decay; preserve Classic unchanged. Verify cursor
-  tracking, spacing, all four dock edges, and 60/120/144 Hz behavior.
+- [x] **Spring Magnification (`done`):** added time-based spring motion with
+  adjustable stiffness, damping, and reaction speed. New configurations use
+  Spring (170 / 0.60 / 1.0, 1.9×); saved user values are preserved and Classic
+  remains available. Owner accepted the animation in a real Plasma/Wayland
+  session; bounded-step tests simulate 60/120/144 Hz.
 - [ ] Add configurable dock show/hide animation. Keep KWin/window interaction
   correct and ensure an invisible surface does not capture the pointer.
 - [ ] Refine launch bounce and separate launch and attention states; verify

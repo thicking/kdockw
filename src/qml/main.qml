@@ -1190,6 +1190,8 @@ Item {
             // Guaranteed initial panel-rect report; coalesces with any already-queued call.
             reportPanelRect()
             Qt.callLater(function() { animationsReady = true })
+            springZoom.synchronize(zoomCursor, classicZoomAmount)
+            updateSpringTarget()
         }
 
         Behavior on width {
@@ -1245,6 +1247,7 @@ Item {
         // neighbours move aside and the background grows), 1 = InPlace (icons
         // scale over their neighbours, nothing moves).
         readonly property int zoomStyle: DockSettings.zoomStyle
+        readonly property int magnificationMode: DockSettings.magnificationMode
 
         // Last valid primary-axis cursor. Kept when mouseX becomes -1 so the
         // zoom-out animation collapses around the point the cursor left from.
@@ -1263,12 +1266,12 @@ Item {
         // and out when it leaves; per-icon scales/offsets and the background
         // growth track the layout directly, so moving the pointer along the
         // dock never lags.
-        property real zoomAmount: mouseInside ? 1.0 : 0.0
+        property real classicZoomAmount: mouseInside ? 1.0 : 0.0
         ZoomAnimationProfile { id: zoomProfile }
         // Direction comes from Behavior.targetValue (set before the animation
         // starts), so binding evaluation order does not matter. A 0 ms
         // direction snaps synchronously.
-        Behavior on zoomAmount {
+        Behavior on classicZoomAmount {
             id: zoomAmountBehavior
             enabled: zoomProfile.animated
             NumberAnimation {
@@ -1279,6 +1282,49 @@ Item {
                     ? zoomProfile.zoomInEasingType
                     : zoomProfile.zoomOutEasingType
             }
+        }
+        SpringZoomController {
+            id: springZoom
+            objectName: "dockSpringZoomController"
+        }
+        readonly property real zoomAmount: magnificationMode === 1
+            ? springZoom.amount : classicZoomAmount
+        readonly property real layoutCursor: magnificationMode === 1
+            ? springZoom.cursor : zoomCursor
+
+        function updateSpringTarget() {
+            if (magnificationMode !== 1) return
+            if (root._dragActive) {
+                springZoom.synchronize(zoomCursor, 0)
+                return
+            }
+            springZoom.setTarget(zoomCursor, mouseInside ? 1.0 : 0.0,
+                DockSettings.springStiffness, DockSettings.springDamping,
+                DockSettings.springSpeed, 0,
+                DockView.isVertical ? root.height : root.width)
+        }
+        onZoomCursorChanged: updateSpringTarget()
+        onMouseInsideChanged: updateSpringTarget()
+        onMagnificationModeChanged: {
+            if (magnificationMode === 1) {
+                // Start from the visible Classic amount when changing modes,
+                // so the live dock does not snap to rest before the spring
+                // takes over.
+                springZoom.synchronize(zoomCursor, classicZoomAmount)
+                updateSpringTarget()
+            } else {
+                springZoom.synchronize(zoomCursor, 0)
+            }
+        }
+        Connections {
+            target: DockSettings
+            function onSpringStiffnessChanged() { dockPanel.updateSpringTarget() }
+            function onSpringDampingChanged() { dockPanel.updateSpringTarget() }
+            function onSpringSpeedChanged() { dockPanel.updateSpringTarget() }
+        }
+        Connections {
+            target: root
+            function on_DragActiveChanged() { dockPanel.updateSpringTarget() }
         }
         // A drag snaps icons back to rest at once (drop targeting and the drop
         // indicator use rest coordinates), whatever the animation is doing.
@@ -1302,7 +1348,7 @@ Item {
             1.0 + (DockSettings.maxZoomFactor - 1.0) * _layoutZoomAmount,
             zoomStyle,
             _layoutZoomAmount > 0,
-            zoomCursor, _minZoomEdge, _maxZoomEdge)
+            layoutCursor, _minZoomEdge, _maxZoomEdge)
         // Icons keep changing under a still pointer while zoom is engaged
         // (zoom-in/out via zoomAmount; Parabolic also moves them and clamps
         // at the edges), so the icon under it can change without a mouse
@@ -1402,10 +1448,12 @@ Item {
             root.scheduleDelegateGeometryRefresh()
         }
         onWidthChanged: {
+            updateSpringTarget()
             reportPanelRect()
             root.scheduleDelegateGeometryRefresh()
         }
         onHeightChanged: {
+            updateSpringTarget()
             reportPanelRect()
             root.scheduleDelegateGeometryRefresh()
         }
@@ -1912,7 +1960,11 @@ Item {
         readonly property real maxLabelWidth: DockView.isVertical
             ? maxSideWidth - Kirigami.Units.largeSpacing * 2
             : Math.max(0, root.width - Kirigami.Units.largeSpacing * 4)
-        readonly property real maximumZoomGrowth: DockSettings.iconSize
+        // DockItem scales its full hit/indicator slot, not only iconSize.
+        // Include the reserved running-indicator band so the tooltip remains
+        // clear at the larger default magnification as well.
+        readonly property real maximumZoomGrowth: (DockSettings.iconSize
+            + DockSettings.runningIndicatorSize * 2)
             * Math.max(0, DockSettings.maxZoomFactor - 1)
         readonly property real maximumGap: Kirigami.Units.largeSpacing + maximumZoomGrowth
         readonly property real shadowOverflow: shadow.size
@@ -1928,7 +1980,8 @@ Item {
         // while still using the same live zoom scale for launchers and windows.
         function gapForItem(item) {
             return Kirigami.Units.largeSpacing
-                + Math.max(0, item.iconSize * (item.currentScale - 1))
+                + Math.max(0, (DockView.isVertical ? item.width : item.height)
+                    * (item.currentScale - 1))
         }
 
         function clampToSurface(center, extent, available) {

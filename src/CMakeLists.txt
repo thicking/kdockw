@@ -72,6 +72,8 @@ add_library(kdockw_lib STATIC
 
     utils/zoomcalculator.h
     utils/zoomlayoutvariant.h
+    utils/springzoomcontroller.h
+    utils/springzoomcontroller.cpp
     utils/surfacegeometry.h
     utils/inputregion.h
     utils/inputregion.cpp

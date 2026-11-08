@@ -137,7 +137,7 @@
 
     <entry name="MaxZoomFactor" type="Double">
       <label>Maximum parabolic zoom factor</label>
-      <default>1.7</default>
+      <default>1.9</default>
       <min>1.0</min>
       <max>2.0</max>
     </entry>
@@ -147,6 +147,34 @@
       <default>0</default>
       <min>0</min>
       <max>1</max>
+    </entry>
+
+    <entry name="MagnificationMode" type="Int">
+      <label>Icon magnification behavior (0=Classic, 1=Spring)</label>
+      <default>1</default>
+      <min>0</min>
+      <max>1</max>
+    </entry>
+
+    <entry name="SpringStiffness" type="Double">
+      <label>Spring magnification stiffness</label>
+      <default>170.0</default>
+      <min>20.0</min>
+      <max>500.0</max>
+    </entry>
+
+    <entry name="SpringDamping" type="Double">
+      <label>Spring magnification damping ratio</label>
+      <default>0.60</default>
+      <min>0.2</min>
+      <max>1.5</max>
+    </entry>
+
+    <entry name="SpringSpeed" type="Double">
+      <label>Spring magnification reaction speed</label>
+      <default>1.0</default>
+      <min>0.25</min>
+      <max>3.0</max>
     </entry>
 
     <entry name="ZoomAnimationPreset" type="Int">

@@ -16,6 +16,7 @@
 #include "shell/dockview.h"
 #include "shell/dockvisibilitycontroller.h"
 #include "shell/multidockmanager.h"
+#include "utils/springzoomcontroller.h"
 #include "shell/outputordermonitor.h"
 
 #include <KAboutData>
@@ -137,6 +138,10 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::IconOpacityMinimizedChanged, context, saveSettings);
     connect(settings, &KDockWSettings::MaxZoomFactorChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomStyleChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::MagnificationModeChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SpringStiffnessChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SpringDampingChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::SpringSpeedChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomAnimationPresetChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomInDurationChanged, context, saveSettings);
     connect(settings, &KDockWSettings::ZoomOutDurationChanged, context, saveSettings);
@@ -347,6 +352,7 @@ int Application::run(const KAboutData &aboutData)
         return launcherEntries;
     });
     qmlRegisterType<ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
+    qmlRegisterType<SpringZoomController>("com.thicking.kdockw", 1, 0, "SpringZoomController");
 
     // Create and initialize the multi-dock manager (creates DockShell(s) based on monitor mode).
     // Placement uses the Plasma primary output (kde_output_order_v1); wait for

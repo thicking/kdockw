@@ -29,6 +29,10 @@ Item {
 
         function init() {
             KDockWMocks.resetAll()
+            // Most DockMain cases exercise legacy Classic behavior; Spring
+            // defaults are covered explicitly in the settings and MiniDock
+            // tests, while Spring dock coverage opts in per test.
+            DockSettings.magnificationMode = 0
             IconDiagnostics.debugEnabled = false
             IconDiagnostics.testBadgeOverlay = false
             IconDiagnostics.testBadgeMetrics = false
@@ -651,6 +655,26 @@ Item {
             compare(its[1].z, 0)
         }
 
+        function test_springZoomVisualAndClickGeometryStayTogether() {
+            DockSettings.magnificationMode = 1
+            addTasks(["A", "B", "C", "D", "E"])
+            let dock = makeDock(5)
+            let its = items(dock)
+            hoverItem(its[2])
+            tryCompare(dock, "hoveredIndex", 2)
+            tryVerify(() => its[2].currentScale > 1.05,
+                      2000, "spring magnification did not move the hovered icon")
+
+            // The pointer-driven hit test reads the same currentScale/currentOffset
+            // that DockItem uses to draw, so a click at the visible icon center
+            // must still activate that exact window while the spring is moving.
+            const visible = drawnBounds(its[2], dock)
+            mouseClick(stage, visible.x + visible.width / 2,
+                       visible.y + visible.height / 2, Qt.LeftButton)
+            const activations = DockActions.callsTo("activate")
+            compare(activations[activations.length - 1].args[0], 2)
+        }
+
         function panelEdges() {
             let r = DockVisibility.panelRect
             return { left: r.x, right: r.x + r.width }
@@ -880,11 +904,15 @@ Item {
 
             const bounds = drawnBounds(item, dock)
             const gap = tooltip.gapForItem(item)
+            const panel = item.parent.parent
             verify(gap > Kirigami.Units.largeSpacing,
                    "the tooltip clearance should grow with the zoomed icon")
             if (data.edge === 0) {
                 verify(tooltip.y >= bounds.y + bounds.height,
-                       "top dock tooltip must clear the enlarged icon below the dock")
+                       "top dock tooltip must clear the enlarged icon below the dock: tooltipY="
+                       + tooltip.y + " iconBottom=" + (bounds.y + bounds.height)
+                       + " scale=" + item.currentScale + " panelY=" + panel.y
+                       + " panelHeight=" + panel.height + " gap=" + gap)
             } else if (data.edge === 1) {
                 verify(tooltip.y + tooltip.height <= bounds.y,
                        "bottom dock tooltip must clear the enlarged icon above the dock")

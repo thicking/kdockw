@@ -45,6 +45,8 @@ Item {
     /// 0 Start, 1 Center, 2 End along the dock's long axis.
     property int contentAlignment: DockSettings.contentAlignment
     property real maxZoomFactor: DockSettings.maxZoomFactor
+    /// 0 Classic, 1 Spring.
+    property int magnificationMode: DockSettings.magnificationMode
     /// 0 Parabolic, 1 In place.
     property int zoomStyle: DockSettings.zoomStyle
     property real iconScale: DockSettings.iconScale
@@ -199,14 +201,53 @@ Item {
     }
 
     // 0 = rest, 1 = full zoom.
-    property real zoomAmount: zoomed && maxZoomFactor > 1.0 ? 1.0 : 0.0
-    Behavior on zoomAmount {
+    property real classicZoomAmount: zoomed && maxZoomFactor > 1.0 ? 1.0 : 0.0
+    Behavior on classicZoomAmount {
         id: zoomBehavior
         enabled: dock.zoomInDuration > 0 || dock.zoomOutDuration > 0
         NumberAnimation {
             duration: zoomBehavior.targetValue > 0.5 ? dock.zoomInDuration : dock.zoomOutDuration
             easing.type: zoomBehavior.targetValue > 0.5 ? dock.zoomInEasing : dock.zoomOutEasing
         }
+    }
+    SpringZoomController {
+        id: springZoom
+        objectName: "miniDockSpringZoomController"
+    }
+    readonly property real zoomAmount: magnificationMode === 1
+        ? springZoom.amount : classicZoomAmount
+    readonly property real layoutCursor: magnificationMode === 1
+        ? springZoom.cursor : cursor
+
+    function updateSpringTarget() {
+        if (magnificationMode !== 1) return
+        springZoom.setTarget(cursor, zoomed && maxZoomFactor > 1.0 ? 1.0 : 0.0,
+            DockSettings.springStiffness, DockSettings.springDamping,
+            DockSettings.springSpeed, 0, vertical ? height : width)
+    }
+    onCursorChanged: updateSpringTarget()
+    onZoomedChanged: updateSpringTarget()
+    onWidthChanged: updateSpringTarget()
+    onHeightChanged: updateSpringTarget()
+    onMaxZoomFactorChanged: updateSpringTarget()
+    onEdgeChanged: updateSpringTarget()
+    onMagnificationModeChanged: {
+        if (magnificationMode === 1) {
+            springZoom.synchronize(cursor, classicZoomAmount)
+            updateSpringTarget()
+        } else {
+            springZoom.synchronize(cursor, 0)
+        }
+    }
+    Component.onCompleted: {
+        springZoom.synchronize(cursor, classicZoomAmount)
+        updateSpringTarget()
+    }
+    Connections {
+        target: DockSettings
+        function onSpringStiffnessChanged() { dock.updateSpringTarget() }
+        function onSpringDampingChanged() { dock.updateSpringTarget() }
+        function onSpringSpeedChanged() { dock.updateSpringTarget() }
     }
 
     // Scales/offsets/growth from the same computeDockZoom the dock uses
@@ -222,7 +263,7 @@ Item {
         1.0 + (maxZoomFactor - 1.0) * zoomAmount,
         zoomStyle,
         zoomAmount > 0,
-        cursor,
+        layoutCursor,
         -primaryDockOrigin - restStart,
         primaryParentExtent - primaryDockOrigin - restStart)
 

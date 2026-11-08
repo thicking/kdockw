@@ -40,6 +40,17 @@ Item {
             return dock
         }
 
+        function test_newMagnificationDefaultsFlowIntoMiniDock() {
+            const dock = makeDock(1)
+            compare(DockSettings.magnificationMode, 1)
+            compare(DockSettings.maxZoomFactor, 1.9)
+            compare(DockSettings.springStiffness, 170)
+            compare(DockSettings.springDamping, 0.60)
+            compare(DockSettings.springSpeed, 1.0)
+            compare(dock.magnificationMode, 1)
+            compare(dock.maxZoomFactor, 1.9)
+        }
+
         function test_badgeUsesLiveDockSettings() {
             const dock = makeDock(1)
             const badge = findChild(dock, "miniDockBadge5")
@@ -152,6 +163,46 @@ Item {
             tryVerify(() => dock.iconPx === 64)
             tryVerify(() => dock.gapPx === 21)
             tryVerify(() => dock.zoomLayout.scales[3] === 1.3)
+        }
+
+        function test_springModeUsesTheSharedZoomGeometryAndUpdatesLive() {
+            const dock = makeDock(1)
+            const spring = findChild(dock, "miniDockSpringZoomController")
+            verify(spring)
+
+            DockSettings.magnificationMode = 1
+            dock.hoveredIndex = 2
+            tryVerify(() => dock.zoomAmount > 0.95)
+            tryVerify(() => dock.zoomLayout.scales[2] > 1.0)
+            compare(dock.zoomLayout.scales.length, dock.count)
+
+            DockSettings.springStiffness = 260
+            DockSettings.springDamping = 1.1
+            DockSettings.springSpeed = 1.7
+            DockSettings.maxZoomFactor = 1.4
+            tryVerify(() => dock.zoomLayout.scales[2] > 1.35)
+
+            DockSettings.magnificationMode = 0
+            tryCompare(dock, "zoomAmount", 1)
+            verify(dock.zoomLayout.scales[2] > 1.3)
+        }
+
+        function test_springZoomSupportsAllDockEdges() {
+            const dock = makeDock(0)
+            dock.magnificationMode = 1
+            const spring = findChild(dock, "miniDockSpringZoomController")
+            verify(spring)
+
+            for (const edge of [0, 1, 2, 3]) {
+                dock.edge = edge
+                const cursor = dock.vertical ? dock.height / 2 : dock.width / 2
+                spring.synchronize(cursor, 0)
+                spring.setTarget(cursor, 1, 170, 0.60, 1.0, 0,
+                                 dock.vertical ? dock.height : dock.width)
+                tryVerify(() => dock.zoomAmount > 0.95)
+                verify(dock.zoomLayout.scales.some(scale => scale > 1.0))
+                spring.synchronize(cursor, 0)
+            }
         }
     }
 }

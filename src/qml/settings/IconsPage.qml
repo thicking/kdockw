@@ -421,6 +421,118 @@ SettingsPage {
     }
 
     FormCard.FormCard {
+        FormCard.AbstractFormDelegate {
+            background: null
+            Accessible.role: Accessible.Grouping
+            Accessible.name: i18n("Magnification mode")
+
+            contentItem: ColumnLayout {
+                spacing: Kirigami.Units.smallSpacing
+
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Magnification mode")
+                    color: Kirigami.Theme.textColor
+                    Accessible.ignored: true
+                }
+                QQC2.Label {
+                    Layout.fillWidth: true
+                    text: i18n("Choose the existing Classic animation or spring-based motion")
+                    wrapMode: Text.Wrap
+                    font: Kirigami.Theme.smallFont
+                    color: page.secondaryTextColor
+                    Accessible.ignored: true
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: Kirigami.Units.largeSpacing
+                    columns: Math.max(1, Math.min(2, Math.floor(width / (Kirigami.Units.gridUnit * 9))))
+                    columnSpacing: Kirigami.Units.largeSpacing * 2
+                    rowSpacing: Kirigami.Units.largeSpacing
+
+                    ChoiceCard {
+                        id: classicMagnificationCard
+                        objectName: "classicMagnificationCard"
+                        text: i18n("Classic")
+                        description: i18n("Use the existing preset-based zoom animation")
+                        previewHeight: Kirigami.Units.gridUnit * 5
+                        Binding { target: classicMagnificationCard; property: "checked"; value: DockSettings.magnificationMode === 0 }
+                        onChosen: DockSettings.magnificationMode = 0
+
+                        DockTile {
+                            dock.magnificationMode: 0
+                            dock.maxZoomFactor: Math.max(DockSettings.maxZoomFactor, 1.5)
+                            dock.hoveredIndex: dock.middleIndex
+                        }
+                    }
+
+                    ChoiceCard {
+                        id: springMagnificationCard
+                        objectName: "springMagnificationCard"
+                        text: i18n("Spring")
+                        description: i18n("Icons follow the pointer with damped spring motion")
+                        previewHeight: Kirigami.Units.gridUnit * 5
+                        Binding { target: springMagnificationCard; property: "checked"; value: DockSettings.magnificationMode === 1 }
+                        onChosen: DockSettings.magnificationMode = 1
+
+                        DockTile {
+                            dock.magnificationMode: 1
+                            dock.maxZoomFactor: Math.max(DockSettings.maxZoomFactor, 1.5)
+                            dock.hoveredIndex: dock.middleIndex
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    FormCard.FormCard {
+        visible: DockSettings.magnificationMode === 1
+        enabled: page.zoomEnabled
+
+        SliderDelegate {
+            objectName: "springStiffnessSlider"
+            text: i18n("Spring stiffness")
+            description: i18n("Higher stiffness pulls icons toward the pointer more strongly")
+            from: 60; to: 320; stepSize: 10
+            value: DockSettings.springStiffness
+            valueText: Math.round(value).toString()
+            minLabel: i18n("Gentle")
+            maxLabel: i18n("Firm")
+            onMoved: (value) => DockSettings.springStiffness = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            objectName: "springDampingSlider"
+            text: i18n("Spring damping")
+            description: i18n("Higher damping reduces overshoot and settles sooner")
+            from: 0.60; to: 1.20; stepSize: 0.05
+            value: DockSettings.springDamping
+            valueText: value.toFixed(2)
+            minLabel: i18n("More bounce")
+            maxLabel: i18n("Less bounce")
+            onMoved: (value) => DockSettings.springDamping = value
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
+            objectName: "springSpeedSlider"
+            text: i18n("Reaction speed")
+            description: i18n("Adjust how quickly the spring responds to pointer movement")
+            from: 0.5; to: 2.0; stepSize: 0.1
+            value: DockSettings.springSpeed
+            valueText: i18nc("multiplier", "%1×", value.toFixed(1))
+            minLabel: i18n("Slow")
+            maxLabel: i18n("Fast")
+            onMoved: (value) => DockSettings.springSpeed = value
+        }
+    }
+
+    FormCard.FormCard {
         SliderDelegate {
             id: zoomFactorSlider
             text: i18n("Zoom factor")
