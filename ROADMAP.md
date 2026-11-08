@@ -200,8 +200,9 @@ surface/input-region geometry. Launch and attention animation remains independen
 ## v0.5.0 — Dock Interactions (planned)
 
 - [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
-  animation, and usable handling of long lists. Consider Fan only if technically
-  justified.
+  animation, and usable handling of long lists. Plan Downloads Stack and real
+  download progress as a linked extension; do not infer percentages from file
+  presence. Consider Fan only if technically justified.
 - [ ] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin;
   handle cancellation and unsupported data safely.
 
@@ -224,6 +225,26 @@ surface/input-region geometry. Launch and attention animation remains independen
   Classic zoom mathematics, geometry, input regions, and Wayland behavior.
 
 ## P3 — Unversioned future exploration and accepted work
+
+### Built-in Dock Widgets (planned; no release assignment)
+
+- [ ] Define a small built-in widget model with left, center, and right slots,
+  separators, and spacers. Keep it internal; a public plugin API is out of scope.
+- [ ] **Application Launcher Widget:** provide compact macOS-style Launchpad,
+  Windows-style Start, and KDE-menu-based hierarchical Launchpad views. All
+  styles share search, keyboard control, localization, and Wayland-aware
+  positioning; use the real KService/XDG Menu hierarchy for KDE categories.
+- [ ] **Media Player Controls Widget:** use MPRIS2 over D-Bus, with player
+  selection, track and artist metadata, artwork, transport controls, and
+  seeking only when supported by the active player.
+- [ ] **Downloads Stack & Progress Indicator:** extend 13.1 Folder Stacks with
+  a navigable Downloads grid, automatic refresh, file opening and Dolphin
+  navigation. Investigate KDE JobViewServer/KIO for actual progress; show an
+  indeterminate or neutral state when no progress is available.
+
+The shared built-in widget model is a prerequisite for the Launcher, Media
+Player Controls, and Downloads Stack. This planning does not assign a release
+version or date.
 
 - **Badge Appearance (implemented and owner accepted):** default badge colors
   are `#FF3B30` and `#FFFFFF`; independent saved colors, reset, preview, and
@@ -258,9 +279,6 @@ surface/input-region geometry. Launch and attention animation remains independen
   the active KDE accent. No release assignment is implied; visual acceptance
   remains pending.
 
-- [ ] Define and evaluate a small built-in dock-widget model before committing
-  to a public extension API; then consider left, center, and right slots plus
-  separator and spacer widgets.
 - [ ] Evaluate StatusNotifierItem system-tray support, including item lifecycle
   and native menus, before planning implementation.
 - [ ] Study whether hosting Plasma widgets (Plasmoids) fits KDockW's Wayland and

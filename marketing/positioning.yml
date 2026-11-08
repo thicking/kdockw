@@ -3,18 +3,18 @@
 # All documentation and SEO files derive from this manifest.
 # Increment manifest_version when making deliberate positioning changes.
 
-manifest_version: "1.2.0"
+manifest_version: "1.3.0"
 
 product:
   name: KDockW
-  tagline: "A lightweight dock for KDE Plasma 6"
-  one_liner: "A lightweight, high-performance dock for KDE Plasma 6 — spiritual successor to Latte Dock."
-  meta_description: "KDockW is a lightweight dock for KDE Plasma 6 with parabolic zoom, PipeWire window previews, and native Plasma integration."
+  tagline: "A customizable dock for KDE Plasma 6 on Wayland"
+  one_liner: "A customizable KDE Plasma 6 dock for Wayland with parabolic zoom and live window previews — a spiritual successor to Latte Dock."
+  meta_description: "KDockW is a customizable KDE Plasma 6 dock for Wayland with parabolic zoom, live previews of open and minimized windows, and macOS-style interactions."
   elevator_pitch: >-
-    KDockW is the dock KDE Plasma 6 users have been waiting for since Latte Dock
-    was discontinued. Built from scratch with C++23 and KDE Frameworks 6, it
-    delivers smooth parabolic zoom, live PipeWire window previews, and deep native
-    integration with the Plasma desktop, using Kirigami and KDE color schemes.
+    KDockW is an independently developed KDE Plasma 6 dock for Wayland and a
+    spiritual successor to Latte Dock. Based on Krema, it offers parabolic zoom,
+    live previews of open and minimized windows, app grouping, and integration
+    with the Plasma desktop through Qt and KDE Frameworks.
   latte_dock_relation: "spiritual successor"  # ONLY this phrase — never "replacement", "fork", or "clone"
   language: C++23
   frameworks:
@@ -66,24 +66,19 @@ keywords:
   github_topics:
     - kde
     - kde-plasma
-    - plasma-6
+    - plasma6
     - wayland
     - dock
-    - taskbar
-    - linux
+    - linux-desktop
     - qt6
-    - cpp
-    - latte-dock
     - kirigami
-    - pipewire
-    - layer-shell
-    - accessibility
-    - qml
-    - launcher
+    - macos-style
+    - latte-dock
+    - kwin
 
 search_intents:
   - name: latte-dock-migration
-    description: "Former Latte Dock users seeking a Plasma 6 replacement"
+    description: "Former Latte Dock users seeking a dock for KDE Plasma 6"
     keywords: [latte dock alternative, latte dock plasma 6 alternative]
 
   - name: kde-dock-search
@@ -107,7 +102,8 @@ search_intents:
     keywords: [lightweight dock kde plasma, best dock for kde plasma]
 
 brand:
-  website: "https://github.com/thicking/kdockw/"
+  website: "https://thicking.github.io/kdockw/"
+  github_description: "KDockW — A modern, customizable dock for KDE Plasma 6 on Wayland, featuring parabolic zoom, live window previews, and macOS-style interactions."
   guide: branding/README.md
   icon_concept: "Blue-to-violet rounded square with a dark K glyph and a small dock motif"
   wordmark_concept: "KDockW wordmark set beside the blue-violet application mark in existing website artwork"

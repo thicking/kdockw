@@ -16,7 +16,6 @@
 
 ### Primary (Use in README, metainfo, all public-facing text)
 - kde plasma dock
-- latte dock replacement
 - latte dock alternative
 - kde plasma 6 dock
 - plasma 6 dock
@@ -67,13 +66,13 @@
 Before any public announcement:
 
 - [x] All M7 and M8 items complete (attention animations, icon normalization, multi-monitor)
-- [ ] Current KDockW screenshots captured in a verified Plasma session and added to README/metainfo
-- [ ] Current KDockW screenshots and demo videos recorded in a verified Plasma session
-- [ ] OBS package builds and installation verified under the current KDockW account
+- [x] Three owner-provided KDockW screenshots are in the README gallery; the site build publishes these same files
+- [x] Existing KDockW demo video is linked from README and included in the Pages site
+- [x] GitHub Releases is the only publication channel; platform package builds remain attached to releases
 - [x] Positioning manifest current (`marketing/positioning.yml`)
 - [ ] Blog post drafted (origin story + features)
-- [ ] Reddit posts drafted for r/kde, r/linux, r/unixporn
-- [ ] KDE Discuss announcement drafted
+- [x] Drafts prepared for r/kde and r/unixporn; r/linux remains optional and unpublished
+- [x] KDE Discuss announcement drafted
 
 ## Content Calendar (Post-Launch)
 
@@ -82,7 +81,7 @@ Before any public announcement:
 | Launch Day | Announcement post | r/kde, r/linux, KDE Discuss |
 | Launch Day | Visual showcase | r/unixporn |
 | Launch Day | Show HN | Hacker News |
-| Week 1 | "Building a Latte Dock successor" blog post | Blog, Mastodon |
+| Week 1 | "Developing a spiritual successor to Latte Dock" blog post | Blog, Mastodon |
 | Week 2 | Technical deep-dive (PipeWire previews) | Blog, r/kde |
 | Week 4 | Feature comparison (KDockW vs alternatives) | Blog, r/linux |
 | Monthly | Release notes / progress update | r/kde, KDE Discuss |
@@ -91,12 +90,12 @@ Before any public announcement:
 
 ### GitHub Repository
 - [x] Description with primary keywords
-- [x] 16 relevant topics
-- [x] Homepage URL set
+- [x] 11 repository topics, verified against GitHub API
+- [x] Homepage set to https://thicking.github.io/kdockw/
 - [x] README with badges, features, installation
 - [x] LICENSE file
 - [x] English documentation
-- [x] WIP badge for transparency
+- [x] Active-development status badge for transparency
 
 ### App Store / Package Manager
 - [x] metainfo.xml with keywords element
@@ -105,9 +104,17 @@ Before any public announcement:
 - [x] Screenshots in metainfo.xml (for KDE Discover)
 
 ### Website & Social
-- [x] Dedicated website (https://github.com/thicking/kdockw/, deployed via GitHub Pages)
+- [ ] Deploy the refreshed site through GitHub Pages and verify live assets
 - [x] Current KDockW OpenGraph preview (`website/og-image.png`)
-- [ ] Separate current KDockW screenshots or feature clips (not present in the deployed site)
+- [x] Pages build is configured to publish three screenshots and the existing MP4 demo
 
 ### Future
 - [ ] Blog with SEO-optimized articles
+
+
+### Discovery work (2026-11)
+
+- GitHub About description, homepage URL, and 11 topics were checked against the live GitHub API and updated to match `marketing/positioning.yml`.
+- Search Console and Bing Webmaster account access was not available in this environment. The public sitemap and `robots.txt` are reachable; public search queries returned no indexed results in the checked queries, which is not a definitive index-status report.
+- No posts were published. Prepared drafts are in `marketing/discovery-drafts.md`.
+- KDE Store/Pling is a possible discovery listing for libre software, but no KDockW listing was found or submitted. See the provider's [creator FAQ](https://store.kde.org/faq-pling); account ownership and any listing decision remain with the project owner.

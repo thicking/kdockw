@@ -35,3 +35,15 @@ nav a { padding: .65rem 1rem; border: 1px solid #8ce7f566; border-radius: 999px;
 nav a:hover { background: #8ce7f522; }
 nav .primary { border-color: transparent; color: #0e1630; background: linear-gradient(100deg, var(--cyan), var(--blue)); font-weight: 700; }
 footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #b8c5e633; color: var(--muted); }
+
+.demo video { display: block; width: 100%; height: auto; max-height: 70vh; border: 1px solid #b8c5e633; border-radius: 1rem; background: #080d1b; }
+.shot { margin: 0; min-width: 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid #b8c5e633; border-radius: .85rem; }
+.shot-featured { margin-bottom: 1rem; }
+.shot-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+figcaption, .caption { margin: .45rem 0 0; color: var(--muted); font-size: .9rem; }
+@media (max-width: 38rem) {
+  main { margin: 1.5rem auto; }
+  .brand img { width: 64px; height: 64px; }
+  .shot-grid { grid-template-columns: minmax(0, 1fr); }
+}

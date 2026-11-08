@@ -23,7 +23,8 @@
   <a href="ROADMAP.ru.md">Русский</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
   <a href="docs/migration/krema-to-kdockw.md">Migration from Krema</a> ·
-  <a href="docs/migration/krema-to-kdockw.ru.md">на русском</a>
+  <a href="docs/migration/krema-to-kdockw.ru.md">на русском</a> ·
+  <a href="https://thicking.github.io/kdockw/">Project website</a>
 </p>
 
 KDockW is an independent KDE Plasma 6 dock for Wayland and a spiritual successor to Latte Dock. Written in C++23 with Qt 6 and KDE Frameworks 6, it provides parabolic icon zoom, window previews, app grouping, launch feedback, and Plasma integration.

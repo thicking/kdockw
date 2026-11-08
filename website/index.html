@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KDockW — KDE Plasma dock for Wayland</title>
-<meta name="description" content="KDockW is an independent Wayland-native dock for KDE Plasma 6, with parabolic zoom, grouped windows, and live previews.">
+<title>KDockW — KDE Plasma 6 dock for Wayland</title>
+<meta name="description" content="KDockW is a customizable KDE Plasma 6 dock for Wayland with parabolic zoom, live previews of open and minimized windows, and macOS-style interactions.">
 <link rel="canonical" href="https://thicking.github.io/kdockw/">
 <meta name="theme-color" content="#17264e">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="KDockW">
 <meta property="og:url" content="https://thicking.github.io/kdockw/">
-<meta property="og:title" content="KDockW — KDE Plasma dock for Wayland">
-<meta property="og:description" content="An independent, Wayland-native dock for KDE Plasma 6.">
+<meta property="og:title" content="KDockW — KDE Plasma 6 dock for Wayland">
+<meta property="og:description" content="A customizable KDE Plasma 6 dock for Wayland, with parabolic zoom and live window previews.">
 <meta property="og:image" content="https://thicking.github.io/kdockw/og-image.png">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="640">
@@ -27,19 +27,45 @@
     <img src="favicon.svg" width="96" height="96" alt="">
     <div><p class="eyebrow">KDE PLASMA 6 · WAYLAND</p><h1>KDockW</h1></div>
   </header>
-  <p class="lead">A native dock for KDE Plasma, with smooth parabolic zoom, grouped windows, and live previews.</p>
-  <p>KDockW is an independent project based on Krema. It keeps the original project’s required notices and Git history while developing its own application identity and features.</p>
+  <p class="lead">A customizable KDE Plasma 6 dock for Wayland, with parabolic zoom, grouped apps, and live previews of open and minimized windows.</p>
+  <p>Looking for a Latte Dock alternative for Plasma 6? KDockW is an independent spiritual successor based on Krema, with its own application identity and continued development. The original project’s Git history and copyright notices are preserved.</p>
   <nav aria-label="Project links">
-    <a class="primary" href="https://github.com/thicking/kdockw">Source code</a>
-    <a href="https://github.com/thicking/kdockw/blob/main/README.md">Build instructions</a>
+    <a class="primary" href="https://github.com/thicking/kdockw/releases/latest">Download the latest release</a>
+    <a href="https://github.com/thicking/kdockw">Source code</a>
+    <a href="https://github.com/thicking/kdockw/blob/main/README.md">Build and installation guide</a>
     <a href="https://github.com/thicking/kdockw/blob/main/docs/troubleshooting/nvidia-prime-wayland.md">NVIDIA PRIME guide</a>
     <a href="https://github.com/thicking/kdockw/blob/main/docs/migration/krema-to-kdockw.md">Migration guide</a>
   </nav>
+  <section class="demo" aria-labelledby="demo-title">
+    <h2 id="demo-title">KDockW in action</h2>
+    <video controls playsinline preload="metadata" poster="screenshots/kdockw-classic-zoom.png">
+      <source src="screenshots/kdockw-demo.mp4" type="video/mp4">
+      Your browser does not support embedded video. <a href="screenshots/kdockw-demo.mp4">Download the MP4 demo</a>.
+    </video>
+    <p class="caption">Classic Zoom, dock animations, and live window previews in KDE Plasma 6 on Wayland.</p>
+  </section>
+  <section aria-labelledby="screenshots-title">
+    <h2 id="screenshots-title">Screenshots</h2>
+    <figure class="shot shot-featured">
+      <img src="screenshots/kdockw-classic-zoom.png" width="1370" height="169" alt="KDockW dock with the Firefox icon enlarged by Classic Zoom">
+      <figcaption>Classic Zoom magnifies the hovered application while keeping the dock visible.</figcaption>
+    </figure>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="screenshots/kdockw-window-preview.png" width="1365" height="388" alt="Live Yandex Browser window preview above the KDockW dock">
+        <figcaption>Live preview of an open window.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="screenshots/kdockw-dock-overview.png" width="1346" height="107" alt="KDockW dock with pinned applications and notification badges">
+        <figcaption>Dock overview with pinned applications and notification badges.</figcaption>
+      </figure>
+    </div>
+  </section>
   <section>
     <h2>Made for Plasma on Wayland</h2>
     <ul>
-      <li>Magnify dock icons with a fluid parabolic zoom.</li>
-      <li>Group application windows and switch between them from the dock.</li>
+      <li>Magnify dock icons with smooth parabolic zoom.</li>
+      <li>Group application windows, preview open and minimized windows, and switch between them from the dock.</li>
       <li>Pin desktop launchers, reorder items, and drop files onto applications.</li>
       <li>Use KDE-native settings, keyboard navigation, and Russian localization.</li>
     </ul>
