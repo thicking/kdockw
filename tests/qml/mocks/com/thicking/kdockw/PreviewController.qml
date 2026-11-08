@@ -17,6 +17,7 @@ QtObject {
     property real contentY: 0
     property real contentWidth: 0
     property real contentHeight: 0
+    property real maxPopupWidth: 1100
     property real previewAnchorOffset: 0
     property real simulatedCurrentZoomOverflow: 0
     property bool previewHovered: false
@@ -78,7 +79,7 @@ QtObject {
     function previewThumbnailCount() { return 0 }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly", "previewFrameRevision", "previewFrameUrls", "frameStoreRequests"]
+    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "maxPopupWidth", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly", "previewFrameRevision", "previewFrameUrls", "frameStoreRequests"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

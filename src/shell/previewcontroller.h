@@ -48,6 +48,7 @@ class PreviewController : public QObject
     Q_PROPERTY(qreal contentY READ contentY NOTIFY positionChanged)
     Q_PROPERTY(qreal contentWidth READ contentWidth NOTIFY contentSizeChanged)
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentSizeChanged)
+    Q_PROPERTY(qreal maxPopupWidth READ maxPopupWidth NOTIFY maxPopupWidthChanged)
     Q_PROPERTY(qreal previewAnchorOffset READ previewAnchorOffset NOTIFY previewAnchorOffsetChanged)
     Q_PROPERTY(bool cpuCaptureOnly READ cpuCaptureOnly NOTIFY captureModeChanged)
     Q_PROPERTY(quint64 previewFrameRevision READ previewFrameRevision NOTIFY previewFramesChanged)
@@ -73,6 +74,7 @@ public:
     [[nodiscard]] qreal contentY() const;
     [[nodiscard]] qreal contentWidth() const;
     [[nodiscard]] qreal contentHeight() const;
+    [[nodiscard]] qreal maxPopupWidth() const;
     [[nodiscard]] qreal previewAnchorOffset() const;
     [[nodiscard]] bool cpuCaptureOnly() const;
     [[nodiscard]] bool captureModeOverridden() const;
@@ -158,6 +160,7 @@ Q_SIGNALS:
     void parentIndexChanged();
     void positionChanged();
     void contentSizeChanged();
+    void maxPopupWidthChanged();
     void previewAnchorOffsetChanged();
     void captureModeChanged();
     void previewFramesChanged();
@@ -196,6 +199,7 @@ private:
     qreal m_contentY = 0;
     qreal m_contentWidth = 280;
     qreal m_contentHeight = 200;
+    qreal m_maxPopupWidth = 0;
     qreal m_itemPos = 0; // icon position in dock-surface-local coordinates
     qreal m_itemExtent = 0;
     qreal m_iconRestEdgeInSurface = 0;

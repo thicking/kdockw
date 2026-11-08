@@ -825,6 +825,32 @@ Item {
             }
         }
 
+        function test_groupedThumbnailsShrinkToFitNarrowOutput() {
+            const previousMaxPopupWidth = PreviewController.maxPopupWidth
+            try {
+                PreviewController.maxPopupWidth = 700
+                DockSettings.previewThumbnailSize = 320
+                DockSettings.previewMaximumHeight = 200
+                const popup = makePopup()
+                show(1, "Konsole")
+                const ts = waitThumbs(popup, 3)
+                const cardPopup = T.findFirst(popup, item => item.objectName === "previewCardPopup")
+                const row = T.findFirst(popup, item => item.objectName === "previewThumbnailRow")
+                verify(cardPopup && row)
+                verify(cardPopup.width <= PreviewController.maxPopupWidth,
+                    "the grouped card must fit the maximum popup width exposed by the preview surface")
+                verify(ts[0].thumbnailWidth < DockSettings.previewThumbnailSize,
+                    "three large thumbnails must shrink to fit the available row width")
+                compare(ts[1].thumbnailWidth, ts[0].thumbnailWidth)
+                compare(ts[2].thumbnailWidth, ts[0].thumbnailWidth)
+                verify(ts[0].thumbnailHeight < DockSettings.previewMaximumHeight,
+                    "the 16:10 height must follow the reduced width")
+                compare(ts[0].thumbnailWidth / ts[0].thumbnailHeight, 1.6)
+            } finally {
+                PreviewController.maxPopupWidth = previousMaxPopupWidth
+            }
+        }
+
         function test_groupCloseButtonClosesExactUuidWithoutActivatingThumbnail() {
             const popup = makePopup()
             show(1, "Konsole")

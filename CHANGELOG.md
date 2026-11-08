@@ -42,6 +42,8 @@ animations for KDE Plasma 6 on Wayland.
   KWin's minimized-window placeholder. The cache stays scoped to each window
   UUID and is never written to disk.
 - Balanced the thumbnail's bottom inset with its side insets.
+- Kept preview cards centered after their first layout and fitted grouped
+  thumbnails to the available output width without changing their aspect ratio.
 - Translated the v0.4.0 animation, dock visibility, and preview-delay settings
   into Russian.
 - Kept a window preview open when the pointer returns to the dock or preview

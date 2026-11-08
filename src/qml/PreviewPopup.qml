@@ -464,11 +464,22 @@ Item {
                 Layout.alignment: Qt.AlignHCenter
                 // Repeater delegates are not included in an enclosing
                 // positioner's implicit size. Publish the fixed thumbnail
-                // geometry here so the card measures the full row.
-                readonly property real thumbnailSlotWidth: Math.min(
+                // geometry here so the card measures the full row. When a
+                // group would exceed the available output width, shrink each
+                // slot uniformly while preserving its 16:10 image ratio.
+                readonly property real requestedThumbnailSlotWidth: Math.min(
                     DockSettings.previewThumbnailSize, DockSettings.previewMaximumHeight * 1.6)
+                readonly property real rowSpacing: Kirigami.Units.smallSpacing
+                readonly property real availableRowWidth: Math.max(1,
+                    PreviewController.maxPopupWidth
+                        - 2 * (popup.cardPadding + popup.shadowMargin))
+                readonly property real thumbnailSlotWidth: Math.min(
+                    requestedThumbnailSlotWidth,
+                    Math.max(1, (availableRowWidth
+                        - Math.max(0, thumbnailRepeater.count - 1) * rowSpacing)
+                        / Math.max(1, thumbnailRepeater.count)))
                 implicitWidth: thumbnailRepeater.count * thumbnailSlotWidth
-                    + Math.max(0, thumbnailRepeater.count - 1) * Kirigami.Units.smallSpacing
+                    + Math.max(0, thumbnailRepeater.count - 1) * rowSpacing
                 implicitHeight: thumbnailRepeater.count > 0 && thumbnailRepeater.itemAt(0)
                     ? thumbnailRepeater.itemAt(0).implicitHeight : 0
                 // Retain thumbnails through the fade-out so the content and
@@ -478,7 +489,7 @@ Item {
 
                 Row {
                     anchors.fill: parent
-                    spacing: Kirigami.Units.smallSpacing
+                    spacing: groupedRow.rowSpacing
 
                     Repeater {
                         id: thumbnailRepeater
@@ -487,6 +498,7 @@ Item {
                         PreviewThumbnail {
                             winId: model.winId
                             title: model.title
+                            slotWidth: groupedRow.thumbnailSlotWidth
                             isMinimized: model.isMinimized
                             isActive: model.isActive
                             parentIndex: PreviewController.parentIndex

@@ -34,6 +34,10 @@ Item {
     property int childIndex: 0
     property bool isKeyboardFocused: false
     property bool showCloseButton: false
+    // The popup may narrow thumbnail slots when a group would exceed the
+    // available output width. Zero keeps standalone/test thumbnails at the
+    // configured preset width.
+    property real slotWidth: 0
     signal closeRequested(var uuid)
     readonly property bool pointerHovered: thumbnailHover.hovered
     property bool forceCpuCapture: false
@@ -69,7 +73,7 @@ Item {
     // Keep a stable 16:10 preview slot for every app. The image fills the
     // inner card area and a scene-graph clip rounds its visible corners.
     readonly property real thumbnailWidth: Math.min(
-        DockSettings.previewThumbnailSize,
+        slotWidth > 0 ? slotWidth : DockSettings.previewThumbnailSize,
         DockSettings.previewMaximumHeight * 1.6)
     readonly property real thumbnailHeight: thumbnailWidth / 1.6
     readonly property real titleToThumbnailSpacing: Kirigami.Units.smallSpacing / 2

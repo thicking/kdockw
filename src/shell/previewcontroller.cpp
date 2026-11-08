@@ -260,6 +260,11 @@ qreal PreviewController::contentHeight() const
     return m_contentHeight;
 }
 
+qreal PreviewController::maxPopupWidth() const
+{
+    return m_maxPopupWidth;
+}
+
 qreal PreviewController::previewAnchorOffset() const
 {
     return m_previewAnchorOffset;
@@ -458,8 +463,13 @@ void PreviewController::setContentSize(qreal width, qreal height)
         // popup position and publishing the corresponding input region.
         applyEdgeLayout();
 
-        // Recalculate position to stay centered on the icon
-        if (m_visible && m_parentIndex >= 0) {
+        // Recalculate as soon as the first layout arrives, even before the
+        // surface is shown. parentIndexChanged rebuilds the QML delegates
+        // synchronously, while the corresponding layout/width change can be
+        // delivered before doShow() flips m_visible. Skipping this update
+        // leaves contentX/contentY at the old (often zero-width) geometry and
+        // reveals the card offset from its icon.
+        if (m_parentIndex >= 0) {
             recalcContentPosition();
             Q_EMIT positionChanged();
         }
@@ -762,6 +772,13 @@ void PreviewController::applyEdgeLayout()
     constexpr int previewDepth = 400;
     const int contentExtent = static_cast<int>(std::ceil(vertical ? m_contentWidth : m_contentHeight));
     const int availableExtent = (vertical ? screenGeo.width() : screenGeo.height()) - dockMargin;
+    const qreal maxPopupWidth = std::max(1, vertical
+        ? availableExtent - static_cast<int>(std::ceil(m_previewAnchorOffset)) - 8
+        : screenGeo.width() - 16);
+    if (!qFuzzyCompare(m_maxPopupWidth + 1.0, maxPopupWidth + 1.0)) {
+        m_maxPopupWidth = maxPopupWidth;
+        Q_EMIT maxPopupWidthChanged();
+    }
     const int requiredDepth = contentExtent + static_cast<int>(std::ceil(m_maxPreviewZoomOverflow));
     const int depth = qBound(1, qMax(previewDepth, requiredDepth), qMax(1, availableExtent));
     QSize size;
