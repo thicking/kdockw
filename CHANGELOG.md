@@ -13,9 +13,16 @@ carried forward from the Krema-based development period.
 - Added Spring magnification with adjustable stiffness, damping, and reaction
   speed. Spring is the default for new configurations; saved magnification modes
   and tuning values remain unchanged.
+- Added a configurable dock slide and fade when its existing visibility policy
+  hides or reveals the panel. The animation can be disabled and defaults to
+  220 ms; auto-hide is never enabled by the animation setting itself.
+- Added a window-preview hide delay from 0 to 1500 ms (default 400 ms), separate
+  from the dock's 500 ms default hide delay.
 
 ### Fixed
 
+- Kept a window preview open when the pointer returns to the dock or preview
+  before its hide delay expires.
 - Kept application-name tooltips clear of enlarged icons by accounting for the
   full dock-item geometry.
 - Made the settings dock preview follow the live badge colors and typography,

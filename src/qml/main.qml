@@ -857,6 +857,8 @@ Item {
         function onBackgroundStyleTypeChanged() { dockPanel.reportPanelRect() }
         function onBackgroundColorChanged() { dockPanel.reportPanelRect() }
         function onPointerInsideChanged() {
+            if (DockView.pointerInside)
+                PreviewController.cancelHide()
             if (!DockView.pointerInside && !root._menuHeld && root._pointerOnDock
                     && !dockMouseArea.containsMouse)
                 root._pointerLeft()
@@ -883,6 +885,7 @@ Item {
         // context menu holds hover; real input ends a pending reconcile.
         onEntered: {
             if (root._menuHeld) return
+            PreviewController.cancelHide()
             root._pointerOnDock = true
             DockVisibility.setHovered(true)
             if (root._hoverReconciling)
@@ -1078,6 +1081,7 @@ Item {
     // The visible background is dockBackground, which also covers zoom growth.
     Rectangle {
         id: dockPanel
+        objectName: "dockPanel"
 
         readonly property real paddingLeft: DockSettings.contentPaddingLeft
         readonly property real paddingRight: DockSettings.contentPaddingRight
@@ -1124,24 +1128,37 @@ Item {
         readonly property real restX: DockView.isVertical ? restEdgePos : (parent.width - width) / 2
         readonly property real restY: DockView.isVertical ? (parent.height - height) / 2 : restEdgePos
 
-        // Position: center on the non-edge axis, slide on the edge axis
-        x: DockView.isVertical ? _panelEdgePos : restX
-        y: DockView.isVertical ? restY : _panelEdgePos
-
-        property real _panelEdgePos: {
+        // Animate only the visibility offset. Keeping the dock's zoom geometry
+        // out of this animation prevents a hide/show transition from adding a
+        // second easing pass to the icon layout.
+        readonly property real hiddenEdgeOffset: {
             let sp = Kirigami.Units.largeSpacing
             switch (DockView.edge) {
             case 0: // Top
-                return DockVisibility.dockVisible ? restEdgePos : -height - sp
+                return -height - sp - restY
             case 1: // Bottom
-                return DockVisibility.dockVisible ? restEdgePos : parent.height + sp
+                return parent.height + sp - restY
             case 2: // Left
-                return DockVisibility.dockVisible ? restEdgePos : -width - sp
+                return -width - sp - restX
             case 3: // Right
-                return DockVisibility.dockVisible ? restEdgePos : parent.width + sp
+                return parent.width + sp - restX
             }
             return 0
         }
+        property real visibilityOffset: DockVisibility.dockVisible ? 0 : hiddenEdgeOffset
+
+        Behavior on visibilityOffset {
+            enabled: dockPanel.animationsReady && DockSettings.dockShowHideAnimationEnabled
+            NumberAnimation {
+                duration: DockSettings.dockShowHideAnimationDuration
+                easing.type: Easing.InOutCubic
+            }
+        }
+
+        // Position: center on the non-edge axis and apply the independently
+        // animated slide only along the screen edge axis.
+        x: DockView.isVertical ? restX + visibilityOffset : restX
+        y: DockView.isVertical ? restY : restY + visibilityOffset
 
         // Visible background. Rests on the panel extent and grows by the
         // zoom layout's edge-clamped growth on each side (Parabolic only;
@@ -1210,27 +1227,12 @@ Item {
             }
         }
 
-        Behavior on x {
-            enabled: dockPanel.animationsReady && DockView.isVertical
-            NumberAnimation {
-                duration: Kirigami.Units.longDuration
-                easing.type: Easing.InOutQuad
-            }
-        }
-
-        Behavior on y {
-            enabled: dockPanel.animationsReady && !DockView.isVertical
-            NumberAnimation {
-                duration: Kirigami.Units.longDuration
-                easing.type: Easing.InOutQuad
-            }
-        }
-
         // Fade animation
         opacity: DockVisibility.dockVisible ? 1.0 : 0.0
 
         Behavior on opacity {
-            NumberAnimation { duration: Kirigami.Units.longDuration }
+            enabled: dockPanel.animationsReady && DockSettings.dockShowHideAnimationEnabled
+            NumberAnimation { duration: DockSettings.dockShowHideAnimationDuration }
         }
 
         // Mouse position relative to the panel, -1 when outside

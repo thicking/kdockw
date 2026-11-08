@@ -326,6 +326,36 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
     CHECK(settings.contentPaddingBottom() == 0);
 }
 
+TEST_CASE("Dock and preview visibility defaults preserve explicit user timing", "[settings][visibility][defaults][migration]")
+{
+    const ScopedConfigHome home;
+
+    KDockWSettings defaults;
+    defaults.load();
+    CHECK(defaults.hideDelay() == 500);
+    CHECK(defaults.dockShowHideAnimationEnabled());
+    CHECK(defaults.dockShowHideAnimationDuration() == 220);
+    CHECK(defaults.previewHideDelay() == 400);
+
+    {
+        KConfig config(home.configFilePath(), KConfig::SimpleConfig);
+        auto general = config.group(QStringLiteral("General"));
+        general.writeEntry(QStringLiteral("HideDelay"), 750);
+        general.writeEntry(QStringLiteral("DockShowHideAnimationEnabled"), false);
+        general.writeEntry(QStringLiteral("DockShowHideAnimationDuration"), 360);
+        general.writeEntry(QStringLiteral("PreviewHideDelay"), 650);
+        config.sync();
+    }
+
+    KDockWSettings saved;
+    saved.setConfig(std::make_unique<KConfig>(home.configFilePath(), KConfig::SimpleConfig));
+    saved.load();
+    CHECK(saved.hideDelay() == 750);
+    CHECK_FALSE(saved.dockShowHideAnimationEnabled());
+    CHECK(saved.dockShowHideAnimationDuration() == 360);
+    CHECK(saved.previewHideDelay() == 650);
+}
+
 TEST_CASE("Existing magnification settings migrate without overwriting saved values", "[settings][migration][zoom]")
 {
     const ScopedConfigHome home;

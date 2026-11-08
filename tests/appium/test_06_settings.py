@@ -566,6 +566,23 @@ def test_set003_auto_hide_applies_immediately_and_persists(kdockw: KDockW, apps:
     wait_until(lambda: config_value(kdockw, "VisibilityMode") == str(kcfg.AUTO_HIDE), message="kdockwrc VisibilityMode=1")
     # The auto-hide-only delay rows appear at once: the mode is live in the UI.
     assert kdockw.find(f"{SETTINGS}//slider[@name='Hide delay (ms)']") is not None
+    animation_toggle = f"{SETTINGS}//check_box[@name='Animate dock show and hide']"
+    duration_slider = f"{SETTINGS}//slider[@name='Dock animation duration (ms)']"
+    assert has_state(kdockw.wait_for(animation_toggle), "checked")
+    animation = scroll_into_view(kdockw, animation_toggle)
+    click_el(kdockw, animation)
+    wait_until(lambda: config_value(kdockw, "DockShowHideAnimationEnabled") == "false",
+               message="dock show/hide animation disabled")
+    click_el(kdockw, animation)
+    wait_until(lambda: config_value(kdockw, "DockShowHideAnimationEnabled") == "true",
+               message="dock show/hide animation enabled")
+    duration = focus_slider(kdockw, duration_slider, 100, 600)
+    original_duration = slider_value(duration)
+    inp.key("right")
+    wait_until(lambda: slider_value(kdockw.wait_for(duration_slider)) == original_duration + 10,
+               message="dock animation duration changed live")
+    wait_until(lambda: config_value(kdockw, "DockShowHideAnimationDuration") == str(int(original_duration + 10)),
+               message="dock animation duration saved")
 
     # By design the open Settings dialog holds the dock shown (SET-008).
     pointer_to_center()
@@ -1507,7 +1524,7 @@ def test_clk011_preview_controls_follow_hover_and_explicit_group_choice(
         ("Maximum thumbnail height (px)", preview_controls_enabled, "PreviewMaximumHeight", 80, 300, 10),
         ("Card inner padding (px)", preview_controls_enabled, "PreviewCardPadding", 4, 24, 1),
         ("Gap between preview and dock (px)", preview_controls_enabled, "PreviewDockGap", 0, 32, 1),
-        ("Hide delay (ms)", preview_controls_enabled, "PreviewHideDelay", 0, 1000, 50),
+        ("Hide delay (ms)", preview_controls_enabled, "PreviewHideDelay", 0, 1500, 50),
         ("Hover delay (ms)", hover_enabled, "PreviewHoverDelay", 0, 2000, 50),
     ):
         xpath = f"{SETTINGS}//slider[@name='{label}']"

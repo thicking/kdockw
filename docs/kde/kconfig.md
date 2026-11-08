@@ -251,7 +251,9 @@ class DockSettings : public QObject {
 | `VisibilityMode` | int | 0 | Dock visibility behavior |
 | `Edge` | int | 1 | Screen edge (0=Top, 1=Bottom, 2=Left, 3=Right) |
 | `ShowDelay` | int | 200 | Show delay in ms |
-| `HideDelay` | int | 400 | Hide delay in ms |
+| `HideDelay` | int | 500 | Dock hide delay in ms |
+| `DockShowHideAnimationEnabled` | bool | true | Animate panel slide and fade when the existing visibility policy changes |
+| `DockShowHideAnimationDuration` | int | 220 | Slide/fade duration in ms (100–600) |
 | `DodgeActiveOnly` | bool | true | In Dodge mode, hide only for the active window |
 | `ReserveScreenSpace` | bool | true | In Always visible mode, reserve the dock's panel-bar height as the exclusive screen zone so maximized windows avoid the dock; when false, do not reserve that zone |
 | `BackgroundStyle` | int | 2 | Background style (0 = Panel Inherit, 1 = Transparent, 2 = Tinted, 3 = Acrylic) |
@@ -264,6 +266,7 @@ class DockSettings : public QObject {
 | `ShadowLightRadius` | qreal | 5.5 | Shadow softness |
 | `ShadowIntensity` | qreal | 0.6 | Shadow opacity |
 | `CpuOnlyPreviewCapture` | bool | false | Use CPU-compatible preview capture; kept off by default because the need is hardware-specific |
+| `PreviewHideDelay` | int | 400 | Delay before hiding a window-preview card in ms (0–1500), independent of `HideDelay` |
 | `SeparateLaunchers` | bool | true | Keep pinned applications, including running pinned applications, before unpinned running tasks in the dock |
 | `SingleWindowClickAction` | int | `0` | Left-click action (0 to 1): 0 = Activate window; 1 = Minimize active window (restore a minimized window or focus a background window) |
 | `GroupedWindowClickAction` | int | `0` | Grouped left-click action (0 to 2): 0 = Cycle through windows; 1 = Show window previews; 2 = Minimize only the currently active child (activate or restore the most recently used child when none is active) |
@@ -274,6 +277,8 @@ class DockSettings : public QObject {
 | `RunningIndicatorColor` | QString | `#ffffffff` | Custom marker color; used when `RunningIndicatorColorMode=1` |
 
 `ReserveScreenSpace` is a global `[General]` setting. The Behavior switch is shown only when `VisibilityMode=0` (Always visible). The dock applies a changed value while running and persists it for the next start. Auto hide and Dodge modes keep their existing platform behavior rather than using this reservation setting.
+
+The Behavior page shows dock animation controls only for visibility modes that can hide the panel. The animation toggle and duration affect only the transition; they do not select or enable auto-hide. The preview page's `PreviewHideDelay` controls only the preview-card timer.
 
 `SeparateLaunchers` is also global and optional. When enabled, the dock keeps pinned applications in the first section and unpinned running applications after the boundary. A drag that crosses the boundary is clamped to the source section and does not implicitly pin or unpin an application. When disabled, the existing free-reorder behavior remains in effect.
 

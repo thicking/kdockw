@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Krema Contributors
 
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include "utils/inputregion.h"
 #include "utils/layershellpolicy.h"
@@ -85,6 +86,31 @@ TEST_CASE("Dock input region computation", "[input-region]")
         // Empty QRegion = no mask = accept all input
         REQUIRE(region.isEmpty());
     }
+}
+
+TEST_CASE("Hidden dock surface accepts input only at its configured edge", "[input-region][visibility]")
+{
+    const auto [edge, triggerPoint, outsidePoint] = GENERATE(table<int, QPoint, QPoint>({
+        {0, QPoint(400, 1), QPoint(400, 25)},
+        {1, QPoint(400, 598), QPoint(400, 575)},
+        {2, QPoint(1, 300), QPoint(25, 300)},
+        {3, QPoint(798, 300), QPoint(775, 300)},
+    }));
+    INFO("edge=" << edge);
+
+    kdockw::InputRegionParams params{};
+    params.surfaceWidth = 800;
+    params.surfaceHeight = 600;
+    params.panelX = 200;
+    params.panelY = 200;
+    params.panelWidth = 400;
+    params.panelHeight = 200;
+    params.edge = edge;
+    params.visible = false;
+
+    const QRegion region = kdockw::computeDockInputRegion(params);
+    CHECK(region.contains(triggerPoint));
+    CHECK_FALSE(region.contains(outsidePoint));
 }
 
 TEST_CASE("Dock screen rect computation", "[screen-rect]")

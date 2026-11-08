@@ -9,6 +9,7 @@
 #include <QGuiApplication>
 #include <QSignalSpy>
 #include <QWindow>
+#include <QTest>
 
 namespace
 {
@@ -72,4 +73,24 @@ TEST_CASE("unchanged interaction geometry does not rebuild the input region", "[
 
     controller.setInteractionRect(20.9, 41.1, 100.1, 50.1);
     CHECK(platform.inputRegionUpdates == 2);
+}
+
+TEST_CASE("dock auto-hide delay remains a live independent timer", "[visibility][timer]")
+{
+    CountingDockPlatform platform;
+    QWindow window;
+    window.resize(800, 600);
+    kdockw::DockVisibilityController controller(&platform, nullptr, nullptr, nullptr, &window, QGuiApplication::primaryScreen());
+
+    controller.setMode(kdockw::DockPlatform::VisibilityMode::AutoHide);
+    CHECK_FALSE(controller.isDockVisible());
+    controller.setShowDelay(10);
+    controller.setHovered(true);
+    REQUIRE(QTest::qWaitFor([&controller] { return controller.isDockVisible(); }, 1000));
+
+    controller.setHideDelay(80);
+    controller.setHovered(false);
+    QTest::qWait(25);
+    CHECK(controller.isDockVisible());
+    CHECK(QTest::qWaitFor([&controller] { return !controller.isDockVisible(); }, 1000));
 }

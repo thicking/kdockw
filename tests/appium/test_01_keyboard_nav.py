@@ -439,7 +439,7 @@ def _keyboard_mode_keeps_dock_shown(kdockw: KDockW, apps: TestWindows, visibilit
         assert 0 <= r.y and r.y + r.height <= env.SCREEN_HEIGHT, f"item off screen: {r}"
         colors = img.crop((r.x, r.y, r.x + r.width, r.y + r.height)).getcolors(maxcolors=1 << 16)
         assert colors is None or len(colors) > 16, "dock item region looks blank"
-    # Longer than HideDelay (400 ms) plus the slide-out: the dock stays.
+    # Longer than HideDelay (500 ms) plus the slide-out: the dock stays.
     assert_holds(
         lambda: item_is_shown(kdockw, first) and focused_items(kdockw) == [first],
         3.5,

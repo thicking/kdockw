@@ -190,8 +190,14 @@ preview card's visibility/header state. Toggle Minimize on Click is independent.
   Spring (170 / 0.60 / 1.0, 1.9×); saved user values are preserved and Classic
   remains available. Owner accepted the animation in a real Plasma/Wayland
   session; bounded-step tests simulate 60/120/144 Hz.
-- [ ] Add configurable dock show/hide animation. Keep KWin/window interaction
-  correct and ensure an invisible surface does not capture the pointer.
+- [x] **Dock Show/Hide Animation (`done`):** added configurable slide/fade
+  animation (enabled, 220 ms by default) for existing hide-capable modes only;
+  hiding delay remains independently configurable (500 ms by default). Input
+  remains restricted to the edge activation strip while hidden. Owner accepted
+  both animation and interaction on real KDE Plasma/Wayland on 2026-11-08.
+- [x] **Window Preview Hide Delay (`done`):** added an independent 0–1500 ms
+  delay (400 ms default) that can be cancelled when the pointer returns. Owner
+  accepted the behavior on KDE Plasma/Wayland on 2026-11-08.
 - [ ] Refine launch bounce and separate launch and attention states; verify
   overlapping events do not leave an item in a stale animation state.
 

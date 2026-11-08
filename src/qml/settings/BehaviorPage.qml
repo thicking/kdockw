@@ -610,6 +610,30 @@ SettingsPage {
             visible: DockSettings.visibilityMode !== 0
         }
 
+        FormCard.FormSwitchDelegate {
+            objectName: "dockShowHideAnimationSwitch"
+            text: i18n("Animate dock show and hide")
+            description: i18n("Slide the dock smoothly when its visibility changes")
+            checked: DockSettings.dockShowHideAnimationEnabled
+            onToggled: DockSettings.dockShowHideAnimationEnabled = checked
+            visible: DockSettings.visibilityMode !== 0
+        }
+
+        SliderDelegate {
+            objectName: "dockShowHideDurationSlider"
+            visible: DockSettings.visibilityMode !== 0 && DockSettings.dockShowHideAnimationEnabled
+            text: i18n("Dock animation duration (ms)")
+            from: 100; to: 600; stepSize: 10
+            value: DockSettings.dockShowHideAnimationDuration
+            valueText: i18nc("@label milliseconds", "%1 ms", value)
+            onMoved: (value) => DockSettings.dockShowHideAnimationDuration = value
+        }
+
+        // Show/hide delay controls — only visible in hide-capable modes
+        FormCard.FormDelegateSeparator {
+            visible: DockSettings.visibilityMode !== 0
+        }
+
         SliderDelegate {
             visible: DockSettings.visibilityMode !== 0
             text: i18n("Show delay (ms)")

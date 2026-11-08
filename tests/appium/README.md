@@ -819,8 +819,8 @@ names are the entries in `src/config/kdockw.kcfg`.
 `wait_until` polls every 50 ms by default: it returns only when the
 predicate is true, so a shorter interval lowers latency and checks the same
 thing. `wait_stable` defaults to a 0.5 s settle window because the window
-must be longer than any pause in the transition (dock hide delay 400 ms,
-attention animation pauses up to 2 s). A call may pass `duration=0.3` only
+must be longer than any pause in the transition (default dock hide delay 500 ms,
+preview hide delay 400 ms, attention animation pauses up to 2 s). A call may pass `duration=0.3` only
 when the value comes from a hover zoom or a layout animation that starts
 immediately, with no timer of 300 ms or more before its first change and no
 pause inside the animation.

@@ -529,8 +529,9 @@ SettingsPage {
         FormCard.FormDelegateSeparator {}
 
         SliderDelegate {
+            objectName: "previewHideDelaySlider"
             text: i18n("Hide delay (ms)")
-            from: 0; to: 1000; stepSize: 50
+            from: 0; to: 1500; stepSize: 50
             value: DockSettings.previewHideDelay
             valueText: i18nc("@label milliseconds", "%1 ms", value)
             enabled: page.popupInUse

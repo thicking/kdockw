@@ -70,7 +70,7 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
     }
 
     m_hideTimer.setSingleShot(true);
-    m_hideTimer.setInterval(200);
+    m_hideTimer.setInterval(m_settings ? m_settings->previewHideDelay() : 400);
     connect(&m_hideTimer, &QTimer::timeout, this, [this]() {
         qCDebug(lcPreview) << "Hide timer fired, previewHovered:" << m_previewHovered;
         if (!m_previewHovered) {

@@ -17,11 +17,13 @@
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
+#include "scenegraph/clippedpipewiresourceitem.h"
 #include "shell/dockshell.h"
 #include "shell/dockview.h"
 #include "shell/multidockmanager.h"
 #include "shell/outputordermonitor.h"
 #include "shell/previewcontroller.h"
+#include "utils/springzoomcontroller.h"
 
 #include <taskmanager/abstracttasksmodel.h>
 #include <taskmanager/tasksmodel.h>
@@ -174,10 +176,13 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
     // Keep the hover timer out of the way: only the row-insertion path may
     // open the preview in this test.
     const int hoverDelay = app().settings->previewHoverDelay();
+    const int previewHideDelay = app().settings->previewHideDelay();
     app().settings->setPreviewHoverDelay(10 * kTimeoutMs);
-    const auto restore = qScopeGuard([hoverDelay] {
+    app().settings->setPreviewHideDelay(150);
+    const auto restore = qScopeGuard([hoverDelay, previewHideDelay] {
         app().settings->setPreviewEnabled(true);
         app().settings->setPreviewHoverDelay(hoverDelay);
+        app().settings->setPreviewHideDelay(previewHideDelay);
     });
 
     // Windows of children killed by the previous run can linger for a moment.
@@ -260,6 +265,18 @@ TEST_CASE("A task row appearing while a window is hovered respects the preview s
                 return preview->isVisible();
             },
             kTimeoutMs));
+
+        // Leaving the preview schedules only its own timer. Returning to the
+        // dock cancels that pending hide; a real leave later hides at the
+        // configured delay.
+        preview->hidePreviewDelayed();
+        QTest::qWait(60);
+        preview->cancelHide();
+        QTest::qWait(previewHideDelay);
+        CHECK(preview->isVisible());
+
+        preview->hidePreviewDelayed();
+        CHECK(QTest::qWaitFor([preview] { return !preview->isVisible(); }, kTimeoutMs));
     } else {
         // Let queued work settle; the popup must never open, not even briefly.
         QTest::qWait(1000);
@@ -288,6 +305,8 @@ int main(int argc, char *argv[])
     KAboutData aboutData(QStringLiteral("kdockw"), QStringLiteral("KDockW"), QStringLiteral("test"));
     KAboutData::setApplicationData(aboutData);
     initResources();
+    qmlRegisterType<kdockw::ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
+    qmlRegisterType<kdockw::SpringZoomController>("com.thicking.kdockw", 1, 0, "SpringZoomController");
 
     return Catch::Session().run(argc, argv);
 }

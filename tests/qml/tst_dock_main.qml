@@ -750,6 +750,80 @@ Item {
             for (let it of its) compare(it.currentScale, 1.0)
         }
 
+        function test_showHideOffsetUsesEachDockEdge_data() {
+            return [
+                { tag: "top", edge: 0, axis: "y" },
+                { tag: "bottom", edge: 1, axis: "y" },
+                { tag: "left", edge: 2, axis: "x" },
+                { tag: "right", edge: 3, axis: "x" },
+            ]
+        }
+
+        function test_showHideOffsetUsesEachDockEdge(data) {
+            addTasks(["A", "B"])
+            DockSettings.dockShowHideAnimationDuration = 80
+            DockSettings.dockShowHideAnimationEnabled = true
+            DockView.edge = data.edge
+            const dock = makeDock(2)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            tryCompare(panel, "visibilityOffset", 0)
+            const expected = panel.hiddenEdgeOffset
+            DockVisibility.dockVisible = false
+            tryVerify(() => Math.abs(panel.visibilityOffset - expected) < 0.1,
+                      1000, "hide offset did not reach the off-screen edge " + data.edge)
+            if (data.axis === "y")
+                compare(panel.y, panel.restY + panel.visibilityOffset)
+            else
+                compare(panel.x, panel.restX + panel.visibilityOffset)
+        }
+
+        function test_showHideAnimationCanBeDisabled() {
+            addTasks(["A"])
+            DockSettings.dockShowHideAnimationEnabled = false
+            DockView.edge = 1
+            const dock = makeDock(1)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+            DockSettings.dockShowHideAnimationEnabled = false
+            DockVisibility.dockVisible = true
+            tryCompare(panel, "visibilityOffset", 0)
+            DockVisibility.dockVisible = false
+            compare(panel.visibilityOffset, panel.hiddenEdgeOffset)
+        }
+
+        function test_showHideAnimationReversesFromItsCurrentPosition() {
+            addTasks(["A"])
+            DockSettings.dockShowHideAnimationDuration = 220
+            DockSettings.dockShowHideAnimationEnabled = true
+            DockView.edge = 1
+            DockVisibility.dockVisible = true
+            const dock = makeDock(1)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            DockVisibility.dockVisible = false
+            wait(50)
+            verify(panel.visibilityOffset > 0 && panel.visibilityOffset < panel.hiddenEdgeOffset,
+                   "hide animation should be between its visible and hidden positions")
+            DockVisibility.dockVisible = true
+            tryCompare(panel, "visibilityOffset", 0, 1000)
+        }
+
+        function test_pointerReturnCancelsPendingPreviewHide() {
+            addTasks(["Window"])
+            const dock = makeDock(1)
+            PreviewController.visible = true
+            PreviewController.hidePreviewDelayed()
+            const cancellations = PreviewController.callsTo("cancelHide").length
+
+            DockView.pointerInside = true
+            tryVerify(() => PreviewController.callsTo("cancelHide").length > cancellations)
+            verify(PreviewController.visible,
+                   "returning the pointer to the dock must not hide the preview")
+        }
+
         // Easing curves of ZoomAnimationProfile's easing indices (Qt's formulas),
         // mirroring tst_dockitem_zoom.qml.
         function ease(index, t) {

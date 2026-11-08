@@ -364,6 +364,18 @@ msgstr "Скрывать только при перекрытии активны
 msgid "Show delay (ms)"
 msgstr "Задержка показа (мс)"
 
+#: src/qml/settings/BehaviorPage.qml
+msgid "Animate dock show and hide"
+msgstr "Анимировать появление и скрытие дока"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Slide the dock smoothly when its visibility changes"
+msgstr "Плавно выдвигать док при изменении его видимости"
+
+#: src/qml/settings/BehaviorPage.qml
+msgid "Dock animation duration (ms)"
+msgstr "Длительность анимации дока (мс)"
+
 #: src/qml/SettingsDialog.qml:87 src/qml/SettingsDialog.qml:104
 #: src/qml/settings/PreviewPage.qml:456 src/qml/settings/BehaviorPage.qml:628
 msgid "Hide delay (ms)"

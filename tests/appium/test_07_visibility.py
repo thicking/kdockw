@@ -6,7 +6,7 @@ Oracles:
 
 * Dock shown/hidden: the dock item's AT-SPI ``showing`` state together with
   its surface-local rect. The panel slides on the edge axis inside the
-  fixed-size layer surface (src/qml/main.qml ``_panelEdgePos``): shown, the
+  fixed-size layer surface (src/qml/main.qml ``visibilityOffset``): shown, the
   item lies inside the surface; hidden, it is pushed below the surface's
   bottom edge and loses ``showing``.
 * Window geometry, stacking and activation: KWin scripting.
@@ -15,8 +15,8 @@ Oracles:
   and no window around.
 
 Timings (src/shell/dockvisibilitycontroller.cpp, kdockw.kcfg): show dwell
-200 ms (ShowDelay), hide delay 400 ms (HideDelay), window-change debounce
-300 ms, slide/fade Kirigami.Units.longDuration (250 ms).
+200 ms (ShowDelay), default dock hide delay 500 ms (HideDelay), window-change
+debounce 300 ms, configurable slide/fade duration 220 ms by default.
 """
 
 from __future__ import annotations
