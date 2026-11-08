@@ -987,12 +987,12 @@ msgid "%1x · %2 px"
 msgstr "%1× · %2 пикс."
 
 #: src/qml/settings/IconsPage.qml:292
-msgid "Hover"
-msgstr "Наведение"
+msgid "Pointer hover zoom"
+msgstr "Увеличение при наведении указателя"
 
 #: src/qml/settings/IconsPage.qml:300
-msgid "Show hover zoom in preview"
-msgstr "Показывать увеличение при наведении"
+msgid "Enable pointer hover zoom in preview"
+msgstr "Включить увеличение при наведении указателя в предпросмотре"
 
 #: src/qml/settings/IconsPage.qml:309
 msgid "Size & Spacing"

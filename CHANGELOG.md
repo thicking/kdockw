@@ -8,6 +8,12 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Fixed
+
+- Made the settings dock preview follow the live badge colors and typography,
+  made its hover switch control pointer-driven zoom, and aligned magnification
+  direction with the selected dock edge.
+
 ### Changed
 
 - Limited v0.3.2 release packages and Distro E2E gates to current Debian

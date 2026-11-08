@@ -270,10 +270,10 @@ version or date.
   has a close button tied to that child's current window UUID; the existing
   header button remains for a single window. The owner accepted the production
   behavior.
-- **Settings Preview Consistency (`todo`):** align the settings mini-dock with runtime
-  appearance and behavior: badge colors, parabolic zoom direction, and the
-  discoverability of the “Hover” switch. Tracked in Obsidian as an unversioned
-  `todo`; no release assignment is implied.
+- **Settings Preview Consistency (`done`):** the settings mini-dock uses the
+  live badge colors and typography, edge-aware parabolic zoom geometry, and an
+  interactive “Pointer hover zoom” switch. The owner accepted the behavior in a
+  real Plasma 6 / Wayland session; no release assignment is implied.
 - **Adaptive Inactive Preview Border (`review`):** add a subtle one-pixel
   outline that adapts to the configured preview-card surface while preserving
   the active KDE accent. No release assignment is implied; visual acceptance

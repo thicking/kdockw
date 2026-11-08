@@ -36,6 +36,7 @@ set(KDOCKW_QML_TEST_FILES
     tst_dockitem_indicators
     tst_icon_alpha
     tst_badge_color_settings
+    tst_settings_mini_dock
     tst_rounded_clip
     tst_dock_main
     tst_preview_popup

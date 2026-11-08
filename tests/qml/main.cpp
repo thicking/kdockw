@@ -164,12 +164,15 @@ public Q_SLOTS:
     engine->setImportPathList(paths);
     engine->rootContext()->setContextProperty(QStringLiteral("IconDiagnostics"),
                                               &iconDiagnostics);
+    engine->rootContext()->setContextProperty(QStringLiteral("SettingsWindow"),
+                                              &zoomLayoutEngine);
 
     KLocalization::setupLocalizedContext(engine);
   }
 
 private:
   MockIconDiagnostics iconDiagnostics;
+  KDockWQmlTest::ZoomLayoutEngine zoomLayoutEngine;
 };
 
 QUICK_TEST_MAIN_WITH_SETUP(kdockw_qml, KDockWQmlTestSetup)

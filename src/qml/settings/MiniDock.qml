@@ -7,7 +7,6 @@ import QtQuick.Effects
 import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import ".."
-import "../BadgeTextColor.js" as BadgeTextColor
 
 // Lifelike miniature of the dock: real theme icons on the panel background,
 // drawn at `unit` preview pixels per real pixel. Every look property defaults
@@ -63,6 +62,8 @@ Item {
     property real otherDesktopOpacity: DockSettings.otherDesktopOpacity
     /// 0 Number, 1 Dot, 2 Off.
     property int badgeDisplayMode: DockSettings.badgeDisplayMode
+    property color badgeBackgroundColor: DockSettings.badgeBackgroundColor
+    property color badgeTextColor: DockSettings.badgeTextColor
     property int badgeFontWeight: DockSettings.badgeFontWeight
     property int badgeTextSizePercent: DockSettings.badgeTextSizePercent
     property int runningIndicatorStyle: DockSettings.runningIndicatorStyle
@@ -90,6 +91,8 @@ Item {
     property Item backdrop: null
     /// Looping demo animations may run (pause while the window is hidden).
     property bool active: true
+    /// Pointer movement over the miniature drives hover zoom when enabled.
+    property bool interactiveHover: true
     /// Icon zoomed as if hovered while the pointer is elsewhere (-1: none).
     property int hoveredIndex: -1
     /// Zoom in and out on `focusIndex` in a loop (picker previews).
@@ -153,6 +156,9 @@ Item {
     readonly property real pitch: iconPx + gapPx
     readonly property real thickness: iconPx + padPx + indicatorReservePx
     readonly property real length: restLengthReal * unit
+    readonly property real primaryParentExtent: vertical ? (parent ? parent.height : 0)
+                                                          : (parent ? parent.width : 0)
+    readonly property real primaryDockOrigin: vertical ? y : x
     readonly property real restContentLength: count * iconPx + Math.max(0, count - 1) * gapPx
     readonly property real restStart: {
         const available = Math.max(0, length - (primaryLeadingPadding + primaryTrailingPadding) * unit - restContentLength)
@@ -176,7 +182,8 @@ Item {
     // --- Hover zoom (same layout as the dock's computeDockZoom) ---
 
     property bool _pulseOn: false
-    readonly property bool zoomed: hoverArea.containsMouse || hoveredIndex >= 0 || _pulseOn
+    readonly property bool zoomed: (interactiveHover && hoverArea.containsMouse)
+        || hoveredIndex >= 0 || _pulseOn
     readonly property real _staticCursor: focusIndex * pitch + iconPx / 2
     // Cursor in rest-row coordinates (0 = start of the first icon). Kept when
     // the pointer leaves so the zoom collapses where it left, as in the dock.
@@ -211,11 +218,13 @@ Item {
         count, 0,
         iconPx, gapPx,
         -1, 0,
-        -restStart, restContentLength + restStart,
+        -restStart, length - restStart,
         1.0 + (maxZoomFactor - 1.0) * zoomAmount,
         zoomStyle,
         zoomAmount > 0,
-        cursor, -Infinity, Infinity)
+        cursor,
+        -primaryDockOrigin - restStart,
+        primaryParentExtent - primaryDockOrigin - restStart)
 
     SequentialAnimation {
         id: pulseAnimation
@@ -349,6 +358,7 @@ Item {
 
             Item {
                 id: slot
+                objectName: "miniDockSlot" + index
 
                 required property var modelData
                 required property int index
@@ -375,14 +385,19 @@ Item {
                 height: dock.vertical ? slotLength : dock.iconPx
                 z: zoomScale
 
-                // Zoomed icon bounds (no transform), centered on the slot
-                // and growing away from the screen edge.
+                // Resize the icon directly and pin its cross-axis edge to the
+                // dock edge, matching DockItem's Scale origin on all sides.
                 Item {
                     id: box
                     width: dock.iconPx * slot.zoomScale
                     height: width
-                    x: dock.vertical ? (!dock.indicatorAfterIcon ? slot.width - width : 0) : (slot.width - width) / 2
-                    y: dock.vertical ? (slot.height - height) / 2 : (!dock.indicatorAfterIcon ? slot.height - height : 0)
+                    x: dock.vertical
+                        ? (dock.edge === 2 ? 0 : slot.width - width)
+                        : (slot.width - width) / 2
+                    y: dock.vertical
+                        ? (slot.height - height) / 2
+                        : (dock.edge === 0 ? 0 : slot.height - height)
+                    objectName: "miniDockIconBox" + slot.index
                 }
 
                 // Cell rendered at the maximum zoom size and scaled down to
@@ -447,30 +462,52 @@ Item {
                     }
                 }
 
+                // Keep the shadow in its own texture so the Qt-rendered
+                // label remains sharp, matching DockItem's badge path.
+                Rectangle {
+                    id: badgeShadow
+                    x: box.x + box.width - width * 0.8
+                    y: box.y - height * 0.2
+                    width: Math.round(box.width * (dock.badgeDisplayMode === 1 ? 0.18 : 0.38))
+                    height: width
+                    radius: width / 2
+                    color: dock.badgeBackgroundColor
+                    visible: (slot.modelData.badge ?? 0) > 0 && dock.badgeDisplayMode === 0
+                    layer.enabled: visible
+                    layer.effect: MultiEffect {
+                        shadowEnabled: true
+                        shadowColor: Qt.alpha("black", 0.4)
+                        shadowBlur: 0.3
+                        shadowVerticalOffset: 1
+                    }
+                }
+
                 // Badge (DockItem.qml): number or dot at the icon's corner.
                 Rectangle {
+                    id: badge
+                    objectName: "miniDockBadge" + slot.index
                     visible: (slot.modelData.badge ?? 0) > 0 && dock.badgeDisplayMode !== 2
                     width: Math.round(box.width * (dock.badgeDisplayMode === 1 ? 0.18 : 0.38))
                     height: width
                     radius: width / 2
                     x: box.x + box.width - width * 0.8
                     y: box.y - height * 0.2
-                    color: Kirigami.Theme.highlightColor
+                    color: dock.badgeBackgroundColor
 
                     QQC2.Label {
+                        objectName: "miniDockBadgeLabel" + slot.index
                         visible: dock.badgeDisplayMode === 0
-                        anchors.centerIn: parent
-                        width: parent.width - 2
+                        x: (parent.width - width) / 2
+                        y: (parent.height - height) / 2
+                        width: parent.width - 1
                         height: parent.height - 2
                         text: (slot.modelData.badge ?? 0) > 99 ? "99+" : String(slot.modelData.badge ?? 0)
-                        color: BadgeTextColor.choose(parent.color,
-                                                     Kirigami.Theme.highlightedTextColor)
+                        color: dock.badgeTextColor
                         renderType: Text.QtRendering
-                        font.pixelSize: Math.max(1, parent.height * 0.55
-                                                 * dock.badgeTextSizePercent / 100)
+                        font.pixelSize: Math.max(1, parent.height * 0.55 * dock.badgeTextSizePercent / 100)
                         font.weight: dock.badgeFontWeight
                         fontSizeMode: Text.Fit
-                        minimumPixelSize: 4 * dock.badgeTextSizePercent / 100
+                        minimumPixelSize: 3 * dock.badgeTextSizePercent / 100
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         Accessible.ignored: true
@@ -509,11 +546,13 @@ Item {
     // edge, which is the dock's input region while it is hovered.
     MouseArea {
         id: hoverArea
+        objectName: "miniDockHoverArea"
         x: dock.edge === 3 ? -dock.zoomOverflow : 0
         y: dock.edge === 1 ? -dock.zoomOverflow : 0
         width: dock.width + (dock.vertical ? dock.zoomOverflow : 0)
         height: dock.height + (dock.vertical ? 0 : dock.zoomOverflow)
-        hoverEnabled: true
+        enabled: dock.interactiveHover
+        hoverEnabled: dock.interactiveHover
         acceptedButtons: Qt.NoButton
         onPositionChanged: mouse => {
             dock._mouseCursor = (dock.vertical ? mouse.y + y : mouse.x + x) - dock.restStart

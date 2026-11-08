@@ -22,8 +22,8 @@ SettingsPage {
     property int lastZoomPreset: 0
 
     readonly property bool zoomEnabled: DockSettings.maxZoomFactor > 1.0
-    // The stage's middle icon is shown magnified until the pointer hovers it.
-    property bool showStaticHover: true
+    // Lets users inspect the same pointer-driven zoom behavior as the dock.
+    property bool previewHoverEnabled: true
 
     Component.onCompleted: {
         const preset = DockSettings.zoomAnimationPreset
@@ -272,14 +272,17 @@ SettingsPage {
                     active: stage.active
                     // Zoomed while the zoom factor is adjusted, at rest while
                     // size or spacing are measured.
-                    hoveredIndex: zoomFactorSlider.active ? middleIndex
-                        : (iconSizeSlider.active || iconSpacingSlider.active) ? -1
-                        : page.showStaticHover ? middleIndex : -1
+                    hoveredIndex: zoomFactorSlider.active ? middleIndex : -1
+                    interactiveHover: page.previewHoverEnabled
+                        && !zoomFactorSlider.active
+                        && !iconSizeSlider.active
+                        && !iconSpacingSlider.active
                 }
             }
 
-            // Toggle: show/hide the static hover zoom on the stage, as a pill
-            // in the stage's top corner.
+            // Toggle pointer-driven zoom on the stage. Keep the control in the
+            // same top corner so users can move the pointer without shifting
+            // the demo dock's geometry.
             Rectangle {
                 anchors.top: parent.top
                 anchors.right: parent.right
@@ -297,15 +300,15 @@ SettingsPage {
                     spacing: Kirigami.Units.smallSpacing
 
                     QQC2.Label {
-                        text: i18n("Hover")
+                        text: i18n("Pointer hover zoom")
                         font.pointSize: Kirigami.Theme.smallFont.pointSize
                         color: Kirigami.Theme.textColor
                         Accessible.ignored: true
                     }
                     QQC2.Switch {
-                        checked: page.showStaticHover
-                        onToggled: page.showStaticHover = checked
-                        Accessible.name: i18n("Show hover zoom in preview")
+                        checked: page.previewHoverEnabled
+                        onToggled: page.previewHoverEnabled = checked
+                        Accessible.name: i18n("Enable pointer hover zoom in preview")
                     }
                 }
             }
