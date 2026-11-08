@@ -104,9 +104,9 @@ Before any public announcement:
 - [x] Screenshots in metainfo.xml (for KDE Discover)
 
 ### Website & Social
-- [ ] Deploy the refreshed site through GitHub Pages and verify live assets
+- [x] Deploy and verify the refreshed site: [Pages run 42468222323](https://github.com/thicking/kdockw/actions/runs/42468222323). The page, CSS, icons, OG image, screenshots, MP4, `robots.txt`, and sitemap returned HTTP 200.
 - [x] Current KDockW OpenGraph preview (`website/og-image.png`)
-- [x] Pages build is configured to publish three screenshots and the existing MP4 demo
+- [x] The deployed Pages site serves three screenshots and the existing MP4 demo
 
 ### Future
 - [ ] Blog with SEO-optimized articles
@@ -115,6 +115,7 @@ Before any public announcement:
 ### Discovery work (2026-11)
 
 - GitHub About description, homepage URL, and 11 topics were checked against the live GitHub API and updated to match `marketing/positioning.yml`.
-- Search Console and Bing Webmaster account access was not available in this environment. The public sitemap and `robots.txt` are reachable; public search queries returned no indexed results in the checked queries, which is not a definitive index-status report.
+- Search Console and Bing Webmaster account access was not available in this environment. The public sitemap and `robots.txt` are reachable. Sampled public search queries returned no results; this does not prove the site is absent from either index.
+- The Pages site deployed on main commit `5c29dd6d8ede819bad094c2a0f42dd9146c3d282` (run 42468222323).
 - No posts were published. Prepared drafts are in `marketing/discovery-drafts.md`.
 - KDE Store/Pling is a possible discovery listing for libre software, but no KDockW listing was found or submitted. See the provider's [creator FAQ](https://store.kde.org/faq-pling); account ownership and any listing decision remain with the project owner.
