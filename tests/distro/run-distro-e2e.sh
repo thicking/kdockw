@@ -70,6 +70,22 @@ fi
 platform_args=()
 [[ -n "${KDOCKW_E2E_PLATFORM:-}" ]] && platform_args=(--platform "$KDOCKW_E2E_PLATFORM")
 
+# The package cache, final image tag, and default artifact path are shared by
+# runs for one target. Serialize those runs so cleanup/build cannot race with
+# another process targeting the same resources.
+command -v flock >/dev/null || {
+    echo "error: flock is required to serialize distro E2E runs" >&2
+    exit 69
+}
+command -v setsid >/dev/null || {
+    echo "error: setsid is required to stop interrupted preparation workers cleanly" >&2
+    exit 69
+}
+lock_file="${TMPDIR:-/tmp}/kdockw-distro-e2e-${UID:-$(id -u)}-$target.lock"
+exec {target_lock_fd}>"$lock_file"
+echo "[distro] waiting for target lock: $target"
+flock "$target_lock_fd"
+
 now() { date +%s; }
 run_start=$(now)
 
@@ -91,48 +107,87 @@ prep_log=
 install_log=
 shard_state=
 
+remove_prep_container() {
+    local prep_ctr="$1" prep_token="$2"
+    local ids
+    local -a owned_ids=()
+    ids="$(docker ps -aq --filter "label=org.kdockw.task-id=$prep_token")" || {
+        echo "[distro] warning: cannot inspect task-owned preparation container $prep_ctr" >&2
+        return 1
+    }
+    [[ -n "$ids" ]] || return 0
+    mapfile -t owned_ids <<<"$ids"
+    if ! docker rm -f "${owned_ids[@]}" >/dev/null; then
+        echo "[distro] warning: cannot remove task-owned preparation container $prep_ctr" >&2
+        return 1
+    fi
+}
+
+prep_child_cleanup() {
+    local rc=$?
+    if (( rc != 0 )); then
+        remove_prep_container "$KDOCKW_PREP_CONTAINER" "$KDOCKW_PREP_TOKEN" || true
+    fi
+    return "$rc"
+}
+
+prep_worker() {
+    set -euo pipefail
+    local ref="$1" prep_ctr="$2" prep_token="$3" packages="$4"
+    local repo="$5" here="$6" target="$7" platform="$8" t0
+    local -a worker_platform_args=()
+    [[ -z "$platform" ]] || worker_platform_args=(--platform "$platform")
+
+    trap prep_child_cleanup EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+
+    t0=$(now)
+    KDOCKW_DOCKER_PLATFORM="$platform" \
+        "$here/build-ci-image.sh" --pull runtime "$target" >/dev/null
+    echo "[distro] runtime-image: $(($(now) - t0))s"
+    t0=$(now)
+    docker run -d --init --name "$prep_ctr" \
+        --label "org.kdockw.task-id=$prep_token" \
+        "${worker_platform_args[@]}" "$ref" sleep infinity >/dev/null
+    docker exec "$prep_ctr" sh "$packages" upgrade
+    echo "[distro] runtime-upgrade: $(($(now) - t0))s"
+    # Prefetch declared package dependencies while the package build runs;
+    # packages.sh kdockw can then install from the package-manager cache.
+    t0=$(now)
+    docker exec "$prep_ctr" mkdir -p /tmp/kdockw-pkgdefs
+    docker cp "$repo/packaging/." "$prep_ctr:/tmp/kdockw-pkgdefs"
+    docker exec -e PKGDEFS=/tmp/kdockw-pkgdefs "$prep_ctr" sh "$packages" depfetch
+    echo "[distro] dep-fetch: $(($(now) - t0))s"
+}
+
+export -f now remove_prep_container prep_child_cleanup prep_worker
+
 start_prep() {
     local ref
     ref="$(ci_image_ref runtime "$target")"
     prep_log="$(mktemp -t kdockw-distro-prep.XXXXXX)"
-    (
-        t0=$(now)
-        KDOCKW_DOCKER_PLATFORM="${KDOCKW_E2E_PLATFORM:-}" \
-            "$here/build-ci-image.sh" --pull runtime "$target" >/dev/null
-        echo "[distro] runtime-image: $(($(now) - t0))s"
-        t0=$(now)
-        docker run -d --init --name "$prep_ctr" \
-            --label "org.kdockw.task-id=$prep_token" \
-            "${platform_args[@]}" "$ref" sleep infinity >/dev/null
-        docker exec "$prep_ctr" sh "$packages" upgrade
-        echo "[distro] runtime-upgrade: $(($(now) - t0))s"
-        # While the package builds, prefetch the deps the packaging declares
-        # (metadata refresh + downloads, no install) so `packages.sh kdockw`
-        # finds them in the package-manager cache.
-        t0=$(now)
-        docker exec "$prep_ctr" mkdir -p /tmp/kdockw-pkgdefs
-        docker cp "$repo/packaging/." "$prep_ctr:/tmp/kdockw-pkgdefs"
-        docker exec -e PKGDEFS=/tmp/kdockw-pkgdefs "$prep_ctr" sh "$packages" depfetch
-        echo "[distro] dep-fetch: $(($(now) - t0))s"
-    ) >"$prep_log" 2>&1 &
+    KDOCKW_PREP_CONTAINER="$prep_ctr" KDOCKW_PREP_TOKEN="$prep_token" \
+        setsid bash -c 'prep_worker "$@"' _ "$ref" "$prep_ctr" \
+            "$prep_token" "$packages" "$repo" "$here" "$target" \
+            "${KDOCKW_E2E_PLATFORM:-}" >"$prep_log" 2>&1 &
     prep_pid=$!
     runtime_ref="$ref"
 }
 
 cleanup() {
     local rc=$?
+    local cleanup_rc=0
     if [[ -n "$prep_pid" ]]; then
-        kill "$prep_pid" 2>/dev/null || true
+        kill -TERM -- "-$prep_pid" 2>/dev/null || true
         wait "$prep_pid" 2>/dev/null || true
         prep_pid=
     fi
-    if [[ "$(docker container inspect --format '{{ index .Config.Labels "org.kdockw.task-id" }}' \
-        "$prep_ctr" 2>/dev/null || true)" == "$prep_token" ]]; then
-        docker rm -f "$prep_ctr" >/dev/null 2>&1 || true
-    fi
+    remove_prep_container "$prep_ctr" "$prep_token" || cleanup_rc=1
+    (( rc != 0 || cleanup_rc == 0 )) || rc=1
     if (( rc == 0 )); then
-        rm -f "${prep_log:-}" "${install_log:-}"
-        rm -rf "${shard_state:-}"
+        rm -f "${prep_log:-}" "${install_log:-}" || rc=1
+        rm -rf "${shard_state:-}" || rc=1
     else
         [[ -z "$prep_log" || ! -f "$prep_log" ]] ||
             echo "[distro] retained preparation log: $prep_log" >&2
@@ -201,18 +256,31 @@ if [[ "$skip_image" != 1 ]]; then
     cmd="$(docker image inspect --format '{{json .Config.Cmd}}' "$runtime_ref")"
     [[ "$cmd" == null ]] || changes+=(--change "CMD $cmd")
     docker commit "${changes[@]}" "$prep_ctr" "$image" >/dev/null
-    docker rm -f "$prep_ctr" >/dev/null
+    remove_prep_container "$prep_ctr" "$prep_token"
     echo "[distro] image-commit: $(($(now) - t0))s"
 elif ! docker image inspect "$image" >/dev/null 2>&1; then
     echo "error: KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1 but there is no image $image" >&2
     exit 1
 fi
 
+# Keep the final per-target image as the reusable installed test environment.
+# CI base/builder/runtime images, package/ccache outputs, and BuildKit cache are
+# also reusable; this installed-binary path mounts no named build volume.
+
 export KDOCKW_E2E_IMAGE="$image"
 export KDOCKW_E2E_SKIP_BUILD=1
 export KDOCKW_E2E_BINARY=/usr/bin/kdockw
 export KDOCKW_E2E_DISTRO="$target"
 export KDOCKW_E2E_ARTIFACTS="${KDOCKW_E2E_ARTIFACTS:-$repo/tests/appium/artifacts-distro-$target}"
+
+# A caller may intentionally point different targets at the same artifact
+# directory. Lock its canonical path before run-e2e.sh clears or writes there.
+artifact_path="$(realpath -m -- "$KDOCKW_E2E_ARTIFACTS")"
+artifact_key="$(printf '%s' "$artifact_path" | sha256sum | cut -c1-16)"
+artifact_lock_file="${TMPDIR:-/tmp}/kdockw-distro-e2e-${UID}-artifacts-$artifact_key.lock"
+exec {artifact_lock_fd}>"$artifact_lock_file"
+echo "[distro] waiting for artifact lock"
+flock "$artifact_lock_fd"
 
 # ---------------------------------------------------------------------------
 # Suite run: single container, or KDOCKW_E2E_SHARDS shards concurrently
@@ -246,9 +314,9 @@ for arg in "$@"; do
 done
 
 # Each shard: one run-e2e.sh (one container, own kwin session) selecting
-# KDOCKW_E2E_SHARD=i/N, artifacts in <artifacts>/shard-<i>, its own build
-# volume when KDOCKW_E2E_VOLUME is set (the default is suffixed inside
-# run-e2e.sh). Status goes to a file (the output pipeline would mask it);
+# KDOCKW_E2E_SHARD=i/N and writing to <artifacts>/shard-<i>. This distro path
+# sets KDOCKW_E2E_BINARY, so run-e2e.sh does not mount a build volume. Status
+# goes to a file (the output pipeline would mask it);
 # stdout/stderr is prefixed so the shards' lines stay distinguishable.
 rm -rf "$KDOCKW_E2E_ARTIFACTS"
 mkdir -p "$KDOCKW_E2E_ARTIFACTS"
