@@ -771,7 +771,12 @@ def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: Tes
     assert current_card(kdockw, "Style") == "Tinted"
     use_system = scroll_into_view(kdockw, f"{SETTINGS}//check_box[@name='Use system color']")
     assert has_state(use_system, "checked")
-    click_el(kdockw, use_system)
+    # FormSwitchDelegate is exposed to AT-SPI as one checkbox covering the
+    # whole row, but the actual switch is right-aligned. Click that visible
+    # control directly instead of the row's center (which newer Qt/KF themes
+    # may leave as non-interactive content).
+    switch_rect = kdockw.screen_rect(use_system, "settings")
+    inp.click(switch_rect.x + switch_rect.width - 10, switch_rect.center[1])
     wait_until(lambda: not has_state(use_system, "checked"), message="Use system color off")
 
     tint = scroll_into_view(kdockw, f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")

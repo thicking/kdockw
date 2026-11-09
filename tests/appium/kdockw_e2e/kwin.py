@@ -208,6 +208,12 @@ def cursor_pos() -> tuple[int, int]:
     return (int(p["x"]), int(p["y"]))
 
 
+def output_at() -> str | None:
+    """Name of the KWin output containing the pointer."""
+    output = evaluate("const output = workspace.screenAt(workspace.cursorPos); report(output ? output.name : null);")
+    return str(output) if output else None
+
+
 class ScreenshotUnavailable(RuntimeError):
     """KWin cannot capture: it composites with QPainter because the container
     has no DRM render node (/dev/dri). See README "Screenshots and previews"."""

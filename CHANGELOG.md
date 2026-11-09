@@ -52,6 +52,8 @@ animations for KDE Plasma 6 on Wayland.
   before its hide delay expires.
 - Kept application-name tooltips clear of enlarged icons by accounting for the
   full dock-item geometry.
+- Kept the Follow Active dock placement in sync when Task Manager reports
+  activation changes without an explicit role list.
 - Made the settings dock preview follow the live badge colors and typography,
   made its hover switch control pointer-driven zoom, and aligned magnification
   direction with the selected dock edge.

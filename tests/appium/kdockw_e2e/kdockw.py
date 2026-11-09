@@ -350,8 +350,9 @@ class KDockW:
         for the dock and preview surfaces on vertical layouts, so use the
         process and window-role flags to disambiguate those before comparing
         dimensions. When multiple outputs have same-size surfaces, ``output_x``
-        selects one explicitly; otherwise the surface under the current pointer
-        is selected. None while unmapped or when the result remains ambiguous."""
+        selects one explicitly; otherwise the output containing the current
+        pointer is selected. The pointer need not be over the dock surface.
+        None while unmapped or when the result remains ambiguous."""
         frame = self.find(self._frame_xpath(surface))
         if frame is None:
             return None
@@ -372,13 +373,9 @@ class KDockW:
         if output_x is not None:
             matching = [w for w in matching if w.client_x == output_x]
         elif len(matching) > 1:
-            pointer_x, pointer_y = kwin.cursor_pos()
-            matching = [
-                w
-                for w in matching
-                if w.client_x <= pointer_x < w.client_x + w.client_width
-                and w.client_y <= pointer_y < w.client_y + w.client_height
-            ]
+            output = kwin.output_at()
+            if output is not None:
+                matching = [w for w in matching if w.output == output]
         if len(matching) != 1:
             return None
         window = matching[0]
