@@ -407,8 +407,12 @@ Item {
             verify(capture.visible)
             compare(capture.opacity, 1)
             verify(capture.freezeFrame)
+            verify(minimized.frameSnapshotWaitingForFrame,
+                   "frame readback must wait until the frozen PipeWire scene-graph frame is presented")
             tryVerify(() => PreviewController.frameStoreRequests.some(request => request.uuid === minimized.winId),
                       3000, "minimizing a window with a real visible frame must snapshot that same UUID in memory")
+            verify(!minimized.frameSnapshotWaitingForFrame,
+                   "the one-shot frame wait must clear after requesting the snapshot")
             const minimizedUuid = minimized.winId
             verify(PreviewController.previewFrameUrl(minimizedUuid).length > 0,
                    "the minimized UUID must have a retrievable process-local frame")

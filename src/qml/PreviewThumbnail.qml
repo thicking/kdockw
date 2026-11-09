@@ -30,6 +30,7 @@ Item {
     // the window was visible, then keep that frame through minimize/restore.
     property bool hasFrameWhileVisible: false
     property bool frameSnapshotPending: false
+    property bool frameSnapshotWaitingForFrame: false
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
@@ -215,10 +216,16 @@ Item {
 
     onCaptureItemChanged: updateSourceAspectRatio()
     onIsMinimizedChanged: {
-        if (!isMinimized && captureItem && captureItem.ready)
+        if (!isMinimized && captureItem && captureItem.ready) {
+            frameSnapshotWaitingForFrame = false
             hasFrameWhileVisible = true
-        else if (isMinimized && hasFrameWhileVisible)
-            Qt.callLater(function() { root.cacheLastRenderedFrame("minimized") })
+        } else if (isMinimized && hasFrameWhileVisible) {
+            // Let ClippedPipeWireSourceItem freeze its current scene-graph node
+            // and wait for that frame to be presented before reading it back.
+            // Calling grabToImage in the minimize notification races KWin's
+            // stream transition on some Qt/KPipeWire combinations.
+            frameSnapshotWaitingForFrame = true
+        }
     }
     Component.onCompleted: {
         captureWinId = winId
@@ -501,6 +508,13 @@ Item {
                 target: root.Window.window
                 ignoreUnknownSignals: true
                 function onScreenChanged() { root.logCaptureState("preview-screen-changed") }
+                function onFrameSwapped() {
+                    if (!root.frameSnapshotWaitingForFrame)
+                        return
+                    root.frameSnapshotWaitingForFrame = false
+                    if (root.isMinimized && root.hasFrameWhileVisible)
+                        root.cacheLastRenderedFrame("minimized")
+                }
             }
 
             // KWin can briefly publish DMA-BUF buffers before PipeWire has
