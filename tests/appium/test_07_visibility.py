@@ -669,8 +669,9 @@ def test_clk012_repeated_explicit_preview_releases_follow_active_screen_hold(
         wait_until(lambda: _visible_preview(kdockw), message="repeated explicit popup remains open")
         assert alpha.is_active(), "explicit preview must preserve the current window"
     popup = _visible_preview(kdockw)
-    pv.wait_on_screen(kdockw, popup)
-    pv.glide_into(kdockw, pv.screen_rect(kdockw, kdockw.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]")).center)
+    pv.wait_on_screen(kdockw, popup, output_x=0)
+    thumbnail = kdockw.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]")
+    pv.glide_into(kdockw, pv.screen_rect(kdockw, thumbnail, output_x=0).center)
     assert_stays(
         lambda: _visible_preview(kdockw) is not None and dock_shown(kdockw, env.TEST_APP_NAME) and _mapped_dock_xs(kdockw) == [0],
         1.0,

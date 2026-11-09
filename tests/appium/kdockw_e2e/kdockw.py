@@ -343,13 +343,15 @@ class KDockW:
             "settings": SETTINGS_XPATH,
         }[surface]
 
-    def surface_rect(self, surface: str = "dock") -> Rect | None:
+    def surface_rect(self, surface: str = "dock", *, output_x: int | None = None) -> Rect | None:
         """Screen geometry of a kdockw surface ("dock", "preview" or
         "settings"): KWin's client geometry of the kdockw window whose size
         matches the surface's AT-SPI frame. KWin can report identical extents
         for the dock and preview surfaces on vertical layouts, so use the
         process and window-role flags to disambiguate those before comparing
-        dimensions. None while unmapped."""
+        dimensions. When multiple outputs have same-size surfaces, ``output_x``
+        selects one explicitly; otherwise the surface under the current pointer
+        is selected. None while unmapped or when the result remains ambiguous."""
         frame = self.find(self._frame_xpath(surface))
         if frame is None:
             return None
@@ -367,19 +369,33 @@ class KDockW:
         else:
             return None
         matching = [w for w in candidates if (w.client_width, w.client_height) == (fr.width, fr.height)]
+        if output_x is not None:
+            matching = [w for w in matching if w.client_x == output_x]
+        elif len(matching) > 1:
+            pointer_x, pointer_y = kwin.cursor_pos()
+            matching = [
+                w
+                for w in matching
+                if w.client_x <= pointer_x < w.client_x + w.client_width
+                and w.client_y <= pointer_y < w.client_y + w.client_height
+            ]
         if len(matching) != 1:
             return None
         window = matching[0]
         return Rect(window.client_x, window.client_y, window.client_width, window.client_height)
 
-    def to_screen(self, rect: Rect, surface: str = "dock") -> Rect:
+    def to_screen(self, rect: Rect, surface: str = "dock", *, output_x: int | None = None) -> Rect:
         """Convert a surface-local AT-SPI rect (what ``element.rect`` returns
         on Wayland) to global screen coordinates."""
-        origin = wait_until(lambda: self.surface_rect(surface), timeout=5, message=f"{surface} surface geometry")
+        origin = wait_until(
+            lambda: self.surface_rect(surface, output_x=output_x),
+            timeout=5,
+            message=f"{surface} surface geometry",
+        )
         return Rect(origin.x + rect.x, origin.y + rect.y, rect.width, rect.height)
 
-    def screen_rect(self, element: WebElement, surface: str = "dock") -> Rect:
-        return self.to_screen(Rect.of(element), surface)
+    def screen_rect(self, element: WebElement, surface: str = "dock", *, output_x: int | None = None) -> Rect:
+        return self.to_screen(Rect.of(element), surface, output_x=output_x)
 
     def item_center(self, name: str) -> tuple[int, int]:
         """Screen coordinates of the centre of dock item ``name``."""

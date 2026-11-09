@@ -1378,8 +1378,12 @@ def assert_click_action_effects(
         if output_x == 0:
             # The existing painted-popup oracle is limited to the primary output.
             popup = visible_preview(kdockw)
-            pv.wait_on_screen(kdockw, popup)
-            target = pv.screen_rect(kdockw, kdockw.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]")).center
+            pv.wait_on_screen(kdockw, popup, output_x=output_x)
+            target = pv.screen_rect(
+                kdockw,
+                kdockw.wait_for(pv.thumb_xpath("Alpha") + "[contains(@states, 'showing')]"),
+                output_x=output_x,
+            ).center
             pv.glide_into(kdockw, target)
             inp.click()
             wait_until(alpha.is_active, message="chosen preview thumbnail activates Alpha")

@@ -60,8 +60,8 @@ def thumb_titles(kdockw: KDockW) -> list[str]:
     return [el.get_attribute("name") for el in sorted(labels, key=lambda el: Rect.of(el).x)]
 
 
-def screen_rect(kdockw: KDockW, element: WebElement) -> Rect:
-    return kdockw.screen_rect(element, "preview")
+def screen_rect(kdockw: KDockW, element: WebElement, *, output_x: int | None = None) -> Rect:
+    return kdockw.screen_rect(element, "preview", output_x=output_x)
 
 
 def close_button_center(thumbnail: Rect) -> tuple[int, int]:
@@ -75,7 +75,9 @@ def close_button_center(thumbnail: Rect) -> tuple[int, int]:
     return thumbnail.x + thumbnail.width - 11, thumbnail.y + 11
 
 
-def fast_pointer_entry(kdockw: KDockW, item: str, timeout: float = 10.0) -> tuple[Rect, float]:
+def fast_pointer_entry(
+    kdockw: KDockW, item: str, timeout: float = 10.0, *, output_x: int | None = None
+) -> tuple[Rect, float]:
     """Enter the current popup as soon as AT-SPI reports it visible.
 
     Cache the in-process Accessible and the already mapped preview surface
@@ -98,7 +100,7 @@ def fast_pointer_entry(kdockw: KDockW, item: str, timeout: float = 10.0) -> tupl
     if popup.get_accessible_id() != popup_element.get_attribute("accessibility-id"):
         raise AssertionError("AT-SPI and WebDriver resolved different preview popups")
     surface = wait_until(
-        lambda: kdockw.surface_rect("preview"),
+        lambda: kdockw.surface_rect("preview", output_x=output_x),
         timeout=timeout,
         message="pre-mapped KWin preview surface",
     )
@@ -183,14 +185,16 @@ DESKTOP_MAX_CHANNEL = 16
 GEOMETRY_SETTLE = 0.3
 
 
-def _popup_geometry(kdockw: KDockW, popup: WebElement) -> tuple[Rect, Rect] | None:
+def _popup_geometry(
+    kdockw: KDockW, popup: WebElement, *, output_x: int | None = None
+) -> tuple[Rect, Rect] | None:
     """(preview surface, popup) in screen coordinates, or None unless the
     popup's AT-SPI rect is non-empty and lies inside the KWin window of the
     preview surface. ``kdockw.surface_rect`` already matches that window by
     the AT-SPI frame's size. A popup being laid out can report a new size
     at its old position (648x211 at the 17x38 popup's origin, reaching past
     the surface), which fails this check."""
-    surface = kdockw.surface_rect("preview")
+    surface = kdockw.surface_rect("preview", output_x=output_x)
     if surface is None:
         return None
     local = Rect.of(popup)
@@ -207,14 +211,14 @@ def _popup_geometry(kdockw: KDockW, popup: WebElement) -> tuple[Rect, Rect] | No
     return surface, Rect(surface.x + local.x, surface.y + local.y, local.width, local.height)
 
 
-def visible_card_geometry(kdockw: KDockW) -> tuple[Rect, Rect] | None:
+def visible_card_geometry(kdockw: KDockW, *, output_x: int | None = None) -> tuple[Rect, Rect] | None:
     """Return the preview surface and visible card rect in screen coordinates.
 
     The popup's outer AT-SPI rect includes transparent shadow bounds. The
     accessible card rect is the visible surface and is the right geometry for
     assertions about card/icon overlap.
     """
-    surface = kdockw.surface_rect("preview")
+    surface = kdockw.surface_rect("preview", output_x=output_x)
     card = kdockw.find("//panel[@name='Window preview card']")
     if surface is None or card is None:
         return None
@@ -230,7 +234,9 @@ def visible_card_geometry(kdockw: KDockW) -> tuple[Rect, Rect] | None:
     return surface, Rect(surface.x + local.x, surface.y + local.y, local.width, local.height)
 
 
-def wait_on_screen(kdockw: KDockW, popup: WebElement, timeout: float = 5.0) -> Rect:
+def wait_on_screen(
+    kdockw: KDockW, popup: WebElement, timeout: float = 5.0, *, output_x: int | None = None
+) -> Rect:
     """Wait for settled popup layout and painted pixels; return its screen rect.
 
     Read thumbnail and close-button glide targets only after this returns.
@@ -262,7 +268,7 @@ def wait_on_screen(kdockw: KDockW, popup: WebElement, timeout: float = 5.0) -> R
         # polling. A geometry that does not settle in time raises WaitTimeout,
         # which wait_until chains into its own.
         return wait_stable(
-            lambda: _popup_geometry(kdockw, popup),
+            lambda: _popup_geometry(kdockw, popup, output_x=output_x),
             duration=GEOMETRY_SETTLE,
             timeout=max(GEOMETRY_SETTLE, deadline - time.monotonic()),
         )
@@ -270,7 +276,10 @@ def wait_on_screen(kdockw: KDockW, popup: WebElement, timeout: float = 5.0) -> R
     surface, rect = wait_until(
         settled,
         timeout=timeout,
-        message=lambda: f"preview popup geometry to settle inside the preview surface (now: {_popup_geometry(kdockw, popup)})",
+        message=lambda: (
+            "preview popup geometry to settle inside the preview surface "
+            f"(now: {_popup_geometry(kdockw, popup, output_x=output_x)})"
+        ),
     )
     x0, y0 = max(rect.x, 0), max(rect.y, 0)
     x1, y1 = min(rect.x + rect.width, env.SCREEN_WIDTH), min(rect.y + rect.height, env.SCREEN_HEIGHT)
@@ -301,7 +310,7 @@ def wait_on_screen(kdockw: KDockW, popup: WebElement, timeout: float = 5.0) -> R
         timeout=max(1.0, deadline - time.monotonic()),
         message=lambda: f"preview popup {rect} on screen (painted fraction {lit})",
     )
-    now = _popup_geometry(kdockw, popup)
+    now = _popup_geometry(kdockw, popup, output_x=output_x)
     assert now == (surface, rect), f"preview popup moved while it was painted: {(surface, rect)} -> {now}"
     return rect
 
