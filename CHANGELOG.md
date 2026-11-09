@@ -37,6 +37,10 @@ animations for KDE Plasma 6 on Wayland.
 
 ### Fixed
 
+- Kept pinned applications and their ordering after dragging active apps within
+  the dock, including when the Task Manager hides activated launcher rows.
+- Moved Follow Active to the screen of the newly activated window even when
+  Task Manager reports the old and new active rows in one model update.
 - Reused a recent rendered window frame from a bounded in-memory cache when a
   window is minimized or its preview popup is recreated, instead of showing
   KWin's minimized-window placeholder. The cache stays scoped to each window

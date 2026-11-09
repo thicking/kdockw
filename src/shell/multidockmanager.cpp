@@ -339,12 +339,14 @@ void MultiDockManager::setupFollowActive()
         connect(m_model->tasksModel(),
                 &QAbstractItemModel::dataChanged,
                 this,
-                [this](const QModelIndex &topLeft, const QModelIndex &, const QList<int> &roles) {
+                [this](const QModelIndex &, const QModelIndex &, const QList<int> &roles) {
                     // An empty roles list means every role changed. Some
                     // libtaskmanager versions emit that form for activation
-                    // updates, so do not ignore it in Follow Active mode.
-                    if ((roles.isEmpty() || roles.contains(TaskManager::AbstractTasksModel::IsActive))
-                        && topLeft.data(TaskManager::AbstractTasksModel::IsActive).toBool()) {
+                    // updates. Activation may also change a contiguous range
+                    // containing both the previously active and newly active
+                    // rows; topLeft alone can therefore be inactive. Scan the
+                    // current model whenever the active role may have changed.
+                    if (roles.isEmpty() || roles.contains(TaskManager::AbstractTasksModel::IsActive)) {
                         onActiveWindowChanged();
                     }
                 });
