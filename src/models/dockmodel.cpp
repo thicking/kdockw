@@ -335,49 +335,12 @@ bool DockModel::moveTask(int fromIndex, int toIndex)
     if (!m_tasksModel->move(fromIndex, toIndex)) {
         return false;
     }
-    if (m_separateLaunchers) {
-        // syncLaunchers() can drop launcher entries whose launcher delegate is
-        // currently hidden by an activated window task (hideActivatedLaunchers).
-        // Keep the complete persisted pin set and reorder only entries that are
-        // represented by pinned rows in the current task model.
-        const QStringList previous = m_tasksModel->launcherList();
-        QStringList reordered;
-        QSet<QString> used;
-        const auto entryUrl = [](const QString &entry) {
-            const qsizetype separator = entry.indexOf(QLatin1Char('\n'));
-            return separator >= 0 ? entry.mid(separator + 1) : entry;
-        };
-
-        for (int row = 0; row < m_tasksModel->rowCount(); ++row) {
-            const QModelIndex index = m_tasksModel->index(row, 0);
-            if (!isPinnedTask(*m_tasksModel, index)) {
-                continue;
-            }
-            const QString url = index.data(TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl().toString();
-            if (url.isEmpty()) {
-                continue;
-            }
-            for (const QString &entry : previous) {
-                if (!used.contains(entry) && entryUrl(entry) == url) {
-                    reordered.append(entry);
-                    used.insert(entry);
-                    break;
-                }
-            }
-        }
-        // Retain pins that do not currently have a visible model row, including
-        // launchers for applications that are not running.
-        for (const QString &entry : previous) {
-            if (!used.contains(entry)) {
-                reordered.append(entry);
-            }
-        }
-        if (reordered != previous) {
-            m_tasksModel->setLauncherList(reordered);
-        }
-    } else {
-        m_tasksModel->syncLaunchers();
-    }
+    // TasksModel::move() updates its manual sort map. syncLaunchers() commits
+    // that order to the launcher model and retains launchers with no visible
+    // row, including pins hidden by hideActivatedLaunchers. Rebuilding the
+    // launcher list from visible rows here resets the model's just-moved order
+    // on Plasma 6.3–6.8 even though the persisted list appears correct.
+    m_tasksModel->syncLaunchers();
     // The user's order is the new settled order: a launcher-slot repair still
     // pending from before the move must not undo it.
     snapshotSettledRows();
