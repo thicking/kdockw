@@ -783,13 +783,20 @@ def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: Tes
     assert current_card(kdockw, "Style") == "Tinted"
     use_system = scroll_into_view(kdockw, f"{SETTINGS}//check_box[@name='Use system color']")
     assert has_state(use_system, "checked")
-    # The switch's accessible checkbox spans a FormCard row whose layout and
-    # switch position vary by KDE/Qt theme. Invoke its native Toggle action so
-    # the same semantic control is exercised without theme-specific pixels.
-    invoke_atspi_action(kdockw, "check box", "Use system color", "Toggle")
+    # The accessible Toggle action changes the checkbox's AT-SPI state on
+    # some Qt/Kirigami versions without invoking FormSwitchDelegate.onToggled,
+    # leaving the bound DockSettings value unchanged. Focus the real control
+    # and send its standard Space key so the GUI handler and persistence path
+    # are exercised.
+    invoke_atspi_action(kdockw, "check box", "Use system color", "SetFocus")
+    inp.key("space")
     wait_until(
         lambda: not has_state(kdockw.wait_for(f"{SETTINGS}//check_box[@name='Use system color']"), "checked"),
         message="Use system color off",
+    )
+    wait_until(
+        lambda: not kcfg.as_bool(config_value(kdockw, "UseSystemColor") or "false"),
+        message="UseSystemColor saved as false",
     )
 
     tint = kdockw.wait_for(f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
