@@ -57,6 +57,15 @@ Rules that apply to every agent working on this repository, regardless of harnes
 - In the final report, list the tests run and their results, tests not run with
   the reason, and any remaining release or manual-acceptance checks.
 
+## Podman / Buildah Resource Management
+
+- Preserve Debian, Ubuntu, and Fedora base images, and the prepared CI builder/runtime images needed by the current release. Keep the current release's test environment and diagnostic artifacts until release acceptance is complete.
+- Remove temporary Podman/Buildah containers, intermediate images, and temporary volumes created by a build or E2E process after successful testing and commit. Keep reusable build caches and named release images only when they are part of the current release environment.
+- Scope cleanup to resources created by the current process. Never remove resources owned by other projects, including TimeOff and LLM-monitor. Do not use global cleanup commands such as `podman system prune -a`, `podman volume prune`, or `podman system reset`; do not force-remove shared resources.
+- Build and E2E scripts should register their temporary resources and clean them with `trap` or an equivalent mechanism on success, failure, and interruption. Preserve logs, screenshots, and other diagnostic artifacts needed to investigate a failed run.
+- Before cleanup, verify a resource's project and purpose. After cleanup, inspect `buildah containers` and `podman ps -a --external`; report pre-existing resources that are outside the task's ownership instead of removing them.
+- Do not remove the v0.4.0 base images, prepared test environment, or diagnostic artifacts before release acceptance is complete.
+
 ## Pull Request Completion
 
 - A PR is ready for review or merge only when every CI check on its head is green, the change has been QA'd in a running KDockW session, and review feedback is resolved.

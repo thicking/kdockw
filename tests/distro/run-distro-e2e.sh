@@ -84,9 +84,11 @@ skip_image="${KDOCKW_DISTRO_SKIP_IMAGE_BUILD:-0}"
 # The runtime image pull (or local build) and a rolling target's upgrade do
 # not need the package: they run in the background while it builds, in the
 # container the package is later installed into.
-prep_ctr="kdockw-e2e-prep-$target-$$"
+prep_token="$target-$$-${RANDOM}"
+prep_ctr="kdockw-e2e-prep-$prep_token"
 prep_pid=
 prep_log=
+install_log=
 shard_state=
 
 start_prep() {
@@ -99,7 +101,9 @@ start_prep() {
             "$here/build-ci-image.sh" --pull runtime "$target" >/dev/null
         echo "[distro] runtime-image: $(($(now) - t0))s"
         t0=$(now)
-        docker run -d --init --name "$prep_ctr" "${platform_args[@]}" "$ref" sleep infinity >/dev/null
+        docker run -d --init --name "$prep_ctr" \
+            --label "org.kdockw.task-id=$prep_token" \
+            "${platform_args[@]}" "$ref" sleep infinity >/dev/null
         docker exec "$prep_ctr" sh "$packages" upgrade
         echo "[distro] runtime-upgrade: $(($(now) - t0))s"
         # While the package builds, prefetch the deps the packaging declares
@@ -116,16 +120,32 @@ start_prep() {
 }
 
 cleanup() {
+    local rc=$?
     if [[ -n "$prep_pid" ]]; then
         kill "$prep_pid" 2>/dev/null || true
         wait "$prep_pid" 2>/dev/null || true
         prep_pid=
     fi
-    docker rm -f "$prep_ctr" >/dev/null 2>&1 || true
-    rm -f "${prep_log:-}"
-    rm -rf "${shard_state:-}"
+    if [[ "$(docker container inspect --format '{{ index .Config.Labels "org.kdockw.task-id" }}' \
+        "$prep_ctr" 2>/dev/null || true)" == "$prep_token" ]]; then
+        docker rm -f "$prep_ctr" >/dev/null 2>&1 || true
+    fi
+    if (( rc == 0 )); then
+        rm -f "${prep_log:-}" "${install_log:-}"
+        rm -rf "${shard_state:-}"
+    else
+        [[ -z "$prep_log" || ! -f "$prep_log" ]] ||
+            echo "[distro] retained preparation log: $prep_log" >&2
+        [[ -z "$install_log" || ! -f "$install_log" ]] ||
+            echo "[distro] retained install log: $install_log" >&2
+        [[ -z "$shard_state" || ! -d "$shard_state" ]] ||
+            echo "[distro] retained shard status: $shard_state" >&2
+    fi
+    return "$rc"
 }
 trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Blocks until the background preparation finishes; on failure shows its
 # whole output and exits with its status.
@@ -170,10 +190,8 @@ if [[ "$skip_image" != 1 ]]; then
             docker exec "$prep_ctr" sh -c "sh $packages kdockw && rm -rf /pkgs"
     } >"$install_log" 2>&1; then
         cat "$install_log" >&2
-        rm -f "$install_log"
         exit 1
     fi
-    rm -f "$install_log"
     echo "[distro] package-install: $(($(now) - t0))s"
 
     # The container runs `sleep infinity`; give the image back the runtime
@@ -261,5 +279,4 @@ for (( i = 0; i < shards; i++ )); do
     [[ -f "$shard_dir/rc.$i" ]] && shard_rc="$(<"$shard_dir/rc.$i")"
     [[ "$shard_rc" == 0 ]] || rc=1
 done
-rm -rf "$shard_dir"
 finish "$rc"
