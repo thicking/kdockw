@@ -1,5 +1,15 @@
 # Distribution Support Policy
 
+## Latest published release: KDockW v0.4.0
+
+Published on 2026-11-09 from commit `992753cad51d1fbe8ae4c4c703cfcc9a459262b0`
+with signed tag `kdockw-v0.4.0`. The full required Distro E2E run passed all
+three targets on that exact commit: [run 42609893460](https://github.com/thicking/kdockw/actions/runs/42609893460).
+The public [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.0)
+contains the source archive, verified Debian 13 and Ubuntu 26.04 LTS DEBs,
+Fedora 45 RPM, and `SHA256SUMS`. Downloaded public assets were checked against
+the published checksum file.
+
 ## Required release targets from v0.3.2
 
 GitHub Releases is the only publication channel. Starting with KDockW v0.3.2,

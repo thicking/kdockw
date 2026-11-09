@@ -183,7 +183,13 @@ priority sequence; it creates no dependency by itself. Window Preview Redesign
 depends on accepted v0.2.0 geometry. Application Name Tooltip depends on the
 preview card's visibility/header state. Toggle Minimize on Click is independent.
 
-## v0.4.0 — macOS-like Spring Physics (complete)
+## v0.4.0 — macOS-like Spring Physics (released)
+
+KDockW v0.4.0 was published on 2026-11-09 from the verified `main` commit.
+The signed tag, packages, and SHA-256 manifest are available on the
+[GitHub Release page](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.0).
+The required Distro E2E gate passed on Debian 13, Ubuntu 26.04 LTS, and Fedora
+45 in [workflow run 42609893460](https://github.com/thicking/kdockw/actions/runs/42609893460).
 
 - [x] **Spring Magnification (`done`):** added time-based spring motion with
   adjustable stiffness, damping, and reaction speed. New configurations use
