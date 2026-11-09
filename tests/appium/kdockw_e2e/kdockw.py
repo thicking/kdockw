@@ -346,15 +346,31 @@ class KDockW:
     def surface_rect(self, surface: str = "dock") -> Rect | None:
         """Screen geometry of a kdockw surface ("dock", "preview" or
         "settings"): KWin's client geometry of the kdockw window whose size
-        matches the surface's AT-SPI frame. None while unmapped."""
+        matches the surface's AT-SPI frame. KWin can report identical extents
+        for the dock and preview surfaces on vertical layouts, so use the
+        process and window-role flags to disambiguate those before comparing
+        dimensions. None while unmapped."""
         frame = self.find(self._frame_xpath(surface))
         if frame is None:
             return None
         fr = Rect.of(frame)
-        for w in self.windows():
-            if (w.client_width, w.client_height) == (fr.width, fr.height):
-                return Rect(w.client_x, w.client_y, w.client_width, w.client_height)
-        return None
+        candidates = [w for w in self.windows() if w.pid == self.pid]
+        if surface == "dock":
+            candidates = [w for w in candidates if w.dock and w.special_window]
+        elif surface == "preview":
+            # KWin versions differ on specialWindow for non-dock LayerShell
+            # surfaces; both identify the mapped preview as a taskbar-skipped,
+            # non-normal, non-dock window owned by this process.
+            candidates = [w for w in candidates if w.skip_taskbar and not w.dock and not w.normal_window]
+        elif surface == "settings":
+            candidates = [w for w in candidates if w.normal_window and not w.special_window and not w.skip_taskbar]
+        else:
+            return None
+        matching = [w for w in candidates if (w.client_width, w.client_height) == (fr.width, fr.height)]
+        if len(matching) != 1:
+            return None
+        window = matching[0]
+        return Rect(window.client_x, window.client_y, window.client_width, window.client_height)
 
     def to_screen(self, rect: Rect, surface: str = "dock") -> Rect:
         """Convert a surface-local AT-SPI rect (what ``element.rect`` returns

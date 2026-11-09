@@ -157,6 +157,7 @@ public:
 
 Q_SIGNALS:
     void visibleChanged(bool visible);
+    void aboutToHide();
     void parentIndexChanged();
     void positionChanged();
     void contentSizeChanged();

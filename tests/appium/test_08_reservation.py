@@ -534,7 +534,7 @@ def test_prev_reservation_hover_popup_stays_inward_of_resting_dock_item(
         current = kdockw.preview_popup()
         if current is None or not has_state(current, "showing") or not has_state(current, "visible"):
             return None
-        return pv._popup_geometry(kdockw, current)
+        return pv.visible_card_geometry(kdockw)
 
     wait_until(visible_geometry, timeout=8, message="visible hover popup within its real KWin preview surface")
     geometry = wait_stable(visible_geometry, duration=pv.GEOMETRY_SETTLE)

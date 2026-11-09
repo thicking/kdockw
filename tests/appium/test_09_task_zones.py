@@ -283,15 +283,15 @@ def test_tzone002_separator_accessibility_geometry_and_single_zone_visibility(
         kdockw.hover_item(name)
         wait_until(lambda: kdockw.screen_rect(kdockw.wait_for_item(name)).width >= REST_ICON_SIZE, message=f"{name} hover target")
         assert _separator(kdockw) is not None
-        # Older Qt reports unscaled AT-SPI extents during hover. Observe the
-        # real consumer at the existing pointer instead of inferring a hit box.
+        # Re-resolve the target's transformed centre after hover. The pointer
+        # path can itself reflow neighbouring icons, so the endpoint computed
+        # before the path is not guaranteed to remain over this delegate.
         target = next(window for window in apps.open_windows if window.title == name)
         active = kwin.active_window()
         assert active is not None and (active.pid, active.internal_id) != (target.pid, target.internal_id), (
             f"{name!r} must differ from the active client before the boundary hit: {active}"
         )
-        point = kwin.cursor_pos()
-        inp.click(*point)
+        kdockw.click_item(name)
         wait_until(
             lambda: (active := kwin.active_window()) is not None
             and (active.pid, active.internal_id) == (target.pid, target.internal_id),

@@ -36,7 +36,7 @@ from kdockw_e2e.kdockw import KDockW, Rect, painted_rect
 from kdockw_e2e.waits import wait_stable, wait_until
 from kdockw_e2e.windows import TestWindow, TestWindows
 
-ICON = 40  # kdockw.kcfg IconSize default; IconSpacing default is 13
+ICON = 40  # kdockw.kcfg IconSize default; IconSpacing default is 10
 HOLD_MS = 450  # > main.qml dragHoldTimer (300 ms)
 STEP_MS = 40
 PAUSE_MS = 8000  # upper bound of the mid-drag pause; the body's end cuts it short
@@ -235,7 +235,7 @@ class Scene:
         """Columns of the insertion line: right after ``target`` when moving
         forward, right before it when moving backward (±1 px tolerance)."""
         r = self.rects[target]
-        spacing = int(self.kdockw.read_config().get("General", {}).get("IconSpacing", "13"))
+        spacing = int(self.kdockw.read_config().get("General", {}).get("IconSpacing", "10"))
         line_x = r.x + ICON + spacing / 2 - 1 if after else r.x - spacing / 2 - 1
         x = round(line_x)
         return set(range(x - 1, x + 3))
@@ -506,7 +506,7 @@ def test_dnd_004_drag_released_outside_dock_keeps_order(kdockw: KDockW, apps: Te
         wait_cursor(over)
         expected = scene.indicator_expected(KWRITE, after=False)
         wait_until(
-            lambda: (cols := scene.indicator_columns(scene.shot("mid-drag"), ghost_x=over[0])) and cols <= expected and cols,
+            lambda: (cols := scene.indicator_columns(scene.shot("mid-drag"))) and cols <= expected and cols,
             timeout=5,
             message="drag in progress with a pending reorder before the first item",
         )

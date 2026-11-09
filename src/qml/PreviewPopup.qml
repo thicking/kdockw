@@ -370,6 +370,8 @@ Item {
         Kirigami.ShadowedRectangle {
             id: card
             objectName: "previewCardSurface"
+            Accessible.role: Accessible.Pane
+            Accessible.name: i18n("Window preview card")
             anchors.fill: parent
             anchors.margins: popup.shadowMargin
             radius: Math.min(DockSettings.cornerRadius, width / 2, height / 2)

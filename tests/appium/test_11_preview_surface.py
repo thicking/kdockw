@@ -155,6 +155,14 @@ def _transparent_passthrough(kdockw: KDockW, windows: list[TestWindow], underlyi
         (surface.center[0], surface.y + surface.height - 20),
         (surface.x + 20, surface.center[1]),
         (surface.x + surface.width - 20, surface.center[1]),
+        # A wide grouped popup can cover all four edge-center samples. Its
+        # rounded shadow/card leaves the corners transparent, so include them
+        # when looking for a point that should pass through the LayerShell
+        # input region to the underlying client.
+        (surface.x + 20, surface.y + 20),
+        (surface.x + surface.width - 20, surface.y + 20),
+        (surface.x + 20, surface.y + surface.height - 20),
+        (surface.x + surface.width - 20, surface.y + surface.height - 20),
     ]
     point = next(
         (

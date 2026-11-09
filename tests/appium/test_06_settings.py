@@ -39,6 +39,7 @@ SET-013 also has a two-output shared-dock case; SET-012's subset test uses
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from typing import Callable
@@ -280,20 +281,42 @@ def slider_value(el) -> float:
 
 def focus_slider(kdockw: KDockW, xpath: str, lo: float, hi: float):
     """Give the slider at ``xpath`` (range ``lo``..``hi``) keyboard focus with
-    a real click on its handle, keeping its value; returns the slider.
+    a real click on a clear part of its track, then restore its value; returns
+    the slider.
 
-    A QQC2.Slider takes the value under the release point of a click, so the
-    click aims at the handle (estimated from the value; the handle is about
-    as wide as the slider is tall). Should it land a step off, arrow keys put
-    the value back. Arrow keys on the focused slider then step it the way a
-    user does and emit moved(), which writes the setting."""
+    A QQC2.Slider takes the value under the release point of a click. The
+    left track end stays clear of the centered bottom dock when Settings is
+    open; arrow keys restore the original value before the caller steps it.
+    Arrow keys on the focused slider emit moved(), which writes the setting."""
     el = scroll_into_view(kdockw, xpath)
     before = slider_value(el)
     r = kdockw.screen_rect(el, "settings")
     handle = min(r.height, 24)
-    frac = (before - lo) / (hi - lo) if hi > lo else 0.0
-    inp.click(round(r.x + handle / 2 + frac * (r.width - handle)), r.center[1])
-    wait_until(lambda: has_state(kdockw.wait_for(xpath), "focused"), message=f"{xpath} focused")
+    # The real dock may overlap the settings slider handle near the center.
+    # Click the left end to keep this independent of dock zoom and layout;
+    # the arrow loop below restores the current value before use.
+    click_point = (round(r.x + handle / 2 + 0.05 * (r.width - handle)), r.center[1])
+    inp.click(*click_point)
+    try:
+        wait_until(lambda: has_state(kdockw.wait_for(xpath), "focused"), message=f"{xpath} focused")
+    except Exception:
+        env.artifact_path("slider-focus-diagnostic.json").write_text(
+            json.dumps(
+                {
+                    "xpath": xpath,
+                    "localRect": list(Rect.of(el)),
+                    "screenRect": list(r),
+                    "settingsSurface": list(kdockw.surface_rect("settings") or ()),
+                    "clickPoint": click_point,
+                    "pointerAfterClick": inp.pointer_position(),
+                    "dockSurface": list(kdockw.surface_rect("dock") or ()),
+                    "previewSurface": list(kdockw.surface_rect("preview") or ()),
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        raise
     tolerance = (hi - lo) * 1e-4
     for _ in range(50):
         value = wait_stable(lambda: slider_value(kdockw.wait_for(xpath)), duration=0.2)
@@ -574,7 +597,9 @@ def test_set003_auto_hide_applies_immediately_and_persists(kdockw: KDockW, apps:
     wait_until(lambda: config_value(kdockw, "DockShowHideAnimationEnabled") == "false",
                message="dock show/hide animation disabled")
     click_el(kdockw, animation)
-    wait_until(lambda: config_value(kdockw, "DockShowHideAnimationEnabled") == "true",
+    # KConfig omits entries equal to their default. Re-enabling this setting
+    # restores its default true value, so an absent key is also persisted.
+    wait_until(lambda: config_value(kdockw, "DockShowHideAnimationEnabled") in (None, "true"),
                message="dock show/hide animation enabled")
     duration = focus_slider(kdockw, duration_slider, 100, 600)
     original_duration = slider_value(duration)

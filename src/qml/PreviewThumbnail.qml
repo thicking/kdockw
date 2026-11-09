@@ -184,7 +184,8 @@ Item {
     }
 
     function cacheLastRenderedFrame(reason) {
-        if (frameSnapshotPending || !hasFrameWhileVisible || !captureItem || !captureItem.ready || !captureLoader.visible)
+        if (frameSnapshotPending || !hasFrameWhileVisible || !captureItem || !captureLoader.visible
+                || (!captureItem.ready && !isMinimized))
             return false
 
         const uuidAtRequest = winId
@@ -212,30 +213,26 @@ Item {
         return accepted
     }
 
-    // Keep a recent in-memory snapshot while this preview is actually visible.
-    // KWin may replace a minimized window's screencast with an app-icon buffer,
-    // and the PipeWire scene-graph node is not a durable cache when the popup is
-    // hidden. The timer is stopped as soon as the row is hidden or minimized.
-    Timer {
-        id: frameSnapshotTimer
-        interval: 2000
-        repeat: true
-        running: captureLoader.visible && root.hasFrameWhileVisible
-            && !root.isMinimized && captureItem !== null && captureItem.ready
-        onTriggered: root.cacheLastRenderedFrame("visible-refresh")
-    }
-
     onCaptureItemChanged: updateSourceAspectRatio()
-    onHasFrameWhileVisibleChanged: {
-        if (hasFrameWhileVisible && !isMinimized)
-            Qt.callLater(function() { root.cacheLastRenderedFrame("first-visible-frame") })
-    }
     onIsMinimizedChanged: {
         if (!isMinimized && captureItem && captureItem.ready)
             hasFrameWhileVisible = true
-        else if (isMinimized && hasFrameWhileVisible
-                 && PreviewController.previewFrameUrl(winId).length === 0)
+        else if (isMinimized && hasFrameWhileVisible)
             Qt.callLater(function() { root.cacheLastRenderedFrame("minimized") })
+    }
+    Connections {
+        target: PreviewController
+        function onAboutToHide() {
+            // One UUID-scoped snapshot as the preview starts closing is enough
+            // to preserve its latest frame for a later minimized-window view.
+            // Repeated offscreen readbacks while the preview stays open are not
+            // needed and add avoidable render-thread work.
+            // Minimized windows were already snapshotted on the minimize event;
+            // reading their source again can replace that frame with KWin's
+            // minimized-window placeholder.
+            if (!root.isMinimized)
+                root.cacheLastRenderedFrame("preview-hidden")
+        }
     }
     Component.onCompleted: {
         captureWinId = winId
@@ -369,10 +366,6 @@ Item {
                 : root.captureSourceMode === "image" ? roundedImageReferenceComponent
                 : roundedPipeWireCaptureComponent
             onLoaded: Qt.callLater(() => root.logCaptureState("component-loaded"))
-            onVisibleChanged: {
-                if (visible && root.hasFrameWhileVisible && !root.isMinimized)
-                    Qt.callLater(function() { root.cacheLastRenderedFrame("popup-visible") })
-            }
 
             Component {
                 id: pipeWireSourceComponent

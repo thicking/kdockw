@@ -517,6 +517,7 @@ void PreviewController::doHide()
         return;
     }
 
+    Q_EMIT aboutToHide();
     m_visible = false;
     m_previewHovered = false;
     m_parentIndex = -1;

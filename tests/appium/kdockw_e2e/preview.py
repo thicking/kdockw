@@ -207,6 +207,29 @@ def _popup_geometry(kdockw: KDockW, popup: WebElement) -> tuple[Rect, Rect] | No
     return surface, Rect(surface.x + local.x, surface.y + local.y, local.width, local.height)
 
 
+def visible_card_geometry(kdockw: KDockW) -> tuple[Rect, Rect] | None:
+    """Return the preview surface and visible card rect in screen coordinates.
+
+    The popup's outer AT-SPI rect includes transparent shadow bounds. The
+    accessible card rect is the visible surface and is the right geometry for
+    assertions about card/icon overlap.
+    """
+    surface = kdockw.surface_rect("preview")
+    card = kdockw.find("//panel[@name='Window preview card']")
+    if surface is None or card is None:
+        return None
+    try:
+        local = Rect.of(card)
+    except Exception:
+        # Qt accessibility may expose the hidden Pane before its component
+        # interface has screen extents (or briefly invalidate it on hide).
+        return None
+    if (local.width <= 0 or local.height <= 0 or local.x < 0 or local.y < 0
+            or local.x + local.width > surface.width or local.y + local.height > surface.height):
+        return None
+    return surface, Rect(surface.x + local.x, surface.y + local.y, local.width, local.height)
+
+
 def wait_on_screen(kdockw: KDockW, popup: WebElement, timeout: float = 5.0) -> Rect:
     """Wait for settled popup layout and painted pixels; return its screen rect.
 

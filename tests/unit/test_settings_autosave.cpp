@@ -307,7 +307,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.previewHideDelay() == 400);
     CHECK(settings.previewThumbnailSize() == 320);
     CHECK(settings.previewMaximumHeight() == 200);
-    CHECK(settings.singleWindowClickAction() == 1);
+    CHECK(settings.singleWindowClickAction() == 0);
     CHECK(settings.shadowElevation() == 1);
     CHECK(settings.runningIndicatorStyle() == 0);
     CHECK(settings.runningIndicatorPosition() == 0);
@@ -330,7 +330,7 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
         general.writeEntry(QStringLiteral("MaxZoomFactor"), 1.8);
         general.writeEntry(QStringLiteral("PreviewHideDelay"), 640);
         general.writeEntry(QStringLiteral("PreviewThumbnailSize"), 260);
-        general.writeEntry(QStringLiteral("SingleWindowClickAction"), 0);
+        general.writeEntry(QStringLiteral("SingleWindowClickAction"), 1);
         config.sync();
     }
 
@@ -343,7 +343,7 @@ TEST_CASE("Explicit user preferences override the new factory defaults", "[setti
     CHECK(settings.maxZoomFactor() == Catch::Approx(1.8));
     CHECK(settings.previewHideDelay() == 640);
     CHECK(settings.previewThumbnailSize() == 260);
-    CHECK(settings.singleWindowClickAction() == 0);
+    CHECK(settings.singleWindowClickAction() == 1);
     CHECK(settings.contentPaddingBottom() == 0);
 }
 

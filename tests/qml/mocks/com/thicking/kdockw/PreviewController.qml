@@ -28,6 +28,7 @@ QtObject {
     property var previewFrameUrls: ({})
     property var frameStoreRequests: []
     signal captureModeChanged()
+    signal aboutToHide()
     function setCaptureMode(cpuOnly) {
         if (cpuCaptureOnly === cpuOnly) return
         cpuCaptureOnly = cpuOnly
@@ -43,7 +44,7 @@ QtObject {
         _record("updatePreviewAnchorGeometry", arguments)
         previewAnchorOffset = maxZoomOverflow
     }
-    function hidePreview() { _record("hidePreview", arguments); visible = false }
+    function hidePreview() { _record("hidePreview", arguments); aboutToHide(); visible = false }
     function hidePreviewDelayed() { _record("hidePreviewDelayed", arguments) }
     function cancelHide() { _record("cancelHide", arguments) }
     function setPreviewHovered(v) { previewHovered = v }
