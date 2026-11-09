@@ -220,20 +220,6 @@ Item {
         else if (isMinimized && hasFrameWhileVisible)
             Qt.callLater(function() { root.cacheLastRenderedFrame("minimized") })
     }
-    Connections {
-        target: PreviewController
-        function onAboutToHide() {
-            // One UUID-scoped snapshot as the preview starts closing is enough
-            // to preserve its latest frame for a later minimized-window view.
-            // Repeated offscreen readbacks while the preview stays open are not
-            // needed and add avoidable render-thread work.
-            // Minimized windows were already snapshotted on the minimize event;
-            // reading their source again can replace that frame with KWin's
-            // minimized-window placeholder.
-            if (!root.isMinimized)
-                root.cacheLastRenderedFrame("preview-hidden")
-        }
-    }
     Component.onCompleted: {
         captureWinId = winId
         updateSourceAspectRatio()

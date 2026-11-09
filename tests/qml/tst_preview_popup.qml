@@ -409,12 +409,6 @@ Item {
             verify(capture.freezeFrame)
             tryVerify(() => PreviewController.frameStoreRequests.some(request => request.uuid === minimized.winId),
                       3000, "minimizing a window with a real visible frame must snapshot that same UUID in memory")
-            const snapshotsBeforeHide = PreviewController.frameStoreRequests.length
-            PreviewController.hidePreview()
-            wait(50)
-            compare(PreviewController.frameStoreRequests.length, snapshotsBeforeHide,
-                    "closing a minimized preview must not replace the retained frame with KWin's placeholder")
-
             const minimizedUuid = minimized.winId
             verify(PreviewController.previewFrameUrl(minimizedUuid).length > 0,
                    "the minimized UUID must have a retrievable process-local frame")
@@ -441,7 +435,7 @@ Item {
                    "a valid retained frame must suppress the app-icon fallback after reopening")
         }
 
-        function test_livePreviewSnapshotsOnceWhenItCloses() {
+        function test_livePreviewDoesNotReadBackWhileItRemainsOpen() {
             const popup = makePopup()
             show(0, "Kate")
             const thumbnail = waitThumbs(popup, 1)[0]
@@ -450,13 +444,9 @@ Item {
             compare(PreviewController.frameStoreRequests.length, 0,
                     "live preview frames must not trigger repeated offscreen readbacks")
 
-            tryVerify(() => container(popup).visible)
-            PreviewController.hidePreview()
-            tryVerify(() => PreviewController.frameStoreRequests.some(
-                request => request.uuid === thumbnail.winId),
-                3000, "closing the preview should preserve its latest frame for a later minimized view")
-            compare(PreviewController.frameStoreRequests.length, 1,
-                    "each thumbnail should be cached once per preview close")
+            wait(2100)
+            compare(PreviewController.frameStoreRequests.length, 0,
+                    "an open live preview must not trigger periodic offscreen readbacks")
         }
 
         function test_cachedMinimizedFrameSuppressesFallbackForExactWindowUuid() {
