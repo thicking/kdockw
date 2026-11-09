@@ -435,6 +435,18 @@ def atspi_actions(kdockw: KDockW, role: str, name: str) -> list[str]:
     return [action.getName(i) for i in range(action.nActions)]
 
 
+def invoke_atspi_action(kdockw: KDockW, role: str, name: str, action_name: str) -> None:
+    """Invoke a named accessible action when coordinate hit testing is flaky."""
+    desktop = pyatspi.Registry.getDesktop(0)
+    app = next(a for a in desktop if a is not None and a.get_process_id() == kdockw.pid)
+    node = pyatspi.findDescendant(app, lambda n: n.getRoleName() == role and n.name == name)
+    assert node is not None, f"{role} {name!r} not in kdockw's AT-SPI tree"
+    action = node.queryAction()
+    index = next((i for i in range(action.nActions) if action.getName(i) == action_name), None)
+    assert index is not None, f"{action_name!r} action missing from {role} {name!r}"
+    assert action.doAction(index), f"{action_name!r} action failed for {role} {name!r}"
+
+
 def panel_band(kdockw: KDockW, tag: str) -> list[tuple[int, int, int]]:
     """Screenshot pixels of the dock panel's flat background left of the
     leftmost item (between the panel's rounded left edge, found on the item's
@@ -771,13 +783,14 @@ def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: Tes
     assert current_card(kdockw, "Style") == "Tinted"
     use_system = scroll_into_view(kdockw, f"{SETTINGS}//check_box[@name='Use system color']")
     assert has_state(use_system, "checked")
-    # FormSwitchDelegate is exposed to AT-SPI as one checkbox covering the
-    # whole row, but the actual switch is right-aligned. Click that visible
-    # control directly instead of the row's center (which newer Qt/KF themes
-    # may leave as non-interactive content).
-    switch_rect = kdockw.screen_rect(use_system, "settings")
-    inp.click(switch_rect.x + switch_rect.width - 10, switch_rect.center[1])
-    wait_until(lambda: not has_state(use_system, "checked"), message="Use system color off")
+    # The switch's accessible checkbox spans a FormCard row whose layout and
+    # switch position vary by KDE/Qt theme. Invoke its native Toggle action so
+    # the same semantic control is exercised without theme-specific pixels.
+    invoke_atspi_action(kdockw, "check box", "Use system color", "Toggle")
+    wait_until(
+        lambda: not has_state(kdockw.wait_for(f"{SETTINGS}//check_box[@name='Use system color']"), "checked"),
+        message="Use system color off",
+    )
 
     tint = scroll_into_view(kdockw, f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
     click_el(kdockw, tint)

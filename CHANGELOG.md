@@ -41,6 +41,8 @@ animations for KDE Plasma 6 on Wayland.
   window is minimized or its preview popup is recreated, instead of showing
   KWin's minimized-window placeholder. The cache stays scoped to each window
   UUID and is never written to disk.
+- Deferred minimized-frame readback until frame-swap signal processing has
+  returned, avoiding re-entrant scene-graph capture on older Qt/KPipeWire stacks.
 - Avoided a redundant PipeWire frame readback when a preview closes; minimized
   windows continue to reuse the frame captured when they were minimized.
 - Balanced the thumbnail's bottom inset with its side insets.

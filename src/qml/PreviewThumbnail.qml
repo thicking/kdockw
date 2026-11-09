@@ -512,8 +512,14 @@ Item {
                     if (!root.frameSnapshotWaitingForFrame)
                         return
                     root.frameSnapshotWaitingForFrame = false
-                    if (root.isMinimized && root.hasFrameWhileVisible)
-                        root.cacheLastRenderedFrame("minimized")
+                    // Defer readback until the frameSwapped signal delivery has
+                    // fully returned. grabToImage() schedules another scene-
+                    // graph render and must not be entered re-entrantly from a
+                    // frame notification (notably on older Qt/KPipeWire stacks).
+                    Qt.callLater(function() {
+                        if (root.isMinimized && root.hasFrameWhileVisible)
+                            root.cacheLastRenderedFrame("minimized")
+                    })
                 }
             }
 
