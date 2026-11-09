@@ -792,8 +792,12 @@ def test_set007_custom_tint_color_is_applied_and_saved(kdockw: KDockW, apps: Tes
         message="Use system color off",
     )
 
-    tint = scroll_into_view(kdockw, f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
-    click_el(kdockw, tint)
+    tint = kdockw.wait_for(f"{SETTINGS}//button[starts-with(@name, 'Tint color')]")
+    # ColorSwatchButton exposes an AT-SPI press action, but not a Component
+    # interface on every supported distro's Qt/Kirigami stack. Selenium's
+    # WebElement.click() dispatches that accessible action without requesting
+    # element bounds (unlike scroll_into_view/click_el).
+    tint.click()
     dialog = wait_until(
         lambda: next((w for w in kdockw.windows() if w.title.startswith("Choose tint color")), None), message="colour dialog window"
     )
