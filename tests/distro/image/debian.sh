@@ -44,7 +44,7 @@ family_runtime() {
         ruby \
         python3 python3-pip python3-flask python3-lxml python3-gi python3-numpy \
         python3-pytest python3-pil gir1.2-gtk-3.0 \
-        procps findutils gawk libcap2-bin psmisc ca-certificates
+        procps findutils gawk libcap2-bin psmisc ca-certificates gdb
     rm -rf /var/lib/apt/lists/*
 }
 

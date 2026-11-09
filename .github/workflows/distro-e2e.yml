@@ -187,6 +187,22 @@ jobs:
           fi
           sudo VGEM_KO="$ko" tests/appium/setup-vgem.sh
 
+      - name: Configure per-process core dumps for E2E diagnostics
+        run: |
+          set -euo pipefail
+          core_dir="$RUNNER_TEMP/kdockw-core-dumps-$TARGET"
+          mkdir -m 700 -p "$core_dir"
+          cat /proc/sys/kernel/core_pattern >"$RUNNER_TEMP/kdockw-core-pattern.before"
+          sudo sysctl -w "kernel.core_pattern=$core_dir/core.%e.%p.%t"
+          actual="$(cat /proc/sys/kernel/core_pattern)"
+          expected="$core_dir/core.%e.%p.%t"
+          if [[ "$actual" != "$expected" ]]; then
+            echo "::error::kernel core_pattern is '$actual', expected '$expected'"
+            exit 1
+          fi
+          echo "KDOCKW_CORE_DUMP_DIR=$core_dir" >>"$GITHUB_ENV"
+          echo "Verified core_pattern=$actual"
+
       - name: Resolve ccache key
         id: ccache
         run: |
@@ -353,3 +369,18 @@ jobs:
           name: distro-e2e-${{ matrix.target }}-3out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-3out
           if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: distro-e2e-crash-diagnostics-${{ matrix.target }}
+          path: ${{ runner.temp }}/kdockw-core-dumps-${{ matrix.target }}
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Restore runner core dump policy
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/kdockw-core-pattern.before" ]]; then
+            sudo sysctl -w "kernel.core_pattern=$(cat "$RUNNER_TEMP/kdockw-core-pattern.before")"
+          fi

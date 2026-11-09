@@ -128,6 +128,7 @@ Consumed by `run-e2e.sh`/`entrypoint.sh` (host side) and `kdockw_e2e.env`
 | `KDOCKW_E2E_SCREEN_WIDTH`, `KDOCKW_E2E_SCREEN_HEIGHT` | 1024, 768 | size of each virtual output (px) |
 | `KDOCKW_E2E_OUTPUT_COUNT` | 1 | number of outputs (`--output-count`), laid out left to right; tests marked `@pytest.mark.outputs(n)` run only when the session has exactly `n` |
 | `KDOCKW_E2E_DOCKER_ARGS` | unset | extra `docker run` arguments, e.g. `--cpus=2` to approximate a slower CI runner |
+| `KDOCKW_CORE_DUMP_DIR` | unset | optional host directory mounted at the same absolute path; enables core limits for KWin and KDockW and expects the host `core_pattern` to target that path |
 | `KDOCKW_E2E_SHARD` | unset | `<i>/<N>` (0-based): run only every N-th collected test and deselect the rest. `tests/distro/run-distro-e2e.sh` sets it per shard container (`KDOCKW_E2E_SHARDS`); composes with `-k`/`-m` (sharding applies to the filtered collection). The default build volume gets a `-shard-<i>` suffix |
 
 ### CI
@@ -195,6 +196,9 @@ skip `Build & tests`. `CI gate` still reports for them.
 | `pytest.log` | pytest output (also streamed to the console) |
 | `session.log` | KWin, D-Bus, AT-SPI and WebDriver stderr, and how `kwin_wayland` ended (`[e2e] kwin_wayland exited with status N` / `killed by signal N`, also printed to the console when the session fails) |
 | `<test id>/kdockw-N.log` | kdockw stdout/stderr for the N-th start in that test |
+| `<test id>/kdockw-N.process.json`, `<test id>/kdockw-N.exit.json` | KDockW PID, executable, matching log, and signal/exit status when it dies from a signal |
+| `<screenshot>.error.txt` | Screenshot2 helper error plus KWin process and session D-Bus status captured at the failure point |
+| `core-<process>-<pid>.txt` | GDB thread backtrace for a core dump produced during that session, with the matching KDockW process manifest when applicable |
 | `<test id>/failure.png`, `atspi-tree.xml`, `kwin-windows.json`, `kdockwrc` | written when a test fails |
 | `<test id>/slide-samples.txt` | VIS-002/VIS-003: time and y of every dock item sample taken while the panel slid |
 | `<test id>/thumbnail-focus.txt` | KBD-006: focus ring vs other thumbnail blue pixel counts, one line per screenshot until the ring was painted |
@@ -203,7 +207,7 @@ skip `Build & tests`. `CI gate` still reports for them.
 | `kdockw-build.log`, `cmake-configure.log` | kdockw build |
 | `kactivitymanagerd.log` | activity manager output, only when the image has it (Tier 3; see below) |
 | `startup-crash/` | logs of a session whose KWin crashed before pytest started (see below) |
-| `[startup-crash-]backtrace-<core>.txt` | gdb backtrace of a KWin core, only when the host's `core_pattern` is a path mounted into the container and the image has gdb |
+| `[startup-crash-]backtrace-<core>.txt` | gdb backtrace of a KWin startup core when the host's `core_pattern` is a visible path and the runtime image has gdb |
 
 **KWin startup crash.** `kwin_wayland` occasionally dies from SIGSEGV (in
 its `QQmlThread`) about a second into the session, before
@@ -215,10 +219,18 @@ session startup (signal N); restarting the session once`). It does so only
 if all three hold: the session failed, KWin died from a signal, and the
 session's inner half, which runs pytest, never started, so no test ran and
 no kdockw was started. A crash after pytest started, a second startup crash,
-or any other failure fails the run as before. To get a backtrace (e.g. for
-an upstream report), run with `sudo sysctl kernel.core_pattern=/tmp/cores/core.%e.%p`,
-`KDOCKW_E2E_DOCKER_ARGS="-v /tmp/cores:/tmp/cores --ulimit core=-1"` and an
-image with gdb (symbols come from debuginfod when `DEBUGINFOD_URLS` is set in the container).
+or any other failure fails the run as before. The GitHub Distro E2E workflow
+configures and verifies a per-job host `core_pattern`, mounts its directory at
+the same absolute path in the test container, and enables core limits only for
+KWin and KDockW. The Debian/Ubuntu and Fedora runtime test images include GDB.
+Backtraces are written only when a core file is actually present; the observed
+pattern and limits are recorded separately, so missing cores are not reported
+as successful capture. The uploaded crash-diagnostics artifact contains raw
+cores, while the normal E2E artifact includes the GDB report, process PID and
+matching KDockW log. Screenshot2 `NoReply` failures also record whether KWin
+remained alive and owned its session D-Bus name, independently of KDockW exit
+status. Symbols may be fetched from debuginfod when `DEBUGINFOD_URLS` is
+available in the container.
 
 **Activity manager.** When the image has kactivitymanagerd (Tier 3:
 kdockw's `plasma-workspace` dependency pulls it in), `entrypoint.sh` starts

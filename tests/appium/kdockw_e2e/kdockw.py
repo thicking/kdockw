@@ -10,6 +10,7 @@ import json
 import os
 import signal
 import subprocess
+import time
 import urllib.request
 from pathlib import Path
 from typing import Any, Mapping, NamedTuple, Sequence
@@ -155,8 +156,58 @@ class KDockW:
         wait_until(lambda: not dbus.has_name("org.kde.kdockw"), timeout=timeout, message="previous kdockw to release org.kde.kdockw")
         self._starts += 1
         log = open(self.log_path, "wb")
-        self.process = subprocess.Popen([env.KDOCKW_BINARY], env=self.environment(), stdout=log, stderr=subprocess.STDOUT)
+        command = [env.KDOCKW_BINARY]
+        process_cwd: str | None = None
+        if os.environ.get("KDOCKW_CORE_DUMP_DIR"):
+            # Keep the application PID stable across exec while opting only
+            # KDockW into core dumps; unrelated fixtures keep the default
+            # zero core limit.
+            command = ["sh", "-c", 'ulimit -c unlimited || exit; exec "$@"', "kdockw-core", env.KDOCKW_BINARY]
+            try:
+                pattern = Path("/proc/sys/kernel/core_pattern").read_text(encoding="utf-8").strip()
+            except OSError:
+                pattern = ""
+            if not pattern.startswith("/") and not pattern.startswith("|"):
+                # Local containers commonly use a relative `core` pattern and
+                # cannot change the host sysctl. Give this opt-in KDockW
+                # process its own mounted working directory so its dump
+                # survives container exit; normal tests keep the image cwd.
+                process_cwd = str(
+                    Path(os.environ["KDOCKW_CORE_DUMP_DIR"]) / f"kdockw-{self.name}-{self._starts}"
+                )
+                Path(process_cwd).mkdir(parents=True, exist_ok=True)
+        self.process = subprocess.Popen(
+            command, env=self.environment(), stdout=log, stderr=subprocess.STDOUT, cwd=process_cwd
+        )
         log.close()
+        self.log_path.with_suffix(".process.json").write_text(
+            json.dumps(
+                {
+                    "pid": self.process.pid,
+                    "executable": os.path.realpath(env.KDOCKW_BINARY),
+                    "argv": [env.KDOCKW_BINARY],
+                    "log": str(self.log_path),
+                    "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        if process_cwd is not None:
+            (Path(process_cwd) / "core-process.json").write_text(
+                json.dumps(
+                    {
+                        "pid": self.process.pid,
+                        "executable": os.path.realpath(env.KDOCKW_BINARY),
+                        "log": str(self.log_path),
+                        "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
         options = AppiumOptions()
         options.set_capability("app", str(self.process.pid))
         # Also the window in which the webdriver looks for the pid on the bus.
@@ -187,13 +238,29 @@ class KDockW:
                 pass
             self.driver = None
         if self.process is not None:
-            if self.process.poll() is None:
+            unexpected_exit = self.process.poll() is not None
+            if not unexpected_exit:
                 self.process.send_signal(signal.SIGTERM)
                 try:
                     self.process.wait(timeout)
                 except subprocess.TimeoutExpired:
                     self.process.kill()
                     self.process.wait(5)
+            if unexpected_exit and self.process.returncode not in (None, 0):
+                self.log_path.with_suffix(".exit.json").write_text(
+                    json.dumps(
+                        {
+                            "pid": self.process.pid,
+                            "returncode": self.process.returncode,
+                            "signal": -self.process.returncode if self.process.returncode < 0 else None,
+                            "ended_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                            "log": str(self.log_path),
+                        },
+                        indent=2,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
             self.process = None
 
     def restart(self, timeout: float = 30.0) -> None:

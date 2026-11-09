@@ -25,6 +25,9 @@
 #                            @pytest.mark.outputs(n) need n
 #   KDOCKW_E2E_DOCKER_ARGS    extra `docker run` arguments, e.g. "--cpus=2" to
 #                            approximate a slow CI runner (default: none)
+#   KDOCKW_CORE_DUMP_DIR      optional host directory for core files; mounted
+#                            at the same path with an unlimited container
+#                            core limit (only KWin and KDockW opt in)
 #   KDOCKW_E2E_BINARY         absolute path of an installed kdockw inside the
 #                            image (e.g. /usr/bin/kdockw): skips the source
 #                            sync and kdockw build, runs the suite from the
@@ -99,6 +102,15 @@ if [ -t 0 ] && [ -t 1 ]; then
     tty_args=-it
 fi
 
+core_args=
+if [ -n "${KDOCKW_CORE_DUMP_DIR:-}" ]; then
+    mkdir -p "$KDOCKW_CORE_DUMP_DIR"
+    case "$KDOCKW_CORE_DUMP_DIR" in
+        *[!A-Za-z0-9_./-]*) echo "error: KDOCKW_CORE_DUMP_DIR must not contain whitespace or Docker argument characters" >&2; exit 64 ;;
+    esac
+    core_args="--ulimit core=-1 -v $KDOCKW_CORE_DUMP_DIR:$KDOCKW_CORE_DUMP_DIR"
+fi
+
 build_args="-v $volume:/build"
 if [ -n "${KDOCKW_E2E_BINARY:-}" ]; then
     build_args=
@@ -107,11 +119,12 @@ fi
 # shellcheck disable=SC2086
 docker run --rm --init $tty_args $platform_args \
     --shm-size=512m \
+    $core_args \
     -v "$repo:/src:ro" \
     $build_args \
     -v "$artifacts:/artifacts" \
     -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
     -e KDOCKW_E2E_SCREEN_WIDTH -e KDOCKW_E2E_SCREEN_HEIGHT -e KDOCKW_E2E_OUTPUT_COUNT \
-    -e KDOCKW_E2E_BINARY -e KDOCKW_E2E_DISTRO -e KDOCKW_E2E_SHARD -e LP_NUM_THREADS \
+    -e KDOCKW_E2E_BINARY -e KDOCKW_E2E_DISTRO -e KDOCKW_E2E_SHARD -e KDOCKW_CORE_DUMP_DIR -e LP_NUM_THREADS \
     $dri_args ${KDOCKW_E2E_DOCKER_ARGS:-} \
     "$image" sh /src/tests/appium/entrypoint.sh "$@"

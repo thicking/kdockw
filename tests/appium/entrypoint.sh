@@ -18,6 +18,16 @@
 
 set -eu
 
+if [ -n "${KDOCKW_CORE_DUMP_DIR:-}" ]; then
+    mkdir -p "$KDOCKW_CORE_DUMP_DIR"
+    {
+        echo "core_dump_dir=$KDOCKW_CORE_DUMP_DIR"
+        echo "core_pattern=$(cat /proc/sys/kernel/core_pattern 2>/dev/null || echo unavailable)"
+        echo "core_limit=$(ulimit -c)"
+        grep '^Max core file size' /proc/self/limits 2>/dev/null || true
+    } >>/artifacts/crash-diagnostics.log
+fi
+
 # Inner mode: runs inside the kwin session started below. kwin sends its
 # children's stdout to its own log, so pytest writes to a file that the outer
 # half streams to the console.
@@ -170,6 +180,10 @@ kwin_bin=$(command -v kwin_wayland)
 mkdir -p /tmp/kdockw-e2e-bin
 cat >/tmp/kdockw-e2e-bin/kwin_wayland <<EOF
 #!/bin/sh
+if [ -n "\${KDOCKW_CORE_DUMP_DIR:-}" ]; then
+    ulimit -c unlimited 2>/dev/null || true
+    echo "kwin_pid=\$\$ core_limit=\$(ulimit -c)" >>/artifacts/crash-diagnostics.log
+fi
 $kwin_bin "\$@"
 rc=\$?
 if [ "\$rc" -gt 128 ]; then
@@ -205,6 +219,63 @@ kwin_core_backtraces() {
             timeout 600 gdb -q -batch -ex 'set debuginfod enabled on' -ex 'set pagination off' \
                 -ex 'info threads' -ex 'thread apply all bt 40' "$kwin_bin" "$core" >"$out" 2>&1 || true
             echo "[e2e] kwin_wayland core backtrace: $out"
+        done
+}
+
+# Collect KDockW and KWin core dumps when the runner has configured an
+# absolute core_pattern under KDOCKW_CORE_DUMP_DIR. The filename embeds the
+# kernel's process name and PID; process manifests in each test artifact bind
+# a KDockW PID to its exact executable and stdout/stderr log.
+collect_process_core_backtraces() {
+    [ -n "${KDOCKW_CORE_DUMP_DIR:-}" ] || return 0
+    [ -d "$KDOCKW_CORE_DUMP_DIR" ] || return 0
+    find "$KDOCKW_CORE_DUMP_DIR" -maxdepth 2 -type f \( -name core -o -name 'core.*' \) \
+        -newer "$KDOCKW_E2E_STATE/started" -print 2>/dev/null |
+        while IFS= read -r core; do
+            base=$(basename "$core")
+            meta=
+            exe=
+            if [ "$base" = core ]; then
+                proc_name=kdockw
+                meta="$(dirname "$core")/core-process.json"
+                if [ -f "$meta" ]; then
+                    proc_pid=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["pid"])' "$meta")
+                    exe=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["executable"])' "$meta")
+                else
+                    proc_pid=unknown
+                fi
+            else
+                rest=${base#core.}
+                proc_name=${rest%%.*}
+                rest=${rest#*.}
+                proc_pid=${rest%%.*}
+                case "$proc_pid" in '' | *[!0-9]*) proc_pid=unknown ;; esac
+                if [ "$proc_pid" != unknown ]; then
+                    meta=$(grep -R -l -E '"pid"[[:space:]]*:[[:space:]]*'"$proc_pid"'([,}])' /artifacts --include='*.process.json' 2>/dev/null | head -n 1 || true)
+                    [ -z "$meta" ] || exe=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["executable"])' "$meta")
+                fi
+            fi
+            report="/artifacts/core-$proc_name-$proc_pid.txt"
+            {
+                echo "core_file=$core"
+                echo "process_name=$proc_name"
+                echo "process_pid=$proc_pid"
+                echo "captured_at=$(date -u +%FT%TZ)"
+                echo "matching_process_metadata=${meta:-none}"
+                [ -z "$meta" ] || cat "$meta"
+            } >"$report"
+            [ -n "$exe" ] || exe=$(command -v "$proc_name" 2>/dev/null || true)
+            [ -n "$exe" ] || [ "$proc_name" != kdockw ] || exe=/usr/bin/kdockw
+            if [ -z "$exe" ]; then
+                echo "gdb_status=executable-not-found" >>"$report"
+            elif ! command -v gdb >/dev/null 2>&1; then
+                echo "gdb_status=not-installed-in-runtime-image" >>"$report"
+            else
+                echo "gdb_status=running" >>"$report"
+                timeout 180 gdb -q -batch -ex 'set debuginfod enabled on' -ex 'set pagination off' \
+                    -ex 'info threads' -ex 'thread apply all bt 50' "$exe" "$core" >>"$report" 2>&1 || true
+            fi
+            echo "[e2e] process core diagnostics: $report"
         done
 }
 
@@ -259,5 +330,6 @@ if [ "$rc" -ne 0 ]; then
     grep '^\[e2e\] kwin_wayland ' /artifacts/session.log || true
     [ ! -s "$KDOCKW_E2E_STATE/kwin-signal" ] || kwin_core_backtraces ""
 fi
+collect_process_core_backtraces
 echo "[e2e] tests: $(elapsed "$t0")s (exit $rc)"
 exit "$rc"

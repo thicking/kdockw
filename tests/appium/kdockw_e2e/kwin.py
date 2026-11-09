@@ -280,9 +280,43 @@ def screenshot(path: str | Path, area: tuple[int, int, int, int] | None = None) 
     if box is None or (box[2] > box[0] and box[3] > box[1]):
         # The helper's "0 0 0 0" means the active output.
         args = (box[0], box[1], box[2] - box[0], box[3] - box[1]) if box else (0, 0, 0, 0)
-        proc = subprocess.run(["selenium-webdriver-at-spi-screenshotter", *map(str, args)], capture_output=True, timeout=30)
-        if proc.returncode != 0 or not proc.stdout:
-            raise RuntimeError(f"screenshot failed: {proc.stderr.decode(errors='replace')[-2000:]}")
+        command = ["selenium-webdriver-at-spi-screenshotter", *map(str, args)]
+        try:
+            proc = subprocess.run(command, capture_output=True, timeout=30)
+        except subprocess.TimeoutExpired as error:
+            proc = None
+            stderr = f"Screenshot2 helper timed out after {error.timeout}s"
+        else:
+            stderr = proc.stderr.decode(errors="replace")
+        if proc is None or proc.returncode != 0 or not proc.stdout:
+            out = Path(path)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                kwin_processes = subprocess.run(
+                    ["pgrep", "-a", "kwin_wayland"], capture_output=True, text=True, timeout=2
+                )
+                kwin_state = kwin_processes.stdout.strip() or f"pgrep exit={kwin_processes.returncode}"
+            except (OSError, subprocess.TimeoutExpired) as error:
+                kwin_state = f"process lookup failed: {error}"
+            try:
+                bus_state = subprocess.run(
+                    ["busctl", "--user", "status", "org.kde.KWin"],
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+                bus_owner = bus_state.stdout.strip() or bus_state.stderr.strip() or f"busctl exit={bus_state.returncode}"
+            except (OSError, subprocess.TimeoutExpired) as error:
+                bus_owner = f"session D-Bus lookup failed: {error}"
+            diagnostic = (
+                f"command={command!r}\n"
+                f"helper_returncode={None if proc is None else proc.returncode}\n"
+                f"helper_stderr={stderr[-4000:]}\n"
+                f"kwin_processes={kwin_state}\n"
+                f"kwin_dbus_status={bus_owner}\n"
+            )
+            Path(f"{out}.error.txt").write_text(diagnostic, encoding="utf-8")
+            raise RuntimeError(f"screenshot failed; diagnostic: {out}.error.txt; {stderr[-2000:]}")
         image = Image.open(io.BytesIO(base64.b64decode(proc.stdout))).convert("RGBA")
         flat = Image.new("RGB", image.size, (0, 0, 0))
         flat.paste(image, mask=image.getchannel("A"))

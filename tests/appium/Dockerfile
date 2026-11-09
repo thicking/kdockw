@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/var/cache/libdnf5,sharing=locked \
         ruby rubygems \
         python3 python3-pip python3-flask python3-lxml python3-gobject python3-numpy \
         python3-pytest python3-pillow gtk3 gobject-introspection \
-        procps-ng findutils libcap rsync psmisc
+        procps-ng findutils libcap rsync psmisc gdb
 
 # kwin_wayland ships with cap_sys_nice=ep. An unprivileged container's bounding
 # capability set has no CAP_SYS_NICE, so execve() fails with EPERM before
