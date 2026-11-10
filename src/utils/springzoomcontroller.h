@@ -40,6 +40,12 @@ public:
     /// Set a starting state without animation (used when enabling Spring).
     Q_INVOKABLE void synchronize(qreal cursor, qreal amount);
 
+    /// Re-anchor only the spatial axis, preserving the current zoom amount and
+    /// its velocity. Used when a pointer starts a new hover session.
+    Q_INVOKABLE void synchronizeCursor(qreal cursor,
+                                      qreal cursorMinimum,
+                                      qreal cursorMaximum);
+
     /// Advance by measured elapsed seconds. Internally clamps elapsed time and
     /// subdivides it into bounded steps for stable integration after stalls.
     void advance(qreal elapsedSeconds);

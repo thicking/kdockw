@@ -69,6 +69,49 @@ TEST_CASE("Spring zoom follows a sudden cursor move and settles at its target", 
     REQUIRE_THAT(controller.amount(), WithinAbs(0.0, 0.002));
 }
 
+TEST_CASE("Spring re-entry re-anchors position without resetting the amount spring", "[zoom][spring]")
+{
+    kdockw::SpringZoomController controller;
+    kdockw::SpringZoomController uninterrupted;
+    controller.synchronize(100.0, 0.0);
+    uninterrupted.synchronize(100.0, 0.0);
+    controller.setTarget(100.0, 1.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    uninterrupted.setTarget(100.0, 1.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    for (int frame = 0; frame < 60; ++frame) {
+        controller.advance(1.0 / 60.0);
+        uninterrupted.advance(1.0 / 60.0);
+    }
+    REQUIRE_THAT(controller.amount(), WithinAbs(1.0, 0.002));
+
+    controller.setTarget(100.0, 0.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    uninterrupted.setTarget(100.0, 0.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    for (int frame = 0; frame < 8; ++frame) {
+        controller.advance(1.0 / 60.0);
+        uninterrupted.advance(1.0 / 60.0);
+    }
+    const qreal fadingAmount = controller.amount();
+    REQUIRE(fadingAmount > 0.0);
+    REQUIRE(fadingAmount < 1.0);
+    REQUIRE_THAT(uninterrupted.amount(), WithinAbs(fadingAmount, 1e-9));
+
+    // Returning at the opposite end of the dock snaps only the spatial axis.
+    controller.synchronizeCursor(900.0, 0.0, 1000.0);
+    REQUIRE_THAT(controller.cursor(), WithinAbs(900.0, 0.001));
+    REQUIRE_THAT(controller.amount(), WithinAbs(fadingAmount, 1e-6));
+
+    controller.setTarget(900.0, 1.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    uninterrupted.setTarget(900.0, 1.0, 170.0, 0.60, 1.0, 0.0, 1000.0);
+    for (int frame = 0; frame < 8; ++frame) {
+        controller.advance(1.0 / 120.0);
+        uninterrupted.advance(1.0 / 120.0);
+    }
+    REQUIRE_THAT(controller.cursor(), WithinAbs(900.0, 0.001));
+    REQUIRE(controller.amount() > 0.0);
+    REQUIRE(controller.amount() < 1.0);
+    // Re-anchoring the spatial axis must preserve both amount and its velocity.
+    REQUIRE_THAT(controller.amount(), WithinAbs(uninterrupted.amount(), 1e-9));
+}
+
 TEST_CASE("Spring zoom clamps long stalls and cursor bounds", "[zoom][spring]")
 {
     kdockw::SpringZoomController controller;

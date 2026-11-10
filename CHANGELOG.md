@@ -8,6 +8,12 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Fixed
+
+- Re-anchored Spring magnification to the pointer on dock re-entry, preventing
+  a zoom wave from sweeping across icons while preserving the current fade and
+  the existing spring settings.
+
 ## [0.4.0] - 2026-11-09
 
 KDockW 0.4.0 adds spring magnification and richer dock and window-preview
@@ -37,6 +43,7 @@ animations for KDE Plasma 6 on Wayland.
 
 ### Fixed
 
+- Anchored Spring magnification to the pointer immediately after re-entering the dock, without interrupting the current zoom fade.
 - Kept pinned applications and their ordering after dragging active apps within
   the dock, including when the Task Manager hides activated launcher rows.
 - Moved Follow Active to the screen of the newly activated window even when

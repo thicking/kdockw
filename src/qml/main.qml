@@ -98,11 +98,17 @@ Item {
         _runHoverRehit()
     }
     // Real pointer input during the reconcile window: reconcile at it now.
-    function _reconcileAt(x, y) {
+    function _reconcileAt(x, y, entryEnvelope = false) {
         _pointerRootX = x
         _pointerRootY = y
         _hoverRehitPending = true
-        _runHoverRehit()
+        if (entryEnvelope) {
+            _hoverRehitPending = false
+            _hoverReconciling = false
+            trackPointer(x, y, true)
+        } else {
+            _runHoverRehit()
+        }
     }
 
     Timer {
@@ -373,7 +379,6 @@ Item {
     // Pointer on the dock as the dock tracks it. Replaces
     // dockMouseArea.containsMouse, which stays false after the fake leave.
     property bool _pointerOnDock: false
-
     // --- Internal drag state ---
     property bool _dragActive: false
     property int _dragSourceIndex: -1
@@ -606,6 +611,8 @@ Item {
         // The context menu holds the zoom anchor (see _hoverHeld).
         if (_hoverHeld) return
         let zoomExtension = DockSettings.iconSize * (DockSettings.maxZoomFactor - 1.0)
+        let primarySample = -1
+        let secondarySample = -1
 
         if (DockView.isVertical) {
             // Vertical: primary = Y screen axis, secondary = X screen axis
@@ -615,11 +622,8 @@ Item {
                 ? (x >= panelNear && x <= panelFar + zoomExtension)    // Left
                 : (x >= panelNear - zoomExtension && x <= panelFar)    // Right
             if (inZone) {
-                dockPanel.mouseX = y - dockPanel.y   // primary = Y
-                dockPanel.mouseY = x - dockPanel.x   // secondary = X
-            } else {
-                dockPanel.mouseX = -1
-                dockPanel.mouseY = -1
+                primarySample = y - dockPanel.y     // primary = Y
+                secondarySample = x - dockPanel.x   // secondary = X
             }
         } else {
             // Horizontal: primary = X screen axis, secondary = Y screen axis
@@ -629,14 +633,38 @@ Item {
                 ? (y >= panelTop && y <= panelBottom + zoomExtension)   // Top
                 : (y >= panelTop - zoomExtension && y <= panelBottom)   // Bottom
             if (inZone) {
-                dockPanel.mouseX = x - dockPanel.x
-                dockPanel.mouseY = y - dockPanel.y
-            } else {
-                dockPanel.mouseX = -1
-                dockPanel.mouseY = -1
+                primarySample = x - dockPanel.x
+                secondarySample = y - dockPanel.y
             }
         }
+        // MouseArea.onEntered is the authoritative start of a new pointer
+        // session. Re-anchor before the first hit-test activates zoom, even if
+        // a visible preview kept mouseInside true while the pointer was away.
+        if (entryEnvelope && primarySample >= 0 && dockPanel.magnificationMode === 1) {
+            springZoom.synchronizeCursor(primarySample, 0,
+                DockView.isVertical ? root.height : root.width)
+        }
+        if (primarySample >= 0) {
+            dockPanel.mouseX = primarySample
+            dockPanel.mouseY = secondarySample
+        } else {
+            dockPanel.mouseX = -1
+            dockPanel.mouseY = -1
+        }
         updateHoveredItem(entryEnvelope)
+    }
+
+    // Shared by MouseArea.onEntered and QML tests so the real event ordering
+    // (pointer ownership -> entry sample -> sync -> hit-test) is exercised.
+    function _handleDockPointerEntered(x, y) {
+        if (_menuHeld) return
+        PreviewController.cancelHide()
+        _pointerOnDock = true
+        DockVisibility.setHovered(true)
+        if (_hoverReconciling)
+            _reconcileAt(x, y, true)
+        else
+            trackPointer(x, y, true)
     }
 
     function updateHoveredItem(entryEnvelope = false) {
@@ -884,14 +912,7 @@ Item {
         // Track hover state for visibility controller. Ignored while the
         // context menu holds hover; real input ends a pending reconcile.
         onEntered: {
-            if (root._menuHeld) return
-            PreviewController.cancelHide()
-            root._pointerOnDock = true
-            DockVisibility.setHovered(true)
-            if (root._hoverReconciling)
-                root._reconcileAt(mouseX, mouseY)
-            else
-                root.trackPointer(mouseX, mouseY, true)
+            root._handleDockPointerEntered(mouseX, mouseY)
         }
         onExited: {
             if (root._menuHeld) return

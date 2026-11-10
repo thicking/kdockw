@@ -677,6 +677,128 @@ Item {
             compare(activations[activations.length - 1].args[0], 2)
         }
 
+        function test_springReentryFromOppositeSideUsesNewCursorImmediately() {
+            DockSettings.previewEnabled = false
+            DockSettings.magnificationMode = 1
+            addTasks(["A", "B", "C", "D", "E", "F", "G"])
+            const dock = makeDock(7)
+            const its = items(dock)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            hoverItem(its[0])
+            tryCompare(dock, "hoveredIndex", 0)
+            tryVerify(() => panel.zoomAmount > 0.98)
+
+            mouseMove(stage, -1, -1)
+            tryCompare(dock, "hoveredIndex", -1)
+            tryCompare(panel, "zoomAmount", 0.0, 3000)
+
+            const target = centerOf(its[6])
+            mouseMove(stage, target.x, target.y)
+            compare(panel.layoutCursor, panel.zoomCursor,
+                    "fresh entry must not interpolate the cursor across intermediate icons")
+            verify(panel.mouseInside,
+                   "the dock should resume its hover zone before the fade completes")
+            tryVerify(() => panel.zoomAmount > 0.05)
+        }
+
+        function test_springFastReentryKeepsFadingAmplitudeAndSnapsCursor() {
+            DockSettings.previewEnabled = false
+            DockSettings.magnificationMode = 1
+            addTasks(["A", "B", "C", "D", "E", "F", "G"])
+            const dock = makeDock(7)
+            const its = items(dock)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            hoverItem(its[0])
+            tryCompare(dock, "hoveredIndex", 0)
+            tryVerify(() => panel.zoomAmount > 0.98)
+
+            mouseMove(stage, -1, -1)
+            tryCompare(dock, "hoveredIndex", -1)
+            tryVerify(() => panel.zoomAmount > 0.05 && panel.zoomAmount < 0.95,
+                      1000, "exit should be fading when the pointer returns")
+            const fadingAmount = panel.zoomAmount
+
+            const target = centerOf(its[6])
+            mouseMove(stage, target.x, target.y)
+            tryVerify(() => panel.mouseInside,
+                      1000, "the dock should resume its hover zone before the fade completes")
+            compare(panel.layoutCursor, panel.zoomCursor,
+                    "fast re-entry must re-anchor before showing the new zoom center")
+            verify(panel.zoomAmount > 0.05,
+                   "re-entry must preserve the visible amplitude instead of resetting it")
+            verify(Math.abs(panel.zoomAmount - fadingAmount) < 0.15,
+                   "re-entry must continue the amount spring without a scale jump")
+        }
+
+        function test_springReentryUsesMouseAreaEnterWhenPreviewKeepsOldZoomState() {
+            DockSettings.previewEnabled = false
+            DockSettings.magnificationMode = 1
+            DockSettings.zoomStyle = 1
+            addTasks(["A", "B", "C", "D", "E", "F", "G"])
+            const dock = makeDock(7)
+            const its = items(dock)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            hoverItem(its[0])
+            tryCompare(dock, "hoveredIndex", 0)
+            tryVerify(() => panel.zoomAmount > 0.98)
+
+            // The real dock intentionally keeps its zoom anchor while moving
+            // from the dock to a visible preview surface. A later physical
+            // MouseArea enter must still re-anchor from that entry sample.
+            PreviewController.visible = true
+            const amountBeforeLeave = panel.zoomAmount
+            mouseMove(stage, -1, -1)
+            tryCompare(dock, "_pointerOnDock", false)
+            compare(panel.mouseInside, true,
+                    "a visible preview preserves the old zoom region during exit")
+
+            const target = centerOf(its[6])
+            const localTarget = Qt.point(panel.x + its[6].itemCenterX, target.y)
+            // Drive the same QML handler used by MouseArea.onEntered. The
+            // visible test popup may own native input, so QTest cannot deliver
+            // a physical motion event through that second surface reliably.
+            dock._handleDockPointerEntered(localTarget.x, localTarget.y)
+            tryCompare(dock, "hoveredIndex", 6)
+            compare(panel.layoutCursor, panel.zoomCursor,
+                    "MouseArea entry must re-anchor before hit testing the distant icon")
+            verify(Math.abs(panel.zoomAmount - amountBeforeLeave) < 0.15,
+                   "entry must preserve the ongoing amplitude spring")
+            PreviewController.visible = false
+        }
+
+        function test_springCursorStillInterpolatesDuringInDockMovement() {
+            DockSettings.previewEnabled = false
+            DockSettings.magnificationMode = 1
+            addTasks(["A", "B", "C", "D", "E", "F", "G"])
+            const dock = makeDock(7)
+            const its = items(dock)
+            const panel = T.findFirst(dock, o => o.objectName === "dockPanel")
+            verify(panel)
+
+            hoverItem(its[0])
+            tryCompare(dock, "hoveredIndex", 0)
+            tryVerify(() => panel.zoomAmount > 0.98)
+            const previousCursor = panel.layoutCursor
+
+            const target = centerOf(its[6])
+            mouseMove(stage, target.x, target.y)
+            tryCompare(dock, "hoveredIndex", 6)
+            const targetCursor = panel.zoomCursor
+            const initialDistance = Math.abs(previousCursor - targetCursor)
+            verify(initialDistance > 0.01,
+                   "ordinary in-dock movement should keep spatial spring interpolation")
+            wait(20)
+            const currentDistance = Math.abs(panel.layoutCursor - targetCursor)
+            verify(currentDistance > 0.01 && currentDistance < initialDistance,
+                   "spatial spring should interpolate toward the new in-dock target")
+        }
+
         function panelEdges() {
             let r = DockVisibility.panelRect
             return { left: r.x, right: r.x + r.width }

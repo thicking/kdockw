@@ -74,6 +74,25 @@ void SpringZoomController::synchronize(qreal cursorValue, qreal amountValue)
     }
 }
 
+void SpringZoomController::synchronizeCursor(qreal cursorValue,
+                                             qreal cursorMinimum,
+                                             qreal cursorMaximum)
+{
+    const qreal safeMinimum = std::min(cursorMinimum, cursorMaximum);
+    const qreal safeMaximum = std::max(cursorMinimum, cursorMaximum);
+    m_cursorMinimum = safeMinimum;
+    m_cursorMaximum = safeMaximum;
+    const qreal cursor = std::clamp(cursorValue, safeMinimum, safeMaximum);
+    const bool changed = !qFuzzyCompare(m_cursor.value + 1.0, cursor + 1.0)
+        || !qFuzzyCompare(m_cursor.target + 1.0, cursor + 1.0)
+        || !qFuzzyIsNull(m_cursor.velocity);
+    m_cursor = {cursor, 0.0, cursor};
+    if (changed) {
+        Q_EMIT stateChanged();
+    }
+    startIfNeeded();
+}
+
 void SpringZoomController::advance(qreal elapsedSeconds)
 {
     const qreal elapsed = std::clamp(elapsedSeconds, 0.0, kMaximumElapsedSeconds);
