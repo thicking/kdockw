@@ -1,6 +1,6 @@
 Format: 1.0
 Source: kdockw
-Version: 0.4.1-1
+Version: 0.4.2-1
 Binary: kdockw
 Maintainer: thicking <thicking@gmail.com>
 Architecture: any
@@ -36,4 +36,4 @@ Build-Depends: debhelper-compat (= 13),
                plasma-workspace-dev,
                libkpipewire-dev,
                libwayland-dev (>= 1.22)
-DEBTRANSFORM-TAR: kdockw-0.4.1.tar.gz
+DEBTRANSFORM-TAR: kdockw-0.4.2.tar.gz

@@ -15,6 +15,7 @@ TEST_CASE("minimized preview frame cache is UUID scoped and process local")
     CHECK(cache.store(QStringLiteral("uuid-a"), frame));
     CHECK(cache.revision() == 1);
     CHECK(cache.contains(QStringLiteral("uuid-a")));
+    CHECK(cache.windowUuids() == QStringList{QStringLiteral("uuid-a")});
     CHECK_FALSE(cache.contains(QStringLiteral("uuid-b")));
 
     const QString url = cache.imageUrl(QStringLiteral("uuid-a"));
@@ -28,6 +29,7 @@ TEST_CASE("minimized preview frame cache is UUID scoped and process local")
     CHECK_FALSE(cache.contains(QStringLiteral("uuid-a")));
     CHECK(cache.imageForKey(cache.imageKey(QStringLiteral("uuid-a"))).isNull());
     CHECK(cache.revision() == 2);
+    CHECK(cache.windowUuids().isEmpty());
 }
 
 TEST_CASE("minimized preview frame cache has fixed entry and byte bounds")
@@ -46,6 +48,9 @@ TEST_CASE("minimized preview frame cache has fixed entry and byte bounds")
     CHECK_FALSE(cache.contains(QStringLiteral("window-1")));
     CHECK(cache.contains(QStringLiteral("window-2")));
     CHECK(cache.contains(QStringLiteral("window-5")));
+    CHECK(cache.windowUuids().size() == 4);
+    CHECK(cache.windowUuids().contains(QStringLiteral("window-2")));
+    CHECK(cache.windowUuids().contains(QStringLiteral("window-5")));
 
     const QImage bounded = cache.imageForKey(cache.imageKey(QStringLiteral("window-5")));
     CHECK(bounded.width() <= 640);

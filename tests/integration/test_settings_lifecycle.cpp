@@ -1000,7 +1000,7 @@ TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge"
         const double iconSize = dock->property("iconSize").toDouble() * unit;
         const double spacing = dock->property("iconSpacing").toDouble() * unit;
         const double restStart = dock->property("restStart").toDouble();
-        const double contentLength = count * iconSize + std::max(0, count - 1) * spacing;
+        const double panelLength = dock->property("length").toDouble();
         const double zoomAmount = dock->property("zoomAmount").toDouble();
         const double maxZoomFactor = dock->property("maxZoomFactor").toDouble();
         const double cursor = dock->property("cursor").toDouble();
@@ -1011,7 +1011,7 @@ TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge"
                                                     -1,
                                                     0,
                                                     -restStart,
-                                                    contentLength + restStart,
+                                                    panelLength - restStart,
                                                     1.0 + (maxZoomFactor - 1.0) * zoomAmount,
                                                     kdockw::ZoomStyle::Parabolic,
                                                     zoomAmount > 0.0,

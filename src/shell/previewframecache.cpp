@@ -3,7 +3,10 @@
 
 #include "previewframecache.h"
 
+#include "models/icondiag.h"
+
 #include <QCryptographicHash>
+#include <QLoggingCategory>
 #include <QMutexLocker>
 #include <QtMath>
 
@@ -12,6 +15,8 @@
 
 namespace kdockw
 {
+
+Q_LOGGING_CATEGORY(lcPreviewCache, "kdockw.shell.preview.cache")
 
 PreviewFrameCache::PreviewFrameCache(QObject *parent)
     : QObject(parent)
@@ -41,6 +46,17 @@ QString PreviewFrameCache::imageUrl(const QString &windowUuid) const
     return QStringLiteral("image://previewframes/%1?v=%2").arg(key).arg(revision());
 }
 
+QStringList PreviewFrameCache::windowUuids() const
+{
+    QMutexLocker locker(&m_mutex);
+    QStringList uuids;
+    uuids.reserve(m_entries.size());
+    for (const Entry &entry : m_entries) {
+        uuids.append(entry.windowUuid);
+    }
+    return uuids;
+}
+
 bool PreviewFrameCache::contains(const QString &windowUuid) const
 {
     const QString key = imageKey(windowUuid);
@@ -56,10 +72,18 @@ QImage PreviewFrameCache::imageForKey(const QString &key) const
     QMutexLocker locker(&m_mutex);
     const auto it = m_entries.constFind(key);
     if (it == m_entries.cend()) {
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreviewCache) << "image-read-miss key=" << key << "entries=" << m_entries.size()
+                                    << "bytes=" << m_totalBytes;
+        }
         return {};
     }
     m_lru.removeAll(key);
     m_lru.append(key);
+    if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+        qCDebug(lcPreviewCache) << "image-read-hit uuid=" << it->windowUuid << "key=" << key
+                                << "size=" << it->image.size() << "bytes=" << it->bytes;
+    }
     return it->image;
 }
 
@@ -78,7 +102,16 @@ qsizetype PreviewFrameCache::totalBytes() const
 bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceImage)
 {
     if (windowUuid.isEmpty() || sourceImage.isNull()) {
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreviewCache) << "store-rejected empty-uuid-or-image uuid=" << windowUuid
+                                    << "null=" << sourceImage.isNull();
+        }
         return false;
+    }
+
+    if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+        qCDebug(lcPreviewCache) << "store-request uuid=" << windowUuid << "source-size=" << sourceImage.size()
+                                << "source-bytes=" << sourceImage.sizeInBytes();
     }
 
     QImage image = sourceImage.convertToFormat(QImage::Format_RGBA8888_Premultiplied);
@@ -107,14 +140,24 @@ bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceIma
             const QString evictedKey = m_lru.takeFirst();
             const auto evicted = m_entries.find(evictedKey);
             if (evicted != m_entries.end()) {
+                if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+                    qCDebug(lcPreviewCache) << "evict uuid=" << evicted->windowUuid << "key=" << evictedKey
+                                            << "bytes=" << evicted->bytes << "incoming-key=" << key;
+                }
                 m_totalBytes -= evicted->bytes;
                 m_entries.erase(evicted);
             }
         }
-        m_entries.insert(key, Entry{std::move(image), bytes});
+        m_entries.insert(key, Entry{std::move(image), bytes, windowUuid});
         m_lru.append(key);
         m_totalBytes += bytes;
         ++m_revision;
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreviewCache) << "store-committed uuid=" << windowUuid << "key=" << key
+                                    << "size=" << m_entries.constFind(key)->image.size() << "bytes=" << bytes
+                                    << "entries=" << m_entries.size() << "total-bytes=" << m_totalBytes
+                                    << "revision=" << m_revision;
+        }
     }
     Q_EMIT revisionChanged();
     return true;
@@ -130,7 +173,14 @@ bool PreviewFrameCache::remove(const QString &windowUuid)
         QMutexLocker locker(&m_mutex);
         const auto it = m_entries.find(key);
         if (it == m_entries.end()) {
+            if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+                qCDebug(lcPreviewCache) << "remove-miss uuid=" << windowUuid << "key=" << key;
+            }
             return false;
+        }
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreviewCache) << "remove-hit uuid=" << it->windowUuid << "key=" << key
+                                    << "bytes=" << it->bytes;
         }
         m_totalBytes -= it->bytes;
         m_entries.erase(it);
@@ -152,6 +202,9 @@ void PreviewFrameCache::clear()
         m_lru.clear();
         m_totalBytes = 0;
         ++m_revision;
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreviewCache) << "clear entries; revision=" << m_revision;
+        }
     }
     Q_EMIT revisionChanged();
 }

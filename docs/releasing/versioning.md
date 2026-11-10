@@ -2,7 +2,7 @@
 
 KDockW's first standalone stable version was `0.1.0`. Starting with `0.3.0`,
 KDockW release tags use the permanent `kdockw-vX.Y.Z` form (for example,
-`kdockw-v0.4.1`). Historical Krema `v0.x.x` tags and release notes remain
+`kdockw-v0.4.2`). Historical Krema `v0.x.x` tags and release notes remain
 unchanged and are not renamed or reused. The release tools continue to
 recognize legacy `vX.Y.Z` tags so existing records remain verifiable.
 
@@ -34,10 +34,10 @@ Package formats use their own spelling for development builds:
 
 | Format | Stable example | Development equivalent | Rule |
 | --- | --- | --- | --- |
-| AppStream | `0.4.1` | `0.4.1-dev` | Stable releases omit `type="development"`; development builds include it. |
-| Arch | `0.4.1` | `0.4.1_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
-| RPM | `0.4.1` | `0.4.1~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
-| Debian | `0.4.1-1` | `0.4.1~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
+| AppStream | `0.4.2` | `0.4.2-dev` | Stable releases omit `type="development"`; development builds include it. |
+| Arch | `0.4.2` | `0.4.2_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
+| RPM | `0.4.2` | `0.4.2~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
+| Debian | `0.4.2-1` | `0.4.2~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
 
 These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/PKGBUILD.5),
 [RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html), and
@@ -50,6 +50,10 @@ v0.3.2, the CI Distro E2E matrix builds and installs one package for each
 required target in `release-targets.txt`; only artifacts from the full
 successful matrix for the exact release commit are eligible for GitHub Release
 uploads. `SHA256SUMS` covers the source archive and every package asset.
+
+While a release is in development, inactive manual compatibility recipes stay
+pinned to the latest published stable source. They are updated to the approved
+release version and exact source checksum only during release preparation.
 
 The Arch adapter can render a tag-specific PKGBUILD and `.SRCINFO` using the
 verified archive hash. Arch remains an explicit manual compatibility target,

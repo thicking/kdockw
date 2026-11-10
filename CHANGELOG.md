@@ -8,21 +8,23 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
-## [0.4.1] - 2026-11-10
+## [0.4.2] - 2026-11-10
 
-KDockW 0.4.1 refines Spring magnification when the pointer re-enters the dock.
+KDockW 0.4.2 brings the accepted v0.4.1 improvements together with window-preview lifecycle and stability fixes.
 
 ### Changed
 
-- Set the default Spring reaction speed to 90% and the default launch-bounce
-  speed to 70% for new configurations, while preserving values already saved
-  by users.
+- Set Spring Speed to 90% and Launch Bounce Speed to 70% for new configurations, while preserving values already saved by users.
+- Closed window previews immediately after a successful dock or thumbnail activation, restore, or minimize action.
 
 ### Fixed
 
-- Re-anchored Spring magnification to the pointer on dock re-entry, preventing
-  a zoom wave from sweeping across icons while preserving the current fade and
-  the existing spring settings.
+- Re-anchored Spring magnification to the pointer when it re-enters the dock and reset spatial velocity without interrupting the current zoom fade.
+- Preserved the last captured window frame for minimized previews across popup and delegate recreation, keyed to the exact window UUID and kept in a bounded in-memory cache.
+- Refreshed minimized-window state when a preview reopens, so a titlebar minimize received while the popup is hidden reveals its previously cached frame.
+- Prefetched one frame for the foreground window without opening the preview popup; a single short-lived PipeWire stream is released after capture, and the bounded UUID cache is cleared after the window closes.
+- Updated Follow Active when TaskManager emits batched active-window changes or reports screen geometry on grouped child rows.
+- Completed missing Russian settings accessibility text and refreshed the compiled Russian catalog.
 
 ## [0.4.0] - 2026-11-09
 

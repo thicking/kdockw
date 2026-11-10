@@ -44,6 +44,16 @@ Item {
 
     focus: true
 
+    // Lazily maintain one short-lived PipeWire stream to seed the bounded
+    // minimized-frame cache for windows whose preview has never been opened.
+    // The component is removed entirely when window previews are disabled.
+    Loader {
+        id: previewFramePrefetcherLoader
+        objectName: "previewFramePrefetcherLoader"
+        active: DockSettings.previewEnabled
+        source: active ? "qrc:/qml/PreviewFramePrefetcher.qml" : ""
+    }
+
     // Dock movement and model relayout can emit several geometry changes.
     // Debounce them until the stable slots settle; hover zoom transforms do
     // not participate in this refresh.
@@ -379,6 +389,26 @@ Item {
     // Pointer on the dock as the dock tracks it. Replaces
     // dockMouseArea.containsMouse, which stays false after the fake leave.
     property bool _pointerOnDock: false
+    // Explicit activation hides the preview and prevents hover-triggered
+    // reopening until the pointer leaves that task's icon.
+    function dismissPreviewAfterTaskAction(index, dispatched, action) {
+        if (typeof IconDiagnostics !== "undefined" && IconDiagnostics.taskDiagnosticsEnabled) {
+            console.info("[KDOCKW_PREVIEW_LIFECYCLE]", JSON.stringify({
+                phase: "dock-task-action-dispatched",
+                action: action,
+                index: index,
+                dispatched: dispatched,
+                previewVisible: PreviewController.visible
+            }))
+        }
+        if (!dispatched)
+            return false
+        PreviewController.suppressPreviewUntilPointerLeavesTask(index)
+        tooltipItem.show = false
+        tooltipTimer.stop()
+        PreviewController.hidePreview()
+        return true
+    }
     // --- Internal drag state ---
     property bool _dragActive: false
     property int _dragSourceIndex: -1
@@ -808,6 +838,7 @@ Item {
     function _pointerLeft() {
         _pointerOnDock = false
         _hoverReconciling = false
+        PreviewController.clearDismissedTask()
         // Keep zoom state when preview is visible (dock→preview mouse transition)
         if (!PreviewController.visible) {
             dockPanel.mouseX = -1
@@ -993,13 +1024,23 @@ Item {
                     tooltipItem.show = false
                     tooltipTimer.stop()
                     let item = dockRepeater.itemAt(root.hoveredIndex)
-                    if (item) root.showPreviewForItem(root.hoveredIndex, item)
+                    if (item) {
+                        // This is an explicit request to open the group chooser,
+                        // so it may override dismissal from an earlier activation.
+                        PreviewController.clearDismissedTask()
+                        root.showPreviewForItem(root.hoveredIndex, item)
+                    }
                 } else if (isWindow && (isGroup
                            ? DockSettings.groupedWindowClickAction === 2
                            : DockSettings.singleWindowClickAction === 1)) {
-                    DockActions.activateOrMinimize(root.hoveredIndex)
+                    const index = root.hoveredIndex
+                    const dispatched = DockActions.activateOrMinimize(index)
+                    root.dismissPreviewAfterTaskAction(index, dispatched, "activateOrMinimize")
                 } else {
-                    DockActions.activate(root.hoveredIndex)
+                    const index = root.hoveredIndex
+                    const dispatched = DockActions.activate(index)
+                    if (isWindow)
+                        root.dismissPreviewAfterTaskAction(index, dispatched, "activate")
                 }
             } else if (mouse.button === Qt.MiddleButton) {
                 DockActions.newInstance(root.hoveredIndex)
@@ -1926,6 +1967,8 @@ Item {
             // The menu hold hides the preview; hover is reconciled on close.
             if (root._hoverHeld) return
             if (externalDropArea.externalFileDragActive) return
+            if (!PreviewController.visible && PreviewController.dismissedTaskIndex >= 0
+                    && PreviewController.dismissedTaskIndex === root.hoveredIndex) return
             if (!PreviewController.visible && !root._pointerOnDock) {
                 // Preview closed and mouse not on dock → release zoom smoothly
                 dockPanel.mouseX = -1
@@ -1948,7 +1991,8 @@ Item {
         interval: DockSettings.previewHoverDelay
         onTriggered: {
             if (root.hoveredIndex < 0 || root._hoverHeld
-                    || externalDropArea.externalFileDragActive) return
+                    || externalDropArea.externalFileDragActive
+                    || PreviewController.dismissedTaskIndex === root.hoveredIndex) return
             // Row removed under the hover before the re-hit-test ran.
             if (root.hoveredIndex >= dockRepeater.count
                     || !dockRepeater.itemAt(root.hoveredIndex)) return
@@ -2079,8 +2123,13 @@ Item {
             function onHoveredIndexChanged() {
                 tooltipItem.show = false
                 tooltipTimer.stop()
+                if (PreviewController.dismissedTaskIndex >= 0
+                        && PreviewController.dismissedTaskIndex !== root.hoveredIndex)
+                    PreviewController.clearDismissedTask()
                 if (root._hoverHeld) return
                 if (externalDropArea.externalFileDragActive) return
+                if (PreviewController.dismissedTaskIndex === root.hoveredIndex)
+                    return
                 if (root.hoveredIndex < 0) {
                     // Mouse left dock: start delayed preview hide
                     PreviewController.hidePreviewDelayed()

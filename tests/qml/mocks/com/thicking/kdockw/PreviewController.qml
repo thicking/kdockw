@@ -25,9 +25,11 @@ QtObject {
     property int focusedThumbnailIndex: -1
     property bool cpuCaptureOnly: false
     property int previewFrameRevision: 0
+    property int dismissedTaskIndex: -1
     property var previewFrameUrls: ({})
     property var frameStoreRequests: []
     signal captureModeChanged()
+    signal previewFramesChanged()
     function setCaptureMode(cpuOnly) {
         if (cpuCaptureOnly === cpuOnly) return
         cpuCaptureOnly = cpuOnly
@@ -35,6 +37,8 @@ QtObject {
     }
     function showPreview(i, pos, ext, restEdge, maxZoomOverflow, shadowMargin) {
         _record("showPreview", arguments)
+        if (dismissedTaskIndex === i) return
+        if (dismissedTaskIndex >= 0) clearDismissedTask()
         previewAnchorOffset = maxZoomOverflow
         parentIndex = i
         visible = true
@@ -44,6 +48,8 @@ QtObject {
         previewAnchorOffset = maxZoomOverflow
     }
     function hidePreview() { _record("hidePreview", arguments); visible = false }
+    function suppressPreviewUntilPointerLeavesTask(i) { dismissedTaskIndex = i }
+    function clearDismissedTask() { dismissedTaskIndex = -1 }
     function hidePreviewDelayed() { _record("hidePreviewDelayed", arguments) }
     function cancelHide() { _record("cancelHide", arguments) }
     function setPreviewHovered(v) { previewHovered = v }
@@ -52,12 +58,24 @@ QtObject {
         const revision = previewFrameRevision
         return previewFrameUrls[uuid] || ""
     }
+    function cachedPreviewFrameUuids() { return Object.keys(previewFrameUrls) }
     function storeMinimizedPreviewFrame(uuid, image) {
         frameStoreRequests = frameStoreRequests.concat([{ uuid: uuid, imageSize: Qt.size(image.width, image.height) }])
         let updated = Object.assign({}, previewFrameUrls)
         updated[uuid] = "image://previewframes/mock/" + uuid + "?v=" + (previewFrameRevision + 1)
         previewFrameUrls = updated
         ++previewFrameRevision
+        Qt.callLater(function() { previewFramesChanged() })
+        return true
+    }
+    function capturePreviewFrame(item, uuid, size) {
+        if (!item || !uuid) return false
+        frameStoreRequests = frameStoreRequests.concat([{ uuid: uuid, imageSize: size }])
+        let updated = Object.assign({}, previewFrameUrls)
+        updated[uuid] = "image://previewframes/mock/" + uuid + "?v=" + (previewFrameRevision + 1)
+        previewFrameUrls = updated
+        ++previewFrameRevision
+        Qt.callLater(function() { previewFramesChanged() })
         return true
     }
     function removePreviewFrame(uuid) {
@@ -79,7 +97,7 @@ QtObject {
     function previewThumbnailCount() { return 0 }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "maxPopupWidth", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly", "previewFrameRevision", "previewFrameUrls", "frameStoreRequests"]
+    readonly property var _resettable: ["calls", "visible", "parentIndex", "appName", "contentX", "contentY", "contentWidth", "contentHeight", "maxPopupWidth", "previewAnchorOffset", "simulatedCurrentZoomOverflow", "previewHovered", "previewKeyboardActive", "focusedThumbnailIndex", "cpuCaptureOnly", "previewFrameRevision", "previewFrameUrls", "frameStoreRequests", "dismissedTaskIndex"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

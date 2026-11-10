@@ -49,6 +49,7 @@ set(KDOCKW_QML_TEST_FILES
     tst_rounded_clip
     tst_dock_main
     tst_preview_popup
+    tst_preview_frame_prefetcher
     tst_preview_border_color
     tst_preview_size_presets
     tst_tooltip_bounds

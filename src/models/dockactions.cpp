@@ -28,12 +28,12 @@ DockActions::DockActions(DockModel *model, QObject *parent)
 {
 }
 
-void DockActions::activate(int index)
+bool DockActions::activate(int index)
 {
     auto *tasksModel = m_model->tasksModel();
     const QModelIndex idx = tasksModel->index(index, 0);
     if (!idx.isValid()) {
-        return;
+        return false;
     }
 
     // TaskGroupingProxyModel::requestActivate() ignores group parents, so a
@@ -43,8 +43,11 @@ void DockActions::activate(int index)
     // activates the next one in model order, wrapping around. When none is
     // active, the most recently used window of the group is activated.
     if (idx.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
+        if (tasksModel->rowCount(idx) <= 0) {
+            return false;
+        }
         cycleWindows(index, true);
-        return;
+        return true;
     }
 
     const bool isLauncher = idx.data(TaskManager::AbstractTasksModel::IsLauncher).toBool();
@@ -52,10 +55,13 @@ void DockActions::activate(int index)
 
     if (isWindow) {
         tasksModel->requestActivate(idx);
+        return true;
     } else if (isLauncher) {
         tasksModel->requestNewInstance(idx);
         Q_EMIT taskLaunching(index);
+        return true;
     }
+    return false;
 }
 
 void DockActions::activateWindowForExternalDrag(int index)
@@ -172,18 +178,17 @@ int entryChild(TaskManager::TasksModel *tasksModel, int index, int childCount)
 
 } // namespace
 
-void DockActions::activateOrMinimize(int index)
+bool DockActions::activateOrMinimize(int index)
 {
     auto *tasksModel = m_model->tasksModel();
     const QModelIndex idx = tasksModel->index(index, 0);
     if (!idx.isValid()) {
-        return;
+        return false;
     }
 
     const bool isWindow = idx.data(TaskManager::AbstractTasksModel::IsWindow).toBool();
     if (!isWindow) {
-        activate(index);
-        return;
+        return activate(index);
     }
 
     if (!idx.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
@@ -192,15 +197,15 @@ void DockActions::activateOrMinimize(int index)
         const bool isMinimizable = idx.data(TaskManager::AbstractTasksModel::IsMinimizable).toBool();
         if (isActive && !isMinimized && isMinimizable) {
             tasksModel->requestToggleMinimized(idx);
+            return true;
         } else {
-            activate(index);
+            return activate(index);
         }
-        return;
     }
 
     const int childCount = tasksModel->rowCount(idx);
     if (childCount <= 0) {
-        return;
+        return false;
     }
 
     int activeChild = -1;
@@ -216,20 +221,21 @@ void DockActions::activateOrMinimize(int index)
     if (activeChild < 0) {
         const int target = entryChild(tasksModel, index, childCount);
         if (target < 0 || target >= childCount) {
-            return;
+            return false;
         }
         const QModelIndex targetIdx = tasksModel->makeModelIndex(index, target);
         if (targetIdx.isValid() && targetIdx.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
             && !targetIdx.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
             tasksModel->requestActivate(targetIdx);
+            return true;
         }
-        return;
+        return false;
     }
 
     const QModelIndex activeIdx = tasksModel->makeModelIndex(index, activeChild);
     if (!activeIdx.isValid() || !activeIdx.data(TaskManager::AbstractTasksModel::IsWindow).toBool()
         || activeIdx.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool()) {
-        return;
+        return false;
     }
 
     const bool isMinimized = activeIdx.data(TaskManager::AbstractTasksModel::IsMinimized).toBool();
@@ -239,6 +245,7 @@ void DockActions::activateOrMinimize(int index)
     } else {
         tasksModel->requestActivate(activeIdx);
     }
+    return true;
 }
 
 void DockActions::cycleWindows(int index, bool forward)

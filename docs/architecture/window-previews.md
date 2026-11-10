@@ -86,16 +86,33 @@ The source node alone is therefore not a durable frame cache across hiding or
 recreating the popup.
 
 While a preview row is visible and has received a frame, KDockW snapshots the
-rendered thumbnail at a two-second cadence with `QQuickItem::grabToImage()`.
-Snapshots are scaled to at most 640×400 and retained in a process-local LRU
-cache capped at four images and 4 MiB total, keyed by a hash of the exact
-window UUID. The cached image is shown for that UUID while minimized and after
-the popup is recreated; a reused delegate resets its live source when its UUID
-changes. Closing a task removes its cached entry. The cache is never persisted
-to disk, and an icon remains the fallback if no real frame was received before
-minimization. Capture runs only while the preview row is visible. The Qt grab
-uses an additional render/readback, so its CPU cost still needs measurement in
-the owner's Wayland session.
+rendered thumbnail with `QQuickItem::grabToImage()` no more often than every
+1.5 seconds. Snapshots are scaled to at most 640×400 and retained in a process-local
+LRU cache capped at four images and 4 MiB total, keyed by the exact window UUID.
+The cached image is shown for that UUID while minimized and after the popup is
+recreated; a reused delegate resets its live source when its UUID changes.
+
+Before the popup has ever been opened, `PreviewFramePrefetcher.qml` can seed
+that cache for the foreground window. It starts one temporary
+`ScreencastingRequest`/PipeWire source at a time, captures one rounded thumbnail
+after the first real frame, then destroys the source. It does not run background
+streams for every window. A short timeout bounds a missing first frame; if the
+window is minimized or loses foreground before a frame is available, the
+attempt stops and the app icon remains the fallback. A later restore or
+activation can permit one new attempt. Opening the regular popup cancels the
+background stream so it cannot add to the live preview's stream count. The
+cache remains in memory only; when a UUID is absent from the settled
+TaskManager model on two checks, its cached image and attempt state are removed.
+The capture path still requests the PipeWire source's actual window stream size;
+only the one-shot `grabToImage()` target is limited to the thumbnail's physical
+pixel dimensions (maximum 640×400).
+
+The prefetcher reports opt-in counters and elapsed times in diagnostic builds
+(`KDOCKW_TASK_DIAGNOSTICS=1` and `KDOCKW_PREVIEW_METRICS=1`): queued/active
+UUID, node/ready transition, readback target, cache result, and stream lifetime.
+It never records frame pixels or window titles. The source cost is transient
+but begins with a full-resolution PipeWire stream; actual CPU/GPU and latency
+measurements still require the owner's Wayland session.
 
 The preview surface size is derived from its actual content rows rather than
 from a layout that fills the card and would otherwise create a circular

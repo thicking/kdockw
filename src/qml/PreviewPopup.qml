@@ -31,11 +31,6 @@ Item {
             Accessible.Polite)
     }
 
-    function removeCachedFramesForCurrentRows() {
-        for (let i = 0; i < childWindowModel.count; ++i)
-            PreviewController.removePreviewFrame(childWindowModel.get(i).winId)
-    }
-
     // Surface-level hover detection: keep preview visible when mouse is anywhere
     // on this surface. The C++ input region (updateInputRegion) already constrains
     // which events reach this surface to the visible popup rectangle, so detecting
@@ -60,10 +55,22 @@ Item {
         id: childWindowModel
     }
 
-    Component.onCompleted: root.rebuildChildModel()
+    Component.onCompleted: root.rebuildChildModel("component-completed")
 
-    function rebuildChildModel() {
+    function logPreviewLifecycle(phase, details) {
+        if (typeof IconDiagnostics === "undefined" || !IconDiagnostics.taskDiagnosticsEnabled)
+            return
+        console.info("[KDOCKW_PREVIEW_LIFECYCLE]", JSON.stringify(Object.assign({
+            phase: phase,
+            parentIndex: PreviewController.parentIndex,
+            previewVisible: PreviewController.visible,
+            childCount: childWindowModel.count
+        }, details || {})))
+    }
+
+    function rebuildChildModel(reason) {
         let parentIdx = PreviewController.parentIndex
+        logPreviewLifecycle("model-rebuild-start", { reason: reason || "unspecified" })
         if (parentIdx < 0) {
             popup.groupedPreview = false
             // Keep delegates alive so PipeWire streams pause/resume naturally
@@ -103,41 +110,47 @@ Item {
                         TaskManager.AbstractTasksModel.IsActive) || false,
                     childIndex: -1  // sentinel: use parent row directly
                 }
+                logPreviewLifecycle("model-row", {
+                    reason: reason || "unspecified",
+                    uuid: entry.winId,
+                    minimized: entry.isMinimized,
+                    cacheAvailable: PreviewController.previewFrameUrl(entry.winId).length > 0
+                })
                 if (childWindowModel.count > 0) {
-                    const oldUuid = childWindowModel.get(0).winId
-                    if (oldUuid !== entry.winId)
-                        PreviewController.removePreviewFrame(oldUuid)
                     childWindowModel.set(0, entry)
                 } else {
                     childWindowModel.append(entry)
                 }
                 while (childWindowModel.count > 1) {
-                    PreviewController.removePreviewFrame(childWindowModel.get(childWindowModel.count - 1).winId)
                     childWindowModel.remove(childWindowModel.count - 1)
                 }
             } else {
                 // Launcher only (no windows) — clear model
-                removeCachedFramesForCurrentRows()
                 while (childWindowModel.count > 0) {
                     childWindowModel.remove(childWindowModel.count - 1)
                 }
             }
         } else {
             // === Grouped (2+ windows): use child rows ===
-            // Use the lesser of childCount and aggregate ID count when the parent
-            // list is briefly behind. Individual child IDs still come from the
-            // matching child row, so row removal/reordering cannot reuse a
-            // neighbor's previous UUID.
-            let maxCount = Math.min(childCount, allWinIds.length)
-
             // Incremental update: set() preserves existing delegates (and their
             // PipeWire streams), append() adds new ones, remove() trims excess.
-            for (let i = 0; i < maxCount; i++) {
+            // The parent aggregate WinIdList can lag child row updates; use
+            // child UUIDs as identity. When the aggregate is nonempty, use it
+            // only as an exact-membership filter, never as an index into the
+            // child list. An empty aggregate is a transient model update and
+            // must not destroy streams or frame ownership.
+            let allChildUuidsResolved = true
+            let matchedChildCount = 0
+            for (let i = 0; i < childCount; i++) {
                 let childModelIndex = DockModel.tasksModel.makeModelIndex(parentIdx, i)
                 let childWinIds = DockModel.tasksModel.data(
                     childModelIndex, TaskManager.AbstractTasksModel.WinIdList) || []
-                if (childWinIds.length === 0)
+                if (childWinIds.length === 0) {
+                    allChildUuidsResolved = false
                     break
+                }
+                if (allWinIds.length > 0 && allWinIds.indexOf(childWinIds[0]) < 0)
+                    continue
                 let entry = {
                     winId: childWinIds[0],
                     title: DockModel.tasksModel.data(childModelIndex, Qt.DisplayRole) || "",
@@ -147,18 +160,27 @@ Item {
                         childModelIndex, TaskManager.AbstractTasksModel.IsActive) || false,
                     childIndex: i
                 }
+                logPreviewLifecycle("model-row", {
+                    reason: reason || "unspecified",
+                    row: i,
+                    uuid: entry.winId,
+                    minimized: entry.isMinimized,
+                    cacheAvailable: PreviewController.previewFrameUrl(entry.winId).length > 0
+                })
 
-                if (i < childWindowModel.count) {
-                    childWindowModel.set(i, entry)
+                if (matchedChildCount < childWindowModel.count) {
+                    childWindowModel.set(matchedChildCount, entry)
                 } else {
                     childWindowModel.append(entry)
                 }
+                matchedChildCount++
             }
 
             // Remove excess items from the end
-            while (childWindowModel.count > maxCount) {
-                PreviewController.removePreviewFrame(childWindowModel.get(childWindowModel.count - 1).winId)
-                childWindowModel.remove(childWindowModel.count - 1)
+            if (allChildUuidsResolved && (allWinIds.length > 0 || childCount === 0)) {
+                while (childWindowModel.count > matchedChildCount) {
+                    childWindowModel.remove(childWindowModel.count - 1)
+                }
             }
         }
 
@@ -172,6 +194,7 @@ Item {
 
         if (!popup.closeTargetEntry())
             popup.selectDefaultCloseTarget()
+        logPreviewLifecycle("model-rebuild-complete", { reason: reason || "unspecified" })
     }
 
     Connections {
@@ -182,12 +205,20 @@ Item {
                 popup.closeTargetWinId = null
                 childWindowModel.clear()
             }
-            root.rebuildChildModel()
+            root.rebuildChildModel("parent-index-changed")
         }
         function onVisibleChanged() {
             if (PreviewController.visible && PreviewController.parentIndex >= 0) {
+                // A titlebar minimize can arrive while the overlay is hidden.
+                // In that state task data changes are deferred, so refresh from
+                // the live model on every open, even when the parent index did
+                // not change between hide and reopen.
+                root.rebuildChildModel("preview-reopened")
                 let count = childWindowModel.count
+                root.logPreviewLifecycle("preview-visible", { windowCount: count })
                 root.announcePreviewOpen(PreviewController.appName, count)
+            } else {
+                root.logPreviewLifecycle("preview-hidden")
             }
         }
     }
@@ -195,14 +226,25 @@ Item {
     // Also rebuild when the underlying model data changes (window close, title change)
     Connections {
         target: DockModel.tasksModel
-        function onDataChanged() {
+        function onDataChanged(topLeft, bottomRight, roles) {
             if (PreviewController.visible && PreviewController.parentIndex >= 0) {
-                root.rebuildChildModel()
+                root.logPreviewLifecycle("task-data-changed", {
+                    topRow: topLeft ? topLeft.row : -1,
+                    bottomRow: bottomRight ? bottomRight.row : -1,
+                    roles: roles || []
+                })
+                root.rebuildChildModel("task-data-changed")
+            } else if (PreviewController.parentIndex >= 0) {
+                root.logPreviewLifecycle("task-data-changed-while-hidden", {
+                    topRow: topLeft ? topLeft.row : -1,
+                    bottomRow: bottomRight ? bottomRight.row : -1,
+                    roles: roles || []
+                })
             }
         }
         function onRowsInserted() {
             if (PreviewController.visible && PreviewController.parentIndex >= 0) {
-                root.rebuildChildModel()
+                root.rebuildChildModel("rows-inserted")
             }
         }
         function onRowsRemoved() {
@@ -211,10 +253,9 @@ Item {
                 let parentIdx = PreviewController.parentIndex
                 let parentModelIdx = DockModel.tasksModel.index(parentIdx, 0)
                 if (!parentModelIdx.valid) {
-                    root.removeCachedFramesForCurrentRows()
                     PreviewController.hidePreview()
                 } else {
-                    root.rebuildChildModel()
+                    root.rebuildChildModel("rows-removed")
                 }
             }
         }

@@ -1740,6 +1740,39 @@ Item {
             compare(PreviewController.visible, false)
         }
 
+        function test_explicitWindowClickDismissesPreviewAndStaysDismissed_data() {
+            return [
+                { tag: "activate", singleAction: 0, groupedAction: 0, grouped: false, expectedCall: "activate" },
+                { tag: "restore-or-minimize", singleAction: 1, groupedAction: 0, grouped: false, expectedCall: "activateOrMinimize" },
+                { tag: "group-cycle", singleAction: 0, groupedAction: 0, grouped: true, expectedCall: "activate" },
+            ]
+        }
+
+        function test_explicitWindowClickDismissesPreviewAndStaysDismissed(data) {
+            DockSettings.singleWindowClickAction = data.singleAction
+            DockSettings.groupedWindowClickAction = data.groupedAction
+            if (data.grouped)
+                addGroupTask("Click Group")
+            else
+                addTasks(["Click Window"])
+
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            const point = hoverItem(item)
+            tryCompare(PreviewController, "visible", true, 2000)
+            const shownBeforeClick = PreviewController.callsTo("showPreview").length
+
+            mouseClick(stage, point.x, point.y, Qt.LeftButton)
+            tryCompare(PreviewController, "visible", false, 1000)
+            compare(PreviewController.dismissedTaskIndex, 0)
+            compare(DockActions.callsTo(data.expectedCall).length, 1)
+
+            wait(DockSettings.previewHoverDelay + 150)
+            compare(PreviewController.callsTo("showPreview").length, shownBeforeClick,
+                    "the hover timer must not reopen the preview while the pointer stays on the clicked icon")
+            verify(!PreviewController.visible)
+        }
+
         function test_singleClickDoesNotOpenPreview() {
             DockSettings.singleWindowClickAction = 1
             DockSettings.groupedWindowClickAction = 1

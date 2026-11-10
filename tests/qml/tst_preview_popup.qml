@@ -401,18 +401,16 @@ Item {
                       "restoring a ready stream must uncover the thumbnail")
             verify(!minimized.captureItem.freezeFrame,
                    "restoring the window must resume live PipeWire updates")
+            tryVerify(() => PreviewController.previewFrameUrl(minimized.winId).length > 0,
+                      3000, "a visible frame must be cached before KWin minimizes the window")
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
             tryCompare(minimized, "isMinimized", true)
             verify(!fallback.visible, "a frame obtained while visible must be retained when minimized")
             verify(capture.visible)
             compare(capture.opacity, 1)
             verify(capture.freezeFrame)
-            verify(minimized.frameSnapshotWaitingForFrame,
-                   "frame readback must wait until the frozen PipeWire scene-graph frame is presented")
-            tryVerify(() => PreviewController.frameStoreRequests.some(request => request.uuid === minimized.winId),
-                      3000, "minimizing a window with a real visible frame must snapshot that same UUID in memory")
-            verify(!minimized.frameSnapshotWaitingForFrame,
-                   "the one-shot frame wait must clear after requesting the snapshot")
+            verify(T.findFirst(minimized, item => item.objectName === "minimizedCachedFrame").visible,
+                   "minimizing must immediately show the pre-minimize snapshot")
             const minimizedUuid = minimized.winId
             verify(PreviewController.previewFrameUrl(minimizedUuid).length > 0,
                    "the minimized UUID must have a retrievable process-local frame")
@@ -439,18 +437,59 @@ Item {
                    "a valid retained frame must suppress the app-icon fallback after reopening")
         }
 
-        function test_livePreviewDoesNotReadBackWhileItRemainsOpen() {
+        function test_externalMinimizeWhilePopupHiddenReusesCachedFrameForExactUuid() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const target = waitThumbs(popup, 3)[1]
+            const uuid = target.winId
+
+            // Seed a real controller-cache entry while the live preview is
+            // visible, then model a titlebar minimize. No DockActions or
+            // TaskManager request command is issued by this test.
+            verify(PreviewController.capturePreviewFrame(
+                target.captureViewport, uuid, Qt.size(200, 125)))
+            const cachedUrl = PreviewController.previewFrameUrl(uuid)
+            verify(cachedUrl.length > 0, "a valid UUID-keyed frame must exist before the external minimize")
+
+            PreviewController.visible = false
+            tryVerify(() => !container(popup).visible, 1000)
+            DockModel.tasksModel.setChildTaskData(1, 1, "IsMinimized", true)
+            compare(target.isMinimized, false,
+                    "hidden popup delegates defer TaskManager state until they are shown again")
+            compare(DockModel.tasksModel.activateRequests, 0,
+                    "external minimize simulation must not dispatch a KDockW activation request")
+
+            show(1, "Konsole")
+            tryCompare(target, "isMinimized", true, 1000,
+                       "reopening the same group must refresh current external minimized state")
+            compare(target.winId, uuid, "the thumbnail must remain associated with its original UUID")
+
+            const retained = T.findFirst(target,
+                item => item.objectName === "minimizedCachedFrame")
+            const fallback = T.findFirst(target,
+                item => item.objectName === "previewFallbackIcon")
+            tryVerify(() => retained && retained.visible, 1000,
+                      "the pre-minimize cached frame must become visible after an external minimize")
+            compare(String(retained.source), cachedUrl,
+                    "the reopened thumbnail must use the existing cached frame for this UUID")
+            verify(fallback && !fallback.visible,
+                   "a valid cached frame must suppress the app icon after external minimization")
+        }
+
+        function test_livePreviewCachesFramesAtABoundedCadence() {
             const popup = makePopup()
             show(0, "Kate")
             const thumbnail = waitThumbs(popup, 1)[0]
             thumbnail.captureItem.ready = true
             tryCompare(thumbnail, "hasFrameWhileVisible", true)
-            compare(PreviewController.frameStoreRequests.length, 0,
-                    "live preview frames must not trigger repeated offscreen readbacks")
-
+            tryVerify(() => PreviewController.frameStoreRequests.length === 1, 1500,
+                      "the first rendered live frame should be cached before a minimize transition")
+            compare(PreviewController.frameStoreRequests[0].uuid, thumbnail.winId,
+                    "the initial snapshot must be bound to the source window UUID")
             wait(2100)
-            compare(PreviewController.frameStoreRequests.length, 0,
-                    "an open live preview must not trigger periodic offscreen readbacks")
+            verify(PreviewController.frameStoreRequests.length >= 1
+                   && PreviewController.frameStoreRequests.length <= 2,
+                   "live snapshots should be limited to the first rendered frame plus the bounded cadence")
         }
 
         function test_cachedMinimizedFrameSuppressesFallbackForExactWindowUuid() {
@@ -481,6 +520,45 @@ Item {
             compare(String(images[0].source), "image://previewframes/k1?v=1")
             compare(String(images[1].source), "image://previewframes/k2?v=1")
             verify(!images[2].visible, "a neighboring UUID without a cached frame must not inherit one")
+        }
+
+        function test_thumbnailActivationDismissesPreviewAndTargetsExactGroupedChild() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const thumbnails = waitThumbs(popup, 3)
+            const target = thumbnails[1]
+            compare(target.winId, "k-2")
+
+            const point = target.mapToItem(stage,
+                target.thumbnailWidth / 2, target.thumbnailHeight / 2)
+            mouseClick(stage, point.x, point.y, Qt.LeftButton)
+
+            tryCompare(PreviewController, "visible", false)
+            compare(PreviewController.dismissedTaskIndex, 1)
+            compare(DockModel.tasksModel.activateRequests, 1)
+            compare(DockModel.tasksModel.lastRequestRow, 1)
+            compare(DockModel.tasksModel.lastRequestChild, 1,
+                    "the click must activate the selected child's UUID, not a neighboring window")
+
+            PreviewController.showPreview(1, 0, 0, 0, 0, 0)
+            verify(!PreviewController.visible,
+                   "hover must not reopen the group preview until the pointer leaves its dock task")
+        }
+
+        function test_groupKeepsDelegatesAndFramesWhileAggregateUuidListLags() {
+            const popup = makePopup()
+            show(1, "Konsole")
+            const thumbnails = waitThumbs(popup, 3)
+            PreviewController.previewFrameUrls = ({ "k-2": "image://previewframes/k2?v=1" })
+
+            // KDE may update child rows before refreshing the parent's aggregate
+            // WinIdList. That transient state must not trim live source delegates
+            // or invalidate a UUID-keyed minimized frame.
+            DockModel.tasksModel.setTaskData(1, "WinIdList", [])
+            tryVerify(() => thumbs(popup).length === 3)
+            compare(thumbs(popup)[1].winId, "k-2")
+            compare(PreviewController.previewFrameUrl("k-2"), "image://previewframes/k2?v=1")
+            compare(thumbs(popup)[2].winId, "k-3")
         }
 
         function test_groupedMinimizeFreezesOnlyTheMatchingWindowFrame() {
@@ -643,6 +721,8 @@ Item {
             compare(DockModel.tasksModel.lastRequestRow, data.row)
             compare(DockModel.tasksModel.lastRequestChild, data.child)
             compare(PreviewController.callsTo("hidePreview").length, 1)
+            compare(PreviewController.dismissedTaskIndex, data.parent,
+                    "activating a grouped or single thumbnail must suppress reopening for its dock icon")
             compare(DockModel.tasksModel.closeRequests, 0)
         }
 

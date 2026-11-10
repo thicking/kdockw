@@ -11,9 +11,9 @@ QtObject {
     function _record(name, args) { calls = calls.concat([{ name: name, args: Array.from(args) }]) }
     function callsTo(name) { return calls.filter(c => c.name === name) }
     signal taskLaunching(int index)
-    function activate(i) { _record("activate", arguments) }
+    function activate(i) { _record("activate", arguments); return i >= 0 }
     function activateWindowForExternalDrag(i) { _record("activateWindowForExternalDrag", arguments) }
-    function activateOrMinimize(i) { _record("activateOrMinimize", arguments) }
+    function activateOrMinimize(i) { _record("activateOrMinimize", arguments); return i >= 0 }
     function newInstance(i) { _record("newInstance", arguments) }
     function cycleWindows(i, forward) { _record("cycleWindows", arguments) }
     function moveTask(from, to) { _record("moveTask", arguments) }

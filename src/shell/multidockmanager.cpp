@@ -26,6 +26,7 @@
 #include <QScreen>
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 
 Q_LOGGING_CATEGORY(lcMultiDock, "kdockw.shell.multidock")
@@ -339,14 +340,21 @@ void MultiDockManager::setupFollowActive()
         connect(m_model->tasksModel(),
                 &QAbstractItemModel::dataChanged,
                 this,
-                [this](const QModelIndex &, const QModelIndex &, const QList<int> &roles) {
+                [this](const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles) {
                     // An empty roles list means every role changed. Some
                     // libtaskmanager versions emit that form for activation
                     // updates. Activation may also change a contiguous range
                     // containing both the previously active and newly active
                     // rows; topLeft alone can therefore be inactive. Scan the
                     // current model whenever the active role may have changed.
-                    if (roles.isEmpty() || roles.contains(TaskManager::AbstractTasksModel::IsActive)) {
+                    const bool relevant = roles.isEmpty()
+                        || roles.contains(TaskManager::AbstractTasksModel::IsActive)
+                        || roles.contains(TaskManager::AbstractTasksModel::ScreenGeometry);
+                    if (relevant) {
+                        qCDebug(lcMultiDock) << "Follow Active task data changed; row range:"
+                                             << topLeft.row() << ".." << bottomRight.row()
+                                             << "parent row:" << topLeft.parent().row()
+                                             << "roles:" << roles;
                         onActiveWindowChanged();
                     }
                 });
@@ -448,29 +456,45 @@ void MultiDockManager::onActiveWindowChanged()
         return;
     }
 
-    // Find the active task's screen geometry
+    // TaskManager may group windows by application. In that model the active
+    // state and ScreenGeometry can live on a child row while the root group
+    // carries neither role. Scan recursively so a grouped active window can
+    // drive Follow Active just like a top-level task.
     auto *tasksModel = m_model->tasksModel();
-    for (int i = 0; i < tasksModel->rowCount(); ++i) {
-        auto idx = tasksModel->index(i, 0);
-        if (!idx.data(TaskManager::AbstractTasksModel::IsActive).toBool()) {
-            continue;
-        }
+    std::function<QScreen *(const QModelIndex &)> activeWindowScreen = [&](const QModelIndex &parent) -> QScreen * {
+        const int rowCount = tasksModel->rowCount(parent);
+        for (int row = 0; row < rowCount; ++row) {
+            const QModelIndex index = tasksModel->index(row, 0, parent);
+            if (!index.isValid()) {
+                continue;
+            }
 
-        // Skip KDE internal surfaces (task switcher, etc.)
-        if (idx.data(TaskManager::AbstractTasksModel::SkipTaskbar).toBool()) {
-            continue;
-        }
+            // Prefer the active leaf: a group row's geometry can describe an
+            // arbitrary member, while the child row identifies the real window.
+            if (auto *screen = activeWindowScreen(index)) {
+                return screen;
+            }
 
-        QRect screenGeo = idx.data(TaskManager::AbstractTasksModel::ScreenGeometry).toRect();
-        if (screenGeo.isEmpty()) {
-            continue;
-        }
+            if (!index.data(TaskManager::AbstractTasksModel::IsActive).toBool()
+                || index.data(TaskManager::AbstractTasksModel::SkipTaskbar).toBool()) {
+                continue;
+            }
 
-        auto *targetScreen = QGuiApplication::screenAt(screenGeo.center());
-        if (targetScreen && targetScreen != m_activeScreen) {
-            scheduleActiveScreen(targetScreen);
+            const QRect geometry = index.data(TaskManager::AbstractTasksModel::ScreenGeometry).toRect();
+            if (geometry.isEmpty()) {
+                continue;
+            }
+            if (auto *screen = QGuiApplication::screenAt(geometry.center())) {
+                qCDebug(lcMultiDock) << "Follow Active found active task row" << index.row()
+                                     << "on screen" << screen->name() << "geometry" << geometry;
+                return screen;
+            }
         }
-        break;
+        return nullptr;
+    };
+
+    if (auto *targetScreen = activeWindowScreen(QModelIndex()); targetScreen && targetScreen != m_activeScreen) {
+        scheduleActiveScreen(targetScreen);
     }
 }
 

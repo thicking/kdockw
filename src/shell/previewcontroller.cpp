@@ -24,6 +24,7 @@
 #include <limits>
 
 #include <QGuiApplication>
+#include <QQuickItem>
 #include <QLoggingCategory>
 #include <QQmlEngine>
 #include <QQuickView>
@@ -285,14 +286,104 @@ quint64 PreviewController::previewFrameRevision() const
     return m_previewFrameCache->revision();
 }
 
+int PreviewController::dismissedTaskIndex() const
+{
+    return m_dismissedTaskIndex;
+}
+
 QString PreviewController::previewFrameUrl(const QString &windowUuid) const
 {
     return m_previewFrameCache->imageUrl(windowUuid);
 }
 
+QStringList PreviewController::cachedPreviewFrameUuids() const
+{
+    return m_previewFrameCache->windowUuids();
+}
+
 bool PreviewController::storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image)
 {
     return m_previewFrameCache->store(windowUuid, image);
+}
+
+bool PreviewController::capturePreviewFrame(QQuickItem *item, const QString &windowUuid, const QSize &targetSize)
+{
+    const auto reject = [this, &item, &windowUuid, &targetSize](const QString &reason) {
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreview) << "frame-grab-rejected uuid=" << windowUuid << "reason=" << reason
+                               << "item=" << item << "item-visible=" << (item && item->isVisible())
+                               << "target-size=" << targetSize << "pending=" << m_pendingPreviewFrames.size();
+        }
+        return false;
+    };
+    if (!item) {
+        return reject(QStringLiteral("null-item"));
+    }
+    if (windowUuid.isEmpty()) {
+        return reject(QStringLiteral("empty-uuid"));
+    }
+    if (!targetSize.isValid() || targetSize.isEmpty()) {
+        return reject(QStringLiteral("invalid-target-size"));
+    }
+    if (m_pendingPreviewFrames.contains(windowUuid)) {
+        return reject(QStringLiteral("uuid-already-pending"));
+    }
+    if (m_pendingPreviewFrames.size() >= 8) {
+        return reject(QStringLiteral("pending-limit"));
+    }
+
+    if (!item->isVisible()) {
+        return reject(QStringLiteral("item-not-visible"));
+    }
+
+    const auto result = item->grabToImage(targetSize);
+    if (!result) {
+        return reject(QStringLiteral("grab-not-accepted"));
+    }
+
+    const QWeakPointer<QQuickItemGrabResult> weakResult = result.toWeakRef();
+    auto *resultIdentity = result.data();
+    m_pendingPreviewFrames.insert(windowUuid, result);
+    if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+        qCDebug(lcPreview) << "frame-grab-accepted uuid=" << windowUuid << "size=" << targetSize
+                           << "pending=" << m_pendingPreviewFrames.size();
+    }
+    connect(resultIdentity, &QQuickItemGrabResult::ready, this, [this, windowUuid, resultIdentity] {
+        const auto it = m_pendingPreviewFrames.find(windowUuid);
+        if (it == m_pendingPreviewFrames.end() || it.value().data() != resultIdentity) {
+            if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+                qCDebug(lcPreview) << "frame-grab-completion-stale uuid=" << windowUuid
+                                   << "result=" << resultIdentity;
+            }
+            return;
+        }
+
+        const auto completedResult = it.value();
+        m_pendingPreviewFrames.erase(it);
+        const QImage image = completedResult->image();
+        // The window UUID is captured at request time, not read from a QML
+        // delegate which may have been recycled before the readback completes.
+        const bool stored = !image.isNull() && m_previewFrameCache->store(windowUuid, image);
+        if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+            qCDebug(lcPreview) << "frame-grab-completed uuid=" << windowUuid << "result=" << resultIdentity
+                               << "image-null=" << image.isNull() << "image-size=" << image.size()
+                               << "stored=" << stored << "cache-url-available="
+                               << !m_previewFrameCache->imageUrl(windowUuid).isEmpty()
+                               << "pending=" << m_pendingPreviewFrames.size();
+        }
+    });
+    QTimer::singleShot(5000, this, [this, windowUuid, weakResult] {
+        const auto it = m_pendingPreviewFrames.find(windowUuid);
+        const auto timedOutResult = weakResult.toStrongRef();
+        if (timedOutResult && it != m_pendingPreviewFrames.end() && it.value() == timedOutResult) {
+            if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+                qCDebug(lcPreview) << "frame-grab-timeout uuid=" << windowUuid
+                                   << "pending=" << m_pendingPreviewFrames.size();
+            }
+            m_pendingPreviewFrames.erase(it);
+        }
+    });
+    return true;
 }
 
 bool PreviewController::removePreviewFrame(const QString &windowUuid)
@@ -318,6 +409,13 @@ void PreviewController::showPreview(int index, qreal itemSurfacePos, qreal itemE
                                     qreal iconRestEdgeInSurface, qreal maxZoomOverflow,
                                     qreal shadowMargin)
 {
+    if (m_dismissedTaskIndex == index) {
+        qCDebug(lcPreview) << "Preview request ignored until pointer leaves dismissed task row" << index;
+        return;
+    }
+    if (m_dismissedTaskIndex >= 0) {
+        clearDismissedTask();
+    }
     if (m_held) {
         // The preview is an Overlay surface and would cover the context menu.
         qCDebug(lcPreview) << "showPreview ignored: held by context menu";
@@ -356,6 +454,24 @@ void PreviewController::showPreview(int index, qreal itemSurfacePos, qreal itemE
     Q_EMIT positionChanged();
 
     doShow();
+}
+
+void PreviewController::suppressPreviewUntilPointerLeavesTask(int index)
+{
+    if (index < 0 || m_dismissedTaskIndex == index) {
+        return;
+    }
+    m_dismissedTaskIndex = index;
+    Q_EMIT dismissedTaskIndexChanged();
+}
+
+void PreviewController::clearDismissedTask()
+{
+    if (m_dismissedTaskIndex < 0) {
+        return;
+    }
+    m_dismissedTaskIndex = -1;
+    Q_EMIT dismissedTaskIndexChanged();
 }
 
 void PreviewController::updatePreviewAnchorGeometry(qreal itemSurfacePos, qreal itemExtent,
@@ -598,6 +714,7 @@ void PreviewController::activatePreviewThumbnail()
     if (!idx.isValid()) {
         return;
     }
+    suppressPreviewUntilPointerLeavesTask(m_parentIndex);
     m_model->tasksModel()->requestActivate(idx);
     hidePreview();
 }

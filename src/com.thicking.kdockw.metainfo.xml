@@ -73,10 +73,10 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
-    <release version="0.4.1" date="2026-11-10">
+    <release version="0.4.2" date="2026-11-10">
       <description>
-        <p>Spring magnification now follows the pointer immediately when it re-enters the dock, without changing the existing fade or spring settings. New configurations use a 90% spring reaction speed and 70% launch-bounce speed.</p>
-        <p xml:lang="ru">При повторном наведении увеличение значков сразу следует за указателем, сохраняя плавное затухание и параметры пружины. В новых конфигурациях скорость реакции пружины по умолчанию составляет 90%, а скорость подпрыгивания при запуске — 70%.</p>
+        <p>Window previews retain real frames for minimized windows, including before the preview popup is opened. Follow Active now handles grouped and batched task updates, previews close after window actions, and the settings are fully localized in Russian.</p>
+        <p xml:lang="ru">Предпросмотр сохраняет реальные кадры свёрнутых окон, в том числе если карточку ещё не открывали. Follow Active корректно обрабатывает группы окон и пакетные обновления, карточка закрывается после действий с окном, а настройки полностью переведены на русский.</p>
       </description>
     </release>
     <release version="0.4.0" date="2026-11-09">

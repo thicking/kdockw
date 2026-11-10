@@ -30,7 +30,7 @@ Item {
     // the window was visible, then keep that frame through minimize/restore.
     property bool hasFrameWhileVisible: false
     property bool frameSnapshotPending: false
-    property bool frameSnapshotWaitingForFrame: false
+    property double lastFrameSnapshotAt: 0
     property int parentIndex: -1
     property int childIndex: 0
     property bool isKeyboardFocused: false
@@ -185,61 +185,108 @@ Item {
     }
 
     function cacheLastRenderedFrame(reason) {
-        if (frameSnapshotPending || !hasFrameWhileVisible || !captureItem || !captureLoader.visible
-                || (!captureItem.ready && !isMinimized))
+        if (frameSnapshotPending || !PreviewController.visible || isMinimized || !hasFrameWhileVisible
+                || !captureItem || !captureItem.ready || !captureLoader.visible)
+            return false
+
+        const now = Date.now()
+        if (PreviewController.previewFrameUrl(winId).length > 0
+                && now - lastFrameSnapshotAt < 1500)
             return false
 
         const uuidAtRequest = winId
-        frameSnapshotPending = true
         const window = root.Window.window
         const reportedDpr = window ? window.devicePixelRatio : root.Screen.devicePixelRatio
         const dpr = Number.isFinite(reportedDpr) && reportedDpr > 0 ? reportedDpr : 1
         const width = Math.max(1, Math.min(640, Math.ceil(captureLoader.width * dpr)))
         const height = Math.max(1, Math.min(400, Math.ceil(captureLoader.height * dpr)))
-        const accepted = captureLoader.grabToImage(function(result) {
-            root.frameSnapshotPending = false
-            if (root.winId !== uuidAtRequest || !result || !result.image
-                    || result.image.width <= 0 || result.image.height <= 0)
-                return
-            const stored = PreviewController.storeMinimizedPreviewFrame(uuidAtRequest, result.image)
-            if (typeof IconDiagnostics !== "undefined" && IconDiagnostics.taskDiagnosticsEnabled) {
-                console.info("[KDOCKW_PREVIEW_FRAME_CACHE] phase=" + reason
-                    + " stored=" + stored + " imageSize=" + result.image.width + "x" + result.image.height)
-            }
-        }, Qt.size(width, height))
-        if (!accepted)
-            frameSnapshotPending = false
+        const accepted = PreviewController.capturePreviewFrame(
+            captureLoader, uuidAtRequest, Qt.size(width, height))
+        if (accepted) {
+            frameSnapshotPending = true
+            lastFrameSnapshotAt = now
+            frameSnapshotTimeoutTimer.restart()
+            logPreviewLifecycle("frame-capture-requested", {
+                reason: reason,
+                uuid: uuidAtRequest,
+                size: width + "x" + height,
+                previewVisible: PreviewController.visible
+            })
+        }
         if (!accepted && typeof IconDiagnostics !== "undefined" && IconDiagnostics.taskDiagnosticsEnabled)
             console.warn("[KDOCKW_PREVIEW_FRAME_CACHE] phase=" + reason + " accepted=false")
         return accepted
     }
 
+    function logPreviewLifecycle(phase, details) {
+        if (typeof IconDiagnostics === "undefined" || !IconDiagnostics.taskDiagnosticsEnabled)
+            return
+        const capture = root.captureItem
+        const frameUrl = PreviewController.previewFrameUrl(root.winId)
+        console.info("[KDOCKW_PREVIEW_LIFECYCLE]", JSON.stringify(Object.assign({
+            phase: phase,
+            uuid: root.winId,
+            captureUuid: root.captureWinId,
+            minimized: root.isMinimized,
+            active: root.isActive,
+            previewVisible: PreviewController.visible,
+            hasFrameWhileVisible: root.hasFrameWhileVisible,
+            cacheAvailable: frameUrl.length > 0,
+            frameUrl: frameUrl,
+            captureReady: capture ? capture.ready : false,
+            captureState: capture ? capture.state : -1,
+            freezeFrame: capture && capture.freezeFrame !== undefined ? capture.freezeFrame : false,
+            retainedImageVisible: retainedFrameImage.visible,
+            fallbackVisible: fallbackIcon.visible
+        }, details || {})))
+    }
+
     onCaptureItemChanged: updateSourceAspectRatio()
     onIsMinimizedChanged: {
+        logPreviewLifecycle("minimized-state-changed", {
+            frameSnapshotPending: frameSnapshotPending
+        })
         if (!isMinimized && captureItem && captureItem.ready) {
-            frameSnapshotWaitingForFrame = false
             hasFrameWhileVisible = true
-        } else if (isMinimized && hasFrameWhileVisible) {
-            // Let ClippedPipeWireSourceItem freeze its current scene-graph node
-            // and wait for that frame to be presented before reading it back.
-            // Calling grabToImage in the minimize notification races KWin's
-            // stream transition on some Qt/KPipeWire combinations.
-            frameSnapshotWaitingForFrame = true
         }
     }
     Component.onCompleted: {
         captureWinId = winId
         updateSourceAspectRatio()
     }
+    Connections {
+        target: root.Window.window
+        ignoreUnknownSignals: true
+        function onScreenChanged() { root.logCaptureState("preview-screen-changed") }
+        function onFrameSwapped() {
+            if (!root.frameSnapshotPending)
+                root.cacheLastRenderedFrame("live-frame-swapped")
+        }
+    }
+    Connections {
+        target: PreviewController
+        function onPreviewFramesChanged() {
+            if (PreviewController.previewFrameUrl(root.winId).length > 0) {
+                root.frameSnapshotPending = false
+                frameSnapshotTimeoutTimer.stop()
+                root.logPreviewLifecycle("frame-cache-available")
+            }
+        }
+    }
     onWinIdChanged: {
         if (captureWinId === undefined) {
             captureWinId = winId
+            logPreviewLifecycle("window-uuid-initialized")
             return
         }
         if (captureWinId === winId)
             return
+        logPreviewLifecycle("window-uuid-changing", { previousUuid: captureWinId, nextUuid: winId })
         captureWinId = winId
         resetCaptureForWindowChange()
+        frameSnapshotPending = false
+        lastFrameSnapshotAt = 0
+        logPreviewLifecycle("window-uuid-changed")
     }
 
     function logCaptureState(reason) {
@@ -339,6 +386,15 @@ Item {
         // window target when the pointer moves to the shared header control.
         HoverHandler {
             id: thumbnailHover
+        }
+
+        // One timeout per asynchronous readback keeps a missing completion
+        // from blocking later captures. The controller owns outstanding grabs.
+        Timer {
+            id: frameSnapshotTimeoutTimer
+            interval: 5000
+            repeat: false
+            onTriggered: root.frameSnapshotPending = false
         }
 
         border.color: root.isActive ? Kirigami.Theme.highlightColor : "transparent"
@@ -488,8 +544,10 @@ Item {
                 function onStateChanged() { root.logCaptureState("state-changed") }
                 function onReadyChanged() {
                     root.updateSourceAspectRatio()
-                    if (root.captureItem && root.captureItem.ready && !root.isMinimized)
+                    if (root.captureItem && root.captureItem.ready && !root.isMinimized) {
                         root.hasFrameWhileVisible = true
+                    }
+                    root.logPreviewLifecycle("capture-ready-changed")
                     root.logCaptureState("ready-changed")
                 }
                 function onStreamSizeChanged() {
@@ -502,25 +560,6 @@ Item {
             Connections {
                 target: PreviewController
                 function onCaptureModeChanged() { root.restartCapture() }
-            }
-
-            Connections {
-                target: root.Window.window
-                ignoreUnknownSignals: true
-                function onScreenChanged() { root.logCaptureState("preview-screen-changed") }
-                function onFrameSwapped() {
-                    if (!root.frameSnapshotWaitingForFrame)
-                        return
-                    root.frameSnapshotWaitingForFrame = false
-                    // Defer readback until the frameSwapped signal delivery has
-                    // fully returned. grabToImage() schedules another scene-
-                    // graph render and must not be entered re-entrantly from a
-                    // frame notification (notably on older Qt/KPipeWire stacks).
-                    Qt.callLater(function() {
-                        if (root.isMinimized && root.hasFrameWhileVisible)
-                            root.cacheLastRenderedFrame("minimized")
-                    })
-                }
             }
 
             // KWin can briefly publish DMA-BUF buffers before PipeWire has
@@ -619,6 +658,7 @@ Item {
         // Click to activate window
         MouseArea {
             id: thumbnailMouseArea
+            objectName: "previewThumbnailActivationArea"
             anchors.fill: parent
             acceptedButtons: Qt.LeftButton
             Accessible.ignored: true
@@ -628,6 +668,9 @@ Item {
                 let modelIndex = (root.childIndex < 0)
                     ? DockModel.tasksModel.index(root.parentIndex, 0)
                     : DockModel.tasksModel.makeModelIndex(root.parentIndex, root.childIndex)
+                if (!modelIndex.valid)
+                    return
+                PreviewController.suppressPreviewUntilPointerLeavesTask(root.parentIndex)
                 DockModel.tasksModel.requestActivate(modelIndex)
                 PreviewController.hidePreview()
             }

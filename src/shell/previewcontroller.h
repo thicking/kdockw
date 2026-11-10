@@ -8,13 +8,19 @@
 #include <QModelIndex>
 #include <QObject>
 #include <QRegion>
+#include <QHash>
+#include <QStringList>
+#include <QSharedPointer>
+#include <QWeakPointer>
 #include <QTimer>
 #include <QImage>
+#include <QQuickItemGrabResult>
 
 #include "style/backgroundstyle.h"
 
 class KDockWSettings;
 class QQuickView;
+class QQuickItem;
 
 namespace kdockw
 {
@@ -52,6 +58,7 @@ class PreviewController : public QObject
     Q_PROPERTY(qreal previewAnchorOffset READ previewAnchorOffset NOTIFY previewAnchorOffsetChanged)
     Q_PROPERTY(bool cpuCaptureOnly READ cpuCaptureOnly NOTIFY captureModeChanged)
     Q_PROPERTY(quint64 previewFrameRevision READ previewFrameRevision NOTIFY previewFramesChanged)
+    Q_PROPERTY(int dismissedTaskIndex READ dismissedTaskIndex NOTIFY dismissedTaskIndexChanged)
 
     // Preview keyboard navigation state (driven from dock)
     Q_PROPERTY(bool previewKeyboardActive READ isPreviewKeyboardActive NOTIFY previewKeyboardActiveChanged)
@@ -79,6 +86,7 @@ public:
     [[nodiscard]] bool cpuCaptureOnly() const;
     [[nodiscard]] bool captureModeOverridden() const;
     [[nodiscard]] quint64 previewFrameRevision() const;
+    [[nodiscard]] int dismissedTaskIndex() const;
 
     [[nodiscard]] bool isPreviewKeyboardActive() const;
     [[nodiscard]] int focusedThumbnailIndex() const;
@@ -121,8 +129,16 @@ public:
     /// Update the content size from QML (after layout).
     Q_INVOKABLE void setContentSize(qreal width, qreal height);
     Q_INVOKABLE QString previewFrameUrl(const QString &windowUuid) const;
+    Q_INVOKABLE QStringList cachedPreviewFrameUuids() const;
     Q_INVOKABLE bool storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image);
+    /// Capture a rendered preview item asynchronously into the bounded in-memory cache.
+    /// The controller owns pending grab results so QML delegate destruction cannot
+    /// leave callbacks referring to a dead QML object.
+    Q_INVOKABLE bool capturePreviewFrame(QQuickItem *item, const QString &windowUuid, const QSize &targetSize);
     Q_INVOKABLE bool removePreviewFrame(const QString &windowUuid);
+    /// Keep hover-triggered previews closed for a task after an explicit activation click.
+    Q_INVOKABLE void suppressPreviewUntilPointerLeavesTask(int index);
+    Q_INVOKABLE void clearDismissedTask();
     [[nodiscard]] QImage previewFrameByKey(const QString &key) const;
 
     // --- Preview keyboard navigation (called from dock key handler) ---
@@ -164,6 +180,7 @@ Q_SIGNALS:
     void previewAnchorOffsetChanged();
     void captureModeChanged();
     void previewFramesChanged();
+    void dismissedTaskIndexChanged();
     void previewKeyboardActiveChanged();
     void focusedThumbnailIndexChanged();
 
@@ -187,10 +204,12 @@ private:
     bool m_overrideCpuCaptureOnly = false;
     std::unique_ptr<QQuickView> m_previewView;
     std::unique_ptr<PreviewFrameCache> m_previewFrameCache;
+    QHash<QString, QSharedPointer<QQuickItemGrabResult>> m_pendingPreviewFrames;
     QRegion m_inputRegion;
     BackgroundEffectPlan m_backgroundEffectPlan;
 
     bool m_visible = false;
+    int m_dismissedTaskIndex = -1;
     bool m_previewHovered = false;
     bool m_held = false;
     int m_parentIndex = -1;

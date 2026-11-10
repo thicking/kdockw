@@ -156,11 +156,11 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 
 ## Установка
 
-KDockW 0.4.1 — последняя стабильная версия. Исходный архив, пакеты и контрольные суммы доступны на странице [релиза GitHub](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.1). Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по выпуску](docs/releasing/release-process.md), а также в [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
+KDockW 0.4.2 — последняя стабильная версия. Исходный архив, пакеты и контрольные суммы доступны на странице [релиза KDockW 0.4.2 в GitHub](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). Подробнее — в [политике версий](docs/releasing/versioning.md) и [инструкции по выпуску](docs/releasing/release-process.md), а также в [инструкции по сборке на TUXEDO OS](docs/building/tuxedo-os.md).
 
 ### Целевые Linux-дистрибутивы
 
-В релиз v0.4.1 входят пакеты для Debian 13, Ubuntu 26.04 LTS и Fedora 45. Это обязательные цели сборки и Distro E2E; рецепты для проверки совместимости со старыми выпусками доступны для ручных запусков, но не входят в релиз. В предыдущем релизе v0.3.1 сохранены все 12 проверенных пакетов. KDockW распространяется только через GitHub Releases.
+В релиз v0.4.2 входят пакеты для Debian 13, Ubuntu 26.04 LTS и Fedora 45. Это обязательные цели сборки и Distro E2E; рецепты для проверки совместимости со старыми выпусками доступны для ручных запусков, но не входят в релиз. KDockW распространяется только через GitHub Releases.
 
 Для сборки KDockW из исходников требуются Qt версии 6.8 или новее и KDE Frameworks 6 версии 6.0 или новее.
 
@@ -172,9 +172,9 @@ KDockW 0.4.1 — последняя стабильная версия. Исхо�
 Установите загруженный пакет штатным менеджером:
 
 ```bash
-sudo apt install ./kdockw-0.4.1-debian-13.deb
-sudo apt install ./kdockw-0.4.1-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.4.1-fedora-45.rpm
+sudo apt install ./kdockw-0.4.2-debian-13.deb
+sudo apt install ./kdockw-0.4.2-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.4.2-fedora-45.rpm
 ```
 
 ```bash

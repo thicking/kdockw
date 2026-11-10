@@ -27,6 +27,7 @@ public:
     [[nodiscard]] quint64 revision() const;
     [[nodiscard]] QString imageKey(const QString &windowUuid) const;
     [[nodiscard]] QString imageUrl(const QString &windowUuid) const;
+    [[nodiscard]] QStringList windowUuids() const;
     [[nodiscard]] bool contains(const QString &windowUuid) const;
     [[nodiscard]] QImage imageForKey(const QString &key) const;
     [[nodiscard]] qsizetype entryCount() const;
@@ -43,6 +44,7 @@ private:
     struct Entry {
         QImage image;
         qsizetype bytes = 0;
+        QString windowUuid;
     };
 
     static constexpr qsizetype MaximumEntries = 4;

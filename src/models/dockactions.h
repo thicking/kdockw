@@ -27,13 +27,15 @@ public:
 
     /// Activate the task at @p index. If it's a launcher, launch it. If it's a
     /// group of windows, cycle to the group's next window.
-    Q_INVOKABLE void activate(int index);
+    /// Returns true when a valid activation/launch request was dispatched.
+    Q_INVOKABLE bool activate(int index);
 
     /// Activate an existing window for external-drag hover; never launches a task.
     Q_INVOKABLE void activateWindowForExternalDrag(int index);
 
     /// Activate or minimize the task at @p index based on its current state.
-    Q_INVOKABLE void activateOrMinimize(int index);
+    /// Returns true when a valid activate/minimize request was dispatched.
+    Q_INVOKABLE bool activateOrMinimize(int index);
 
     /// Request a new instance of the app at @p index.
     Q_INVOKABLE void newInstance(int index);
