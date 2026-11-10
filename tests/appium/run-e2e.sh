@@ -126,5 +126,6 @@ docker run --rm --init $tty_args $platform_args \
     -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
     -e KDOCKW_E2E_SCREEN_WIDTH -e KDOCKW_E2E_SCREEN_HEIGHT -e KDOCKW_E2E_OUTPUT_COUNT \
     -e KDOCKW_E2E_BINARY -e KDOCKW_E2E_DISTRO -e KDOCKW_E2E_SHARD -e KDOCKW_CORE_DUMP_DIR -e LP_NUM_THREADS \
+    -e KDOCKW_PREVIEW_CAPTURE_MODE \
     $dri_args ${KDOCKW_E2E_DOCKER_ARGS:-} \
     "$image" sh /src/tests/appium/entrypoint.sh "$@"

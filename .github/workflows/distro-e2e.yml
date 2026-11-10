@@ -76,6 +76,11 @@ on:
         type: string
         required: false
         default: "1"
+      preview_capture_mode:
+        description: "Optional PipeWire capture override for targeted diagnosis (auto or cpu-only)"
+        type: string
+        required: false
+        default: ""
   schedule:
     - cron: "41 2 * * 3"
   workflow_dispatch:
@@ -103,6 +108,14 @@ on:
           - "2"
           - "3"
         default: "1"
+      preview_capture_mode:
+        description: "Optional PipeWire capture override for targeted diagnosis"
+        required: false
+        type: choice
+        options:
+          - "auto"
+          - "cpu-only"
+        default: "auto"
 
 permissions: {}
 
@@ -253,9 +266,14 @@ jobs:
           KDOCKW_E2E_OUTPUT_COUNT: ${{ inputs.output_count || '1' }}
           KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
           E2E_SCENARIO: ${{ inputs.scenario || '' }}
+          KDOCKW_PREVIEW_CAPTURE_MODE: ${{ inputs.preview_capture_mode || '' }}
           KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS: ${{ matrix.target == 'debian-13' && inputs.scenario == 'test_03_preview.py::test_prev012_minimized_window_keeps_last_frame_and_group_frames_stay_bound' && '1' || '0' }}
         run: |
           set -euo pipefail
+          if [[ -n "$KDOCKW_PREVIEW_CAPTURE_MODE" && "$KDOCKW_PREVIEW_CAPTURE_MODE" != auto && "$KDOCKW_PREVIEW_CAPTURE_MODE" != cpu-only ]]; then
+            echo "::error::preview_capture_mode must be auto or cpu-only"
+            exit 64
+          fi
           if [[ -n "$E2E_SCENARIO" ]]; then
             if [[ ! "$E2E_SCENARIO" =~ ^test_[A-Za-z0-9_]+\.py::[A-Za-z0-9_]+$ ]]; then
               echo "::error::targeted scenario must be one test_*.py::test_function selector"
