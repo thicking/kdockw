@@ -231,6 +231,30 @@ Avoid Qt private QQuickItem internals. The live QSG tree still needs inspection
 on the target renderer because headless mocks cannot establish KPipeWire's
 runtime frame-node topology.
 
+## Software-renderer DMA-BUF fallback
+
+The E2E core from Debian 13 confirmed a SIGSEGV in Mesa llvmpipe's JIT shader
+while it sampled a PipeWire DMA-BUF-backed texture. The same PREV-012 scenario
+passed with `PipeWireSourceItem.allowDmaBuf = false`; this isolates the failure
+to the DMA-BUF import/render path in the llvmpipe software renderer. The core
+does not establish whether the unmapped DMA-BUF address originates in Mesa,
+KPipeWire buffer ownership, or their interaction, so do not label the upstream
+component without further evidence.
+
+Qt exposes the supported renderer inspection path through public APIs:
+`QQuickWindow::afterSynchronizing` runs on the scene-graph rendering thread,
+and for OpenGL the context used by Qt Quick is current at that point. A direct
+connection can query `QOpenGLContext::currentContext()` and
+`QOpenGLFunctions::glGetString(GL_RENDERER)` there. `QSGRendererInterface::graphicsApi()`
+identifies Qt Quick's software backend directly. Do not query GL state from the
+GUI thread or use Qt private scene-graph internals.
+
+When the renderer is a software rasterizer (for example llvmpipe or softpipe),
+disable DMA-BUF import and keep KPipeWire's CPU-readable buffer path. Preserve
+DMA-BUF for hardware renderers. This is a renderer-specific fallback, not a
+user setting or a change to frame caching. Recheck it against the Debian
+PREV-012 pixel test and a hardware-rendered Wayland session.
+
 ## Window stream resolution negotiation (Plasma 6.6.6)
 
 The resolution option in `PipeWireSourceStream` is consumer-side format
