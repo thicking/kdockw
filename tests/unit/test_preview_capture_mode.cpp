@@ -77,8 +77,6 @@ TEST_CASE("Software renderers use CPU-readable PipeWire capture without changing
 {
     CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("llvmpipe (LLVM 19.1.7, 256 bits)"));
     CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("Mesa X11 swrast"));
-    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("llvmpipe (LLVM 19.1.7, 256 bits)"));
-    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("Vulkan device: lavapipe (LLVM 19.1.7)"));
     CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("SwiftShader Device (Subzero)"));
     CHECK_FALSE(kdockw::previewcapturepolicy::isSoftwareRenderer("AMD Radeon RX 7800 XT"));
 

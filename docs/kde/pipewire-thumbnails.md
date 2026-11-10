@@ -249,12 +249,15 @@ connection can query `QOpenGLContext::currentContext()` and
 identifies Qt Quick's software backend directly. Do not query GL state from the
 GUI thread or use Qt private scene-graph internals.
 
-When the renderer is a software rasterizer (for example llvmpipe or softpipe),
-KDockW detects it through Qt's public renderer APIs and disables DMA-BUF import,
-keeping KPipeWire's CPU-readable buffer path. DMA-BUF remains enabled according
-to the existing setting or environment override on hardware renderers. The
-capture source starts in CPU mode until the preview surface's renderer has been
-identified, so an early prefetch cannot enter the failing path. This is a
+When the Qt Quick backend is Software or its OpenGL renderer is a software
+rasterizer (for example llvmpipe or softpipe), KDockW detects it through Qt's
+public renderer APIs and disables DMA-BUF import, keeping KPipeWire's
+CPU-readable buffer path. DMA-BUF remains enabled according to the existing
+setting or environment override for other graphics APIs and hardware OpenGL
+renderers. The capture source starts in CPU mode until the preview surface's
+renderer has been identified, so an early prefetch cannot enter the failing
+OpenGL path. This fallback identifies Qt Quick's Software backend and software
+OpenGL renderer names; it does not inspect software Vulkan devices. It is a
 renderer-specific fallback, not a user setting or a change to frame caching.
 Recheck it against the Debian PREV-012 pixel test and a hardware-rendered
 Wayland session.

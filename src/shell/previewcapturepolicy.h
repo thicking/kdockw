@@ -13,8 +13,7 @@ inline bool isSoftwareRenderer(const QByteArray &rendererName)
 {
     const QByteArray normalized = rendererName.toLower();
     return normalized.contains("llvmpipe") || normalized.contains("softpipe") || normalized.contains("swrast")
-        || normalized.contains("software rasterizer") || normalized.contains("lavapipe")
-        || normalized.contains("swiftshader");
+        || normalized.contains("software rasterizer") || normalized.contains("swiftshader");
 }
 
 /** Software-renderer safety takes precedence without changing user settings. */

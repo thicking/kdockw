@@ -8,12 +8,6 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
-### Fixed
-
-- Kept grouped window previews available after activating a thumbnail when the pointer had already left the dock icon.
-- Kept Follow Active on the current output when a batched TaskManager activation update briefly reported a stale screen.
-- Avoided the llvmpipe DMA-BUF crash by selecting CPU-readable PipeWire buffers on software renderers while preserving the configured mode on hardware renderers.
-
 ## [0.4.2] - 2026-11-10
 
 KDockW 0.4.2 brings the accepted v0.4.1 improvements together with window-preview lifecycle and stability fixes.
@@ -31,6 +25,9 @@ KDockW 0.4.2 brings the accepted v0.4.1 improvements together with window-previe
 - Prefetched one frame for the foreground window without opening the preview popup; a single short-lived PipeWire stream is released after capture, and the bounded UUID cache is cleared after the window closes.
 - Updated Follow Active when TaskManager emits batched active-window changes or reports screen geometry on grouped child rows.
 - Completed missing Russian settings accessibility text and refreshed the compiled Russian catalog.
+- Kept grouped window previews available after activating a thumbnail when the pointer had already left the dock icon.
+- Kept Follow Active on the current output when a batched TaskManager activation update briefly reported a stale screen.
+- Avoided the llvmpipe DMA-BUF crash by selecting CPU-readable PipeWire buffers on software renderers while preserving the configured mode on hardware renderers.
 
 ## [0.4.0] - 2026-11-09
 
