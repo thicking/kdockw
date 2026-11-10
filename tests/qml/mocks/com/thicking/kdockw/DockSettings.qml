@@ -22,7 +22,7 @@ QtObject {
     property int magnificationMode: 1
     property real springStiffness: 170.0
     property real springDamping: 0.60
-    property real springSpeed: 1.0
+    property real springSpeed: 0.9
     // 0 = Natural, 1 = Quick, 2 = Relaxed, 3 = Instant, 4 = Custom
     property int zoomAnimationPreset: 0
     // Custom preset timing (unscaled ms) and easing indices (see ZoomAnimationProfile).
@@ -60,7 +60,7 @@ QtObject {
     property int attentionAnimationIntensity: 100
     property bool launchBounceEnabled: true
     property int launchBounceIntensity: 150
-    property int launchBounceSpeed: 100
+    property int launchBounceSpeed: 70
     property bool clickBounceEnabled: true
     property int badgeDisplayMode: 0
     property color badgeBackgroundColor: "#ffff3b30"

@@ -172,7 +172,7 @@
 
     <entry name="SpringSpeed" type="Double">
       <label>Spring magnification reaction speed</label>
-      <default>1.0</default>
+      <default>0.9</default>
       <min>0.25</min>
       <max>3.0</max>
     </entry>
@@ -470,7 +470,7 @@
 
     <entry name="LaunchBounceSpeed" type="Int">
       <label>Launch bounce speed (percent)</label>
-      <default>100</default>
+      <default>70</default>
       <min>50</min>
       <max>150</max>
     </entry>

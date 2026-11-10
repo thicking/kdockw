@@ -49,7 +49,7 @@ Item {
             compare(launchIntensity.from, 50)
             compare(launchIntensity.to, 200)
             compare(clickBounceSwitch.checked, true)
-            compare(launchSpeed.value, 100)
+            compare(launchSpeed.value, 70)
             compare(attentionSwitch.checked, true)
             compare(attentionIntensity.value, 100)
             compare(attentionDuration.value, 3)

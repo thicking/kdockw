@@ -8,6 +8,12 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Changed
+
+- Set the default Spring reaction speed to 90% and the default launch-bounce
+  speed to 70% for new configurations, while preserving values already saved
+  by users.
+
 ### Fixed
 
 - Re-anchored Spring magnification to the pointer on dock re-entry, preventing

@@ -52,7 +52,7 @@ Item {
             compare(DockSettings.maxZoomFactor, 1.9)
             compare(DockSettings.springStiffness, 170)
             compare(DockSettings.springDamping, 0.60)
-            compare(DockSettings.springSpeed, 1.0)
+            compare(DockSettings.springSpeed, 0.9)
             compare(classic.checked, false)
             compare(spring.checked, true)
             verify(stiffness.visible && damping.visible && speed.visible)

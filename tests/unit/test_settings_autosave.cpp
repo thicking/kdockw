@@ -275,7 +275,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.magnificationMode() == 1);
     CHECK(settings.springStiffness() == Catch::Approx(170.0));
     CHECK(settings.springDamping() == Catch::Approx(0.60));
-    CHECK(settings.springSpeed() == Catch::Approx(1.0));
+    CHECK(settings.springSpeed() == Catch::Approx(0.9));
     CHECK(settings.cornerRadius() == 17);
     CHECK(settings.floating());
     CHECK(settings.floatingMargin() == 3);
@@ -301,7 +301,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.attentionAnimationIntensity() == 100);
     CHECK(settings.launchBounceEnabled());
     CHECK(settings.launchBounceIntensity() == 150);
-    CHECK(settings.launchBounceSpeed() == 100);
+    CHECK(settings.launchBounceSpeed() == 70);
     CHECK(settings.clickBounceEnabled());
     CHECK(settings.hideDelay() == 500);
     CHECK(settings.previewHideDelay() == 400);
@@ -407,7 +407,7 @@ TEST_CASE("Launch and attention animation settings preserve old and explicit pre
     CHECK(migrated.attentionAnimationIntensity() == 100);
     CHECK(migrated.launchBounceEnabled());
     CHECK(migrated.launchBounceIntensity() == 150);
-    CHECK(migrated.launchBounceSpeed() == 100);
+    CHECK(migrated.launchBounceSpeed() == 70);
     CHECK(migrated.clickBounceEnabled());
 
     migrated.setAttentionAnimationEnabled(false);
@@ -448,7 +448,7 @@ TEST_CASE("Existing magnification settings migrate without overwriting saved val
     CHECK(settings.magnificationMode() == 1);
     CHECK(settings.springStiffness() == Catch::Approx(170.0));
     CHECK(settings.springDamping() == Catch::Approx(0.60));
-    CHECK(settings.springSpeed() == Catch::Approx(1.0));
+    CHECK(settings.springSpeed() == Catch::Approx(0.9));
 }
 
 TEST_CASE("Explicit Classic mode and Spring tuning survive updated defaults", "[settings][migration][zoom]")
