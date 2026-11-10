@@ -262,7 +262,7 @@ jobs:
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }})
         id: main
         env:
-          KDOCKW_E2E_SHARDS: "2"
+          KDOCKW_E2E_SHARDS: ${{ inputs.scenario != '' && '1' || '2' }}
           KDOCKW_E2E_OUTPUT_COUNT: ${{ inputs.output_count || '1' }}
           KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
           E2E_SCENARIO: ${{ inputs.scenario || '' }}
