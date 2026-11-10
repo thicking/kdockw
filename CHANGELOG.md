@@ -12,6 +12,7 @@ carried forward from the Krema-based development period.
 
 - Kept grouped window previews available after activating a thumbnail when the pointer had already left the dock icon.
 - Kept Follow Active on the current output when a batched TaskManager activation update briefly reported a stale screen.
+- Avoided the llvmpipe DMA-BUF crash by selecting CPU-readable PipeWire buffers on software renderers while preserving the configured mode on hardware renderers.
 
 ## [0.4.2] - 2026-11-10
 

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 KDockW Contributors
 
 #include "shell/previewcontroller.h"
+#include "shell/previewcapturepolicy.h"
 
 #include "app/application.h"
 #include "kdockw.h"
@@ -70,6 +71,22 @@ private:
     QByteArray m_previous;
     bool m_hadPrevious;
 };
+}
+
+TEST_CASE("Software renderers use CPU-readable PipeWire capture without changing user preferences", "[preview]")
+{
+    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("llvmpipe (LLVM 19.1.7, 256 bits)"));
+    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("Mesa X11 swrast"));
+    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("llvmpipe (LLVM 19.1.7, 256 bits)"));
+    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("Vulkan device: lavapipe (LLVM 19.1.7)"));
+    CHECK(kdockw::previewcapturepolicy::isSoftwareRenderer("SwiftShader Device (Subzero)"));
+    CHECK_FALSE(kdockw::previewcapturepolicy::isSoftwareRenderer("AMD Radeon RX 7800 XT"));
+
+    CHECK(kdockw::previewcapturepolicy::cpuCaptureOnly(true, false, true, false, false));
+    CHECK(kdockw::previewcapturepolicy::cpuCaptureOnly(false, true, true, false, false));
+    CHECK_FALSE(kdockw::previewcapturepolicy::cpuCaptureOnly(false, false, true, false, true));
+    CHECK(kdockw::previewcapturepolicy::cpuCaptureOnly(false, false, false, false, true));
+    CHECK_FALSE(kdockw::previewcapturepolicy::cpuCaptureOnly(false, false, false, false, false));
 }
 
 TEST_CASE("Preview capture mode is selected per process environment", "[preview]")

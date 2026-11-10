@@ -202,6 +202,8 @@ private:
     KDockWSettings *m_settings;
     bool m_captureModeOverridden = false;
     bool m_overrideCpuCaptureOnly = false;
+    bool m_rendererDetectionPending = false;
+    bool m_softwareRenderer = false;
     std::unique_ptr<QQuickView> m_previewView;
     std::unique_ptr<PreviewFrameCache> m_previewFrameCache;
     QHash<QString, QSharedPointer<QQuickItemGrabResult>> m_pendingPreviewFrames;

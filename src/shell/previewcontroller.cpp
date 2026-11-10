@@ -3,6 +3,7 @@
 
 #include "previewcontroller.h"
 #include "previewframecache.h"
+#include "previewcapturepolicy.h"
 
 #include "dockview.h"
 #include "dockvisibilitycontroller.h"
@@ -21,9 +22,12 @@
 
 #include <cmath>
 #include <algorithm>
+#include <atomic>
 #include <limits>
 
 #include <QGuiApplication>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <QQuickItem>
 #include <QLoggingCategory>
 #include <QQmlEngine>
@@ -31,6 +35,7 @@
 #include <QQuickImageProvider>
 #include <QPointer>
 #include <QScreen>
+#include <QSGRendererInterface>
 #include <QPainterPath>
 #include <qpa/qplatformnativeinterface.h>
 
@@ -74,6 +79,11 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
     , m_settings(settings)
     , m_previewFrameCache(std::make_unique<PreviewFrameCache>())
 {
+    // DockView's QML may start a one-shot preview prefetch before the overlay
+    // QQuickWindow exists. Keep that early source CPU-only until initialize()
+    // identifies the renderer.
+    m_rendererDetectionPending = (m_dockView != nullptr);
+
     const QByteArray captureMode = qgetenv("KDOCKW_PREVIEW_CAPTURE_MODE").trimmed().toLower();
     if (captureMode == "cpu-only") {
         m_captureModeOverridden = true;
@@ -84,7 +94,8 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
         qCWarning(lcPreview) << "Unsupported KDOCKW_PREVIEW_CAPTURE_MODE; using the saved setting";
     }
     qCInfo(lcPreview) << "Capture mode:" << (cpuCaptureOnly() ? "cpu-only" : "auto")
-                      << "source:" << (m_captureModeOverridden ? "environment" : "settings");
+                      << "source:" << (m_rendererDetectionPending ? "renderer-detection-pending"
+                                             : (m_captureModeOverridden ? "environment" : "settings"));
 
     if (m_settings) {
         connect(m_settings, &KDockWSettings::CpuOnlyPreviewCaptureChanged, this, [this]() {
@@ -124,6 +135,75 @@ void PreviewController::initialize()
     m_previewView = std::make_unique<QQuickView>(m_dockView->engine(), nullptr);
     m_previewView->setColor(Qt::transparent);
     m_previewView->setResizeMode(QQuickView::SizeRootObjectToView);
+
+    // Keep every PipeWire source on CPU-readable buffers until the preview
+    // surface renderer is identified. In software OpenGL (llvmpipe), KPipeWire
+    // DMA-BUF capture has crashed in Mesa's generated shader. Hardware renderers
+    // retain the normal DMA-BUF-preferred path after this one-time check.
+    m_rendererDetectionPending = true;
+    Q_EMIT captureModeChanged();
+    const QSGRendererInterface::GraphicsApi graphicsApi = m_previewView->rendererInterface()->graphicsApi();
+    if (graphicsApi == QSGRendererInterface::Software) {
+        m_rendererDetectionPending = false;
+        m_softwareRenderer = true;
+        qCInfo(lcPreview) << "Qt Quick renderer: software; capture mode: cpu-only (software renderer fallback)";
+        Q_EMIT captureModeChanged();
+    } else if (graphicsApi == QSGRendererInterface::OpenGL) {
+        // QQuickWindow::afterSynchronizing runs on the scene graph thread with
+        // the OpenGL context current. Read GL_RENDERER there, then update this
+        // QObject's state on its owning (GUI) thread.
+        auto detectionQueued = std::make_shared<std::atomic_bool>(false);
+        auto rendererConnection = std::make_shared<QMetaObject::Connection>();
+        *rendererConnection = connect(
+            m_previewView.get(),
+            &QQuickWindow::afterSynchronizing,
+            this,
+            [this, detectionQueued, rendererConnection]() {
+                if (detectionQueued->load()) {
+                    return;
+                }
+                QByteArray rendererName;
+                if (QOpenGLContext *context = QOpenGLContext::currentContext()) {
+                    if (QOpenGLFunctions *functions = context->functions()) {
+                        if (const auto *renderer = functions->glGetString(GL_RENDERER)) {
+                            rendererName = QByteArray(reinterpret_cast<const char *>(renderer));
+                        }
+                    }
+                }
+                // If Qt has not made a context current yet, leave detection
+                // pending and try on the next synchronization. The source
+                // remains CPU-only while the renderer is unknown.
+                if (rendererName.isEmpty()) {
+                    return;
+                }
+                bool expected = false;
+                if (!detectionQueued->compare_exchange_strong(expected, true)) {
+                    return;
+                }
+                const bool software = previewcapturepolicy::isSoftwareRenderer(rendererName);
+                QMetaObject::invokeMethod(
+                    this,
+                    [this, rendererName, software, rendererConnection]() {
+                        QObject::disconnect(*rendererConnection);
+                        m_rendererDetectionPending = false;
+                        m_softwareRenderer = software;
+                        qCInfo(lcPreview) << "Qt Quick GL_RENDERER:" << rendererName
+                                          << "capture mode:" << (cpuCaptureOnly() ? "cpu-only" : "auto")
+                                          << "source:" << (software ? "software renderer fallback"
+                                                                     : (m_captureModeOverridden ? "environment" : "settings"));
+                        Q_EMIT captureModeChanged();
+                    },
+                    Qt::QueuedConnection);
+            },
+            Qt::DirectConnection);
+    } else {
+        // Qt's explicit Software backend was handled above. Other graphics
+        // APIs do not expose GL_RENDERER here and retain configured behavior.
+        m_rendererDetectionPending = false;
+        qCInfo(lcPreview) << "Qt Quick graphics API:" << graphicsApi
+                          << "capture mode:" << (cpuCaptureOnly() ? "cpu-only" : "auto");
+        Q_EMIT captureModeChanged();
+    }
     auto *engine = m_dockView->engine();
     engine->addImageProvider(QStringLiteral("previewframes"), new PreviewFrameImageProvider(m_previewFrameCache.get()));
     connect(m_previewFrameCache.get(), &PreviewFrameCache::revisionChanged, this, &PreviewController::previewFramesChanged);
@@ -273,7 +353,9 @@ qreal PreviewController::previewAnchorOffset() const
 
 bool PreviewController::cpuCaptureOnly() const
 {
-    return m_captureModeOverridden ? m_overrideCpuCaptureOnly : (m_settings && m_settings->cpuOnlyPreviewCapture());
+    return previewcapturepolicy::cpuCaptureOnly(m_rendererDetectionPending, m_softwareRenderer,
+                                                 m_captureModeOverridden, m_overrideCpuCaptureOnly,
+                                                 m_settings && m_settings->cpuOnlyPreviewCapture());
 }
 
 bool PreviewController::captureModeOverridden() const
