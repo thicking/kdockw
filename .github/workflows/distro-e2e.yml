@@ -66,6 +66,16 @@ on:
         type: string
         required: false
         default: all
+      scenario:
+        description: "Optional single pytest selector for targeted diagnosis; leave empty for the full release gate"
+        type: string
+        required: false
+        default: ""
+      output_count:
+        description: "Virtual output count for a targeted scenario"
+        type: string
+        required: false
+        default: "1"
   schedule:
     - cron: "41 2 * * 3"
   workflow_dispatch:
@@ -79,6 +89,20 @@ on:
         required: false
         type: string
         default: ""
+      scenario:
+        description: "Optional single pytest selector for targeted diagnosis; leave empty for the full release gate"
+        required: false
+        type: string
+        default: ""
+      output_count:
+        description: "Virtual output count for a targeted scenario"
+        required: false
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
+        default: "1"
 
 permissions: {}
 
@@ -226,11 +250,27 @@ jobs:
         id: main
         env:
           KDOCKW_E2E_SHARDS: "2"
+          KDOCKW_E2E_OUTPUT_COUNT: ${{ inputs.output_count || '1' }}
           KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
-        run: tests/distro/run-distro-e2e.sh "$TARGET" -rs
+          E2E_SCENARIO: ${{ inputs.scenario || '' }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$E2E_SCENARIO" ]]; then
+            if [[ ! "$E2E_SCENARIO" =~ ^test_[A-Za-z0-9_]+\.py::[A-Za-z0-9_]+$ ]]; then
+              echo "::error::targeted scenario must be one test_*.py::test_function selector"
+              exit 64
+            fi
+            if [[ "$KDOCKW_E2E_OUTPUT_COUNT" != 1 && "$KDOCKW_E2E_OUTPUT_COUNT" != 2 && "$KDOCKW_E2E_OUTPUT_COUNT" != 3 ]]; then
+              echo "::error::output_count must be 1, 2, or 3"
+              exit 64
+            fi
+            tests/distro/run-distro-e2e.sh "$TARGET" "$E2E_SCENARIO" -rs
+          else
+            KDOCKW_E2E_OUTPUT_COUNT=1 tests/distro/run-distro-e2e.sh "$TARGET" -rs
+          fi
 
       - name: Stage verified package artifact
-        if: steps.main.outcome == 'success'
+        if: steps.main.outcome == 'success' && (inputs.scenario == '' || inputs.scenario == null)
         env:
           TARGET: ${{ matrix.target }}
           COMMIT_SHA: ${{ github.sha }}
@@ -280,7 +320,7 @@ jobs:
           PY
 
       - name: Upload verified package artifact
-        if: steps.main.outcome == 'success'
+        if: steps.main.outcome == 'success' && (inputs.scenario == '' || inputs.scenario == null)
         uses: actions/upload-artifact@v7
         with:
           name: kdockw-package-${{ matrix.target }}
@@ -321,7 +361,7 @@ jobs:
         # explicitly deselected so this session runs only outputs(2) tests.
         # Reuses the package and image the main run built, and runs even when
         # that run failed on a test.
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
           KDOCKW_E2E_OUTPUT_COUNT: "2"
           KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
@@ -331,14 +371,14 @@ jobs:
             --deselect test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts
 
       - name: JUnit summary (${{ matrix.target }}, 2 outputs)
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         run: |
           python3 .github/scripts/junit-summary.py "Distro E2E: $TARGET (2 outputs)" \
             "tests/appium/artifacts-distro-$TARGET-2out/junit.xml" \
             --forbid-skip 'QPainter|render node' >>"$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         with:
           name: distro-e2e-${{ matrix.target }}-2out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-2out
@@ -347,7 +387,7 @@ jobs:
       - name: Run tests/distro/run-distro-e2e.sh (${{ matrix.target }}, 3 outputs)
         # Exact node selection avoids rerunning the two-output contracts.
         # Reuse the main run's package and image even if its tests failed.
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04') && (steps.main.outcome == 'success' || steps.main.outcome == 'failure')
         env:
           KDOCKW_E2E_OUTPUT_COUNT: "3"
           KDOCKW_DISTRO_SKIP_IMAGE_BUILD: "1"
@@ -357,14 +397,14 @@ jobs:
             test_06_settings.py::test_set012_selected_subset_preserves_docks_and_routes_shortcuts -rs
 
       - name: JUnit summary (${{ matrix.target }}, 3 outputs)
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         run: |
           python3 .github/scripts/junit-summary.py "Distro E2E: $TARGET (3 outputs)" \
             "tests/appium/artifacts-distro-$TARGET-3out/junit.xml" \
             --forbid-skip 'QPainter|render node' >>"$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v7
-        if: always() && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
+        if: always() && (inputs.scenario == '' || inputs.scenario == null) && (matrix.target == 'fedora-45' || matrix.target == 'ubuntu-26.04')
         with:
           name: distro-e2e-${{ matrix.target }}-3out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-3out

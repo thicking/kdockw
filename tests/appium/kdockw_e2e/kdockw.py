@@ -146,6 +146,16 @@ class KDockW:
             QT_LINUX_ACCESSIBILITY_ALWAYS_ON="1",
             QT_QPA_PLATFORM="wayland",
         )
+        if os.environ.get("KDOCKW_CORE_DUMP_DIR"):
+            # KCrash handles SIGSEGV and exits 255 when DrKonqi cannot start,
+            # preventing the kernel core handler from writing a dump. In the
+            # explicit E2E core-dump mode only, disable KCrash so the signal
+            # and core are preserved for the artifact collector.
+            e["KDE_DEBUG"] = "1"
+            existing_rules = e.get("QT_LOGGING_RULES", "").strip()
+            multidock_rule = "kdockw.shell.multidock.debug=true"
+            if multidock_rule not in existing_rules.split(";"):
+                e["QT_LOGGING_RULES"] = ";".join(filter(None, (existing_rules, multidock_rule)))
         return e
 
     def start(self, timeout: float = 30.0) -> None:
