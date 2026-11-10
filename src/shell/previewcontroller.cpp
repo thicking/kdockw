@@ -708,13 +708,15 @@ void PreviewController::navigatePreviewThumbnail(int delta)
     }
 }
 
-void PreviewController::activatePreviewThumbnail()
+void PreviewController::activatePreviewThumbnail(bool suppressHoverReopen)
 {
     const QModelIndex idx = focusedThumbnailModelIndex();
     if (!idx.isValid()) {
         return;
     }
-    suppressPreviewUntilPointerLeavesTask(m_parentIndex);
+    if (suppressHoverReopen) {
+        suppressPreviewUntilPointerLeavesTask(m_parentIndex);
+    }
     m_model->tasksModel()->requestActivate(idx);
     hidePreview();
 }

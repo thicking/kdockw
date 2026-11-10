@@ -493,8 +493,26 @@ void MultiDockManager::onActiveWindowChanged()
         return nullptr;
     };
 
-    if (auto *targetScreen = activeWindowScreen(QModelIndex()); targetScreen && targetScreen != m_activeScreen) {
-        scheduleActiveScreen(targetScreen);
+    if (auto *targetScreen = activeWindowScreen(QModelIndex())) {
+        qCDebug(lcMultiDock) << "Follow Active resolved screen:" << targetScreen->name()
+                             << "current:" << (m_activeScreen ? m_activeScreen->name() : QStringLiteral("none"))
+                             << "pending:" << (m_pendingScreen ? m_pendingScreen->name() : QStringLiteral("none"))
+                             << "debounce active:" << m_followActiveDebounce.isActive();
+        if (targetScreen == m_activeScreen) {
+            // Cancel a delayed switch selected by an earlier dataChanged in
+            // the same activation batch. TaskManager can first report the
+            // outgoing active row, then the incoming row; if that final row
+            // resolves back to the current output, leaving the earlier
+            // pending target alive would move the dock to a stale screen.
+            if (m_followActiveDebounce.isActive()) {
+                qCDebug(lcMultiDock) << "Follow Active canceling stale pending screen:"
+                                     << (m_pendingScreen ? m_pendingScreen->name() : QStringLiteral("none"));
+                m_followActiveDebounce.stop();
+                m_pendingScreen = nullptr;
+            }
+        } else {
+            scheduleActiveScreen(targetScreen);
+        }
     }
 }
 

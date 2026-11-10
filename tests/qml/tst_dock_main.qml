@@ -2298,6 +2298,29 @@ Item {
             verify(!PreviewController.visible)
         }
 
+        function test_keyboardThumbnailActivationSuppressesOnlyWhenPointerStillOnTask_data() {
+            return [
+                { tag: "pointer-on-dock", pointerOnDock: true },
+                { tag: "pointer-outside-dock", pointerOnDock: false },
+            ]
+        }
+
+        function test_keyboardThumbnailActivationSuppressesOnlyWhenPointerStillOnTask(data) {
+            addTasks(["A"])
+            let dock = makeDock(1)
+            dock._pointerOnDock = data.pointerOnDock
+            if (data.pointerOnDock) {
+                dock.hoveredIndex = 0
+            }
+            dock.startKeyboardNavigation()
+            keyClick(Qt.Key_Up) // bottom dock: open the grouped/single preview
+            tryCompare(PreviewController, "visible", true)
+            keyClick(Qt.Key_Return)
+            const calls = PreviewController.callsTo("activatePreviewThumbnail")
+            compare(calls.length, 1)
+            compare(calls[0].args[0], data.pointerOnDock)
+        }
+
         // --- Drag reorder and drop helpers ---
 
         function test_computeDropIndexPicksNearestIcon() {

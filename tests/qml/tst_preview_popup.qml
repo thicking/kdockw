@@ -522,7 +522,7 @@ Item {
             verify(!images[2].visible, "a neighboring UUID without a cached frame must not inherit one")
         }
 
-        function test_thumbnailActivationDismissesPreviewAndTargetsExactGroupedChild() {
+        function test_thumbnailActivationTargetsExactGroupedChildWithoutStaleDockSuppression() {
             const popup = makePopup()
             show(1, "Konsole")
             const thumbnails = waitThumbs(popup, 3)
@@ -534,15 +534,16 @@ Item {
             mouseClick(stage, point.x, point.y, Qt.LeftButton)
 
             tryCompare(PreviewController, "visible", false)
-            compare(PreviewController.dismissedTaskIndex, 1)
+            compare(PreviewController.dismissedTaskIndex, -1,
+                    "a thumbnail click happens outside the dock icon and must not leave it suppressed")
             compare(DockModel.tasksModel.activateRequests, 1)
             compare(DockModel.tasksModel.lastRequestRow, 1)
             compare(DockModel.tasksModel.lastRequestChild, 1,
                     "the click must activate the selected child's UUID, not a neighboring window")
 
             PreviewController.showPreview(1, 0, 0, 0, 0, 0)
-            verify(!PreviewController.visible,
-                   "hover must not reopen the group preview until the pointer leaves its dock task")
+            verify(PreviewController.visible,
+                   "a fresh hover may reopen the group after the pointer returns to its dock icon")
         }
 
         function test_groupKeepsDelegatesAndFramesWhileAggregateUuidListLags() {
@@ -721,8 +722,8 @@ Item {
             compare(DockModel.tasksModel.lastRequestRow, data.row)
             compare(DockModel.tasksModel.lastRequestChild, data.child)
             compare(PreviewController.callsTo("hidePreview").length, 1)
-            compare(PreviewController.dismissedTaskIndex, data.parent,
-                    "activating a grouped or single thumbnail must suppress reopening for its dock icon")
+            compare(PreviewController.dismissedTaskIndex, -1,
+                    "activating a thumbnail outside the dock must not suppress a later hover on its icon")
             compare(DockModel.tasksModel.closeRequests, 0)
         }
 

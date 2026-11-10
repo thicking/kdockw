@@ -680,7 +680,11 @@ def test_clk012_repeated_explicit_preview_releases_follow_active_screen_hold(
     if close_mode == "thumbnail":
         inp.click()
         wait_until(alpha.is_active, message="thumbnail keeps Alpha active")
-    inp.move(*CENTRE)
+    # Keep the pointer outside the test windows. With focus-follows-mouse,
+    # moving through Alpha here would reactivate Virtual-0 after the explicit
+    # focus switch to Virtual-1, invalidating the subsequent edge/show check.
+    neutral = (width - 8, height // 2)
+    inp.move(*neutral)
     wait_until(lambda: _visible_preview(kdockw) is None, message=f"follow-active popup closes after {close_mode}")
     wait_hidden(kdockw, env.TEST_APP_NAME, why=" after the explicit popup releases visibility")
 
@@ -688,9 +692,13 @@ def test_clk012_repeated_explicit_preview_releases_follow_active_screen_hold(
         kwin.activate(other.internal_id)
         wait_until(other.is_active, message="window on the second output active")
         wait_until(lambda: _mapped_dock_xs(kdockw) == [width], message="dock follows focus after popup closes")
-    inp.move_path(inp.line(CENTRE, (width + width // 2, height - 1), 10))
+    if follow_trigger == 1:
+        wait_until(other.is_active, message="focus remains on the second-output window before edge movement")
+    inp.move_path(inp.line(neutral, (width + width // 2, height - 1), 10))
     wait_until(lambda: _mapped_dock_xs(kdockw) == [width], message="second-output dock available after popup closes")
     wait_shown(kdockw, env.TEST_APP_NAME, why=" on the second output")
+    if follow_trigger == 1:
+        wait_until(other.is_active, message="focus remains on the second-output window after edge movement")
     assert_stays(lambda: dock_shown(kdockw, env.TEST_APP_NAME), 1.0, "second-output edge can show the dock after the hold releases")
     inp.move(width + width // 2, height // 2)
     wait_hidden(kdockw, env.TEST_APP_NAME, why=" after leaving the second-output dock")

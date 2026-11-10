@@ -153,7 +153,7 @@ public:
     Q_INVOKABLE void navigatePreviewThumbnail(int delta);
 
     /// Activate the currently focused preview thumbnail window.
-    Q_INVOKABLE void activatePreviewThumbnail();
+    Q_INVOKABLE void activatePreviewThumbnail(bool suppressHoverReopen = false);
 
     /// Close the currently focused preview thumbnail window.
     Q_INVOKABLE void closePreviewThumbnail();

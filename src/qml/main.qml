@@ -293,7 +293,8 @@ Item {
                 break
             case Qt.Key_Return:
             case Qt.Key_Enter:
-                PreviewController.activatePreviewThumbnail()
+                PreviewController.activatePreviewThumbnail(
+                    root._pointerOnDock && root.hoveredIndex === PreviewController.parentIndex)
                 endKeyboardNavigation(false)
                 event.accepted = true
                 break

@@ -8,6 +8,11 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Fixed
+
+- Kept grouped window previews available after activating a thumbnail when the pointer had already left the dock icon.
+- Kept Follow Active on the current output when a batched TaskManager activation update briefly reported a stale screen.
+
 ## [0.4.2] - 2026-11-10
 
 KDockW 0.4.2 brings the accepted v0.4.1 improvements together with window-preview lifecycle and stability fixes.

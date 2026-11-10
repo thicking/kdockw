@@ -670,7 +670,6 @@ Item {
                     : DockModel.tasksModel.makeModelIndex(root.parentIndex, root.childIndex)
                 if (!modelIndex.valid)
                     return
-                PreviewController.suppressPreviewUntilPointerLeavesTask(root.parentIndex)
                 DockModel.tasksModel.requestActivate(modelIndex)
                 PreviewController.hidePreview()
             }

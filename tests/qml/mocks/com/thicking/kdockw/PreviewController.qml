@@ -89,7 +89,11 @@ QtObject {
     function startPreviewKeyboardNav() { _record("startPreviewKeyboardNav", arguments); previewKeyboardActive = true; focusedThumbnailIndex = 0 }
     function endPreviewKeyboardNav() { _record("endPreviewKeyboardNav", arguments); previewKeyboardActive = false }
     function navigatePreviewThumbnail(d) { _record("navigatePreviewThumbnail", arguments) }
-    function activatePreviewThumbnail() { _record("activatePreviewThumbnail", arguments) }
+    function activatePreviewThumbnail(suppressHoverReopen) {
+        if (suppressHoverReopen)
+            suppressPreviewUntilPointerLeavesTask(parentIndex)
+        _record("activatePreviewThumbnail", arguments)
+    }
     function closePreviewThumbnail() { _record("closePreviewThumbnail", arguments) }
     function focusedThumbnailTitle() { return "" }
     function focusedThumbnailIsActive() { return false }
