@@ -1,3 +1,10 @@
+kdockw (0.4.1-1) unstable; urgency=medium
+
+  * Re-anchor Spring magnification immediately when the pointer re-enters the dock.
+  * Set new-configuration Spring and launch-bounce speed defaults to 90% and 70%.
+
+ -- thicking <thicking@gmail.com>  Tue, 10 Nov 2026 00:00:00 +0500
+
 kdockw (0.4.0-1) unstable; urgency=medium
 
   * Add spring magnification, launch bounce, click bounce, and attention animations.

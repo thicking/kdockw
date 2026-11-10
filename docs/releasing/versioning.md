@@ -2,7 +2,7 @@
 
 KDockW's first standalone stable version was `0.1.0`. Starting with `0.3.0`,
 KDockW release tags use the permanent `kdockw-vX.Y.Z` form (for example,
-`kdockw-v0.4.0`). Historical Krema `v0.x.x` tags and release notes remain
+`kdockw-v0.4.1`). Historical Krema `v0.x.x` tags and release notes remain
 unchanged and are not renamed or reused. The release tools continue to
 recognize legacy `vX.Y.Z` tags so existing records remain verifiable.
 
@@ -34,10 +34,10 @@ Package formats use their own spelling for development builds:
 
 | Format | Stable example | Development equivalent | Rule |
 | --- | --- | --- | --- |
-| AppStream | `0.4.0` | `0.4.0-dev` | Stable releases omit `type="development"`; development builds include it. |
-| Arch | `0.4.0` | `0.4.0_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
-| RPM | `0.4.0` | `0.4.0~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
-| Debian | `0.4.0-1` | `0.4.0~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
+| AppStream | `0.4.1` | `0.4.1-dev` | Stable releases omit `type="development"`; development builds include it. |
+| Arch | `0.4.1` | `0.4.1_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
+| RPM | `0.4.1` | `0.4.1~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
+| Debian | `0.4.1-1` | `0.4.1~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
 
 These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/PKGBUILD.5),
 [RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html), and

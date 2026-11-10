@@ -8,6 +8,10 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-10
+
+KDockW 0.4.1 refines Spring magnification when the pointer re-enters the dock.
+
 ### Changed
 
 - Set the default Spring reaction speed to 90% and the default launch-bounce

@@ -219,6 +219,19 @@ The required Distro E2E gate passed on Debian 13, Ubuntu 26.04 LTS, and Fedora
 Classic zoom performance-profile technical debt. Dock show/hide follows accepted
 surface/input-region geometry. Launch and attention animation remains independent.
 
+## v0.4.1 — Spring Magnification Patch (release preparation)
+
+- [x] **Spring re-entry:** on pointer re-entry, move the zoom center directly to
+  the new pointer position and reset spatial velocity while preserving the
+  current amplitude fade and existing spring tuning. The owner accepted the
+  behavior on real Plasma/Wayland.
+- [x] **Animation speed defaults:** new configurations use 90% Spring Speed and
+  70% Launch Bounce Speed; saved user values remain unchanged. Defaults and
+  migration behavior are covered by tests.
+
+Release checks and publication are in progress; this section does not mark the
+release as published.
+
 ## v0.5.0 — Dock Interactions (planned)
 
 - [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
