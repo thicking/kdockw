@@ -164,6 +164,7 @@ run_build() {
         -e "TARGET_ID=$id"
         -e "FAMILY=$family"
         -e "KDOCKW_VERSION=$version"
+        -e "KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS=${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}"
         -e "HOST_UID=$(id -u)"
         -e "HOST_GID=$(id -g)"
     )

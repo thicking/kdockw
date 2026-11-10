@@ -225,6 +225,7 @@ if [[ "${KDOCKW_DISTRO_REBUILD_PACKAGE:-0}" == 1 || ${#pkgs[@]} -eq 0 ]]; then
     t0=$(now)
     rm -rf "$pkg_dir"
     KDOCKW_DOCKER_PLATFORM="${KDOCKW_E2E_PLATFORM:-}" \
+        KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS="${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}" \
         "$here/build-package.sh" "$target" "$here/.cache/packages"
     echo "[distro] package: $(($(now) - t0))s"
 fi

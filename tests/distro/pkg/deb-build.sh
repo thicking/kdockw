@@ -23,7 +23,13 @@ cd "$src"
 # The automatic dbgsym package stays on: dh_strip only adds the
 # .gnu_debuglink section to the shipped binary when it saves the debug
 # symbols, so noautodbgsym would change the tested binary.
-dpkg-buildpackage -b -us -uc
+if [[ "${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}" == 1 ]]; then
+    # Keep the normal Release optimization/packaging path but retain compiler
+    # debug sections for one explicitly targeted crash-diagnostic package.
+    DEB_BUILD_OPTIONS=nostrip dpkg-buildpackage -b -us -uc
+else
+    dpkg-buildpackage -b -us -uc
+fi
 
 # Artifacts land in the parent of the source tree (/work). Ship the binary
 # .deb only; the dbgsym package (kdockw-dbgsym_*.ddeb/.deb) is never installed.
@@ -34,4 +40,15 @@ if (( ${#artifacts[@]} == 0 )); then
     exit 70
 fi
 cp "${artifacts[@]}" /out/
+if [[ "${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}" == 1 ]]; then
+    binary=/tmp/kdockw-debug-symbols-check
+    mkdir -p "$binary"
+    dpkg-deb -x "${artifacts[0]}" "$binary"
+    if ! readelf -S "$binary/usr/bin/kdockw" | grep -q '\.debug_info'; then
+        echo "error: diagnostic Debian package does not contain .debug_info" >&2
+        exit 71
+    fi
+    echo "diagnostic debug sections verified in ${artifacts[0]}"
+    rm -rf "$binary"
+fi
 ls -l /out

@@ -253,6 +253,7 @@ jobs:
           KDOCKW_E2E_OUTPUT_COUNT: ${{ inputs.output_count || '1' }}
           KDOCKW_CCACHE_DIR: ${{ runner.temp }}/ccache
           E2E_SCENARIO: ${{ inputs.scenario || '' }}
+          KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS: ${{ matrix.target == 'debian-13' && inputs.scenario == 'test_03_preview.py::test_prev012_minimized_window_keeps_last_frame_and_group_frames_stay_bound' && '1' || '0' }}
         run: |
           set -euo pipefail
           if [[ -n "$E2E_SCENARIO" ]]; then
@@ -409,6 +410,17 @@ jobs:
           name: distro-e2e-${{ matrix.target }}-3out
           path: tests/appium/artifacts-distro-${{ matrix.target }}-3out
           if-no-files-found: ignore
+
+      - name: Make container core dumps readable to the runner
+        if: always()
+        run: |
+          set -euo pipefail
+          core_dir="$RUNNER_TEMP/kdockw-core-dumps-$TARGET"
+          if [[ -d "$core_dir" ]]; then
+            sudo chown -R "$(id -u):$(id -g)" "$core_dir"
+            find "$core_dir" -type f -exec chmod u+r {} +
+            find "$core_dir" -type d -exec chmod u+rx {} +
+          fi
 
       - uses: actions/upload-artifact@v7
         if: always()

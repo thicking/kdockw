@@ -272,8 +272,16 @@ collect_process_core_backtraces() {
                 echo "gdb_status=not-installed-in-runtime-image" >>"$report"
             else
                 echo "gdb_status=running" >>"$report"
-                timeout 180 gdb -q -batch -ex 'set debuginfod enabled on' -ex 'set pagination off' \
-                    -ex 'info threads' -ex 'thread apply all bt 50' "$exe" "$core" >>"$report" 2>&1 || true
+                timeout 180 gdb -q -batch \
+                    -ex 'set debuginfod enabled on' \
+                    -ex 'set pagination off' \
+                    -ex 'info proc mappings' \
+                    -ex 'info sharedlibrary' \
+                    -ex 'info threads' \
+                    -ex 'info symbol $pc' \
+                    -ex 'x/8i $pc' \
+                    -ex 'thread apply all bt full 50' \
+                    "$exe" "$core" >>"$report" 2>&1 || true
             fi
             echo "[e2e] process core diagnostics: $report"
         done
