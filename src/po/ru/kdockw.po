@@ -1593,3 +1593,55 @@ msgstr "Журнал действия «Открыть выпуск»: %1"
 #: src/qml/PreviewPopup.qml
 msgid "Window preview card"
 msgstr "Карточка предпросмотра окна"
+
+#: src/models/folderstackmodel.cpp
+msgid "This folder is no longer available"
+msgstr "Эта папка больше недоступна"
+
+#: src/models/folderstackmodel.cpp
+msgid "You do not have permission to view this folder"
+msgstr "У вас нет прав на просмотр этой папки"
+
+#: src/models/folderstackmodel.cpp
+msgid "Could not read this folder"
+msgstr "Не удалось прочитать эту папку"
+
+#: src/models/folderstackmodel.cpp
+msgid "Could not open this item"
+msgstr "Не удалось открыть этот элемент"
+
+#: src/qml/FolderStackItem.qml
+msgid "Folder stack"
+msgstr "Стек папки"
+
+#: src/qml/FolderStackItem.qml
+msgid "Remove folder stack from dock"
+msgstr "Убрать стек папки из дока"
+
+#: src/qml/FolderStackItem.qml
+msgid "Go up one folder"
+msgstr "Перейти на уровень выше"
+
+#: src/qml/FolderStackItem.qml
+msgid "Open folder in Dolphin"
+msgstr "Открыть папку в Dolphin"
+
+#: src/qml/FolderStackItem.qml
+msgid "Loading folder contents…"
+msgstr "Загрузка содержимого папки…"
+
+#: src/qml/FolderStackItem.qml
+msgid "This folder is empty"
+msgstr "Папка пуста"
+
+#: src/qml/FolderStackItem.qml
+msgid "Folder contents"
+msgstr "Содержимое папки"
+
+#: src/qml/FolderStackItem.qml
+msgid "Folder"
+msgstr "Папка"
+
+#: src/qml/FolderStackItem.qml
+msgid "File"
+msgstr "Файл"

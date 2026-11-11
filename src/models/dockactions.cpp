@@ -10,6 +10,7 @@
 #include <taskmanager/tasktools.h>
 
 #include <QDateTime>
+#include <QFileInfo>
 #include <QLoggingCategory>
 
 Q_DECLARE_LOGGING_CATEGORY(lcModel)
@@ -347,6 +348,15 @@ bool DockActions::addLauncher(const QUrl &url)
         Q_EMIT pinnedLaunchersChanged();
     }
     return ok;
+}
+
+bool DockActions::addFolderStack(const QUrl &url)
+{
+    if (!url.isValid() || !url.isLocalFile() || !url.host().isEmpty() || !url.query().isEmpty() || !url.fragment().isEmpty()
+        || !QFileInfo(url.toLocalFile()).isDir()) {
+        return false;
+    }
+    return m_model->dockEntriesModel()->appendFolderStack(url);
 }
 
 bool DockActions::removeLauncher(int index)

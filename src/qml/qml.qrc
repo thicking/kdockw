@@ -3,6 +3,7 @@
         <file>fixtures/preview-clip-pattern.svg</file>
         <file>main.qml</file>
         <file>DockItem.qml</file>
+        <file>FolderStackItem.qml</file>
         <file>BadgeTextColor.js</file>
         <file>ZoomAnimationProfile.qml</file>
         <file>SettingsDialog.qml</file>

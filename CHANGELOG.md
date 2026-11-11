@@ -8,6 +8,10 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Added
+
+- Added initial local Folder Stack support: dropped folders persist as distinct dock entries and open in an asynchronous, scrollable Grid with nested-folder navigation and default-app file opening.
+
 ## [0.4.3] - 2026-11-11
 
 ### Changed

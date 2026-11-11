@@ -55,6 +55,9 @@ public:
     /// Add a pinned launcher from a URL (.desktop file or applications: URL).
     Q_INVOKABLE bool addLauncher(const QUrl &url);
 
+    /// Add a local directory as a distinct Folder Stack entry.
+    Q_INVOKABLE bool addFolderStack(const QUrl &url);
+
     /// Remove the pinned launcher at @p index. Returns true on success.
     Q_INVOKABLE bool removeLauncher(int index);
 

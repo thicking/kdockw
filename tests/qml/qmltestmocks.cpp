@@ -260,6 +260,7 @@ void registerMockTypes()
         return tracker;
     });
     qmlRegisterType<MockTasksModel>("kdockw.test", 1, 0, "MockTasksModel");
+    qmlRegisterType<MockFolderStackModel>("com.thicking.kdockw", 1, 0, "FolderStackModel");
     qmlRegisterSingletonType<ZoomLayoutEngine>("kdockw.test", 1, 0, "ZoomLayoutEngine", [](QQmlEngine *, QJSEngine *) -> QObject * {
         return new ZoomLayoutEngine;
     });

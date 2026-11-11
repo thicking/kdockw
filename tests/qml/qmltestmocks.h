@@ -16,12 +16,61 @@
 // The com.thicking.kdockw singletons are plain QML files under mocks/.
 
 #include <QQuickItem>
+#include <QAbstractListModel>
 #include <QRectF>
 #include <QStandardItemModel>
+#include <QUrl>
 #include <QVariantMap>
 
 namespace KDockWQmlTest
 {
+
+class MockFolderStackModel : public QAbstractListModel
+{
+    Q_OBJECT
+    Q_PROPERTY(QUrl rootUrl READ rootUrl NOTIFY rootUrlChanged)
+    Q_PROPERTY(QUrl currentUrl READ currentUrl NOTIFY currentUrlChanged)
+    Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
+    Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged)
+
+public:
+    using QAbstractListModel::QAbstractListModel;
+    int rowCount(const QModelIndex &parent = {}) const override
+    {
+        Q_UNUSED(parent);
+        return 0;
+    }
+    QVariant data(const QModelIndex &, int = Qt::DisplayRole) const override
+    {
+        return {};
+    }
+    QUrl rootUrl() const { return m_rootUrl; }
+    QUrl currentUrl() const { return m_currentUrl; }
+    QString errorMessage() const { return {}; }
+    bool loading() const { return false; }
+    Q_INVOKABLE bool openFolder(const QUrl &url)
+    {
+        m_rootUrl = url;
+        m_currentUrl = url;
+        Q_EMIT rootUrlChanged();
+        Q_EMIT currentUrlChanged();
+        return true;
+    }
+    Q_INVOKABLE bool openItem(int) { return true; }
+    Q_INVOKABLE void goUp() {}
+    Q_INVOKABLE void openCurrentFolder() {}
+    Q_INVOKABLE void close() {}
+
+Q_SIGNALS:
+    void rootUrlChanged();
+    void currentUrlChanged();
+    void errorMessageChanged();
+    void loadingChanged();
+
+private:
+    QUrl m_rootUrl;
+    QUrl m_currentUrl;
+};
 
 // Mirrors the role names of TaskManager::AbstractTasksModel that KDockW's QML
 // reads, plus a few mock-only roles (IconName, IsOnCurrentDesktop) that back

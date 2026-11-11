@@ -61,6 +61,8 @@ add_library(kdockw_lib STATIC
     models/dockentry.cpp
     models/dockentriesmodel.h
     models/dockentriesmodel.cpp
+    models/folderstackmodel.h
+    models/folderstackmodel.cpp
     models/dockactions.h
     models/dockactions.cpp
     models/dockcontextmenu.h
@@ -127,6 +129,7 @@ target_link_libraries(kdockw_lib PUBLIC
     KF6::XmlGui
     KF6::Service
     KF6::KIOGui
+    KF6::KIOWidgets
     KF6::JobWidgets
     KF6::Notifications
     LayerShellQt::Interface

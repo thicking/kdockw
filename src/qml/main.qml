@@ -1652,6 +1652,32 @@ Item {
                                           && externalDropArea.dropTargetIndex === index
                 }
             }
+
+            // Folder stacks are independent dock entries. Keep TaskManager's
+            // row indexes intact for existing task actions; folder delegates
+            // use the stable DockEntriesModel row for persistence and removal.
+            Repeater {
+                id: folderStackRepeater
+                model: DockModel.dockEntriesModel
+                delegate: Item {
+                    required property int index
+                    required property string entryType
+                    required property var model
+                    readonly property bool isFolderStack: entryType === "folderStack"
+                    width: isFolderStack ? DockSettings.iconSize + DockSettings.iconSpacing : 0
+                    height: isFolderStack ? DockSettings.iconSize + DockSettings.iconSpacing : 0
+
+                    FolderStackItem {
+                        anchors.fill: parent
+                        visible: parent.isFolderStack
+                        index: parent.index
+                        model: parent.model
+                        rootItem: root
+                        verticalDock: DockView.isVertical
+                        dockEdge: DockView.edge
+                    }
+                }
+            }
         }
         // Allocate a dedicated separator slot outside the Flow. The native
         // separator is centered between transformed visual edges below, cannot
@@ -1845,10 +1871,14 @@ Item {
                 // Check first URL to classify the drop
                 let firstUrl = urls[0]
                 let isLauncher = DockModel.isDesktopFile(firstUrl)
+                let isLocalFolder = firstUrl.isLocalFile()
 
                 if (isLauncher) {
                     // .desktop file → add as pinned launcher
                     DockActions.addLauncher(firstUrl)
+                } else if (isLocalFolder) {
+                    // A local directory becomes an independent folder-stack entry.
+                    DockActions.addFolderStack(firstUrl)
                 } else if (dropTargetIndex >= 0) {
                     // Regular file(s) on an app icon → open with that app
                     DockActions.openUrlsWithTask(dropTargetIndex, urls)
