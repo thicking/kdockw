@@ -16,6 +16,15 @@ mkdir -p "$topdir"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 cp "$spec" "$topdir/SPECS/kdockw.spec"
 # Source0 uses the archive basename from the permanent tag URL.
 cp "$tarball" "$topdir/SOURCES/kdockw-v${KDOCKW_VERSION}.tar.gz"
+# Keep the package checker outside RPM's BUILD tree: the Fedora macros run
+# %clean before rpmbuild returns and remove that entire tree.
+checker_member="kdockw-${KDOCKW_VERSION}/tests/distro/check_package_locale.py"
+tar -xzf "$tarball" -C /work "$checker_member"
+locale_checker="/work/$checker_member"
+[[ -f "$locale_checker" ]] || {
+    echo "error: package locale checker missing from source archive: $locale_checker" >&2
+    exit 66
+}
 
 # debuginfo/debugsource stay enabled: find-debuginfo is what strips the
 # binary in the shipped rpm (eu-strip + .gnu_debuglink, and .gnu_debugdata on
@@ -26,18 +35,6 @@ cp "$tarball" "$topdir/SOURCES/kdockw-v${KDOCKW_VERSION}.tar.gz"
 # metadata the E2E suite exercises.
 rpmbuild -bb --define "_topdir $topdir" --define '_binary_payload w3.zstdio' \
     "$topdir/SPECS/kdockw.spec"
-
-# %autosetup extracts Source0 under rpmbuild's BUILD tree. Distribution
-# macros may add a build-root directory before the extracted source directory,
-# so locate the checker in the tree rpmbuild actually populated.
-mapfile -t locale_checkers < <(
-    find "$topdir/BUILD" -type f -path '*/tests/distro/check_package_locale.py' -print
-)
-if (( ${#locale_checkers[@]} != 1 )); then
-    echo "error: expected one package locale checker in RPM build tree, found ${#locale_checkers[@]}" >&2
-    exit 66
-fi
-locale_checker="${locale_checkers[0]}"
 
 # Ship the binary rpm(s): kdockw-<version>-*.rpm, excluding debuginfo/debugsource
 # (kdockw-debug*) and .src.rpm.
