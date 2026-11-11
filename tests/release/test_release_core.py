@@ -152,6 +152,41 @@ class VersionTests(TempDirTest):
     def test_agreeing_source_returns_revision(self) -> None:
         self.assertEqual(check_source_versions(self.tree(), "1.2.3"), "1")
 
+    def test_archived_arch_metadata_is_not_a_gate_when_arch_is_not_selected(self) -> None:
+        source = self.tree(
+            **{
+                "tests/distro/release-targets.txt": (
+                    "debian-13\nubuntu-26.04\nfedora-45\n"
+                ),
+                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
+                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
+            }
+        )
+        self.assertEqual(check_source_versions(source, "1.2.3"), "1")
+
+    def test_arch_metadata_is_checked_when_arch_is_selected(self) -> None:
+        source = self.tree(
+            **{
+                "tests/distro/release-targets.txt": "debian-13\narch\n",
+                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
+                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
+            }
+        )
+        with self.assertRaises(ReleaseError) as caught:
+            check_source_versions(source, "1.2.3")
+        self.assertIn("packaging/arch/PKGBUILD", str(caught.exception))
+
+    def test_arch_metadata_remains_checked_for_legacy_tag_without_allowlist(self) -> None:
+        source = self.tree(
+            **{
+                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
+                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
+            }
+        )
+        with self.assertRaises(ReleaseError) as caught:
+            check_source_versions(source, "1.2.3")
+        self.assertIn("packaging/arch/PKGBUILD", str(caught.exception))
+
     def test_each_disagreeing_field_is_rejected(self) -> None:
         cases = {
             "CMakeLists.txt": 'set(KDOCKW_VERSION "1.2.2")\nproject(kdockw VERSION 1.2.3 LANGUAGES C CXX)\n',

@@ -52,12 +52,15 @@ successful matrix for the exact release commit are eligible for GitHub Release
 uploads. `SHA256SUMS` covers the source archive and every package asset.
 
 While a release is in development, inactive manual compatibility recipes stay
-pinned to the latest published stable source. They are updated to the approved
-release version and exact source checksum only during release preparation.
+pinned to the latest published stable source. They are not updated during
+release preparation and are not validated as release package metadata unless
+their target is explicitly added to `tests/distro/release-targets.txt`.
 
-The Arch adapter can render a tag-specific PKGBUILD and `.SRCINFO` using the
-verified archive hash. Arch remains an explicit manual compatibility target,
-but is excluded from required release gates and v0.3.2+ GitHub package assets.
+The Arch adapter and the retained `packaging/arch/PKGBUILD` and `.SRCINFO` can
+still support explicit manual compatibility checks. Arch is not a supported
+KDockW release package, and its archived recipe versions do not block a release
+unless Arch is explicitly added to the tagged required-target list. Arch is
+excluded from v0.3.2+ release gates and GitHub package assets.
 
 The JSON and research files under `packaging/submissions/` and the local
 Flatpak validation package are historical receipts for earlier Krema or

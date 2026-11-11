@@ -9,6 +9,10 @@ stable, current Ubuntu LTS, and current stable Fedora. The required target IDs
 are listed in `tests/distro/release-targets.txt`; update them when those
 upstream representatives change. Older compatibility targets remain available
 for explicit manual runs but are not release gates or release assets.
+The retained `packaging/arch/PKGBUILD` and `.SRCINFO` files are archival manual
+compatibility recipes, not supported KDockW release packages. Their pinned
+versions do not block a release unless `arch` is explicitly added to the tagged
+`release-targets.txt`.
 
 AUR, OBS, COPR, and Launchpad/PPA are inactive. Optional adapter scripts may
 remain in the repository, but the release CLI's `all` selection means GitHub
@@ -19,10 +23,11 @@ or publication in those services.
 
 1. Start from a clean, current `main` checkout. Audit and test the accepted
    source changes before making the release commit.
-2. Bump `KDOCKW_VERSION` and synchronize AppStream, package metadata for the
-   required targets, documentation, and package version metadata. Move the new
-   user-facing entries from `[Unreleased]` into a dated version section in
-   `CHANGELOG.md`.
+2. Bump `KDOCKW_VERSION` and synchronize AppStream and package metadata for the
+   required targets, plus documentation. Arch recipes are archival and excluded
+   from this synchronization unless Arch is explicitly added to the required
+   release-target list. Move the new user-facing entries from `[Unreleased]`
+   into a dated version section in `CHANGELOG.md`.
 3. Build Release and run the complete Release CTest suite, localization,
    desktop-entry, documentation, release-tooling, and packaging checks.
 4. Commit and push the release source to `main` without rewriting history.
