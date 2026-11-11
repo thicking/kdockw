@@ -27,15 +27,17 @@ cp "$tarball" "$topdir/SOURCES/kdockw-v${KDOCKW_VERSION}.tar.gz"
 rpmbuild -bb --define "_topdir $topdir" --define '_binary_payload w3.zstdio' \
     "$topdir/SPECS/kdockw.spec"
 
-# %autosetup extracts Source0 under rpmbuild's BUILD directory, not /work.
-# Keep the package-locale check next to the source tree that was actually
-# built so it works for the RPM family as well as the Debian-family builder.
-source_dir="$topdir/BUILD/kdockw-${KDOCKW_VERSION}"
-locale_checker="$source_dir/tests/distro/check_package_locale.py"
-[[ -f "$locale_checker" ]] || {
-    echo "error: package locale checker missing from RPM build source: $locale_checker" >&2
+# %autosetup extracts Source0 under rpmbuild's BUILD tree. Distribution
+# macros may add a build-root directory before the extracted source directory,
+# so locate the checker in the tree rpmbuild actually populated.
+mapfile -t locale_checkers < <(
+    find "$topdir/BUILD" -type f -path '*/tests/distro/check_package_locale.py' -print
+)
+if (( ${#locale_checkers[@]} != 1 )); then
+    echo "error: expected one package locale checker in RPM build tree, found ${#locale_checkers[@]}" >&2
     exit 66
-}
+fi
+locale_checker="${locale_checkers[0]}"
 
 # Ship the binary rpm(s): kdockw-<version>-*.rpm, excluding debuginfo/debugsource
 # (kdockw-debug*) and .src.rpm.
