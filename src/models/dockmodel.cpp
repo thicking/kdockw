@@ -87,6 +87,7 @@ QString rawIconKey(const QModelIndex &index, const QString &appId, const QIcon &
 
 DockModel::DockModel(QObject *parent)
     : QObject(parent)
+    , m_dockEntriesModel(std::make_unique<DockEntriesModel>(this))
     , m_tasksModel(std::make_unique<TaskManager::TasksModel>(this))
     , m_virtualDesktopInfo(std::make_shared<TaskManager::VirtualDesktopInfo>(this))
     , m_activityInfo(std::make_shared<TaskManager::ActivityInfo>(this))
@@ -144,6 +145,11 @@ DockModel::DockModel(QObject *parent)
     // NOW activate internal source models (launcher model, window model, etc.)
     // All properties are set, so the backends will correctly discover running windows.
     m_tasksModel->componentComplete();
+
+    connect(m_dockEntriesModel.get(), &DockEntriesModel::entriesChanged, this, &DockModel::dockEntriesChanged);
+    connect(m_tasksModel.get(), &TaskManager::TasksModel::launcherListChanged, this, [this]() {
+        m_dockEntriesModel->syncTaskOrder(m_tasksModel->launcherList());
+    });
 
 #ifdef KDOCKW_DIAGNOSTIC_BUILD
     if (diagnosticTaskLoggingEnabled()) {
@@ -290,6 +296,31 @@ TaskManager::TasksModel *DockModel::tasksModel() const
     return m_tasksModel.get();
 }
 
+DockEntriesModel *DockModel::dockEntriesModel() const
+{
+    return m_dockEntriesModel.get();
+}
+
+QString DockModel::dockEntries() const
+{
+    return DockEntriesCodec::encode(m_dockEntriesModel->entries());
+}
+
+void DockModel::loadDockEntries(const QString &serialized)
+{
+    const DockEntriesCodec::DecodeResult decoded = DockEntriesCodec::decode(serialized);
+    const QList<DockEntry> entries = decoded.validDocument ? decoded.entries : DockEntriesCodec::fromLegacyLaunchers(pinnedLaunchers());
+    m_dockEntriesModel->setEntries(entries);
+
+    QStringList launcherUrls;
+    for (const DockEntry &entry : entries) {
+        if (entry.type == DockEntryType::Task) {
+            launcherUrls.append(entry.url.toString());
+        }
+    }
+    m_tasksModel->setLauncherList(launcherUrls);
+}
+
 TaskManager::VirtualDesktopInfo *DockModel::virtualDesktopInfo() const
 {
     return m_virtualDesktopInfo.get();
@@ -308,6 +339,7 @@ QStringList DockModel::pinnedLaunchers() const
 void DockModel::setPinnedLaunchers(const QStringList &launchers)
 {
     m_tasksModel->setLauncherList(launchers);
+    m_dockEntriesModel->syncTaskOrder(m_tasksModel->launcherList());
     Q_EMIT pinnedLaunchersChanged();
 }
 
@@ -341,6 +373,7 @@ bool DockModel::moveTask(int fromIndex, int toIndex)
     // launcher list from visible rows here resets the model's just-moved order
     // on Plasma 6.3–6.8 even though the persisted list appears correct.
     m_tasksModel->syncLaunchers();
+    m_dockEntriesModel->syncTaskOrder(m_tasksModel->launcherList());
     // The user's order is the new settled order: a launcher-slot repair still
     // pending from before the move must not undo it.
     snapshotSettledRows();

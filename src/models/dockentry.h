@@ -24,6 +24,7 @@ struct DockEntry {
     [[nodiscard]] static DockEntry task(const QUrl &url);
     [[nodiscard]] static DockEntry folderStack(const QUrl &url);
     [[nodiscard]] bool isValid() const;
+    bool operator==(const DockEntry &) const = default;
 };
 
 /** Versioned serialization and v0.4.x launcher migration for pinned entries. */

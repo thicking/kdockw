@@ -94,8 +94,9 @@ Partition reconciliation is signal-driven, queued, coalesced, and guarded agains
 
 ### Typed Pinned Entry Store (v0.5.0 foundation)
 
-`DockEntry` gives persisted pins an explicit `Task` or `FolderStack` type. The
-version-1 `DockEntries` setting stores the mixed pinned order as JSON records
+`DockEntriesModel` gives persisted pins an explicit `Task` or `FolderStack`
+type and keeps their mixed order. The version-1 `DockEntries` setting stores
+that order as JSON records
 with stable IDs and URLs. Task IDs are deterministic hashes of their launcher
 URL; folder stack IDs are UUIDs, so two stacks may refer to the same directory.
 Folder-stack records accept local absolute `file://` URLs only.

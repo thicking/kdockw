@@ -6,6 +6,8 @@
 #include <QObject>
 #include <QUrl>
 
+#include "dockentriesmodel.h"
+
 #include <taskmanager/activityinfo.h>
 #include <taskmanager/tasksmodel.h>
 #include <taskmanager/virtualdesktopinfo.h>
@@ -27,6 +29,8 @@ class DockModel : public QObject
     Q_OBJECT
 
     Q_PROPERTY(TaskManager::TasksModel *tasksModel READ tasksModel CONSTANT)
+    Q_PROPERTY(DockEntriesModel *dockEntriesModel READ dockEntriesModel CONSTANT)
+    Q_PROPERTY(QString dockEntries READ dockEntries NOTIFY dockEntriesChanged)
     Q_PROPERTY(QStringList pinnedLaunchers READ pinnedLaunchers WRITE setPinnedLaunchers NOTIFY pinnedLaunchersChanged)
     Q_PROPERTY(int pinnedTaskCount READ pinnedTaskCount NOTIFY pinnedTaskCountChanged)
     Q_PROPERTY(int virtualDesktopMode READ virtualDesktopMode WRITE setVirtualDesktopMode NOTIFY virtualDesktopModeChanged)
@@ -37,6 +41,9 @@ public:
     ~DockModel() override;
 
     [[nodiscard]] TaskManager::TasksModel *tasksModel() const;
+    [[nodiscard]] DockEntriesModel *dockEntriesModel() const;
+    [[nodiscard]] QString dockEntries() const;
+    void loadDockEntries(const QString &serialized);
     [[nodiscard]] TaskManager::VirtualDesktopInfo *virtualDesktopInfo() const;
     [[nodiscard]] TaskManager::ActivityInfo *activityInfo() const;
 
@@ -91,6 +98,7 @@ public:
     Q_INVOKABLE QString appId(int index) const;
 
 Q_SIGNALS:
+    void dockEntriesChanged();
     void pinnedLaunchersChanged();
     void pinnedTaskCountChanged();
     void virtualDesktopModeChanged();
@@ -127,6 +135,7 @@ private:
     int m_pinnedTaskCount = 0;
     int m_virtualDesktopMode = 0;
     QList<SettledRow> m_settledRows;
+    std::unique_ptr<DockEntriesModel> m_dockEntriesModel;
     std::unique_ptr<TaskManager::TasksModel> m_tasksModel;
     std::shared_ptr<TaskManager::VirtualDesktopInfo> m_virtualDesktopInfo;
     std::shared_ptr<TaskManager::ActivityInfo> m_activityInfo;

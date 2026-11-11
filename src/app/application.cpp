@@ -337,6 +337,7 @@ int Application::run(const KAboutData &aboutData)
     // Create data model
     m_dockModel = std::make_unique<DockModel>();
     m_dockModel->setPinnedLaunchers(m_settings->pinnedLaunchers());
+    m_dockModel->loadDockEntries(m_settings->dockEntries());
     m_dockModel->setSeparateLaunchers(m_settings->separateLaunchers());
 
     // Create notification trackers (before QML loading)
@@ -394,6 +395,11 @@ int Application::run(const KAboutData &aboutData)
     // Auto-save pinned launchers when they change on any shell
     connect(m_dockManager.get(), &MultiDockManager::pinnedLaunchersChanged, this, [this]() {
         m_settings->setPinnedLaunchers(m_dockModel->pinnedLaunchers());
+        m_settings->save();
+    });
+
+    connect(m_dockModel.get(), &DockModel::dockEntriesChanged, this, [this]() {
+        m_settings->setDockEntries(m_dockModel->dockEntries());
         m_settings->save();
     });
 
