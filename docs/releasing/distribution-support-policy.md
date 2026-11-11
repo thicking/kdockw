@@ -1,14 +1,16 @@
 # Distribution Support Policy
 
-## Latest published release: KDockW v0.4.0
+## Latest published release: KDockW v0.4.2
 
-Published on 2026-11-09 from commit `992753cad51d1fbe8ae4c4c703cfcc9a459262b0`
-with signed tag `kdockw-v0.4.0`. The full required Distro E2E run passed all
-three targets on that exact commit: [run 42609893460](https://github.com/thicking/kdockw/actions/runs/42609893460).
-The public [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.0)
-contains the source archive, verified Debian 13 and Ubuntu 26.04 LTS DEBs,
-Fedora 45 RPM, and `SHA256SUMS`. Downloaded public assets were checked against
-the published checksum file.
+Published on 2026-11-11 from commit `54aeb6d7c09cbea86bd47175338a855902cfbb12`
+with signed tag `kdockw-v0.4.2`. The full required Distro E2E run passed all
+three targets on that exact commit: [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363).
+The public [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2)
+contains the source archive, Debian 13 and Ubuntu 26.04 LTS DEBs, Fedora 45 RPM,
+and `SHA256SUMS`. All four payload assets and the manifest were downloaded and
+verified against the published SHA-256 values. The retained Arch recipes are
+archival manual-compatibility files; their stale version fields do not enter
+the required package matrix or release gate.
 
 ## Required release targets from v0.3.2
 

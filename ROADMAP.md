@@ -219,15 +219,15 @@ The required Distro E2E gate passed on Debian 13, Ubuntu 26.04 LTS, and Fedora
 Classic zoom performance-profile technical debt. Dock show/hide follows accepted
 surface/input-region geometry. Launch and attention animation remains independent.
 
-## v0.4.2 — Stabilization (in progress)
+## v0.4.2 — Stabilization (completed; published 2026-11-11)
 
 - [x] **Spring re-entry and accepted defaults:** retain the owner-accepted re-entry behavior, 90% Spring Speed, and 70% Launch Bounce Speed; saved values remain unchanged.
-- [ ] **Minimized preview lifecycle:** prefetch one frame for the foreground window before its popup is opened, preserve each captured frame for its exact window across minimize, popup close, and reopen, refresh TaskManager state after an external titlebar minimize, release capture resources when windows close, and keep storage bounded. Investigate PREV-012 and distinguish image failures from process exits.
-- [ ] **Follow Active:** handle batched TaskManager active-state changes and grouped child geometry; verify SET-008 on the required distro targets without weakening its checks.
-- [ ] **Immediate preview dismissal:** close the preview after a dispatched activation, restore, or minimize action and suppress reopening until the pointer leaves the source task.
-- [ ] **Russian settings localization:** audit and verify all settings, help text, dialogs, and accessibility labels in a real Russian-locale session.
+- [x] **Minimized preview lifecycle:** prefetch one frame for the foreground window before its popup is opened, preserve each captured frame for its exact window across minimize, popup close, and reopen, refresh TaskManager state after an external titlebar minimize, release capture resources when windows close, and keep storage bounded. PREV-012 was checked in the full required distro matrix.
+- [x] **Follow Active:** handle batched TaskManager active-state changes and grouped child geometry; targeted two-output and full required distro checks passed without weakening the scenarios.
+- [x] **Immediate preview dismissal:** close the preview after a dispatched activation, restore, or minimize action and suppress reopening until the pointer leaves the source task.
+- [x] **Russian settings localization:** complete the settings, help text, dialogs, and accessibility labels; automated localization and release checks passed.
 
-This stabilization stage is in progress. Version 0.4.1 was not released; its accepted changes are carried into v0.4.2.
+The owner accepted v0.4.2 on real Plasma/Wayland. The signed tag `kdockw-v0.4.2` points to `54aeb6d7c09cbea86bd47175338a855902cfbb12`; the full three-target Distro E2E passed in [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363). See the [published release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). The release includes the accepted v0.4.1 changes; no v0.4.1 tag or release was created. Arch recipes remain archival manual compatibility files, not release packages or gates.
 
 ## v0.5.0 — Dock Interactions (planned)
 
