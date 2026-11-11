@@ -383,9 +383,14 @@ QStringList PreviewController::cachedPreviewFrameUuids() const
     return m_previewFrameCache->windowUuids();
 }
 
-bool PreviewController::storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image)
+bool PreviewController::storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image, bool minimized)
 {
-    return m_previewFrameCache->store(windowUuid, image);
+    return m_previewFrameCache->store(windowUuid, image, minimized);
+}
+
+bool PreviewController::setPreviewFrameMinimized(const QString &windowUuid, bool minimized)
+{
+    return m_previewFrameCache->setMinimized(windowUuid, minimized);
 }
 
 bool PreviewController::capturePreviewFrame(QQuickItem *item, const QString &windowUuid, const QSize &targetSize)

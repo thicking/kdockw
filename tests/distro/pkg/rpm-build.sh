@@ -30,9 +30,15 @@ rpmbuild -bb --define "_topdir $topdir" --define '_binary_payload w3.zstdio' \
 # Ship the binary rpm(s): kdockw-<version>-*.rpm, excluding debuginfo/debugsource
 # (kdockw-debug*) and .src.rpm.
 found=0
+binary=$(mktemp -d /tmp/kdockw-package-locale.XXXXXX)
+trap 'rm -rf "$binary"' EXIT
 while IFS= read -r -d '' rpm; do
     cp "$rpm" /out/
     found=1
+    rpm2cpio "$rpm" | (cd "$binary" && cpio -idm --quiet)
+    python3 "/work/kdockw-${KDOCKW_VERSION}/tests/distro/check_package_locale.py" \
+        "$binary" "$KDOCKW_VERSION"
+    find "$binary" -mindepth 1 -delete
 done < <(find "$topdir/RPMS" -name 'kdockw-[0-9]*.rpm' -print0)
 
 if (( ! found )); then

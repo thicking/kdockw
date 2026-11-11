@@ -40,15 +40,15 @@ if (( ${#artifacts[@]} == 0 )); then
     exit 70
 fi
 cp "${artifacts[@]}" /out/
+binary=$(mktemp -d /tmp/kdockw-package-locale.XXXXXX)
+trap 'rm -rf "$binary"' EXIT
+dpkg-deb -x "${artifacts[0]}" "$binary"
+python3 "$src/tests/distro/check_package_locale.py" "$binary" "$KDOCKW_VERSION"
 if [[ "${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}" == 1 ]]; then
-    binary=/tmp/kdockw-debug-symbols-check
-    mkdir -p "$binary"
-    dpkg-deb -x "${artifacts[0]}" "$binary"
     if ! readelf -S "$binary/usr/bin/kdockw" | grep -q '\.debug_info'; then
         echo "error: diagnostic Debian package does not contain .debug_info" >&2
         exit 71
     fi
     echo "diagnostic debug sections verified in ${artifacts[0]}"
-    rm -rf "$binary"
 fi
 ls -l /out

@@ -82,7 +82,9 @@ QImage PreviewFrameCache::imageForKey(const QString &key) const
     m_lru.append(key);
     if (IconDiagnostics::previewCaptureMetricsEnabled()) {
         qCDebug(lcPreviewCache) << "image-read-hit uuid=" << it->windowUuid << "key=" << key
-                                << "size=" << it->image.size() << "bytes=" << it->bytes;
+                                << "size=" << it->image.size() << "bytes=" << it->bytes
+                                << "minimized=" << it->minimized << "entries=" << m_entries.size()
+                                << "total-bytes=" << m_totalBytes;
     }
     return it->image;
 }
@@ -99,7 +101,7 @@ qsizetype PreviewFrameCache::totalBytes() const
     return m_totalBytes;
 }
 
-bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceImage)
+bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceImage, bool minimized)
 {
     if (windowUuid.isEmpty() || sourceImage.isNull()) {
         if (IconDiagnostics::previewCaptureMetricsEnabled()) {
@@ -136,19 +138,37 @@ bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceIma
             m_entries.erase(existing);
             m_lru.removeAll(key);
         }
-        while (!m_lru.isEmpty() && (m_entries.size() >= MaximumEntries || m_totalBytes + bytes > MaximumTotalBytes)) {
-            const QString evictedKey = m_lru.takeFirst();
+        while (m_entries.size() >= MaximumEntries || m_totalBytes + bytes > MaximumTotalBytes) {
+            // The list is oldest first, but minimized frames are retained
+            // preferentially. Only evict one when every candidate is already
+            // minimized and the hard bounds still require space.
+            auto eviction = std::find_if(m_lru.cbegin(), m_lru.cend(), [this](const QString &candidateKey) {
+                const auto candidate = m_entries.constFind(candidateKey);
+                return candidate != m_entries.cend() && !candidate->minimized;
+            });
+            if (eviction == m_lru.cend()) {
+                eviction = m_lru.cbegin();
+            }
+            if (eviction == m_lru.cend()) {
+                return false;
+            }
+            const QString evictedKey = *eviction;
+            m_lru.removeAt(std::distance(m_lru.cbegin(), eviction));
             const auto evicted = m_entries.find(evictedKey);
             if (evicted != m_entries.end()) {
                 if (IconDiagnostics::previewCaptureMetricsEnabled()) {
                     qCDebug(lcPreviewCache) << "evict uuid=" << evicted->windowUuid << "key=" << evictedKey
-                                            << "bytes=" << evicted->bytes << "incoming-key=" << key;
+                                            << "bytes=" << evicted->bytes << "minimized=" << evicted->minimized
+                                            << "reason=" << (m_entries.size() >= MaximumEntries ? "entry-limit"
+                                                                                              : "byte-limit")
+                                            << "incoming-key=" << key << "entries-before=" << m_entries.size()
+                                            << "bytes-before=" << m_totalBytes;
                 }
                 m_totalBytes -= evicted->bytes;
                 m_entries.erase(evicted);
             }
         }
-        m_entries.insert(key, Entry{std::move(image), bytes, windowUuid});
+        m_entries.insert(key, Entry{std::move(image), bytes, windowUuid, minimized});
         m_lru.append(key);
         m_totalBytes += bytes;
         ++m_revision;
@@ -160,6 +180,29 @@ bool PreviewFrameCache::store(const QString &windowUuid, const QImage &sourceIma
         }
     }
     Q_EMIT revisionChanged();
+    return true;
+}
+
+bool PreviewFrameCache::setMinimized(const QString &windowUuid, bool minimized)
+{
+    const QString key = imageKey(windowUuid);
+    if (key.isEmpty()) {
+        return false;
+    }
+
+    QMutexLocker locker(&m_mutex);
+    const auto it = m_entries.find(key);
+    if (it == m_entries.end() || it->minimized == minimized) {
+        return false;
+    }
+    it->minimized = minimized;
+    if (IconDiagnostics::previewCaptureMetricsEnabled()) {
+        qCDebug(lcPreviewCache) << "priority-changed uuid=" << it->windowUuid << "key=" << key
+                                << "minimized=" << minimized << "entries=" << m_entries.size()
+                                << "total-bytes=" << m_totalBytes;
+    }
+    // Keep recency and priority independent. Priority metadata changes do not
+    // change the displayed image, so they must not trigger a QML image reload.
     return true;
 }
 
@@ -180,7 +223,8 @@ bool PreviewFrameCache::remove(const QString &windowUuid)
         }
         if (IconDiagnostics::previewCaptureMetricsEnabled()) {
             qCDebug(lcPreviewCache) << "remove-hit uuid=" << it->windowUuid << "key=" << key
-                                    << "bytes=" << it->bytes;
+                                    << "bytes=" << it->bytes << "minimized=" << it->minimized
+                                    << "entries-before=" << m_entries.size() << "bytes-before=" << m_totalBytes;
         }
         m_totalBytes -= it->bytes;
         m_entries.erase(it);

@@ -110,6 +110,8 @@ Item {
 
             const hadMinimizedState = Object.prototype.hasOwnProperty.call(
                 root.lastMinimizedByUuid, candidate.uuid)
+            const minimizedChanged = hadMinimizedState
+                && root.lastMinimizedByUuid[candidate.uuid] !== candidate.minimized
             if (hadMinimizedState && root.lastMinimizedByUuid[candidate.uuid]
                     && !candidate.minimized) {
                 // A restore permits one fresh attempt after an earlier
@@ -128,6 +130,19 @@ Item {
             let minimizedState = Object.assign({}, root.lastMinimizedByUuid)
             minimizedState[candidate.uuid] = candidate.minimized
             root.lastMinimizedByUuid = minimizedState
+            // Cache eviction priority follows the live TaskManager state, so
+            // a retained minimized frame survives ordinary prefetch churn.
+            const priorityChanged = PreviewController.setPreviewFrameMinimized(
+                candidate.uuid, candidate.minimized)
+            if (!hadMinimizedState || minimizedChanged || priorityChanged) {
+                log("task-window-state", {
+                    windowUuid: candidate.uuid,
+                    minimized: candidate.minimized,
+                    active: candidate.active,
+                    cached: root.previewControllerHasFrame(candidate.uuid),
+                    cachePriorityChanged: priorityChanged
+                })
+            }
             let activeState = Object.assign({}, root.lastActiveByUuid)
             activeState[candidate.uuid] = candidate.active
             root.lastActiveByUuid = activeState

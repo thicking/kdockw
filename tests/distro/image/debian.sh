@@ -64,7 +64,7 @@ family_build() {
 
 family_toolchain() {
     apt-get update
-    debian_install build-essential dpkg-dev fakeroot devscripts equivs tar xz-utils ccache
+    debian_install build-essential dpkg-dev fakeroot devscripts equivs cpio tar xz-utils ccache
 }
 
 # dpkg-checkbuilddeps is offline and applies the version constraints;

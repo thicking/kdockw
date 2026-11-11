@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.4.2")
+set(KDOCKW_VERSION "0.4.3")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
@@ -24,6 +24,9 @@ find_package(ECM ${KF6_MIN_VERSION} REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)
+file(RELATIVE_PATH KDOCKW_INSTALL_LOCALE_RELATIVE_PATH
+    "${KDE_INSTALL_FULL_BINDIR}"
+    "${KDE_INSTALL_FULL_LOCALEDIR}")
 include(KDECMakeSettings)
 include(KDECompilerSettings NO_POLICY_SCOPE)
 include(KDEClangFormat)

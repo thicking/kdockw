@@ -388,6 +388,8 @@ Item {
             let fallback = T.findFirst(minimized, o => o.objectName === "previewFallbackIcon")
             verify(fallback && fallback.visible,
                    "an initially minimized stream without a visible-window frame must show the app icon")
+            compare(minimized.fallbackReason, "minimized-without-retained-frame",
+                    "diagnostics must identify why the icon is used for this UUID")
 
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
             tryCompare(minimized, "isMinimized", true)
@@ -406,6 +408,8 @@ Item {
             DockModel.tasksModel.setChildTaskData(1, 2, "IsMinimized", true)
             tryCompare(minimized, "isMinimized", true)
             verify(!fallback.visible, "a frame obtained while visible must be retained when minimized")
+            compare(minimized.fallbackReason, "cached-frame",
+                    "a retained UUID-specific frame must be the fallback decision")
             verify(capture.visible)
             compare(capture.opacity, 1)
             verify(capture.freezeFrame)
@@ -435,6 +439,8 @@ Item {
                 item => item.objectName === "previewFallbackIcon")
             verify(reopenedFallback && !reopenedFallback.visible,
                    "a valid retained frame must suppress the app-icon fallback after reopening")
+            compare(reopenedMinimized.fallbackReason, "cached-frame",
+                    "delegate recreation must still resolve the exact cached-frame state")
         }
 
         function test_externalMinimizeWhilePopupHiddenReusesCachedFrameForExactUuid() {

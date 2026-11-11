@@ -33,7 +33,8 @@ public:
     [[nodiscard]] qsizetype entryCount() const;
     [[nodiscard]] qsizetype totalBytes() const;
 
-    bool store(const QString &windowUuid, const QImage &image);
+    bool store(const QString &windowUuid, const QImage &image, bool minimized = false);
+    bool setMinimized(const QString &windowUuid, bool minimized);
     bool remove(const QString &windowUuid);
     void clear();
 
@@ -45,9 +46,10 @@ private:
         QImage image;
         qsizetype bytes = 0;
         QString windowUuid;
+        bool minimized = false;
     };
 
-    static constexpr qsizetype MaximumEntries = 4;
+    static constexpr qsizetype MaximumEntries = 32;
     static constexpr qsizetype MaximumImageBytes = 1024 * 1024;
     static constexpr qsizetype MaximumTotalBytes = MaximumEntries * MaximumImageBytes;
     static constexpr int MaximumWidth = 640;
@@ -55,6 +57,8 @@ private:
 
     mutable QMutex m_mutex;
     QHash<QString, Entry> m_entries;
+    // Least-recently-used first. Eviction searches this order for a restored
+    // frame before it can remove a retained minimized frame.
     mutable QStringList m_lru;
     qsizetype m_totalBytes = 0;
     quint64 m_revision = 0;

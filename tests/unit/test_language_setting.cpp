@@ -713,6 +713,42 @@ TEST_CASE("KI18n falls back to the English source string when a translation is m
     CHECK(fallback == QLatin1String("A source string without a catalog entry"));
 }
 
+TEST_CASE("the explicit production locale directory loads current settings translations", "[i18n][settings]")
+{
+    QString localeRoot = QStringLiteral(KDOCKW_TEST_INSTALL_LOCALE_DIR);
+    const QString installedCatalog = QDir(localeRoot).filePath(QStringLiteral("ru/LC_MESSAGES/kdockw.mo"));
+    if (!QFileInfo::exists(installedCatalog)) {
+        // Clean build runners do not have KDockW installed. Use the catalog
+        // produced from this same source tree while keeping the explicit-path
+        // lookup behavior under test.
+        localeRoot = QStringLiteral(KDOCKW_TEST_LOCALE_DIR);
+    }
+
+    REQUIRE(QFileInfo::exists(QDir(localeRoot).filePath(QStringLiteral("ru/LC_MESSAGES/kdockw.mo"))));
+    KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), localeRoot);
+    kdockw::Application::applyLanguagePreference(QStringLiteral("ru"));
+
+    // This settings label is absent from the stale /usr/local catalog found
+    // during the v0.4.3 investigation, but present in the current package MO.
+    const QList<QPair<QString, QString>> settingsLabels{
+        {QStringLiteral("General"), QStringLiteral("Общие")},
+        {QStringLiteral("Icons"), QStringLiteral("Значки")},
+        {QStringLiteral("Layout & Position"), QStringLiteral("Расположение и позиция")},
+        {QStringLiteral("Panel Style"), QStringLiteral("Стиль панели")},
+        {QStringLiteral("Shadow"), QStringLiteral("Тень")},
+        {QStringLiteral("Animations & Badges"), QStringLiteral("Анимация и индикаторы")},
+        {QStringLiteral("Behavior"), QStringLiteral("Поведение")},
+        {QStringLiteral("Monitors & Desktops"), QStringLiteral("Мониторы и рабочие столы")},
+        {QStringLiteral("Window Preview"), QStringLiteral("Предпросмотр окон")},
+        {QStringLiteral("Update Checks"), QStringLiteral("Проверка обновлений")},
+        {QStringLiteral("Badge text size"), QStringLiteral("Размер текста бейджа")},
+        {QStringLiteral("Spring stiffness"), QStringLiteral("Упругость пружины")},
+    };
+    for (const auto &[source, translated] : settingsLabels) {
+        CHECK(i18n(source.toUtf8().constData()) == translated);
+    }
+}
+
 TEST_CASE("An explicit English preference overrides a Russian system locale", "[i18n][settings]")
 {
     const ScopedConfigHome home;

@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.4.3" date="2026-11-11">
+      <description>
+        <p>Improves installed settings localization and keeps minimized window previews in a bounded, priority-aware memory cache.</p>
+        <p xml:lang="ru">Исправляет локализацию установленных настроек и сохраняет миниатюры свёрнутых окон в ограниченном кэше с приоритетом таких окон.</p>
+      </description>
+    </release>
     <release version="0.4.2" date="2026-11-10">
       <description>
         <p>Window previews retain real frames for minimized windows, including before the preview popup is opened. Follow Active now handles grouped and batched task updates, previews close after window actions, and the settings are fully localized in Russian.</p>

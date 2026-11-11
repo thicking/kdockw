@@ -64,12 +64,18 @@ int main(int argc, char *argv[])
     // notifications; the earlier call also supports headless metadata setup.
     KLocalizedString::setApplicationDomain(QByteArrayLiteral("kdockw"));
     // Now KI18n has a Q*Application instance and can load catalogs reliably.
-    // KI18n installs catalogs under the system locale directory. Also expose
-    // the build-tree catalog so `build/release/bin/kdockw` can run directly.
+    // Prefer a build-tree catalog for an uninstalled candidate. Installed
+    // binaries explicitly add their own prefix's catalog directory so a stale
+    // /usr/local catalog cannot shadow a newer packaged /usr catalog.
     const QDir appDir(QCoreApplication::applicationDirPath());
     const QString buildLocaleDir = appDir.filePath(QStringLiteral("../src/locale"));
     if (QDir(buildLocaleDir).exists()) {
         KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), buildLocaleDir);
+    } else {
+        const QString installedLocaleDir = appDir.filePath(QStringLiteral(KDOCKW_INSTALL_LOCALE_RELATIVE_PATH));
+        if (QDir(installedLocaleDir).exists()) {
+            KLocalizedString::addDomainLocaleDir(QByteArrayLiteral("kdockw"), installedLocaleDir);
+        }
     }
     const KConfigGroup general(kdockw::applicationConfig(), QStringLiteral("General"));
     kdockw::Application::applyLanguagePreference(general.readEntry(QStringLiteral("Language"), QStringLiteral("system")));

@@ -49,6 +49,17 @@ Item {
         const revision = PreviewController.previewFrameRevision
         return PreviewController.previewFrameUrl(root.winId)
     }
+    readonly property string fallbackReason: {
+        if (cachedFrameSource.length > 0)
+            return "cached-frame"
+        if (!captureItem)
+            return "capture-not-created"
+        if (!captureItem.ready)
+            return "capture-not-ready"
+        if (isMinimized && !hasFrameWhileVisible)
+            return "minimized-without-retained-frame"
+        return "live-frame"
+    }
     readonly property string captureClipMode: {
         const requested = typeof IconDiagnostics !== "undefined" ? IconDiagnostics.previewClipMode : ""
         return requested === "raw" || requested === "center50" || requested === "rounded"
@@ -237,9 +248,12 @@ Item {
             captureState: capture ? capture.state : -1,
             freezeFrame: capture && capture.freezeFrame !== undefined ? capture.freezeFrame : false,
             retainedImageVisible: retainedFrameImage.visible,
-            fallbackVisible: fallbackIcon.visible
+            fallbackVisible: fallbackIcon.visible,
+            fallbackReason: root.fallbackReason
         }, details || {})))
     }
+
+    onFallbackReasonChanged: logPreviewLifecycle("fallback-selection-changed")
 
     onCaptureItemChanged: updateSourceAspectRatio()
     onIsMinimizedChanged: {
@@ -253,7 +267,9 @@ Item {
     Component.onCompleted: {
         captureWinId = winId
         updateSourceAspectRatio()
+        logPreviewLifecycle("delegate-created")
     }
+    Component.onDestruction: logPreviewLifecycle("delegate-destroyed")
     Connections {
         target: root.Window.window
         ignoreUnknownSignals: true
@@ -607,8 +623,7 @@ Item {
                 return DockModel.iconName(root.parentIndex) || "application-x-executable"
             }
             readonly property bool isRawIcon: iconName.startsWith("raw:")
-            visible: !root.cachedFrameSource.length && (!root.captureItem || !root.captureItem.ready
-                || (root.isMinimized && !root.hasFrameWhileVisible))
+            visible: root.fallbackReason !== "cached-frame" && root.fallbackReason !== "live-frame"
 
             Kirigami.Icon {
                 anchors.fill: parent

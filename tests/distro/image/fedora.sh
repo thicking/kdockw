@@ -43,8 +43,8 @@ family_build() {
 }
 
 family_toolchain() {
-    fedora_install 'dnf-command(builddep)' rpm-build tar gzip findutils ccache \
-        || fedora_install dnf-plugins-core rpm-build tar gzip findutils ccache
+    fedora_install 'dnf-command(builddep)' rpm-build cpio tar gzip findutils ccache \
+        || fedora_install dnf-plugins-core rpm-build cpio tar gzip findutils ccache
 }
 
 family_builddeps() {

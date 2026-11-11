@@ -68,6 +68,10 @@ QtObject {
         Qt.callLater(function() { previewFramesChanged() })
         return true
     }
+    function setPreviewFrameMinimized(uuid, minimized) {
+        _record("setPreviewFrameMinimized", [uuid, minimized])
+        return true
+    }
     function capturePreviewFrame(item, uuid, size) {
         if (!item || !uuid) return false
         frameStoreRequests = frameStoreRequests.concat([{ uuid: uuid, imageSize: size }])

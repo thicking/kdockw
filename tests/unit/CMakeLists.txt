@@ -31,6 +31,7 @@ add_executable(kdockw_unit_tests
 
 target_compile_definitions(kdockw_unit_tests PRIVATE
     KDOCKW_TEST_LOCALE_DIR="${CMAKE_BINARY_DIR}/src/locale"
+    KDOCKW_TEST_INSTALL_LOCALE_DIR="${KDE_INSTALL_FULL_LOCALEDIR}"
 )
 
 target_link_libraries(kdockw_unit_tests PRIVATE

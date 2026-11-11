@@ -87,10 +87,16 @@ recreating the popup.
 
 While a preview row is visible and has received a frame, KDockW snapshots the
 rendered thumbnail with `QQuickItem::grabToImage()` no more often than every
-1.5 seconds. Snapshots are scaled to at most 640×400 and retained in a process-local
-LRU cache capped at four images and 4 MiB total, keyed by the exact window UUID.
+1.5 seconds. Snapshots are normalized to premultiplied RGBA, scaled to at most
+640×400 and 1 MiB, then retained in a process-local cache capped at 32 images
+and 32 MiB total. Its byte accounting uses `QImage::sizeInBytes()`. Restored-
+window frames are eviction candidates before minimized-window frames. If all
+entries are minimized, the hard limits still evict the least-recently-used
+frame. Entries do not expire by age and remain keyed by the exact window UUID.
 The cached image is shown for that UUID while minimized and after the popup is
 recreated; a reused delegate resets its live source when its UUID changes.
+The RAM cap covers cached image buffers; temporary readback buffers and
+Qt Quick/GPU textures are outside that cache accounting.
 
 Before the popup has ever been opened, `PreviewFramePrefetcher.qml` can seed
 that cache for the foreground window. It starts one temporary

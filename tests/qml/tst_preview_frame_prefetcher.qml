@@ -91,6 +91,10 @@ Item {
             verify(!prefetcher.active, "the one-shot stream must be released after caching a frame")
 
             DockModel.tasksModel.setTaskData(0, "IsMinimized", true)
+            tryVerify(() => PreviewController.calls.some(call =>
+                call.name === "setPreviewFrameMinimized"
+                    && call.args[0] === "new-window-uuid" && call.args[1] === true),
+                1000, "TaskManager minimized state must update the cached frame priority")
             PreviewController.parentIndex = 0
             PreviewController.visible = true
             const popup = createTemporaryObject(popupComponent, stage)
@@ -157,7 +161,7 @@ Item {
             compare(maximumConcurrentStreams, 1)
             compare(activeStreams, 0)
             compare(PreviewController.cachedPreviewFrameUuids().length, 5,
-                    "the scheduler processed each exact UUID; the C++ cache's four-entry bound is tested separately")
+                    "the mock scheduler processed each exact UUID; the C++ cache's 32-entry bound is tested separately")
         }
 
         function test_closingAnUncachedWindowReleasesTheActiveStream() {

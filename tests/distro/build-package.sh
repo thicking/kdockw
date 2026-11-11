@@ -90,6 +90,19 @@ make_source_tarball() {
     local version="$1" dest="$2"
     local -a excludes=(
         --exclude-vcs
+        --exclude-vcs-ignores
+        # Local-only diagnostics are not release or package inputs, even
+        # when this script packs a dirty development worktree.
+        --wildcards-match-slash
+        --exclude='*diagnostics'
+        --exclude='*diagnostics/*'
+        --exclude='*attention-test*'
+        --exclude='*kdockw-v040-attention-diagnostics-*'
+        --exclude='*kdockw-v040-launch-attention-*'
+        --exclude='*kdockw-v040-window-preview-fix-*'
+        --exclude='*kdockw-v040-show-hide-preview-delay-*'
+        --exclude='*kdockw-v041-spring-reentry-*'
+        --exclude='*kdockw-v042-stabilization-*'
         --exclude='./build' --exclude='./build-*' --exclude='./cmake-build-*'
         --exclude='./out' --exclude='./node_modules' --exclude='./.idea'
         --exclude='./.vscode' --exclude='./.claude/worktrees' --exclude='./.omo'

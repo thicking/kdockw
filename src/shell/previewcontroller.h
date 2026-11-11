@@ -130,7 +130,9 @@ public:
     Q_INVOKABLE void setContentSize(qreal width, qreal height);
     Q_INVOKABLE QString previewFrameUrl(const QString &windowUuid) const;
     Q_INVOKABLE QStringList cachedPreviewFrameUuids() const;
-    Q_INVOKABLE bool storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image);
+    Q_INVOKABLE bool storeMinimizedPreviewFrame(const QString &windowUuid, const QImage &image,
+                                                bool minimized = true);
+    Q_INVOKABLE bool setPreviewFrameMinimized(const QString &windowUuid, bool minimized);
     /// Capture a rendered preview item asynchronously into the bounded in-memory cache.
     /// The controller owns pending grab results so QML delegate destruction cannot
     /// leave callbacks referring to a dead QML object.

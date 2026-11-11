@@ -1,11 +1,11 @@
-kdockw (0.4.2-1) unstable; urgency=medium
+kdockw (0.4.3-1) unstable; urgency=medium
 
-  * Retain minimized-window previews, including a frame prefetched before opening the popup.
-  * Fix Follow Active for batched and grouped task updates.
-  * Close previews after window actions and complete Russian settings translations.
-  * Set the default Spring Speed to 90% and Launch Bounce Speed to 70% for new configurations.
+  * Load the current Russian settings catalog from the installed application prefix.
+  * Retain minimized-window frames with a bounded, minimized-first cache policy.
+  * Add opt-in diagnostics for preview-cache hits, misses, and fallback selection.
+  * Retire unsupported Arch Linux packaging and release checks.
 
- -- thicking <thicking@gmail.com>  Tue, 10 Nov 2026 15:22:33 +0500
+ -- thicking <thicking@gmail.com>  Wed, 11 Nov 2026 00:00:00 +0500
 
 kdockw (0.4.0-1) unstable; urgency=medium
 

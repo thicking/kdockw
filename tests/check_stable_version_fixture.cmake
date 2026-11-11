@@ -27,11 +27,49 @@ endforeach()
 # version so this fixture continues to cover subsequent stable version bumps.
 file(READ "${FIXTURE_DIR}/CMakeLists.txt" contents)
 string(REGEX MATCH "set\\(KDOCKW_VERSION \"([^\"]+)\"\\)" _ "${contents}")
-set(stable_version "${CMAKE_MATCH_1}")
-if(NOT stable_version OR stable_version MATCHES "-dev$")
-    message(FATAL_ERROR "Expected a stable KDOCKW_VERSION in fixture source")
+set(source_version "${CMAKE_MATCH_1}")
+if(NOT source_version)
+    message(FATAL_ERROR "Fixture source has no KDOCKW_VERSION")
+endif()
+string(REGEX REPLACE "-dev$" "" stable_version "${source_version}")
+if(source_version MATCHES "-dev$")
+    # Development candidates already carry development package metadata.
+    # Normalize the copied tree back to a synthetic stable baseline so this
+    # fixture continues to test stable-to-development conversion at every
+    # point in the release cycle.
+    string(REPLACE "KDOCKW_VERSION \"${source_version}\""
+        "KDOCKW_VERSION \"${stable_version}\"" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/CMakeLists.txt" "${contents}")
+
+    file(READ "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" contents)
+    string(REPLACE "<release version=\"${source_version}\" type=\"development\">"
+        "<release version=\"${stable_version}\" date=\"2026-01-01\">" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" "${contents}")
+
+    file(READ "${FIXTURE_DIR}/src/po/ru/kdockw.po" contents)
+    string(REPLACE "Project-Id-Version: KDockW ${source_version}\\n"
+        "Project-Id-Version: KDockW ${stable_version}\\n" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/src/po/ru/kdockw.po" "${contents}")
+
+    file(READ "${FIXTURE_DIR}/packaging/obs/kdockw.spec" contents)
+    string(REPLACE "Version:        ${stable_version}~dev" "Version:        ${stable_version}" contents "${contents}")
+    string(REPLACE "upstream_version ${source_version}" "upstream_version ${stable_version}" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/packaging/obs/kdockw.spec" "${contents}")
+
+    file(READ "${FIXTURE_DIR}/packaging/obs/kdockw.dsc" contents)
+    string(REPLACE "Version: ${stable_version}~dev-1" "Version: ${stable_version}-1" contents "${contents}")
+    string(REPLACE "kdockw-${source_version}.tar.gz" "kdockw-${stable_version}.tar.gz" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/packaging/obs/kdockw.dsc" "${contents}")
+
+    file(READ "${FIXTURE_DIR}/packaging/obs/debian.changelog" contents)
+    string(REPLACE "kdockw (${stable_version}~dev-1)" "kdockw (${stable_version}-1)" contents "${contents}")
+    file(WRITE "${FIXTURE_DIR}/packaging/obs/debian.changelog" "${contents}")
+endif()
+if(NOT stable_version)
+    message(FATAL_ERROR "Expected a stable SemVer core in fixture source")
 endif()
 set(development_version "${stable_version}-dev")
+file(READ "${FIXTURE_DIR}/CMakeLists.txt" contents)
 string(REPLACE "KDOCKW_VERSION \"${stable_version}\"" "KDOCKW_VERSION \"${development_version}\"" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/CMakeLists.txt" "${contents}")
 file(READ "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" contents)

@@ -139,6 +139,9 @@ target_include_directories(kdockw_lib PUBLIC
 
 add_executable(kdockw main.cpp)
 target_link_libraries(kdockw PRIVATE kdockw_lib)
+target_compile_definitions(kdockw PRIVATE
+    KDOCKW_INSTALL_LOCALE_RELATIVE_PATH="${KDOCKW_INSTALL_LOCALE_RELATIVE_PATH}"
+)
 
 ki18n_install(po)
 
