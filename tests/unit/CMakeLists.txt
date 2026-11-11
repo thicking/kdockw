@@ -17,6 +17,7 @@ add_executable(kdockw_unit_tests
     test_application_config.cpp
     test_dock_visibility_geometry.cpp
     test_settings_migration.cpp
+    test_dock_entries.cpp
     test_language_setting.cpp
     test_taskiconprovider.cpp
     test_icondiag.cpp

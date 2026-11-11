@@ -6,6 +6,7 @@
 #include "config/applicationconfig.h"
 #include "kdockw.h"
 #include "models/dockactions.h"
+#include "models/dockentry.h"
 #include "models/dockmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
@@ -218,14 +219,25 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
 
 void Application::migrateLegacySettings(KDockWSettings *settings)
 {
+    // Keep the v0.4.x launcher list intact while seeding the typed, ordered
+    // entry format. The dock still reads PinnedLaunchers until the mixed model
+    // is integrated, so this migration cannot change the current rendering.
+    KConfigGroup group = settings->config()->group(QStringLiteral("General"));
+    bool migratedDockEntries = false;
+    if (!group.hasKey(QStringLiteral("DockEntries"))) {
+        settings->setDockEntries(DockEntriesCodec::encode(DockEntriesCodec::fromLegacyLaunchers(settings->pinnedLaunchers())));
+        migratedDockEntries = true;
+    }
+
     // KDockW 0.10 stored a single ZoomAnimationDuration (only when changed from
     // its 100 ms default) applied with an ease-out curve to both directions.
     // Map it to the Custom preset with the same duration and easing, so the
     // upgraded dock keeps exactly the old feel, and drop the obsolete key.
-    // "General" is the kdockw.kcfg group holding the zoom entries.
-    KConfigGroup group = settings->config()->group(QStringLiteral("General"));
     const QString legacyKey = QStringLiteral("ZoomAnimationDuration");
     if (!group.hasKey(legacyKey)) {
+        if (migratedDockEntries) {
+            settings->save();
+        }
         return;
     }
 

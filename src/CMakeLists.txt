@@ -57,6 +57,8 @@ add_library(kdockw_lib STATIC
 
     models/dockmodel.h
     models/dockmodel.cpp
+    models/dockentry.h
+    models/dockentry.cpp
     models/dockactions.h
     models/dockactions.cpp
     models/dockcontextmenu.h

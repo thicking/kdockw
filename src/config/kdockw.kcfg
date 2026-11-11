@@ -603,6 +603,11 @@
       <default>applications:org.kde.dolphin.desktop,applications:org.kde.konsole.desktop,applications:org.kde.kate.desktop,applications:systemsettings.desktop</default>
     </entry>
 
+    <entry name="DockEntries" type="String">
+      <label>Versioned typed dock entry order</label>
+      <default></default>
+    </entry>
+
     <entry name="SeparateLaunchers" type="Bool">
       <label>Separate pinned and running applications</label>
       <default>true</default>

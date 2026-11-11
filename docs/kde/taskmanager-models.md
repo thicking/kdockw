@@ -92,6 +92,20 @@ Partition reconciliation is signal-driven, queued, coalesced, and guarded agains
 
 ---
 
+### Typed Pinned Entry Store (v0.5.0 foundation)
+
+`DockEntry` gives persisted pins an explicit `Task` or `FolderStack` type. The
+version-1 `DockEntries` setting stores the mixed pinned order as JSON records
+with stable IDs and URLs. Task IDs are deterministic hashes of their launcher
+URL; folder stack IDs are UUIDs, so two stacks may refer to the same directory.
+Folder-stack records accept local absolute `file://` URLs only.
+
+On first start with no `DockEntries` key, the migration seeds ordered `Task`
+records from `PinnedLaunchers` and leaves that legacy setting unchanged. An
+existing typed list, including an empty one, takes precedence. At this stage
+the visible dock still renders from `TaskManager::TasksModel`; typed entries
+are a persistence foundation and are not yet composed into the live dock.
+
 ## Roles — AbstractTasksModel::AdditionalRoles
 
 ### Identity

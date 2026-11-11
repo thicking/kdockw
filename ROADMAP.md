@@ -246,10 +246,14 @@ release tooling, and the full required Distro E2E matrix: Debian 13, Ubuntu
 26.04 LTS, and Fedora 45 ([run 42970493484](https://github.com/thicking/kdockw/actions/runs/42970493484)).
 Signed tag `kdockw-v0.4.3` points to that commit. The stable
 [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.3)
-is public with verified packages, source archive, and `SHA256SUMS`. v0.5.0
-remains the following approved feature stage and has not been started.
+is public with verified packages, source archive, and `SHA256SUMS`. Work has now
+started on the approved v0.5.0 feature stage.
 
-## v0.5.0 — Dock Interactions (planned)
+## v0.5.0 — Dock Interactions (in progress)
+
+Implementation has started with the typed pinned-entry persistence format and
+v0.4.3 launcher migration. The live dock still uses TaskManager pending mixed
+entry integration.
 
 - [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
   animation, and usable handling of long lists. Plan Downloads Stack and real
