@@ -64,7 +64,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("package_root", type=Path)
     parser.add_argument("version")
-    parser.add_argument("--locale-dir", default="share/locale")
+    # package_root is the directory produced by dpkg-deb -x/rpm2cpio, so its
+    # paths include the install prefix (normally usr/share/locale).
+    parser.add_argument("--locale-dir", default="usr/share/locale")
     args = parser.parse_args()
     catalog = args.package_root / args.locale_dir / "ru/LC_MESSAGES/kdockw.mo"
     if not catalog.is_file():
