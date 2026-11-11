@@ -229,19 +229,25 @@ surface/input-region geometry. Launch and attention animation remains independen
 
 The owner accepted v0.4.2 on real Plasma/Wayland. The signed tag `kdockw-v0.4.2` points to `54aeb6d7c09cbea86bd47175338a855902cfbb12`; the full three-target Distro E2E passed in [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363). See the [published release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). The release includes the accepted v0.4.1 changes; no v0.4.1 tag or release was created. Arch Linux package support was retired after v0.4.2 and is not a supported target.
 
-## v0.4.3 — Localization & Preview Cache Reliability (in progress)
+## v0.4.3 — Localization & Preview Cache Reliability (completed, published 2026-11-11)
 
-- [ ] **Installed settings localization:** resolve the current KI18n catalog
+- [x] **Installed settings localization:** resolve the current KI18n catalog
   from the application's install prefix and verify its compiled contents in
   the installable package.
-- [ ] **Minimized preview cache reliability:** retain minimized-window frames
+- [x] **Minimized preview cache reliability:** retain minimized-window frames
   under bounded cache pressure, prioritize them over restored-window frames,
   and preserve UUID isolation and close cleanup.
-- [ ] Include the completed retirement of unsupported Arch Linux packaging;
+- [x] Include the completed retirement of unsupported Arch Linux packaging;
   do not alter historical releases or tags.
 
-This development candidate is not released. No release tag or package has
-been created. v0.5.0 remains the following approved feature stage.
+The owner accepted the diagnostic candidate on real Plasma/Wayland. Commit
+`17347884f98e35cb4f9919edb265ebad3529f84c` passed Build & Tests, CI images,
+release tooling, and the full required Distro E2E matrix: Debian 13, Ubuntu
+26.04 LTS, and Fedora 45 ([run 42970493484](https://github.com/thicking/kdockw/actions/runs/42970493484)).
+Signed tag `kdockw-v0.4.3` points to that commit. The stable
+[GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.3)
+is public with verified packages, source archive, and `SHA256SUMS`. v0.5.0
+remains the following approved feature stage and has not been started.
 
 ## v0.5.0 — Dock Interactions (planned)
 
