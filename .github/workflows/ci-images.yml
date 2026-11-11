@@ -116,7 +116,7 @@ jobs:
         env:
           REQUESTED: ${{ inputs.targets || 'all' }}
         run: |
-          known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv; echo arch)"
+          known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv)"
           required="$(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' tests/distro/release-targets.txt)"
           for t in $required; do
             grep -qxF -- "$t" <<<"$known" || { echo "::error::required release target '$t' is not in targets.tsv"; exit 1; }
@@ -340,7 +340,7 @@ jobs:
         run: |
           # Tags of the refs this tree computes: never deleted.
           keep="$(
-            for t in $(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv) arch; do
+            for t in $(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv); do
               tests/distro/image-ref.sh runtime "$t"
               tests/distro/image-ref.sh builder "$t"
             done
@@ -348,11 +348,11 @@ jobs:
             tests/distro/image-ref.sh vgem
           )"
           keep_json="$(python3 -c 'import json,sys; print(json.dumps([r.rsplit(":", 1)[1] for r in sys.stdin.read().split()]))' <<<"$keep")"
-          # 2 refs per distro target (targets.tsv rows + arch) + ctest + vgem;
+          # 2 refs per distro target (targets.tsv rows) + ctest + vgem;
           # fewer means image-ref.sh failed, and pruning would then hit
           # current refs.
           rows=$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { n++ } END { print n + 0 }' tests/distro/targets.tsv)
-          want=$(( 2 * (rows + 1) + 2 ))
+          want=$(( 2 * rows + 2 ))
           got=$(jq length <<<"$keep_json")
           echo "protected tags: $got of $want"
           (( got == want )) || { echo "::error::could not compute the current refs; not pruning"; exit 1; }

@@ -28,7 +28,7 @@
 #                          every dependency
 #   packages.sh builddeps  install the build deps of /pkg/packaging that are
 #                          missing. The check is offline (rpm database,
-#                          dpkg-checkbuilddeps, pacman -T); the package
+#                          dpkg-checkbuilddeps); the package
 #                          manager only runs for a missing delta
 #   packages.sh kdockw      job time, runtime image: installs the KDockW package
 #                          from /pkgs through the distro package manager, so
@@ -38,7 +38,7 @@
 # The runtime list mirrors tests/appium/Dockerfile (Fedora) minus kdockw's
 # build and runtime dependencies, which must come from the package instead.
 #
-# Environment: FAMILY (fedora|suse|debian|arch), TARGET_ID.
+# Environment: FAMILY (fedora|suse|debian), TARGET_ID.
 
 set -eu
 
@@ -57,7 +57,7 @@ PIP_PACKAGES="Appium-Python-Client==4.5.1 selenium==4.29.0 pytest-timeout==2.3.1
 # keeps the package build and the runtime on today's repository state.
 is_rolling() {
     case "$TARGET_ID" in
-    fedora-rawhide | opensuse-tumbleweed | opensuse-slowroll | arch) return 0 ;;
+    fedora-rawhide | opensuse-tumbleweed | opensuse-slowroll) return 0 ;;
     *) return 1 ;;
     esac
 }
@@ -129,15 +129,12 @@ dep_names() {
             }
         ' "$PKGDEFS/obs/debian.control"
         ;;
-    arch)
-        sh -c '. "$1"; printf "%s\n" "${depends[@]}"' _ "$PKGDEFS/arch/PKGBUILD" | sed 's/[<>=].*//'
-        ;;
     esac | sort -u
 }
 
 # ---------------------------------------------------------------- main
 case "$FAMILY" in
-fedora | suse | debian | arch) ;;
+fedora | suse | debian) ;;
 *)
     echo "unknown FAMILY '$FAMILY'" >&2
     exit 64

@@ -8,9 +8,7 @@ three targets on that exact commit: [run 42833056363](https://github.com/thickin
 The public [GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2)
 contains the source archive, Debian 13 and Ubuntu 26.04 LTS DEBs, Fedora 45 RPM,
 and `SHA256SUMS`. All four payload assets and the manifest were downloaded and
-verified against the published SHA-256 values. The retained Arch recipes are
-archival manual-compatibility files; their stale version fields do not enter
-the required package matrix or release gate.
+verified against the published SHA-256 values.
 
 ## Required release targets from v0.3.2
 
@@ -44,6 +42,9 @@ assets. Keeping a manual row does not make it a required release target.
 - AUR, OBS, COPR, and Launchpad/PPA are inactive. Do not create accounts,
   projects, credentials, keys, or publication steps for them. Optional adapters
   may remain in the repository but must not enter the release gate.
+- Arch Linux is unsupported. Its package recipe and CI/build/test paths were
+  removed by owner decision; release targets remain Debian 13, Ubuntu 26.04 LTS,
+  and Fedora 45.
 - An upstream EOL event alone does not delete a packaging recipe or manual
   compatibility target. It also does not add that target to future release
   packages. Required representatives are governed by the current stable/LTS
@@ -57,8 +58,9 @@ assets. Keeping a manual row does not make it a required release target.
 - Do not remove a packaging recipe solely because its distribution release is
   EOL. A release-gate change is not, by itself, a claim that the underlying
   package recipe was retired.
-- When removing a recipe, cite the concrete unfixable build failure or blocking
-  dependency requirement, and update `tests/distro/targets.tsv`, the README,
-  and CHANGELOG (`### Removed`).
+- For this owner-directed Arch retirement, record that Arch is outside the
+  supported release matrix and remove its package metadata, CI paths, tests,
+  README/build instructions, and version checks. Historical release records
+  and signed tags remain unchanged.
 - Report EOL as lifecycle information, not as the sole rationale for removing
   packaging code.

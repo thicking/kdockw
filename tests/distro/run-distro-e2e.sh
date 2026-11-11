@@ -9,7 +9,7 @@
 #   tests/distro/run-distro-e2e.sh <target> test_smoke.py -x   # pytest args
 #   tests/distro/run-distro-e2e.sh <target> --shell            # debug shell
 #
-# <target> is a row of tests/distro/targets.tsv or `arch`.
+# <target> is a row of tests/distro/targets.tsv.
 #
 # 1. In the background: gets the target's runtime image (image-ref.sh
 #    runtime <target>: the local tag, else ghcr.io, else a local build with
@@ -29,11 +29,11 @@
 #   KDOCKW_DISTRO_REBUILD_PACKAGE=1   rebuild the package even if cached
 #   KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1  reuse an existing kdockw-e2e-distro:<target>
 #                                    (steps 1 and 3 are skipped)
-#   KDOCKW_CCACHE_DIR, CCACHE_MAXSIZE, KDOCKW_CI_REGISTRY, KDOCKW_ARCH_IMAGE
+#   KDOCKW_CCACHE_DIR, CCACHE_MAXSIZE, KDOCKW_CI_REGISTRY
 #                         see build-package.sh and image-ref.sh
 #   KDOCKW_E2E_ARTIFACTS   default tests/appium/artifacts-distro-<target>
-#   KDOCKW_E2E_PLATFORM    default linux/amd64 for arch and opensuse-slowroll
-#                         (their repositories are amd64-only), else native
+#   KDOCKW_E2E_PLATFORM    default linux/amd64 for opensuse-slowroll
+#                         (its repository is amd64-only), else native
 #   KDOCKW_E2E_SHARDS=N    run the suite as N shards concurrently (default 1,
 #                         one run-e2e.sh). Shard i (0-based) gets
 #                         KDOCKW_E2E_SHARD=i/N, selects every N-th collected
@@ -59,7 +59,7 @@ target="$1"
 shift
 
 distro_target "$target" || {
-    echo "error: unknown target '$target' (not in tests/distro/targets.tsv, and not 'arch')" >&2
+    echo "error: unknown target '$target' (not in tests/distro/targets.tsv)" >&2
     exit 64
 }
 
@@ -219,7 +219,7 @@ await_prep() {
 
 pkg_dir="$here/.cache/packages/$target"
 shopt -s nullglob
-pkgs=("$pkg_dir"/*.rpm "$pkg_dir"/*.deb "$pkg_dir"/*.pkg.tar.zst)
+pkgs=("$pkg_dir"/*.rpm "$pkg_dir"/*.deb)
 shopt -u nullglob
 if [[ "${KDOCKW_DISTRO_REBUILD_PACKAGE:-0}" == 1 || ${#pkgs[@]} -eq 0 ]]; then
     t0=$(now)

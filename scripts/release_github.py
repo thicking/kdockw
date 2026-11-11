@@ -76,13 +76,12 @@ def _target_formats(context: ReleaseContext) -> dict[str, str]:
         if len(fields) < 4:
             continue
         extension = fields[-1]
-        package_format = {"*.deb": "deb", "*.rpm": "rpm", "*.pkg.tar.zst": "arch"}.get(extension)
+        package_format = {"*.deb": "deb", "*.rpm": "rpm"}.get(extension)
         if not package_format:
             raise ReleaseError(f"unsupported package format in target matrix: {extension}")
         if fields[0] in targets:
             raise ReleaseError(f"duplicate package target in matrix: {fields[0]}")
         targets[fields[0]] = package_format
-    targets["arch"] = "arch"
     gate_path = context.source_dir / "tests/distro/release-targets.txt"
     if gate_path.is_symlink():
         raise ReleaseError("release target list must not be a symlink")
@@ -261,7 +260,7 @@ def _package_manifest(context: ReleaseContext) -> tuple[Path, list[dict]] | None
             raise ReleaseError("package manifest entry is invalid")
         target = item.get("target", "")
         package_format = item.get("format")
-        suffix = {"deb": ".deb", "rpm": ".rpm", "arch": ".pkg.tar.zst"}.get(package_format)
+        suffix = {"deb": ".deb", "rpm": ".rpm"}.get(package_format)
         if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", target) or not suffix or targets[target] != package_format:
             raise ReleaseError("package manifest contains an invalid target or format")
         name = item.get("asset_filename")
@@ -347,7 +346,7 @@ def download_verified_packages(context: ReleaseContext) -> dict:
             ):
                 raise ReleaseError(f"package artifact {artifact} does not match the release commit")
             package_format = manifest.get("format")
-            extension = {"deb": ".deb", "rpm": ".rpm", "arch": ".pkg.tar.zst"}.get(package_format)
+            extension = {"deb": ".deb", "rpm": ".rpm"}.get(package_format)
             if not extension or targets[target] != package_format or not package.name.endswith(extension):
                 raise ReleaseError(f"package artifact {artifact} has an unsupported package format")
             asset_filename = f"kdockw-{context.version}-{target}{extension}"

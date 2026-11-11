@@ -9,8 +9,7 @@
 #   tests/distro/build-package.sh <target-id> <outdir>
 #   tests/distro/build-package.sh all <outdir>
 #
-# <target-id> is a row in tests/distro/targets.tsv, or `arch` which builds
-# packaging/arch/PKGBUILD on archlinux:latest (amd64 image only).
+# <target-id> is a row in tests/distro/targets.tsv.
 #
 # The package is built from the CURRENT source tree (the worktree minus VCS
 # and build-output directories), packed as kdockw-<version>.tar.gz with the
@@ -25,13 +24,12 @@
 # rolling targets, installs only the build deps a newer packaging/ adds
 # (offline check first), and builds with the compilers behind ccache.
 #
-# Output: <outdir>/<target-id>/ contains the produced .rpm / .deb /
-# .pkg.tar.zst binary package. Timing lines: `[distro] <phase>: <s>s`.
+# Output: <outdir>/<target-id>/ contains the produced .rpm or .deb package.
+# Timing lines: `[distro] <phase>: <s>s`.
 #
 # Environment:
 #   DOCKER_HOST            docker daemon to use (default: ambient socket)
 #   KDOCKW_DOCKER_PLATFORM  force container platform, e.g. linux/amd64
-#   KDOCKW_ARCH_IMAGE       arch base image (default: docker.io/archlinux:latest)
 #   KDOCKW_CCACHE_DIR       host ccache directory, created if missing (default
 #                          tests/distro/.cache/ccache/<target-id>); given back
 #                          to the invoking user after the build
@@ -77,8 +75,8 @@ host_arch="$(uname -m)"
 # ---------------------------------------------------------------------------
 
 # source_version -> canonical version used by CMake and the source tree.
-# Package managers have different version syntax (for example, Arch uses
-# 0.1.0_pre and RPM/Debian use 0.1.0~dev). Those forms must never name the
+# Package managers have different version syntax (RPM/Debian use 0.1.0~dev).
+# Those forms must never name the
 # source archive or extracted source directory.
 # shellcheck source=tests/distro/source-version.sh
 . "$script_dir/source-version.sh"
@@ -192,8 +190,7 @@ overall_start=$SECONDS
 for target in "${targets[@]}"; do
     echo "=== $target ==="
     if ! distro_target "$target"; then
-        echo "error: unknown target '$target' (not in tests/distro/targets.tsv," \
-            "and not 'arch')" >&2
+        echo "error: unknown target '$target' (not in tests/distro/targets.tsv)" >&2
         results[$target]="unknown-target"
         continue
     fi
@@ -205,7 +202,7 @@ for target in "${targets[@]}"; do
         continue
     fi
 
-    # mktemp dirs are 0700; the arch build drops privileges to a builder user.
+    # mktemp dirs are 0700; make the staged source readable to the container.
     stage_dir="$(mktemp -d)"
     trap 'rm -rf "$stage_dir"' EXIT
     chmod 755 "$stage_dir"
@@ -230,7 +227,7 @@ for target in "${targets[@]}"; do
 done
 echo "total: $((SECONDS - overall_start))s"
 
-find "$outdir" -type f \( -name '*.rpm' -o -name '*.deb' \
-    -o -name '*.pkg.tar.zst' \) -printf '%10s  %p\n' 2>/dev/null | sort -k2
+find "$outdir" -type f \( -name '*.rpm' -o -name '*.deb' \) \
+    -printf '%10s  %p\n' 2>/dev/null | sort -k2
 
 exit "$status"

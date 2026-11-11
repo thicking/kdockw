@@ -191,5 +191,5 @@ drift_detection:
     - CHANGELOG.md
     - src/com.thicking.kdockw.metainfo.xml
     - src/com.thicking.kdockw.desktop.in
-    - packaging/arch/PKGBUILD
+    - tests/distro/release-targets.txt
     - marketing/strategy.md

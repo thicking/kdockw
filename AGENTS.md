@@ -15,7 +15,7 @@ Rules that apply to every agent working on this repository, regardless of harnes
 - Code is formatted with clang-format (enforced by the pre-commit hook).
 - Commit messages are English and follow Conventional Commits (`feat:`, `fix:`, `docs:`, `refactor:`, …).
 - Documentation, manifests, and PR communication are in English.
-- When adding or removing a dependency (`find_package()` / `target_link_libraries()` in CMake), update `packaging/arch/PKGBUILD` (`depends` / `makedepends`) and the OBS packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.control`) in the same change.
+- When adding or removing a dependency (`find_package()` / `target_link_libraries()` in CMake), update the supported package metadata in the OBS packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.control`) in the same change.
 
 ## Testing Strategy & Efficiency
 

@@ -227,7 +227,7 @@ surface/input-region geometry. Launch and attention animation remains independen
 - [x] **Immediate preview dismissal:** close the preview after a dispatched activation, restore, or minimize action and suppress reopening until the pointer leaves the source task.
 - [x] **Russian settings localization:** complete the settings, help text, dialogs, and accessibility labels; automated localization and release checks passed.
 
-The owner accepted v0.4.2 on real Plasma/Wayland. The signed tag `kdockw-v0.4.2` points to `54aeb6d7c09cbea86bd47175338a855902cfbb12`; the full three-target Distro E2E passed in [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363). See the [published release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). The release includes the accepted v0.4.1 changes; no v0.4.1 tag or release was created. Arch recipes remain archival manual compatibility files, not release packages or gates.
+The owner accepted v0.4.2 on real Plasma/Wayland. The signed tag `kdockw-v0.4.2` points to `54aeb6d7c09cbea86bd47175338a855902cfbb12`; the full three-target Distro E2E passed in [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363). See the [published release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). The release includes the accepted v0.4.1 changes; no v0.4.1 tag or release was created. Arch Linux package support was retired after v0.4.2 and is not a supported target.
 
 ## v0.5.0 — Dock Interactions (planned)
 

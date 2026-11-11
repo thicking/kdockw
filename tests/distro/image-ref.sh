@@ -9,7 +9,7 @@
 #   tests/distro/image-ref.sh ctest              tests/appium/Dockerfile ctest-image
 #   tests/distro/image-ref.sh vgem               FROM scratch image with /vgem.ko
 #
-# <target> is a row of tests/distro/targets.tsv or `arch`. The reference is
+# <target> is a row of tests/distro/targets.tsv. The reference is
 #
 #   <registry>:runtime-<target>-<hash12>
 #   <registry>:builder-<target>-<hash12>
@@ -43,7 +43,6 @@
 # Environment:
 #   KDOCKW_CI_REGISTRY   image repository (default ghcr.io/thicking/kdockw-ci)
 #   KDOCKW_VGEM_KERNEL   kernel release for the vgem kind (default: uname -r)
-#   KDOCKW_ARCH_IMAGE    arch base image (default docker.io/archlinux:latest)
 #
 # Sourced (by build-ci-image.sh, build-package.sh, run-distro-e2e.sh), it
 # only defines the distro_* and ci_image_ref functions. It reads
@@ -56,11 +55,6 @@ _ir_repo="$(cd -- "$_ir_here/../.." && pwd)"
 # an unknown target.
 distro_target() {
     local id="$1" row
-    if [[ "$id" == arch ]]; then
-        DISTRO_FAMILY=arch
-        DISTRO_BASE_IMAGE="${KDOCKW_ARCH_IMAGE:-docker.io/archlinux:latest}"
-        return 0
-    fi
     row="$(awk -F'\t' -v id="$id" '
         /^[[:space:]]*#/ || NF < 4 { next }
         $1 == id {
@@ -78,14 +72,13 @@ distro_target() {
 # distro_targets: every target id, one per line.
 distro_targets() {
     awk -F'\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' "$_ir_here/targets.tsv"
-    echo arch
 }
 
 # distro_platform <id>: the container platform a target needs, empty for
-# native. arch and opensuse-slowroll repositories publish x86_64 only.
+# native. The openSUSE Slowroll repository publishes x86_64 only.
 distro_platform() {
     case "$1" in
-        arch | opensuse-slowroll) echo linux/amd64 ;;
+        opensuse-slowroll) echo linux/amd64 ;;
         *) echo ;;
     esac
 }
@@ -124,7 +117,7 @@ ci_image_ref() {
         runtime | builder)
             [[ -n "$target" ]] || { echo "image-ref: $kind needs a target" >&2; return 64; }
             distro_target "$target" || {
-                echo "image-ref: unknown target '$target' (not in tests/distro/targets.tsv, and not 'arch')" >&2
+                echo "image-ref: unknown target '$target' (not in tests/distro/targets.tsv)" >&2
                 return 64
             }
             local -a files=(

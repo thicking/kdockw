@@ -16,7 +16,7 @@ from release_common import ReleaseError  # noqa: E402
 class GitHubOnlyReleasePolicyTest(unittest.TestCase):
     def test_github_is_the_only_active_publication_channel(self) -> None:
         self.assertEqual(release.CHANNELS, ("github",))
-        self.assertEqual(set(release.INACTIVE_ADAPTERS), {"aur", "obs", "copr", "ppa"})
+        self.assertEqual(set(release.INACTIVE_ADAPTERS), {"obs", "copr", "ppa"})
 
     def test_all_means_github_only_for_publish_and_status(self) -> None:
         parser = release._parser()
@@ -47,7 +47,7 @@ class GitHubOnlyReleasePolicyTest(unittest.TestCase):
         self.assertEqual(gates, ["debian-13", "ubuntu-26.04", "fedora-45"])
         self.assertIn("v0.3.2", policy)
         self.assertIn("release-targets.txt", runbook)
-        self.assertNotIn("Arch builds remain in scope", runbook)
+        self.assertIn("Arch Linux is not a supported package target", runbook)
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("scripts/check_distro_releases.py", ci)
         self.assertIn("GitHub Release", runbook)

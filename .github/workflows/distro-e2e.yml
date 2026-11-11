@@ -162,7 +162,7 @@ jobs:
         env:
           REQUESTED: ${{ inputs.targets || 'all' }}
         run: |
-          known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv; echo arch)"
+          known="$(awk -F '\t' '/^[[:space:]]*#/ || NF < 4 { next } { print $1 }' tests/distro/targets.tsv)"
           required="$(sed '/^[[:space:]]*#/d; /^[[:space:]]*$/d' tests/distro/release-targets.txt)"
           for t in $required; do
             grep -qxF -- "$t" <<<"$known" || { echo "::error::required release target '$t' is not in targets.tsv"; exit 1; }
@@ -296,7 +296,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t packages < <(find "tests/distro/.cache/packages/$TARGET" -maxdepth 1 -type f \
-            \( -name '*.deb' -o -name '*.rpm' -o -name '*.pkg.tar.zst' \) -print | sort)
+            \( -name '*.deb' -o -name '*.rpm' \) -print | sort)
           if [[ ${#packages[@]} -ne 1 ]]; then
             echo "::error::expected one built package for $TARGET, found ${#packages[@]}"
             exit 1
@@ -321,8 +321,6 @@ jobs:
               package_format = "deb"
           elif package.name.endswith(".rpm"):
               package_format = "rpm"
-          elif package.name.endswith(".pkg.tar.zst"):
-              package_format = "arch"
           else:
               raise SystemExit(f"unsupported package filename: {package.name}")
           metadata = {

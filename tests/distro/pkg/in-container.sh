@@ -31,7 +31,6 @@ packages=/usr/local/lib/kdockw-distro/packages.sh
 case "$FAMILY" in
     fedora|suse) builder=rpm-build.sh ;;
     debian)      builder=deb-build.sh ;;
-    arch)        builder=arch-build.sh ;;
     *) echo "error: unknown FAMILY '$FAMILY'" >&2; exit 64 ;;
 esac
 
@@ -60,7 +59,7 @@ phase builder-upgrade sh "$packages" upgrade
 phase build-deps sh "$packages" builddeps
 
 # CMake (>= 3.17) initialises CMAKE_<LANG>_COMPILER_LAUNCHER from these
-# variables, and rpmbuild, dpkg-buildpackage/debhelper and makepkg pass the
+# variables, and rpmbuild and dpkg-buildpackage/debhelper pass the
 # environment through to it. /work is the only build root, so CCACHE_BASEDIR
 # makes the cache keys path-independent; CCACHE_NOHASHDIR keeps them
 # independent of the versioned source directory too (it only affects the

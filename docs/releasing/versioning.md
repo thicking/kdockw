@@ -35,12 +35,10 @@ Package formats use their own spelling for development builds:
 | Format | Stable example | Development equivalent | Rule |
 | --- | --- | --- | --- |
 | AppStream | `0.4.2` | `0.4.2-dev` | Stable releases omit `type="development"`; development builds include it. |
-| Arch | `0.4.2` | `0.4.2_pre` | Arch `pkgver` uses `_pre` for development; the source tag is `kdockw-vX.Y.Z`. |
 | RPM | `0.4.2` | `0.4.2~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
 | Debian | `0.4.2-1` | `0.4.2~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
 
-These mappings follow the [Arch PKGBUILD manual](https://man.archlinux.org/man/PKGBUILD.5),
-[RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html), and
+These mappings follow [RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html) and
 [Debian Policy](https://www.debian.org/doc/debian-policy/policy.pdf). AppStream's
 `development` release type and required date follow its
 [release metadata specification](https://www.freedesktop.org/software/appstream/docs/sect-Metadata-Releases.html).
@@ -51,16 +49,10 @@ required target in `release-targets.txt`; only artifacts from the full
 successful matrix for the exact release commit are eligible for GitHub Release
 uploads. `SHA256SUMS` covers the source archive and every package asset.
 
-While a release is in development, inactive manual compatibility recipes stay
-pinned to the latest published stable source. They are not updated during
-release preparation and are not validated as release package metadata unless
-their target is explicitly added to `tests/distro/release-targets.txt`.
-
-The Arch adapter and the retained `packaging/arch/PKGBUILD` and `.SRCINFO` can
-still support explicit manual compatibility checks. Arch is not a supported
-KDockW release package, and its archived recipe versions do not block a release
-unless Arch is explicitly added to the tagged required-target list. Arch is
-excluded from v0.3.2+ release gates and GitHub package assets.
+KDockW supports release packages only for Debian 13, Ubuntu 26.04 LTS, and
+Fedora 45. Arch Linux packaging was removed; it is not a manual compatibility
+target or a release gate. Existing signed tags and historical release assets
+remain unchanged.
 
 The JSON and research files under `packaging/submissions/` and the local
 Flatpak validation package are historical receipts for earlier Krema or

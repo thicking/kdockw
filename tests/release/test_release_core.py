@@ -68,8 +68,6 @@ def source_files(
             f"DEBTRANSFORM-TAR: kdockw-{version}.tar.gz\n"
         ),
         "packaging/obs/debian.changelog": f"kdockw ({version}-{revision}) unstable; urgency=medium\n\n  * x\n",
-        "packaging/arch/PKGBUILD": f"pkgver={version}\n",
-        "packaging/arch/.SRCINFO": f"pkgbase = kdockw\n\tpkgver = {version}\n\tpkgrel = 1\n",
         "tests/distro/targets.tsv": "# comment\nfedora-42\tfedora\tfedora:42\tsha256:x\tFedora_42\t*.rpm\n",
     }
     files.update(overrides)
@@ -152,40 +150,9 @@ class VersionTests(TempDirTest):
     def test_agreeing_source_returns_revision(self) -> None:
         self.assertEqual(check_source_versions(self.tree(), "1.2.3"), "1")
 
-    def test_archived_arch_metadata_is_not_a_gate_when_arch_is_not_selected(self) -> None:
-        source = self.tree(
-            **{
-                "tests/distro/release-targets.txt": (
-                    "debian-13\nubuntu-26.04\nfedora-45\n"
-                ),
-                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
-                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
-            }
-        )
+    def test_arch_package_metadata_is_not_part_of_release_version_checks(self) -> None:
+        source = self.tree()
         self.assertEqual(check_source_versions(source, "1.2.3"), "1")
-
-    def test_arch_metadata_is_checked_when_arch_is_selected(self) -> None:
-        source = self.tree(
-            **{
-                "tests/distro/release-targets.txt": "debian-13\narch\n",
-                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
-                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
-            }
-        )
-        with self.assertRaises(ReleaseError) as caught:
-            check_source_versions(source, "1.2.3")
-        self.assertIn("packaging/arch/PKGBUILD", str(caught.exception))
-
-    def test_arch_metadata_remains_checked_for_legacy_tag_without_allowlist(self) -> None:
-        source = self.tree(
-            **{
-                "packaging/arch/PKGBUILD": "pkgver=0.4.0\n",
-                "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 0.4.0\n",
-            }
-        )
-        with self.assertRaises(ReleaseError) as caught:
-            check_source_versions(source, "1.2.3")
-        self.assertIn("packaging/arch/PKGBUILD", str(caught.exception))
 
     def test_each_disagreeing_field_is_rejected(self) -> None:
         cases = {
@@ -195,8 +162,6 @@ class VersionTests(TempDirTest):
             "packaging/obs/kdockw.spec": "Version: 1.2.2\n",
             "packaging/obs/kdockw.dsc": "Version: 1.2.3-1\nDEBTRANSFORM-TAR: kdockw-1.2.2.tar.gz\n",
             "packaging/obs/debian.changelog": "kdockw (1.2.3-2) unstable; urgency=medium\n",
-            "packaging/arch/PKGBUILD": "pkgver=1.2.2\n",
-            "packaging/arch/.SRCINFO": "pkgbase = kdockw\n\tpkgver = 1.2.2\n",
         }
         for name, text in cases.items():
             with self.subTest(name=name):
@@ -383,7 +348,7 @@ class ContextTests(ContextFixture):
 
 
 class GateTests(unittest.TestCase):
-    EXPECTED = ["fedora-42", "debian-13", "arch"]
+    EXPECTED = ["fedora-42", "debian-13"]
 
     def run_(
         self,
@@ -425,10 +390,10 @@ class GateTests(unittest.TestCase):
             "short\tline\n"
             "b\tdebian\timg\tpending\tB\t*.deb\n"
         )
-        self.assertEqual(release.expected_targets(tsv), ["a", "b", "arch"])
+        self.assertEqual(release.expected_targets(tsv), ["a", "b"])
         self.assertEqual(release.expected_targets(tsv, "b\na\n"), ["b", "a"])
         with self.assertRaises(ReleaseError):
-            release.expected_targets(tsv, "missing\n")
+            release.expected_targets(tsv, "arch\n")
         with self.assertRaises(ReleaseError):
             release.expected_targets(tsv, "b\nb\n")
         with self.assertRaises(ReleaseError):
@@ -446,7 +411,7 @@ class GateTests(unittest.TestCase):
             if line and not line.lstrip().startswith("#")
         ]
         self.assertEqual(
-            release.expected_targets(tsv)[:-1], [r.split("\t")[0] for r in rows]
+            release.expected_targets(tsv), [r.split("\t")[0] for r in rows]
         )
 
     def test_repository_release_gate_is_small_and_uses_current_representatives(self) -> None:
@@ -454,7 +419,6 @@ class GateTests(unittest.TestCase):
         gates = (ROOT / "tests/distro/release-targets.txt").read_text()
         expected = ["debian-13", "ubuntu-26.04", "fedora-45"]
         self.assertEqual(release.expected_targets(tsv, gates), expected)
-        self.assertNotIn("arch", expected)
         self.assertFalse(any(target.startswith("opensuse-") for target in expected))
 
     def test_full_green_run_is_ready(self) -> None:
@@ -469,7 +433,7 @@ class GateTests(unittest.TestCase):
 
     def test_partial_without_dispatch_allows_one_dispatch(self) -> None:
         decision = release.classify_runs(
-            [self.run_(8, targets=["arch"])], self.EXPECTED, COMMIT
+            [self.run_(8, targets=["debian-13"])], self.EXPECTED, COMMIT
         )
         self.assertEqual(decision["status"], "needs_dispatch")
 
@@ -496,7 +460,7 @@ class GateTests(unittest.TestCase):
             release.classify_runs([run], self.EXPECTED, COMMIT)["status"], "pending"
         )
         partial = self.run_(
-            6, status="in_progress", targets=["arch"], event="workflow_dispatch"
+            6, status="in_progress", targets=["debian-13"], event="workflow_dispatch"
         )
         self.assertEqual(
             release.classify_runs([partial], self.EXPECTED, COMMIT)["status"], "failed"
@@ -542,11 +506,11 @@ class TrustAndResultTests(unittest.TestCase):
             release.normalize_signers(["DEADBEEF"])
 
     def test_result_vocabulary_and_secret_fields(self) -> None:
-        self.assertEqual(result("aur", "submitted", "ok")["status"], "submitted")
+        self.assertEqual(result("github", "published", "ok")["status"], "published")
         with self.assertRaises(ReleaseError):
-            result("aur", "done", "x")
+            result("github", "done", "x")
         with self.assertRaises(ReleaseError):
-            result("aur", "planned", "x", api_token="x")
+            result("github", "planned", "x", api_token="x")
         self.assertNotIn(
             "ghp_", result("x", "failed", "token ghp_" + "a" * 36)["detail"]
         )
@@ -715,7 +679,7 @@ class GateDispatchTests(ContextFixture):
         decision = {
             "status": "needs_dispatch",
             "runs": [],
-            "expected_targets": ["fedora-42", "arch"],
+            "expected_targets": ["fedora-42", "debian-13"],
         }
         checks = [{"check": "tag", "ok": True, "detail": "ok"}]
         with (
@@ -1022,10 +986,20 @@ class GithubPublishTests(ContextFixture):
         )
 
     def test_exact_matrix_package_artifacts_are_verified_and_added_to_checksums(self) -> None:
-        context = load_context(self.write_context())
+        files = source_files()
+        files["tests/distro/targets.tsv"] = (
+            "debian-13\tdebian\tdebian:13\tsha256:d\tDebian_13\t*.deb\n"
+            "ubuntu-26.04\tdebian\tubuntu:26.04\tsha256:u\txUbuntu_26.04\t*.deb\n"
+            "fedora-45\tfedora\tfedora:45\tsha256:f\tFedora_45\t*.rpm\n"
+        )
+        files["tests/distro/release-targets.txt"] = (
+            "debian-13\nubuntu-26.04\nfedora-45\n"
+        )
+        context = load_context(self.write_context(files))
         payloads = {
-            "fedora-42": ("kdockw-1.2.3-1.x86_64.rpm", b"rpm package"),
-            "arch": ("kdockw-1.2.3-1-x86_64.pkg.tar.zst", b"arch package"),
+            "debian-13": ("kdockw_1.2.3-1_amd64.deb", b"debian package"),
+            "ubuntu-26.04": ("kdockw_1.2.3-1_amd64.deb", b"ubuntu package"),
+            "fedora-45": ("kdockw-1.2.3-1.x86_64.rpm", b"rpm package"),
         }
 
         def download(argv, **_):
@@ -1034,7 +1008,7 @@ class GithubPublishTests(ContextFixture):
             filename, content = payloads[target]
             package = directory / filename
             package.write_bytes(content)
-            package_format = "rpm" if target == "fedora-42" else "arch"
+            package_format = "rpm" if target == "fedora-45" else "deb"
             (directory / "manifest.json").write_text(
                 json.dumps({
                     "target": target,
@@ -1054,13 +1028,15 @@ class GithubPublishTests(ContextFixture):
         ):
             result = release_github.download_verified_packages(context)
 
-        self.assertEqual(result["targets"], 2)
+        self.assertEqual(result["targets"], 3)
         assets = release_github.expected_assets(context)
-        self.assertIn("kdockw-1.2.3-fedora-42.rpm", assets)
-        self.assertIn("kdockw-1.2.3-arch.pkg.tar.zst", assets)
+        self.assertIn("kdockw-1.2.3-debian-13.deb", assets)
+        self.assertIn("kdockw-1.2.3-ubuntu-26.04.deb", assets)
+        self.assertIn("kdockw-1.2.3-fedora-45.rpm", assets)
         sums = release_github._sums_file(context).read_text()
-        self.assertIn("kdockw-1.2.3-fedora-42.rpm", sums)
-        self.assertIn("kdockw-1.2.3-arch.pkg.tar.zst", sums)
+        self.assertIn("kdockw-1.2.3-debian-13.deb", sums)
+        self.assertIn("kdockw-1.2.3-ubuntu-26.04.deb", sums)
+        self.assertIn("kdockw-1.2.3-fedora-45.rpm", sums)
 
     def test_package_artifact_wrong_commit_is_rejected(self) -> None:
         context = load_context(self.write_context())
@@ -1068,7 +1044,11 @@ class GithubPublishTests(ContextFixture):
         def download(argv, **_):
             target = argv[argv.index("--name") + 1].removeprefix("kdockw-package-")
             directory = Path(argv[argv.index("--dir") + 1])
-            filename = f"kdockw-1.2.3-1.{ 'x86_64.rpm' if target == 'fedora-42' else 'x86_64.pkg.tar.zst' }"
+            filename = (
+                "kdockw-1.2.3-1.x86_64.rpm"
+                if target == "fedora-42"
+                else "kdockw_1.2.3-1_amd64.deb"
+            )
             payload = b"package"
             (directory / filename).write_bytes(payload)
             (directory / "manifest.json").write_text(
@@ -1076,7 +1056,7 @@ class GithubPublishTests(ContextFixture):
                     "target": target,
                     "commit": "f" * 40,
                     "version": "1.2.3",
-                    "format": "rpm" if target == "fedora-42" else "arch",
+                    "format": "rpm" if target == "fedora-42" else "deb",
                     "filename": filename,
                     "sha256": hashlib.sha256(payload).hexdigest(),
                 }),

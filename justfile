@@ -23,28 +23,6 @@ format:
 clean:
     rm -rf build/
 
-# Build and install an Arch package from the local checkout (HEAD plus
-# uncommitted changes to tracked files), not the released tarball that
-# packaging/arch/PKGBUILD downloads.
-package:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    describe=$(git describe --tags --long --match 'v*')
-    pkgver=$(sed -E 's/^v//; s/-([0-9]+)-(g[0-9a-f]+)$/.r\1.\2/' <<<"$describe")
-    workdir=build/arch-package
-    rm -rf "$workdir"
-    mkdir -p "$workdir"
-    tree=$(git stash create)
-    git archive --format=tar.gz --prefix="kdockw-$pkgver/" \
-        -o "$workdir/kdockw-$pkgver.tar.gz" "${tree:-HEAD}"
-    sed -e "s|^pkgver=.*|pkgver=$pkgver|" \
-        -e "s|^source=.*|source=(\"kdockw-$pkgver.tar.gz\")|" \
-        -e "s|^sha256sums=.*|sha256sums=('SKIP')|" \
-        packaging/arch/PKGBUILD > "$workdir/PKGBUILD"
-    cd "$workdir"
-    makepkg -si
-    kbuildsycoca6 --noincremental
-
 # OBS 로컬 빌드 테스트
 obs-build-rpm distro="openSUSE_Tumbleweed" arch="x86_64":
     osc build {{distro}} {{arch}} packaging/obs/kdockw.spec

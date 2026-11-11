@@ -8,6 +8,10 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Removed
+
+- Removed Arch Linux packaging and its release, CI, version-check, and package-test paths; supported release packages remain Debian 13, Ubuntu 26.04 LTS, and Fedora 45.
+
 ## [0.4.2] - 2026-11-10
 
 KDockW 0.4.2 brings the accepted v0.4.1 improvements together with window-preview lifecycle and stability fixes.

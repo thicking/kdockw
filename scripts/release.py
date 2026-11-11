@@ -63,13 +63,12 @@ PINNED_SIGNERS = ("90798370719E91DDE1D5028AAA660B7C5AB258E7",)
 # below are retained as inactive experiments for possible future use, but they
 # are deliberately excluded from the public CLI and release gate.
 CHANNELS = ("github",)
-INACTIVE_ADAPTERS = ("aur", "obs", "copr", "ppa")
+INACTIVE_ADAPTERS = ("obs", "copr", "ppa")
 GATE_WORKFLOW = "distro-e2e.yml"
 GATE_JOB_RE = re.compile(r"^Distro E2E \((?P<target>[^)]+)\)$")
 TARGETS_FILE = "tests/distro/targets.tsv"
 RELEASE_TARGETS_FILE = "tests/distro/release-targets.txt"
 TARGET_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]*$")
-EXTRA_TARGETS = ("arch",)
 DISPATCH_MARKER = "gate-dispatch.json"
 DISPATCH_VISIBLE_WITHIN = 3600  # seconds until a dispatched run must be listed
 FINGERPRINT_RE = re.compile(r"^[0-9A-F]{40}$")
@@ -298,15 +297,10 @@ def _target_ids(targets_tsv: str) -> list[str]:
 
 
 def expected_targets(targets_tsv: str, release_targets: str | None = None) -> list[str]:
-    """Return required release targets, preserving compatibility with old tags.
-
-    Current sources provide a line-oriented release-target allowlist. Older
-    immutable tags predate it and retain their historical full matrix plus
-    Arch gate.
-    """
+    """Return the selected release targets, preserving old target-list behavior."""
     all_targets = _target_ids(targets_tsv)
     if release_targets is None:
-        return [*all_targets, *EXTRA_TARGETS]
+        return all_targets
 
     selected: list[str] = []
     for line in release_targets.splitlines():
@@ -316,7 +310,7 @@ def expected_targets(targets_tsv: str, release_targets: str | None = None) -> li
         if not TARGET_ID_RE.fullmatch(target):
             raise ReleaseError(f"{RELEASE_TARGETS_FILE}: invalid target id {target!r}")
         selected.append(target)
-    allowed = set(all_targets) | set(EXTRA_TARGETS)
+    allowed = set(all_targets)
     unknown = sorted(set(selected) - allowed)
     if unknown:
         raise ReleaseError(
@@ -765,10 +759,6 @@ def channel_status(channel: str, context: ReleaseContext) -> dict:
 
         release_github.download_verified_packages(context)
         return release_github.status(context)
-    if channel == "aur":
-        import release_aur
-
-        return release_aur.status(context)
     if channel == "obs":
         import release_rpm
 
@@ -793,10 +783,6 @@ def channel_publish(channel: str, context: ReleaseContext, *, execute: bool) -> 
         # cannot silently fall back to source-only assets.
         release_github.download_verified_packages(context)
         return release_github.publish(context, execute=execute)
-    if channel == "aur":
-        import release_aur
-
-        return release_aur.publish(context, execute=execute)
     if channel == "obs":
         import release_rpm
 

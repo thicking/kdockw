@@ -8,8 +8,6 @@ set(files
     src/app/application.cpp
     src/com.thicking.kdockw.metainfo.xml
     src/po/ru/kdockw.po
-    packaging/arch/PKGBUILD
-    packaging/arch/.SRCINFO
     packaging/obs/kdockw.spec
     packaging/obs/kdockw.dsc
     packaging/obs/debian.changelog
@@ -48,8 +46,6 @@ file(WRITE "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" "${contents}")
 file(READ "${FIXTURE_DIR}/src/po/ru/kdockw.po" contents)
 string(REPLACE "Project-Id-Version: KDockW ${stable_version}\\n" "Project-Id-Version: KDockW ${development_version}\\n" contents "${contents}")
 file(WRITE "${FIXTURE_DIR}/src/po/ru/kdockw.po" "${contents}")
-# Arch is a manual-only compatibility recipe. During release preparation its
-# source and checksum remain pinned to the latest published stable version.
 file(READ "${FIXTURE_DIR}/packaging/obs/kdockw.spec" contents)
 string(REPLACE "Version:        ${stable_version}" "Version:        ${stable_version}~dev" contents "${contents}")
 string(REPLACE "upstream_version ${stable_version}" "upstream_version ${development_version}" contents "${contents}")

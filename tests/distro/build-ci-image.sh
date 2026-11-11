@@ -29,9 +29,9 @@
 # The vgem image is built by the workflow itself; image-ref.sh names it.
 #
 # Environment:
-#   KDOCKW_DOCKER_PLATFORM  container platform (default: linux/amd64 for arch
-#                          and opensuse-slowroll, else native)
-#   KDOCKW_CI_REGISTRY, KDOCKW_ARCH_IMAGE  see image-ref.sh
+#   KDOCKW_DOCKER_PLATFORM  container platform (default: linux/amd64 for
+#                          opensuse-slowroll, else native)
+#   KDOCKW_CI_REGISTRY     see image-ref.sh
 
 set -euo pipefail
 

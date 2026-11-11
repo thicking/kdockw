@@ -8,7 +8,7 @@ cannot:
 
 * packaging bugs: missing or misnamed runtime dependencies (`Requires` in
   `packaging/obs/kdockw.spec`, `Depends` in `packaging/obs/debian.control`,
-  `depends` in `packaging/arch/PKGBUILD`), wrong install paths;
+  wrong install paths;
 * behaviour that differs with the Qt/KF/Kirigami/KWin versions a distro ships.
 
 Everything runs in one unprivileged container per target, exactly like Tier 2:
@@ -90,18 +90,18 @@ What it does (each phase prints `[distro] <phase>: <seconds>s`):
 2. **Package.** `tests/distro/build-package.sh <target>` packs the current
    worktree as `kdockw-<version>.tar.gz` and builds it in a container of the
    target's builder image (same local → ghcr → local-build order) with the
-   repo's own packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.*`,
-   `packaging/arch/PKGBUILD`; helpers in `pkg/`): rolling targets are fully
+   repo's own packaging (`packaging/obs/kdockw.spec`, `packaging/obs/debian.*`;
+   helpers in `pkg/`): rolling targets are fully
    upgraded first, build dependencies that a newer `packaging/` adds are
-   installed (the check is offline: rpm database, `dpkg-checkbuilddeps`,
-   `pacman -T`), and the compilers run behind ccache
+   installed (the check is offline: rpm database and `dpkg-checkbuilddeps`),
+   and the compilers run behind ccache
    (`KDOCKW_CCACHE_DIR`, default `tests/distro/.cache/ccache/<target>/`).
    The package is cached in `tests/distro/.cache/packages/<target>/`; it is
    rebuilt only when missing or with `KDOCKW_DISTRO_REBUILD_PACKAGE=1`, so
    **rebuild after changing `src/` or `packaging/`**.
 3. **Install.** The package is copied into the runtime container and
    installed through the distro's package manager (`dnf`, `zypper`,
-   `apt-get`, `pacman -U`), so dependency resolution is part of the test;
+   `apt-get`), so dependency resolution is part of the test;
    the container is committed as `kdockw-e2e-distro:<target>`. Nothing of
    kdockw is built from source in it. While the package built, `packages.sh
    depfetch` already downloaded the deps the packaging declares (into the
@@ -141,7 +141,7 @@ Environment:
 | `KDOCKW_CCACHE_DIR` | host ccache directory of the package build (default `tests/distro/.cache/ccache/<target>`); `CCACHE_MAXSIZE` (default 500M) is passed through |
 | `KDOCKW_CI_REGISTRY` | image repository (default `ghcr.io/thicking/kdockw-ci`) |
 | `KDOCKW_E2E_ARTIFACTS` | artifacts directory (default `tests/appium/artifacts-distro-<target>`) |
-| `KDOCKW_E2E_PLATFORM` | container platform; defaults to `linux/amd64` for `arch` and `opensuse-slowroll` |
+| `KDOCKW_E2E_PLATFORM` | container platform; defaults to `linux/amd64` for `opensuse-slowroll` |
 | `KDOCKW_E2E_SHARDS` | number of concurrent suite shards (default 1 = one `run-e2e.sh`); with N > 1, `LP_NUM_THREADS` defaults to CPUs / N so the shards' llvmpipe renderers do not oversubscribe the CPUs |
 | other `KDOCKW_E2E_*` | as in `tests/appium/run-e2e.sh` (screen size, output count, docker args) |
 
@@ -171,7 +171,7 @@ and decompress faster than gzip. A local `--load` build is unaffected.
 contents plus the listed build arguments, so a change to any input yields a
 new tag, which is missing from the registry until the publisher pushes it:
 the job then builds that image itself. Package names per family live in
-`image/fedora.sh`, `image/suse.sh`, `image/debian.sh` and `image/arch.sh`,
+`image/fedora.sh`, `image/suse.sh`, and `image/debian.sh`,
 one file per family so a change to one family leaves the others' images
 (and tags) alone.
 
@@ -185,7 +185,7 @@ What deliberately stays out of the images:
 * **`packaging/` is not a hash input of the builder.** The builder carries
   the build dependencies as of its build; at job time `packages.sh
   builddeps` checks them offline and installs only what a newer
-  `packaging/` adds, and `rpmbuild`/`dpkg-buildpackage`/`makepkg` re-check
+  `packaging/` adds, and `rpmbuild`/`dpkg-buildpackage` re-check
   them (with versions) before building. A packaging change therefore never
   waits for an image rebuild, and never builds against stale deps.
 * **Runtime and builder of a target share one hash**, so they are always
@@ -205,15 +205,15 @@ declared dependencies during the E2E run.
 Dependency download happens off the critical path. Right after the runtime
 upgrade, `packages.sh depfetch` downloads the packaging's declared runtime
 deps into the package-manager cache (`dnf --downloadonly`+`keepcache`,
-`zypper --download-only`+`keeppackages`, `apt-get --download-only`,
-`pacman -Sw`), which the `kdockw` install then consumes. A metadata snapshot
+`zypper --download-only`+`keeppackages`, `apt-get --download-only`), which the
+`kdockw` install then consumes. A metadata snapshot
 at most a day old is equally valid evidence: the install still runs the
 package manager's full dependency resolution and transaction; only the
 downloads were warmed. If the snapshot has moved past what the cache holds,
 the install retries once after refreshing its metadata.
 
 Debug packages stay on. `rpmbuild` still produces debuginfo/debugsource,
-`dpkg-buildpackage` the dbgsym package and `makepkg` the `-debug` package,
+and `dpkg-buildpackage` the dbgsym package,
 although CI installs only the binary package: splitting the debug info is
 the step that strips the shipped binary and adds its `.gnu_debuglink`
 (Fedora also its `.gnu_debugdata`), so turning it off would test a
@@ -258,10 +258,9 @@ are:
 | `debian-13` | debian | `debian:13-slim` | amd64, arm64 |
 | `ubuntu-25.04` | debian | `ubuntu:25.04` | amd64, arm64 |
 | `ubuntu-25.10` | debian | `ubuntu:25.10` | amd64, arm64 |
-| `arch` | arch | `archlinux:latest` | amd64 |
 
-`arch` and `opensuse-slowroll` publish amd64 packages only; on an arm64 host
-they need amd64 emulation (qemu-user binfmt) and are otherwise CI-only.
+`opensuse-slowroll` publishes amd64 packages only; on an arm64 host it needs
+amd64 emulation (qemu-user binfmt) and is otherwise CI-only.
 
 `release-targets.txt` selects packages for GitHub releases. The fifth column
 of `targets.tsv` is a legacy package identifier and does not select or contact

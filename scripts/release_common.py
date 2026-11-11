@@ -536,42 +536,7 @@ def source_versions(source_dir: Path) -> dict[str, str | None]:
     m = re.match(r"^kdockw \(([^)\s]+)\)\s", first_line)
     found["packaging/obs/debian.changelog"] = m.group(1) if m else None
 
-    pkgbuild = _read_text(source_dir, "packaging/arch/PKGBUILD")
-    m = re.search(r"^pkgver=([^\s#]+)\s*$", pkgbuild, re.M)
-    found["packaging/arch/PKGBUILD"] = m.group(1) if m else None
-
-    srcinfo = _read_text(source_dir, "packaging/arch/.SRCINFO")
-    m = re.search(r"^\s*pkgver\s*=\s*([^\s#]+)\s*$", srcinfo, re.M)
-    found["packaging/arch/.SRCINFO"] = m.group(1) if m else None
     return found
-
-
-def _release_requires_arch(source_dir: Path) -> bool:
-    """Whether the tagged release matrix includes the legacy Arch target.
-
-    Tags predating the release-target allowlist keep the historical strict
-    check. With an allowlist, Arch metadata is required only if ``arch`` is
-    explicitly selected as a release target.
-    """
-    path = source_dir / "tests/distro/release-targets.txt"
-    if not path.exists():
-        return True
-    if path.is_symlink() or not path.is_file():
-        raise ReleaseError("tests/distro/release-targets.txt must be a regular file")
-
-    targets: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        target = line.strip()
-        if not target or target.startswith("#"):
-            continue
-        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", target):
-            raise ReleaseError(f"release-targets.txt has invalid target id {target!r}")
-        targets.append(target)
-    if not targets:
-        raise ReleaseError("release-targets.txt lists no required targets")
-    if len(targets) != len(set(targets)):
-        raise ReleaseError("release-targets.txt lists a target twice")
-    return "arch" in targets
 
 
 def check_source_versions(source_dir: Path, version: str) -> str:
@@ -579,10 +544,7 @@ def check_source_versions(source_dir: Path, version: str) -> str:
 
     Checks CMake, the CHANGELOG section, the newest metainfo release, the RPM
     spec, the DSC (version and tarball), and the top debian.changelog entry.
-    Arch package metadata is checked only when Arch is explicitly selected in
-    the tagged release-target allowlist. Tags without that allowlist retain the
-    historical full-matrix check. Returns the Debian revision shared by the
-    DSC and debian.changelog.
+    Returns the Debian revision shared by the DSC and debian.changelog.
     """
     found = source_versions(source_dir)
     problems: list[str] = []
@@ -595,10 +557,6 @@ def check_source_versions(source_dir: Path, version: str) -> str:
     expect("src/com.thicking.kdockw.metainfo.xml", version)
     expect("packaging/obs/kdockw.spec", version)
     expect("packaging/obs/kdockw.dsc DEBTRANSFORM-TAR", asset_name(version))
-    if _release_requires_arch(source_dir):
-        expect("packaging/arch/PKGBUILD", version)
-        expect("packaging/arch/.SRCINFO", version)
-
     revisions: list[str] = []
     for key in ("packaging/obs/kdockw.dsc", "packaging/obs/debian.changelog"):
         value = found.get(key) or ""
