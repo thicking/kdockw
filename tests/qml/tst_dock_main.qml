@@ -319,6 +319,22 @@ Item {
             tryVerify(() => items(dock).length === 0)
         }
 
+        function test_folderStackDelegateOpensGridPopup() {
+            DockModel.dockEntriesModel.append({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: "file:///tmp",
+                display: "tmp",
+            })
+            let dock = makeDock(0)
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+            compare(stack.displayName, "tmp")
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            compare(stack.popupItemCount, 0)
+        }
+
         function test_iconSizeAndSpacingDriveLayout_data() {
             return [
                 { tag: "defaults", size: 40, spacing: 13 },

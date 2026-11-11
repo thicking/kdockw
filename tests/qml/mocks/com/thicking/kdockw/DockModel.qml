@@ -10,6 +10,18 @@ import kdockw.test
 
 QtObject {
     readonly property MockTasksModel tasksModel: MockTasksModel {}
+    readonly property var dockEntriesModel: ListModel {
+        id: entries
+        function removeFolderStack(entryId) {
+            for (let row = 0; row < count; ++row) {
+                if (get(row).entryId === entryId) {
+                    remove(row)
+                    return true
+                }
+            }
+            return false
+        }
+    }
     property int currentDesktop: 1
     // 0=ShowAll, 1=DimOtherDesktops, 2=CurrentOnly
     property int virtualDesktopMode: 0
@@ -48,6 +60,7 @@ QtObject {
 
     function reset() {
         tasksModel.reset()
+        entries.clear()
         currentDesktop = 1
         virtualDesktopMode = 0
         pinnedTaskCount = 0

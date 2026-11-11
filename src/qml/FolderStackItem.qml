@@ -8,6 +8,7 @@ import com.thicking.kdockw 1.0
 
 Item {
     id: stackItem
+    objectName: "folderStackItem"
 
     required property int index
     required property var model
@@ -15,6 +16,8 @@ Item {
     property bool verticalDock: false
     property int dockEdge: 3
     readonly property string displayName: model.display || ""
+    readonly property bool popupVisible: stackPopup.visible
+    readonly property int popupItemCount: grid.count
     readonly property real iconSize: DockSettings.iconSize
 
     width: iconSize + DockSettings.iconSpacing
@@ -25,6 +28,10 @@ Item {
     Accessible.description: i18n("Folder stack")
     Accessible.focusable: true
     Accessible.onPressAction: stackPopup.openAtRoot()
+
+    function openStack() {
+        stackPopup.openAtRoot()
+    }
 
     Image {
         anchors.centerIn: parent
@@ -144,6 +151,7 @@ Item {
             }
             GridView {
                 id: grid
+                objectName: "folderStackGrid"
                 Accessible.role: Accessible.List
                 Accessible.name: i18n("Folder contents")
                 clip: true
