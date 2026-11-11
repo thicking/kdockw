@@ -84,11 +84,16 @@ Item {
         // identity for its thumbnail. Do not index into the parent list: after
         // a child is removed, its child row may shift before the aggregate list
         // is updated, which could temporarily assign a neighbor's old UUID.
-        let parentModelIdx = DockModel.tasksModel.index(parentIdx, 0)
+        const parentTaskIndex = DockModel.dockPresentationModel.taskIndexForDockIndex(parentIdx)
+        if (parentTaskIndex < 0) {
+            popup.groupedPreview = false
+            return
+        }
+        let parentModelIdx = DockModel.tasksModel.index(parentTaskIndex, 0)
         let allWinIds = DockModel.tasksModel.data(
             parentModelIdx, TaskManager.AbstractTasksModel.WinIdList) || []
 
-        let childCount = DockModel.childCount(parentIdx)
+        let childCount = DockModel.childCount(parentTaskIndex)
         // Keep this state signal-driven by model rebuilds; DockModel.childCount
         // is a method call and does not itself participate in QML bindings.
         popup.groupedPreview = childCount > 0
@@ -142,7 +147,7 @@ Item {
             let allChildUuidsResolved = true
             let matchedChildCount = 0
             for (let i = 0; i < childCount; i++) {
-                let childModelIndex = DockModel.tasksModel.makeModelIndex(parentIdx, i)
+                let childModelIndex = DockModel.tasksModel.makeModelIndex(parentTaskIndex, i)
                 let childWinIds = DockModel.tasksModel.data(
                     childModelIndex, TaskManager.AbstractTasksModel.WinIdList) || []
                 if (childWinIds.length === 0) {
@@ -251,7 +256,12 @@ Item {
             if (PreviewController.visible && PreviewController.parentIndex >= 0) {
                 // Child removed: check if parent still valid
                 let parentIdx = PreviewController.parentIndex
-                let parentModelIdx = DockModel.tasksModel.index(parentIdx, 0)
+                let parentTaskIndex = DockModel.dockPresentationModel.taskIndexForDockIndex(parentIdx)
+                if (parentTaskIndex < 0) {
+                    PreviewController.hidePreview()
+                    return
+                }
+                let parentModelIdx = DockModel.tasksModel.index(parentTaskIndex, 0)
                 if (!parentModelIdx.valid) {
                     PreviewController.hidePreview()
                 } else {
@@ -315,7 +325,9 @@ Item {
                 return false
 
             const uuidKey = String(uuid)
-            const parentTaskIndex = PreviewController.parentIndex
+            const parentTaskIndex = DockModel.dockPresentationModel.taskIndexForDockIndex(PreviewController.parentIndex)
+            if (parentTaskIndex < 0)
+                return false
             const parentModelIndex = DockModel.tasksModel.index(parentTaskIndex, 0)
             if (!parentModelIndex.valid)
                 return false
@@ -448,8 +460,10 @@ Item {
 
                 Item {
                     objectName: "previewAppIconSlot"
-                    readonly property string iconName: DockModel.iconName(PreviewController.parentIndex)
+                    readonly property int taskIndex: DockModel.dockPresentationModel.taskIndexForDockIndex(PreviewController.parentIndex)
+                    readonly property string iconName: taskIndex >= 0 ? DockModel.iconName(taskIndex)
                         || "application-x-executable"
+                        : "application-x-executable"
                     readonly property bool rawIcon: iconName.startsWith("raw:")
                     Layout.preferredWidth: 22
                     Layout.preferredHeight: 22

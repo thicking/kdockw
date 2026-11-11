@@ -33,13 +33,18 @@ Item {
         stackPopup.openAtRoot()
     }
 
+    function openContextMenu() {
+        stackContextMenu.popup()
+    }
+
     Image {
         anchors.centerIn: parent
         width: DockSettings.iconSize
         height: DockSettings.iconSize
-        source: "image://icon/folder"
+        source: stackItem.visible ? "image://icon/folder" : ""
         sourceSize: Qt.size(width, height)
         smooth: true
+        opacity: DockSettings.iconOpacity
         Accessible.ignored: true
     }
 

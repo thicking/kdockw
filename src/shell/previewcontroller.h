@@ -187,6 +187,8 @@ Q_SIGNALS:
     void focusedThumbnailIndexChanged();
 
 private:
+    [[nodiscard]] int taskIndexForParent() const;
+    void reconcileParentIndex();
     void updateInputRegion();
     void applyPreviewBackgroundEffect();
     void commitInputRegion();
@@ -217,6 +219,7 @@ private:
     bool m_previewHovered = false;
     bool m_held = false;
     int m_parentIndex = -1;
+    QString m_parentEntryId;
 
     qreal m_contentX = 0;
     qreal m_contentY = 0;

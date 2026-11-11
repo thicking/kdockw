@@ -79,6 +79,11 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
     , m_settings(settings)
     , m_previewFrameCache(std::make_unique<PreviewFrameCache>())
 {
+    auto *presentationModel = m_model->dockPresentationModel();
+    connect(presentationModel, &QAbstractItemModel::rowsInserted, this, &PreviewController::reconcileParentIndex);
+    connect(presentationModel, &QAbstractItemModel::rowsRemoved, this, &PreviewController::reconcileParentIndex);
+    connect(presentationModel, &QAbstractItemModel::rowsMoved, this, &PreviewController::reconcileParentIndex);
+    connect(presentationModel, &QAbstractItemModel::modelReset, this, &PreviewController::reconcileParentIndex);
     // DockView's QML may start a one-shot preview prefetch before the overlay
     // QQuickWindow exists. Keep that early source CPU-only until initialize()
     // identifies the renderer.
@@ -288,36 +293,62 @@ int PreviewController::parentIndex() const
     return m_parentIndex;
 }
 
+int PreviewController::taskIndexForParent() const
+{
+    return m_parentIndex >= 0 ? m_model->dockPresentationModel()->taskIndexForDockIndex(m_parentIndex) : -1;
+}
+
+void PreviewController::reconcileParentIndex()
+{
+    if (m_parentEntryId.isEmpty()) {
+        return;
+    }
+    const int currentIndex = m_model->dockPresentationModel()->dockIndexForEntryId(m_parentEntryId);
+    if (currentIndex < 0) {
+        hidePreview();
+        return;
+    }
+    if (currentIndex != m_parentIndex) {
+        m_parentIndex = currentIndex;
+        Q_EMIT parentIndexChanged();
+        Q_EMIT positionChanged();
+    }
+}
+
 QModelIndex PreviewController::rootModelIndex() const
 {
-    if (m_parentIndex < 0) {
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
         return {};
     }
-    return m_model->taskModelIndex(m_parentIndex);
+    return m_model->taskModelIndex(taskIndex);
 }
 
 bool PreviewController::isGrouped() const
 {
-    if (m_parentIndex < 0) {
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
         return false;
     }
-    return m_model->childCount(m_parentIndex) > 1;
+    return m_model->childCount(taskIndex) > 1;
 }
 
 QVariantList PreviewController::windowIds() const
 {
-    if (m_parentIndex < 0) {
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
         return {};
     }
-    return m_model->windowIds(m_parentIndex);
+    return m_model->windowIds(taskIndex);
 }
 
 QString PreviewController::appName() const
 {
-    if (m_parentIndex < 0) {
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
         return {};
     }
-    const QModelIndex idx = m_model->tasksModel()->index(m_parentIndex, 0);
+    const QModelIndex idx = m_model->tasksModel()->index(taskIndex, 0);
     return idx.data(TaskManager::AbstractTasksModel::AppName).toString();
 }
 
@@ -514,6 +545,7 @@ void PreviewController::showPreview(int index, qreal itemSurfacePos, qreal itemE
     const auto dockEdge = m_dockView->platform()->edge();
     const bool indexChanged = (m_parentIndex != index);
     m_parentIndex = index;
+    m_parentEntryId = m_model->dockPresentationModel()->entryIdForDockIndex(index);
     m_itemPos = itemSurfacePos;
     m_itemExtent = itemExtent;
     updatePreviewAnchorGeometry(itemSurfacePos, itemExtent, iconRestEdgeInSurface,
@@ -723,6 +755,7 @@ void PreviewController::doHide()
     m_visible = false;
     m_previewHovered = false;
     m_parentIndex = -1;
+    m_parentEntryId.clear();
 
     // End preview keyboard nav if active
     if (m_previewKeyboardActive) {
@@ -830,10 +863,14 @@ int PreviewController::previewThumbnailCount() const
         return 0;
     }
     // Single window (no children) counts as 1 thumbnail
-    int childCount = m_model->childCount(m_parentIndex);
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
+        return 0;
+    }
+    int childCount = m_model->childCount(taskIndex);
     if (childCount == 0) {
         // Check if it's a window (not just a launcher)
-        const QModelIndex parentIdx = m_model->tasksModel()->index(m_parentIndex, 0);
+        const QModelIndex parentIdx = m_model->tasksModel()->index(taskIndex, 0);
         bool isWindow = parentIdx.data(TaskManager::AbstractTasksModel::IsWindow).toBool();
         return isWindow ? 1 : 0;
     }
@@ -872,15 +909,19 @@ QModelIndex PreviewController::focusedThumbnailModelIndex() const
     if (m_parentIndex < 0 || m_focusedThumbnailIndex < 0) {
         return {};
     }
-    int childCount = m_model->childCount(m_parentIndex);
+    const int taskIndex = taskIndexForParent();
+    if (taskIndex < 0) {
+        return {};
+    }
+    int childCount = m_model->childCount(taskIndex);
     if (childCount == 0) {
         // Single window: use parent row directly
-        return m_model->tasksModel()->index(m_parentIndex, 0);
+        return m_model->tasksModel()->index(taskIndex, 0);
     }
     if (m_focusedThumbnailIndex >= childCount) {
         return {};
     }
-    return m_model->tasksModel()->makeModelIndex(m_parentIndex, m_focusedThumbnailIndex);
+    return m_model->tasksModel()->makeModelIndex(taskIndex, m_focusedThumbnailIndex);
 }
 
 void PreviewController::setHideDelay(int ms)

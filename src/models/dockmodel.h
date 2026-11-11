@@ -7,6 +7,7 @@
 #include <QUrl>
 
 #include "dockentriesmodel.h"
+#include "dockpresentationmodel.h"
 
 #include <taskmanager/activityinfo.h>
 #include <taskmanager/tasksmodel.h>
@@ -30,6 +31,8 @@ class DockModel : public QObject
 
     Q_PROPERTY(TaskManager::TasksModel *tasksModel READ tasksModel CONSTANT)
     Q_PROPERTY(DockEntriesModel *dockEntriesModel READ dockEntriesModel CONSTANT)
+    Q_PROPERTY(DockPresentationModel *dockPresentationModel READ dockPresentationModel CONSTANT)
+    Q_PROPERTY(int pinnedDockEntryCount READ pinnedDockEntryCount NOTIFY pinnedDockEntryCountChanged)
     Q_PROPERTY(QString dockEntries READ dockEntries NOTIFY dockEntriesChanged)
     Q_PROPERTY(QStringList pinnedLaunchers READ pinnedLaunchers WRITE setPinnedLaunchers NOTIFY pinnedLaunchersChanged)
     Q_PROPERTY(int pinnedTaskCount READ pinnedTaskCount NOTIFY pinnedTaskCountChanged)
@@ -42,6 +45,8 @@ public:
 
     [[nodiscard]] TaskManager::TasksModel *tasksModel() const;
     [[nodiscard]] DockEntriesModel *dockEntriesModel() const;
+    [[nodiscard]] DockPresentationModel *dockPresentationModel() const;
+    [[nodiscard]] int pinnedDockEntryCount() const;
     [[nodiscard]] QString dockEntries() const;
     void loadDockEntries(const QString &serialized);
     [[nodiscard]] TaskManager::VirtualDesktopInfo *virtualDesktopInfo() const;
@@ -58,6 +63,7 @@ public:
     /// Move the task at @p fromIndex to @p toIndex as an explicit user
     /// reorder and save the new launcher order. Returns true on success.
     bool moveTask(int fromIndex, int toIndex);
+    Q_INVOKABLE bool moveDockEntry(const QString &entryId, const QString &targetEntryId);
 
     /// Virtual desktop display mode: 0=ShowAll, 1=DimOtherDesktops, 2=CurrentOnly
     [[nodiscard]] int virtualDesktopMode() const;
@@ -77,6 +83,9 @@ public:
 
     /// Check whether the given URL refers to a .desktop file or applications: scheme.
     Q_INVOKABLE bool isDesktopFile(const QUrl &url) const;
+
+    /// Check whether the URL points to an existing local directory.
+    Q_INVOKABLE bool isLocalDirectory(const QUrl &url) const;
 
     /// Return true if the task at @p index is a pinned launcher.
     Q_INVOKABLE bool isPinned(int index) const;
@@ -101,6 +110,7 @@ Q_SIGNALS:
     void dockEntriesChanged();
     void pinnedLaunchersChanged();
     void pinnedTaskCountChanged();
+    void pinnedDockEntryCountChanged();
     void virtualDesktopModeChanged();
     void currentDesktopChanged();
 
@@ -137,6 +147,7 @@ private:
     QList<SettledRow> m_settledRows;
     std::unique_ptr<DockEntriesModel> m_dockEntriesModel;
     std::unique_ptr<TaskManager::TasksModel> m_tasksModel;
+    std::unique_ptr<DockPresentationModel> m_dockPresentationModel;
     std::shared_ptr<TaskManager::VirtualDesktopInfo> m_virtualDesktopInfo;
     std::shared_ptr<TaskManager::ActivityInfo> m_activityInfo;
 };

@@ -94,6 +94,11 @@ public:
         LauncherUrlWithoutIcon,
         IconName,
         IsOnCurrentDesktop,
+        TaskIndex,
+        EntryId,
+        EntryType,
+        EntryUrl,
+        IsPinned,
     };
     Q_ENUM(AdditionalRoles)
 };
@@ -128,6 +133,11 @@ public:
     Q_INVOKABLE void setChildTaskData(int parentRow, int childRow, const QString &roleName, const QVariant &value);
     Q_INVOKABLE void removeTask(int row);
     Q_INVOKABLE void reset();
+    Q_INVOKABLE int taskIndexForDockIndex(int dockIndex) const;
+    Q_INVOKABLE int dockIndexForTaskIndex(int taskIndex) const;
+    Q_INVOKABLE QString entryIdForDockIndex(int dockIndex) const;
+    Q_INVOKABLE bool isPinnedDockIndex(int dockIndex) const;
+    Q_INVOKABLE bool moveByEntryId(const QString &entryId, const QString &targetEntryId);
     // Role lookup by name, used by the QML DockModel mock.
     Q_INVOKABLE QVariant get(int row, const QString &roleName) const;
 

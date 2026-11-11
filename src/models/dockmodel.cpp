@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <QCryptographicHash>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QIcon>
 #include <QLoggingCategory>
@@ -287,6 +288,9 @@ DockModel::DockModel(QObject *parent)
                     << "pinned" << isPinnedTask(*m_tasksModel, index);
             }
     });
+
+    m_dockPresentationModel = std::make_unique<DockPresentationModel>(m_tasksModel.get(), m_dockEntriesModel.get(), this);
+    connect(m_dockPresentationModel.get(), &DockPresentationModel::pinnedEntryCountChanged, this, &DockModel::pinnedDockEntryCountChanged);
 }
 
 DockModel::~DockModel() = default;
@@ -299,6 +303,16 @@ TaskManager::TasksModel *DockModel::tasksModel() const
 DockEntriesModel *DockModel::dockEntriesModel() const
 {
     return m_dockEntriesModel.get();
+}
+
+DockPresentationModel *DockModel::dockPresentationModel() const
+{
+    return m_dockPresentationModel.get();
+}
+
+int DockModel::pinnedDockEntryCount() const
+{
+    return m_dockPresentationModel ? m_dockPresentationModel->pinnedEntryCount() : m_pinnedTaskCount;
 }
 
 QString DockModel::dockEntries() const
@@ -377,6 +391,20 @@ bool DockModel::moveTask(int fromIndex, int toIndex)
     // The user's order is the new settled order: a launcher-slot repair still
     // pending from before the move must not undo it.
     snapshotSettledRows();
+    return true;
+}
+
+bool DockModel::moveDockEntry(const QString &entryId, const QString &targetEntryId)
+{
+    if (!m_dockEntriesModel->moveEntryById(entryId, targetEntryId)) {
+        return false;
+    }
+    const QStringList launchers = m_dockEntriesModel->taskLauncherUrls();
+    if (launchers != m_tasksModel->launcherList()) {
+        m_tasksModel->setLauncherList(launchers);
+    }
+    snapshotSettledRows();
+    Q_EMIT pinnedLaunchersChanged();
     return true;
 }
 
@@ -626,6 +654,11 @@ bool DockModel::isDesktopFile(const QUrl &url) const
         return true;
     }
     return false;
+}
+
+bool DockModel::isLocalDirectory(const QUrl &url) const
+{
+    return url.isValid() && url.isLocalFile() && QFileInfo(url.toLocalFile()).isDir();
 }
 
 bool DockModel::isPinned(int index) const

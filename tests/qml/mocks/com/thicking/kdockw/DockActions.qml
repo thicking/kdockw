@@ -18,6 +18,7 @@ QtObject {
     function cycleWindows(i, forward) { _record("cycleWindows", arguments) }
     function moveTask(from, to) { _record("moveTask", arguments) }
     function addLauncher(url) { _record("addLauncher", arguments) }
+    function addFolderStack(url) { _record("addFolderStack", arguments) }
     function removeLauncher(i) { _record("removeLauncher", arguments) }
     function openUrlsWithTask(i, urls) { _record("openUrlsWithTask", arguments) }
 

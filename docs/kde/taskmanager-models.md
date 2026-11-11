@@ -103,9 +103,24 @@ Folder-stack records accept local absolute `file://` URLs only.
 
 On first start with no `DockEntries` key, the migration seeds ordered `Task`
 records from `PinnedLaunchers` and leaves that legacy setting unchanged. An
-existing typed list, including an empty one, takes precedence. At this stage
-the visible dock still renders from `TaskManager::TasksModel`; typed entries
-are a persistence foundation and are not yet composed into the live dock.
+existing typed list, including an empty one, takes precedence.
+
+`DockPresentationModel` is a narrow presentation adapter over the existing
+`TaskManager::TasksModel` and `DockEntriesModel`. It renders the persisted
+mixed sequence of pinned `Task` and `FolderStack` entries first, then appends
+unmatched running task rows in TaskManager order. Stable persisted entry IDs
+anchor pinned rows while model moves preserve delegate identity. The adapter
+forwards TaskManager roles and exposes dock-to-task row mapping; activation,
+window grouping, previews, and task operations continue to use TaskManager.
+Internal reordering within the pinned region moves entries by ID and writes
+the filtered task launcher list back through the existing TaskManager API.
+Unpinned running rows retain their relative order, and a drag cannot cross the
+pinned boundary.
+
+External drops accept local directories as Folder Stacks, files on task icons
+as URLs for that application, `.desktop` launchers, and Plasma task launcher
+URLs. Other MIME data is rejected. Folder Stacks are browse-only: file drops
+onto them are rejected.
 
 ## Roles — AbstractTasksModel::AdditionalRoles
 

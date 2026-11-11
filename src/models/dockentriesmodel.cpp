@@ -62,6 +62,17 @@ QList<DockEntry> DockEntriesModel::entries() const
     return m_entries;
 }
 
+QStringList DockEntriesModel::taskLauncherUrls() const
+{
+    QStringList urls;
+    for (const DockEntry &entry : m_entries) {
+        if (entry.type == DockEntryType::Task) {
+            urls.append(entry.url.toString());
+        }
+    }
+    return urls;
+}
+
 void DockEntriesModel::setEntries(const QList<DockEntry> &entries)
 {
     QList<DockEntry> validEntries;
@@ -156,6 +167,22 @@ bool DockEntriesModel::moveEntry(int fromIndex, int toIndex)
     endMoveRows();
     Q_EMIT entriesChanged();
     return true;
+}
+
+bool DockEntriesModel::moveEntryById(const QString &entryId, const QString &targetEntryId)
+{
+    if (entryId.isEmpty() || targetEntryId.isEmpty() || entryId == targetEntryId) {
+        return false;
+    }
+    const auto findEntry = [this](const QString &id) {
+        for (qsizetype row = 0; row < m_entries.size(); ++row) {
+            if (m_entries.at(row).id == id) {
+                return static_cast<int>(row);
+            }
+        }
+        return -1;
+    };
+    return moveEntry(findEntry(entryId), findEntry(targetEntryId));
 }
 
 } // namespace kdockw

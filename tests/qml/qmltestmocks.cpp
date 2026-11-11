@@ -48,6 +48,11 @@ MockTasksModel::MockTasksModel(QObject *parent)
     for (int i = 0; i < roles.keyCount(); ++i) {
         m_roleNames.insert(roles.value(i), QByteArray(roles.key(i)));
     }
+    m_roleNames.insert(MockAbstractTasksModel::TaskIndex, QByteArrayLiteral("taskIndex"));
+    m_roleNames.insert(MockAbstractTasksModel::EntryId, QByteArrayLiteral("entryId"));
+    m_roleNames.insert(MockAbstractTasksModel::EntryType, QByteArrayLiteral("entryType"));
+    m_roleNames.insert(MockAbstractTasksModel::EntryUrl, QByteArrayLiteral("entryUrl"));
+    m_roleNames.insert(MockAbstractTasksModel::IsPinned, QByteArrayLiteral("isPinned"));
     connect(this, &QAbstractItemModel::rowsInserted, this, &MockTasksModel::countChanged);
     connect(this, &QAbstractItemModel::rowsRemoved, this, &MockTasksModel::countChanged);
 }
@@ -167,6 +172,73 @@ void MockTasksModel::reset()
     m_lastRequestRow = -1;
     m_lastRequestChild = -1;
     Q_EMIT requestsChanged();
+}
+
+int MockTasksModel::taskIndexForDockIndex(int dockIndex) const
+{
+    if (dockIndex < 0 || dockIndex >= rowCount()) {
+        return -1;
+    }
+    const QModelIndex idx = index(dockIndex, 0);
+    if (idx.data(MockAbstractTasksModel::EntryType).toString() == QStringLiteral("folderStack")) {
+        return -1;
+    }
+    const QVariant explicitIndex = idx.data(MockAbstractTasksModel::TaskIndex);
+    return explicitIndex.isValid() ? explicitIndex.toInt() : dockIndex;
+}
+
+int MockTasksModel::dockIndexForTaskIndex(int taskIndex) const
+{
+    for (int row = 0; row < rowCount(); ++row) {
+        if (taskIndexForDockIndex(row) == taskIndex) {
+            return row;
+        }
+    }
+    return -1;
+}
+
+QString MockTasksModel::entryIdForDockIndex(int dockIndex) const
+{
+    if (dockIndex < 0 || dockIndex >= rowCount()) {
+        return {};
+    }
+    const QModelIndex idx = index(dockIndex, 0);
+    const QString explicitId = idx.data(MockAbstractTasksModel::EntryId).toString();
+    if (!explicitId.isEmpty()) {
+        return explicitId;
+    }
+    const QUrl launcherUrl = idx.data(MockAbstractTasksModel::LauncherUrlWithoutIcon).toUrl();
+    if (launcherUrl.isValid()) {
+        return launcherUrl.toString();
+    }
+    return idx.data(MockAbstractTasksModel::AppId).toString();
+}
+
+bool MockTasksModel::isPinnedDockIndex(int dockIndex) const
+{
+    if (dockIndex < 0 || dockIndex >= rowCount()) {
+        return false;
+    }
+    const QModelIndex idx = index(dockIndex, 0);
+    const QVariant explicitPinned = idx.data(MockAbstractTasksModel::IsPinned);
+    return explicitPinned.isValid() ? explicitPinned.toBool() : idx.data(MockAbstractTasksModel::IsLauncher).toBool();
+}
+
+bool MockTasksModel::moveByEntryId(const QString &entryId, const QString &targetEntryId)
+{
+    int from = -1;
+    int to = -1;
+    for (int row = 0; row < rowCount(); ++row) {
+        const QString currentId = entryIdForDockIndex(row);
+        if (currentId == entryId) from = row;
+        if (currentId == targetEntryId) to = row;
+    }
+    if (from < 0 || to < 0 || from == to) {
+        return false;
+    }
+    QList<QStandardItem *> moved = takeRow(from);
+    insertRow(to, moved);
+    return true;
 }
 
 QVariant MockTasksModel::get(int row, const QString &roleName) const

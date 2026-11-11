@@ -10,6 +10,7 @@ import kdockw.test
 
 QtObject {
     readonly property MockTasksModel tasksModel: MockTasksModel {}
+    readonly property var dockPresentationModel: tasksModel
     readonly property var dockEntriesModel: ListModel {
         id: entries
         function removeFolderStack(entryId) {
@@ -28,6 +29,7 @@ QtObject {
     // Fixtures supply prepartitioned task rows and their pinned boundary;
     // production DockModel's sorting is exercised by the model/native suites.
     property int pinnedTaskCount: 0
+    readonly property int pinnedDockEntryCount: pinnedTaskCount + entries.count
     property var delegateGeometryRequests: []
 
     function _role(i, name) { return tasksModel.get(i, name) }
@@ -38,6 +40,8 @@ QtObject {
     function isOnCurrentDesktop(i) { let v = _role(i, "IsOnCurrentDesktop"); return v === undefined ? true : !!v }
     function childCount(i) { return tasksModel.rowCount(tasksModel.index(i, 0)) }
     function isDesktopFile(url) { return url.toString().endsWith(".desktop") }
+    function isLocalDirectory(url) { return url.toString() === "file:///tmp" || url.toString().endsWith("/") }
+    function moveDockEntry(fromId, toId) { return tasksModel.moveByEntryId(fromId, toId) }
 
     function publishDelegateGeometry(i, delegate) {
         delegateGeometryRequests = delegateGeometryRequests.concat([{

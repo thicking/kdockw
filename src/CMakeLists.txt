@@ -61,6 +61,8 @@ add_library(kdockw_lib STATIC
     models/dockentry.cpp
     models/dockentriesmodel.h
     models/dockentriesmodel.cpp
+    models/dockpresentationmodel.h
+    models/dockpresentationmodel.cpp
     models/folderstackmodel.h
     models/folderstackmodel.cpp
     models/dockactions.h

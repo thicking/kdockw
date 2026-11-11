@@ -251,9 +251,10 @@ started on the approved v0.5.0 feature stage.
 
 ## v0.5.0 — Dock Interactions (in progress)
 
-Implementation has started with the typed pinned-entry persistence format and
-v0.4.3 launcher migration. The live dock still uses TaskManager pending mixed
-entry integration.
+Implementation has the typed pinned-entry persistence format, v0.4.3 launcher
+migration, initial local Folder Stacks, and a live presentation adapter that
+places pinned applications and stacks in one saved order. Advanced drop handling
+and real-session visual acceptance remain in progress.
 
 - [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
   animation, and usable handling of long lists. Plan Downloads Stack and real

@@ -32,12 +32,14 @@ public:
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
     [[nodiscard]] QList<DockEntry> entries() const;
+    [[nodiscard]] QStringList taskLauncherUrls() const;
     void setEntries(const QList<DockEntry> &entries);
     void syncTaskOrder(const QStringList &launcherUrls);
 
     Q_INVOKABLE bool appendFolderStack(const QUrl &url);
     Q_INVOKABLE bool removeFolderStack(const QString &entryId);
     Q_INVOKABLE bool moveEntry(int fromIndex, int toIndex);
+    Q_INVOKABLE bool moveEntryById(const QString &entryId, const QString &targetEntryId);
 
 Q_SIGNALS:
     void countChanged();

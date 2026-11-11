@@ -320,13 +320,17 @@ Item {
         }
 
         function test_folderStackDelegateOpensGridPopup() {
-            DockModel.dockEntriesModel.append({
+            const entry = {
                 entryType: "folderStack",
                 entryId: "fixture-stack",
-                entryUrl: "file:///tmp",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
                 display: "tmp",
-            })
-            let dock = makeDock(0)
+                taskIndex: -1,
+                isPinned: true,
+            }
+            DockModel.dockEntriesModel.append(entry)
+            DockModel.tasksModel.addTask(entry)
+            let dock = makeDock(1)
             let stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
             verify(stack)
             compare(stack.displayName, "tmp")
@@ -2362,6 +2366,78 @@ Item {
                     "applications:org.kde.kate.desktop")
             compare(dock.launcherUrlFromTaskMime(
                         ["application/x-orgkdeplasmataskmanager_taskbuttonitem"], ""), "")
+        }
+
+        function test_externalDirectoryDropAddsFolderStack() {
+            let dock = makeDock(0)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            let drop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp")],
+                formats: [],
+                accepted: false,
+            }
+            area.dropTargetIndex = -1
+            area.processDrop(drop)
+            verify(drop.accepted)
+            compare(DockActions.callsTo("addFolderStack").length, 1)
+            compare(DockActions.callsTo("addFolderStack")[0].args[0].toString(), "file:///tmp")
+        }
+
+        function test_externalFileDropOpensWithTargetApplication() {
+            addTasks(["Editor"])
+            let dock = makeDock(1)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            let drop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp/note.txt")],
+                formats: [],
+                accepted: false,
+            }
+            area.dropTargetIndex = 0
+            area.processDrop(drop)
+            verify(drop.accepted)
+            compare(DockActions.callsTo("openUrlsWithTask").length, 1)
+            compare(DockActions.callsTo("openUrlsWithTask")[0].args[0], 0)
+        }
+
+        function test_externalDropRejectsUnsupportedMimeAndFilesOnFolderStack() {
+            let dock = makeDock(0)
+            let area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            verify(!area.supportsDrag({ hasUrls: false, formats: ["image/png"], getDataAsString: function() { return "" } }))
+            let unsupported = { hasUrls: false, urls: [], formats: ["image/png"], accepted: true }
+            area.processDrop(unsupported)
+            verify(!unsupported.accepted)
+
+            let backgroundFileDrop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp/note.txt")],
+                formats: [],
+                accepted: true,
+            }
+            area.processDrop(backgroundFileDrop)
+            verify(!backgroundFileDrop.accepted)
+
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                isPinned: true,
+            })
+            dock = makeDock(1)
+            area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            let fileDrop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp/note.txt")],
+                formats: [],
+                accepted: true,
+            }
+            area.dropTargetIndex = 0
+            area.processDrop(fileDrop)
+            verify(!fileDrop.accepted)
+            compare(DockActions.callsTo("openUrlsWithTask").length, 0)
         }
 
         function test_externalMultiFileHoverActivatesWithoutForwardingFiles() {

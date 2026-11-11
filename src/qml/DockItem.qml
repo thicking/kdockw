@@ -23,11 +23,25 @@ Item {
 
     // Display name for tooltip (readable by parent)
     readonly property string displayName: model.display || ""
+    readonly property bool isFolderStack: model.entryType === "folderStack"
+    readonly property int taskIndex: model.taskIndex !== undefined ? model.taskIndex : index
+    readonly property string dockEntryId: model.entryId || ""
+    readonly property string iconName: isFolderStack ? "folder" : DockModel.iconName(taskIndex)
+    property Item dockRoot: null
+
+    function openFolderStack() {
+        folderStackDelegate.openStack()
+    }
+
+    function openFolderContextMenu() {
+        folderStackDelegate.openContextMenu()
+    }
 
     // Accessible description for screen readers (state summary)
     readonly property string accessibleDescription: {
         let parts = []
-        if (DockModel.isPinned(index)) parts.push(i18n("Pinned"))
+        if (isFolderStack) return i18n("Folder stack")
+        if (DockModel.isPinned(taskIndex)) parts.push(i18n("Pinned"))
         if (model.IsActive) parts.push(i18n("Active"))
         if (model.IsMinimized) parts.push(i18n("Minimized"))
         let count = model.ChildCount || 0
@@ -47,7 +61,7 @@ Item {
     Accessible.description: accessibleDescription
     Accessible.focusable: true
     Accessible.focused: isKeyboardFocused
-    Accessible.onPressAction: DockActions.activate(index)
+    Accessible.onPressAction: isFolderStack ? openFolderStack() : DockActions.activate(taskIndex)
 
     // Launcher URL of this item's app, the key for LauncherEntryTracker (Unity API)
     readonly property url _launcherUrl: model.LauncherUrlWithoutIcon ?? ""
@@ -77,7 +91,7 @@ Item {
     // Desktop entry name for notification lookup (e.g. "org.kde.dolphin", "slack")
     readonly property string _appId: {
         let _dep = model.display  // reactive dependency on model data
-        return DockModel.appId(index)
+        return isFolderStack ? "" : DockModel.appId(taskIndex)
     }
 
     // === Inbox (persistent badge) ===
@@ -112,9 +126,9 @@ Item {
     // Attention condition (Plasma-compatible: IsDemandingAttention OR LauncherEntry urgent OR SNI NeedsAttention)
     readonly property bool _isDemandingAttention: {
         let _rev = NotificationTracker.revision  // reactive dependency
-        return (model.IsDemandingAttention ?? false)
+        return !isFolderStack && ((model.IsDemandingAttention ?? false)
             || _launcherUrgent
-            || (_appId.length > 0 && NotificationTracker.sniNeedsAttention(_appId))
+            || (_appId.length > 0 && NotificationTracker.sniNeedsAttention(_appId)))
     }
 
     // The motion is time-limited; the red running marker remains while the
@@ -324,7 +338,7 @@ Item {
     // keep replaying it.
 
     readonly property bool _isWindow: model.IsWindow ?? false
-    readonly property bool _canPublishDelegateGeometry: model.IsWindow || model.IsGroupParent || false
+    readonly property bool _canPublishDelegateGeometry: !isFolderStack && (model.IsWindow || model.IsGroupParent || false)
     readonly property bool _isStartup: model.IsStartup ?? false
     readonly property bool _isActive: model.IsActive ?? false
     readonly property int _childCount: model.ChildCount || 0
@@ -332,7 +346,7 @@ Item {
     // DockModel.currentDesktop is a reactive dependency — triggers re-evaluation on desktop switch
     readonly property bool _isOnCurrentDesktop: {
         let _dep = DockModel.currentDesktop
-        return DockModel.isOnCurrentDesktop(index)
+        return isFolderStack || DockModel.isOnCurrentDesktop(taskIndex)
 
     }
     opacity: (DockModel.virtualDesktopMode === 1 && !_isOnCurrentDesktop) ? DockSettings.otherDesktopOpacity : 1.0
@@ -351,7 +365,7 @@ Item {
         if (!_delegateGeometryReady || !_canPublishDelegateGeometry || !delegateGeometryTarget
                 || delegateGeometryTarget.width <= 0 || delegateGeometryTarget.height <= 0)
             return
-        DockModel.publishDelegateGeometry(index, delegateGeometryTarget)
+        DockModel.publishDelegateGeometry(taskIndex, delegateGeometryTarget)
     }
 
     function scheduleDelegateGeometryPublication() {
@@ -669,9 +683,9 @@ Item {
     }
 
     function _iconDiagLogImage(reason) {
-        if (!_iconDiagEnabled) return
+        if (!_iconDiagEnabled || isFolderStack) return
         IconDiagnostics.logQmlImage(reason, _appId, _launcherUrl.toString(),
-                                    DockModel.iconName(index), Qt.size(iconImage.width, iconImage.height),
+                                    DockModel.iconName(taskIndex), Qt.size(iconImage.width, iconImage.height),
                                     iconImage.sourceSize, currentScale)
     }
 
@@ -826,7 +840,9 @@ Item {
         // Anchors set via states below (iconAnchorStates)
         width: iconSize
         height: iconSize
+        visible: !dockItem.isFolderStack
         source: {
+            if (dockItem.isFolderStack) return ""
             // IMPORTANT: Read model.display to create a reactive dependency on
             // model data. After model reordering (move), the Repeater may update
             // delegate model data without changing index (position unchanged).
@@ -841,7 +857,7 @@ Item {
             // even after the real icon becomes available moments later.
             let _dep2 = model.decoration
             let iconCacheVersion = DockView.iconCacheVersion
-            let name = DockModel.iconName(dockItem.index)
+            let name = DockModel.iconName(dockItem.taskIndex)
             if (name && name.length > 0) {
                 let source = "image://icon/" + name + "?v=" + iconCacheVersion
                 if (dockItem._iconDiagEnabled)
@@ -896,6 +912,7 @@ Item {
             radius: Kirigami.Units.largeSpacing
             color: Kirigami.Theme.highlightColor
             visible: iconImage.status !== Image.Ready
+                     && !dockItem.isFolderStack
             Accessible.ignored: true
 
             QQC2.Label {
@@ -965,6 +982,18 @@ Item {
                 }
             }
         ]
+    }
+
+    FolderStackItem {
+        id: folderStackDelegate
+        anchors.fill: parent
+        visible: dockItem.isFolderStack
+        index: dockItem.index
+        model: dockItem.model
+        rootItem: dockItem.dockRoot
+        verticalDock: DockView.isVertical
+        dockEdge: DockView.edge
+        Accessible.ignored: true
     }
 
     // Attention glow effect (type 4) — MultiEffect shadow pulse on iconImage
@@ -1420,6 +1449,7 @@ Item {
     // Uses States + AnchorChanges for clean runtime edge switching.
     Flow {
         id: indicatorRow
+        visible: !dockItem.isFolderStack
         flow: DockView.isVertical ? Flow.TopToBottom : Flow.LeftToRight
         spacing: Kirigami.Units.smallSpacing
         Accessible.ignored: true

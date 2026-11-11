@@ -31,9 +31,9 @@ Item {
     // inter-icon gap. The boundary remains a model-free index so task and
     // keyboard indices are unchanged.
     readonly property int taskZoneBoundary: DockSettings.separateLaunchers
-        && DockModel.pinnedTaskCount > 0
-        && DockModel.pinnedTaskCount < dockRepeater.count
-        ? DockModel.pinnedTaskCount : -1
+        && DockModel.pinnedDockEntryCount > 0
+        && DockModel.pinnedDockEntryCount < dockRepeater.count
+        ? DockModel.pinnedDockEntryCount : -1
     readonly property real taskZoneSeparatorThickness: 1
     readonly property real taskZoneGap: taskZoneBoundary >= 0
         ? DockSettings.iconSpacing + taskZoneSeparatorThickness : 0
@@ -149,6 +149,18 @@ Item {
 
     function announceLaunch(name) {
         Accessible.announce(i18n("Starting %1", name), Accessible.Assertive)
+    }
+
+    function taskIndexAtDockIndex(dockIndex) {
+        return DockModel.dockPresentationModel.taskIndexForDockIndex(dockIndex)
+    }
+
+    function isPinnedDockIndex(dockIndex) {
+        return DockModel.dockPresentationModel.isPinnedDockIndex(dockIndex)
+    }
+
+    function dockEntryIdAt(dockIndex) {
+        return DockModel.dockPresentationModel.entryIdForDockIndex(dockIndex)
     }
 
     function startKeyboardNavigation() {
@@ -334,7 +346,11 @@ Item {
         case Qt.Key_Enter:
         case Qt.Key_Space:
             if (hoveredIndex >= 0) {
-                DockActions.activate(hoveredIndex)
+                const item = dockRepeater.itemAt(hoveredIndex)
+                if (item && item.isFolderStack)
+                    item.openFolderStack()
+                else if (item)
+                    DockActions.activate(taskIndexAtDockIndex(hoveredIndex))
                 endKeyboardNavigation(false)
             }
             event.accepted = true
@@ -351,7 +367,9 @@ Item {
             // Open preview for the focused item (if it has windows); not for
             // a held hover that still awaits its post-menu reconcile.
             if (hoveredIndex >= 0 && !_hoverHeld) {
-                let idx = DockModel.tasksModel.index(hoveredIndex, 0)
+                const taskIndex = taskIndexAtDockIndex(hoveredIndex)
+                if (taskIndex < 0) break
+                let idx = DockModel.tasksModel.index(taskIndex, 0)
                 let isWindow = DockModel.tasksModel.data(
                     idx, TaskManager.AbstractTasksModel.IsWindow)
                 if (isWindow) {
@@ -465,14 +483,14 @@ Item {
     // that dropping near the original position keeps the item in place).
     function computeDropIndex(globalMousePos) {
         const separate = DockSettings.separateLaunchers
-        const sourcePinned = separate && DockModel.isPinned(root._dragSourceIndex)
+        const sourcePinned = separate && isPinnedDockIndex(root._dragSourceIndex)
         if (DockView.isVertical) {
             let panelRelY = globalMousePos - dockPanel.y
             let items = []
             for (let i = 0; i < dockRepeater.count; i++) {
                 let item = dockRepeater.itemAt(i)
                 if (!item) continue
-                if (separate && DockModel.isPinned(i) !== sourcePinned) continue
+                if (separate && isPinnedDockIndex(i) !== sourcePinned) continue
                 items.push({ idx: i, cx: _primaryRestSlotStart(item) + item.height / 2 })
             }
             if (items.length === 0) return -1
@@ -489,7 +507,7 @@ Item {
             for (let i = 0; i < dockRepeater.count; i++) {
                 let item = dockRepeater.itemAt(i)
                 if (!item) continue
-                if (separate && DockModel.isPinned(i) !== sourcePinned) continue
+                if (separate && isPinnedDockIndex(i) !== sourcePinned) continue
                 items.push({ idx: i, cx: _primaryRestSlotStart(item) + item.width / 2 })
             }
             if (items.length === 0) return -1
@@ -525,7 +543,9 @@ Item {
         if (externalDropArea.externalFileDragActive) return
         if (!DockSettings.previewEnabled) return
         if (hoveredIndex < 0 || PreviewController.visible) return
-        let idx = DockModel.tasksModel.index(hoveredIndex, 0)
+        const taskIndex = taskIndexAtDockIndex(hoveredIndex)
+        if (taskIndex < 0) return
+        let idx = DockModel.tasksModel.index(taskIndex, 0)
         let isWindow = DockModel.tasksModel.data(
             idx, TaskManager.AbstractTasksModel.IsWindow)
         if (isWindow) {
@@ -852,8 +872,9 @@ Item {
         PreviewController.hidePreviewDelayed()
         // Drag-out: if an active drag leaves the dock, unpin the launcher
         if (_dragActive) {
-            if (DockModel.isPinned(_dragSourceIndex)) {
-                DockActions.removeLauncher(_dragSourceIndex)
+            const sourceTaskIndex = taskIndexAtDockIndex(_dragSourceIndex)
+            if (isPinnedDockIndex(_dragSourceIndex) && sourceTaskIndex >= 0) {
+                DockActions.removeLauncher(sourceTaskIndex)
             }
             _dragActive = false
             _dragPending = false
@@ -985,7 +1006,17 @@ Item {
                 if (root._dragTargetIndex >= 0 && root._dragTargetIndex !== root._dragSourceIndex) {
                     let item = dockRepeater.itemAt(root._dragSourceIndex)
                     let name = item ? item.displayName : ""
-                    if (DockActions.moveTask(root._dragSourceIndex, root._dragTargetIndex)) {
+                    const fromId = root.dockEntryIdAt(root._dragSourceIndex)
+                    const toId = root.dockEntryIdAt(root._dragTargetIndex)
+                    const sourcePinned = root.isPinnedDockIndex(root._dragSourceIndex)
+                    const targetPinned = root.isPinnedDockIndex(root._dragTargetIndex)
+                    const sourceTaskIndex = root.taskIndexAtDockIndex(root._dragSourceIndex)
+                    const targetTaskIndex = root.taskIndexAtDockIndex(root._dragTargetIndex)
+                    const moved = sourcePinned && targetPinned
+                        ? DockModel.moveDockEntry(fromId, toId)
+                        : (!sourcePinned && !targetPinned && sourceTaskIndex >= 0 && targetTaskIndex >= 0
+                           ? DockActions.moveTask(sourceTaskIndex, targetTaskIndex) : false)
+                    if (moved) {
                         Accessible.announce(
                             i18n("Moved %1 to position %2", name, root._dragTargetIndex + 1),
                             Accessible.Polite)
@@ -1009,7 +1040,14 @@ Item {
             if (root._dragWasActive) return
             if (root.hoveredIndex < 0) return
             if (mouse.button === Qt.LeftButton) {
-                let idx = DockModel.tasksModel.index(root.hoveredIndex, 0)
+                let item = dockRepeater.itemAt(root.hoveredIndex)
+                if (item && item.isFolderStack) {
+                    item.openFolderStack()
+                    return
+                }
+                const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
+                if (taskIndex < 0) return
+                let idx = DockModel.tasksModel.index(taskIndex, 0)
                 let isWindow = DockModel.tasksModel.data(
                     idx, TaskManager.AbstractTasksModel.IsWindow)
                 let isGroup = DockModel.tasksModel.data(
@@ -1035,18 +1073,25 @@ Item {
                            ? DockSettings.groupedWindowClickAction === 2
                            : DockSettings.singleWindowClickAction === 1)) {
                     const index = root.hoveredIndex
-                    const dispatched = DockActions.activateOrMinimize(index)
+                    const dispatched = DockActions.activateOrMinimize(taskIndex)
                     root.dismissPreviewAfterTaskAction(index, dispatched, "activateOrMinimize")
                 } else {
                     const index = root.hoveredIndex
-                    const dispatched = DockActions.activate(index)
+                    const dispatched = DockActions.activate(taskIndex)
                     if (isWindow)
                         root.dismissPreviewAfterTaskAction(index, dispatched, "activate")
                 }
             } else if (mouse.button === Qt.MiddleButton) {
-                DockActions.newInstance(root.hoveredIndex)
+                const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
+                if (taskIndex >= 0) DockActions.newInstance(taskIndex)
             } else if (mouse.button === Qt.RightButton) {
-                DockContextMenu.showForTask(root.hoveredIndex)
+                let item = dockRepeater.itemAt(root.hoveredIndex)
+                if (item && item.isFolderStack)
+                    item.openFolderContextMenu()
+                else {
+                    const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
+                    if (taskIndex >= 0) DockContextMenu.showForTask(taskIndex)
+                }
             }
         }
 
@@ -1054,10 +1099,12 @@ Item {
         onWheel: function(wheel) {
             if (root._hoverHeld) return
             if (root.hoveredIndex < 0) return
+            const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
+            if (taskIndex < 0) return
             if (wheel.angleDelta.y > 0) {
-                DockActions.cycleWindows(root.hoveredIndex, false)
+                DockActions.cycleWindows(taskIndex, false)
             } else if (wheel.angleDelta.y < 0) {
-                DockActions.cycleWindows(root.hoveredIndex, true)
+                DockActions.cycleWindows(taskIndex, true)
             }
         }
 
@@ -1586,7 +1633,7 @@ Item {
 
             Repeater {
                 id: dockRepeater
-                model: DockModel.tasksModel
+                model: DockModel.dockPresentationModel
                 property int layoutRevision: 0
                 onCountChanged: root.scheduleDelegateGeometryRefresh()
                 onItemAdded: {
@@ -1624,6 +1671,7 @@ Item {
                     }
 
                     delegateGeometryTarget: delegateGeometryProxy
+                    dockRoot: root
                     z: (root.hoveredIndex === index) ? 1 : 0
                     isKeyboardFocused: root.keyboardNavigating && root.hoveredIndex === index
                     iconSize: DockSettings.iconSize
@@ -1653,31 +1701,6 @@ Item {
                 }
             }
 
-            // Folder stacks are independent dock entries. Keep TaskManager's
-            // row indexes intact for existing task actions; folder delegates
-            // use the stable DockEntriesModel row for persistence and removal.
-            Repeater {
-                id: folderStackRepeater
-                model: DockModel.dockEntriesModel
-                delegate: Item {
-                    required property int index
-                    required property string entryType
-                    required property var model
-                    readonly property bool isFolderStack: entryType === "folderStack"
-                    width: isFolderStack ? DockSettings.iconSize + DockSettings.iconSpacing : 0
-                    height: isFolderStack ? DockSettings.iconSize + DockSettings.iconSpacing : 0
-
-                    FolderStackItem {
-                        anchors.fill: parent
-                        visible: parent.isFolderStack
-                        index: parent.index
-                        model: parent.model
-                        rootItem: root
-                        verticalDock: DockView.isVertical
-                        dockEdge: DockView.edge
-                    }
-                }
-            }
         }
         // Allocate a dedicated separator slot outside the Flow. The native
         // separator is centered between transformed visual edges below, cannot
@@ -1728,7 +1751,7 @@ Item {
             Accessible.ignored: !visible
 
             Connections {
-                target: DockModel.tasksModel
+                target: DockModel.dockPresentationModel
                 function onLayoutChanged() { dockRepeater.layoutRevision++ }
                 function onRowsMoved() { dockRepeater.layoutRevision++ }
                 function onModelReset() { dockRepeater.layoutRevision++ }
@@ -1745,6 +1768,68 @@ Item {
             property bool activationRequested: false
             property bool externalFileDragActive: false
             property real externalDragPrimaryPosition: -1
+
+            function supportsDrag(drag) {
+                const hasTaskLauncherUrl = drag.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
+                        && root.launcherUrlFromTaskMime(drag.formats,
+                            drag.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl")) !== ""
+                return drag.hasUrls || hasTaskLauncherUrl
+            }
+
+            function processDrop(drop) {
+                clearActivationTarget()
+                let urls = []
+                if (drop.hasUrls) {
+                    for (let i = 0; i < drop.urls.length; i++)
+                        urls.push(drop.urls[i])
+                }
+
+                if (drop.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0) {
+                    const taskLauncherUrl = root.launcherUrlFromTaskMime(
+                        drop.formats,
+                        drop.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl"))
+                    if (taskLauncherUrl.length > 0)
+                        urls.unshift(taskLauncherUrl)
+                }
+
+                if (urls.length === 0) {
+                    drop.accepted = false
+                    dropTargetIndex = -1
+                    return
+                }
+
+                const firstUrl = urls[0]
+                const isLauncher = DockModel.isDesktopFile(firstUrl)
+                const isLocalFolder = DockModel.isLocalDirectory(firstUrl)
+                const targetItem = dropTargetIndex >= 0 ? dockRepeater.itemAt(dropTargetIndex) : null
+
+                if (isLauncher) {
+                    DockActions.addLauncher(firstUrl)
+                } else if (isLocalFolder) {
+                    DockActions.addFolderStack(firstUrl)
+                } else if (targetItem && targetItem.isFolderStack) {
+                    // Folder Stacks are browse-only in this release.
+                    drop.accepted = false
+                    dropTargetIndex = -1
+                    return
+                } else if (dropTargetIndex >= 0) {
+                    const taskIndex = root.taskIndexAtDockIndex(dropTargetIndex)
+                    if (taskIndex >= 0)
+                        DockActions.openUrlsWithTask(taskIndex, urls)
+                    else {
+                        drop.accepted = false
+                        dropTargetIndex = -1
+                        return
+                    }
+                } else {
+                    drop.accepted = false
+                    dropTargetIndex = -1
+                    return
+                }
+
+                drop.accepted = true
+                dropTargetIndex = -1
+            }
 
             function updateActivationTarget(drag) {
                 if (!DockSettings.activateWindowOnExternalDrag || !drag.hasUrls || root._dragActive) {
@@ -1812,8 +1897,10 @@ Item {
                     clearActivationTarget()
                     return
                 }
+                const taskIndex = root.taskIndexAtDockIndex(currentTarget)
+                if (taskIndex < 0) return
                 activationRequested = true
-                DockActions.activateWindowForExternalDrag(currentTarget)
+                DockActions.activateWindowForExternalDrag(taskIndex)
             }
 
             Timer {
@@ -1831,10 +1918,7 @@ Item {
             }
 
             onEntered: function(drag) {
-                const hasTaskLauncherUrl = drag.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
-                        && root.launcherUrlFromTaskMime(drag.formats,
-                            drag.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl")) !== ""
-                drag.accepted = drag.hasUrls || hasTaskLauncherUrl
+                drag.accepted = supportsDrag(drag)
                 updateActivationTarget(drag)
             }
 
@@ -1845,48 +1929,7 @@ Item {
             }
 
             onDropped: function(drop) {
-                clearActivationTarget()
-                let urls = []
-                if (drop.hasUrls) {
-                    for (let i = 0; i < drop.urls.length; i++) {
-                        urls.push(drop.urls[i])
-                    }
-                }
-
-                if (drop.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0) {
-                    const taskLauncherUrl = root.launcherUrlFromTaskMime(
-                        drop.formats,
-                        drop.getDataAsString("text/x-orgkdeplasmataskmanager_taskurl"))
-                    if (taskLauncherUrl.length > 0) {
-                        urls.unshift(taskLauncherUrl)
-                    }
-                }
-
-                if (urls.length === 0) {
-                    drop.accepted = false
-                    dropTargetIndex = -1
-                    return
-                }
-
-                // Check first URL to classify the drop
-                let firstUrl = urls[0]
-                let isLauncher = DockModel.isDesktopFile(firstUrl)
-                let isLocalFolder = firstUrl.isLocalFile()
-
-                if (isLauncher) {
-                    // .desktop file → add as pinned launcher
-                    DockActions.addLauncher(firstUrl)
-                } else if (isLocalFolder) {
-                    // A local directory becomes an independent folder-stack entry.
-                    DockActions.addFolderStack(firstUrl)
-                } else if (dropTargetIndex >= 0) {
-                    // Regular file(s) on an app icon → open with that app
-                    DockActions.openUrlsWithTask(dropTargetIndex, urls)
-                }
-                // else: regular file on dock background → no action
-
-                drop.accepted = true
-                dropTargetIndex = -1
+                processDrop(drop)
             }
 
             onExited: {
@@ -1906,7 +1949,8 @@ Item {
         source: {
             if (!visible) return ""
             let iconCacheVersion = DockView.iconCacheVersion
-            let name = DockModel.iconName(root._dragSourceIndex)
+            const sourceItem = dockRepeater.itemAt(root._dragSourceIndex)
+            let name = sourceItem ? sourceItem.iconName : ""
             return (name && name.length > 0) ? "image://icon/" + name + "?v=" + iconCacheVersion : ""
         }
         sourceSize: Qt.size(DockSettings.iconSize, DockSettings.iconSize)
@@ -1964,7 +2008,8 @@ Item {
     Connections {
         target: DockActions
         function onTaskLaunching(index) {
-            let item = dockRepeater.itemAt(index)
+            const dockIndex = DockModel.dockPresentationModel.dockIndexForTaskIndex(index)
+            let item = dockRepeater.itemAt(dockIndex)
             if (!item) return
 
             // Announce launch to screen reader (must call on root Item, not Connections)
@@ -2027,7 +2072,9 @@ Item {
             // Row removed under the hover before the re-hit-test ran.
             if (root.hoveredIndex >= dockRepeater.count
                     || !dockRepeater.itemAt(root.hoveredIndex)) return
-            let idx = DockModel.tasksModel.index(root.hoveredIndex, 0)
+            const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
+            if (taskIndex < 0) return
+            let idx = DockModel.tasksModel.index(taskIndex, 0)
             let isWindow = DockModel.tasksModel.data(
                 idx, TaskManager.AbstractTasksModel.IsWindow)
             if (isWindow && DockSettings.previewEnabled) {
@@ -2179,7 +2226,7 @@ Item {
     // Reacts to TasksModel row insertion — more responsive than polling.
     // _tryAutoPreview() honours the hover-preview setting.
     Connections {
-        target: DockModel.tasksModel
+        target: DockModel.dockPresentationModel
         function onRowsInserted() {
             root._tryAutoPreview()
             root.scheduleDelegateGeometryRefresh()
@@ -2204,7 +2251,7 @@ Item {
     // at their final zoom size without creating another Wayland surface or
     // inheriting DockItem's parabolic Scale transform.
     Repeater {
-        model: DockModel.tasksModel
+        model: DockModel.dockPresentationModel
         delegate: Item {
             id: badgeOverlay
             objectName: "badgeOverlayItem"

@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.5.0-dev" date="2026-11-11" type="development">
+      <description>
+        <p>Adds a unified order for pinned applications and Folder Stacks, plus file and launcher drag-and-drop.</p>
+        <p xml:lang="ru">Добавляет единый порядок закреплённых приложений и стеков папок, а также перетаскивание файлов и ярлыков.</p>
+      </description>
+    </release>
     <release version="0.4.3" date="2026-11-11">
       <description>
         <p>Improves installed settings localization and keeps minimized window previews in a bounded, priority-aware memory cache.</p>
