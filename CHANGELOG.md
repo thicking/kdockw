@@ -8,6 +8,17 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-11
+
+### Changed
+
+- Increased the in-memory minimized-window preview cache to at most 32 frames and 32 MiB, evicting restored-window frames first and retaining minimized frames until the hard bounds require eviction.
+
+### Fixed
+
+- Loaded the installed KDockW translation catalog from the application's own install prefix so an older `/usr/local` catalog cannot shadow the current packaged settings translations.
+- Kept cached minimized-window previews available when normal cache pressure from other windows exceeded the previous four-frame limit.
+
 ### Removed
 
 - Removed Arch Linux packaging and its release, CI, version-check, and package-test paths; supported release packages remain Debian 13, Ubuntu 26.04 LTS, and Fedora 45.

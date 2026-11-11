@@ -229,6 +229,20 @@ surface/input-region geometry. Launch and attention animation remains independen
 
 The owner accepted v0.4.2 on real Plasma/Wayland. The signed tag `kdockw-v0.4.2` points to `54aeb6d7c09cbea86bd47175338a855902cfbb12`; the full three-target Distro E2E passed in [run 42833056363](https://github.com/thicking/kdockw/actions/runs/42833056363). See the [published release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.2). The release includes the accepted v0.4.1 changes; no v0.4.1 tag or release was created. Arch Linux package support was retired after v0.4.2 and is not a supported target.
 
+## v0.4.3 — Localization & Preview Cache Reliability (in progress)
+
+- [ ] **Installed settings localization:** resolve the current KI18n catalog
+  from the application's install prefix and verify its compiled contents in
+  the installable package.
+- [ ] **Minimized preview cache reliability:** retain minimized-window frames
+  under bounded cache pressure, prioritize them over restored-window frames,
+  and preserve UUID isolation and close cleanup.
+- [ ] Include the completed retirement of unsupported Arch Linux packaging;
+  do not alter historical releases or tags.
+
+This development candidate is not released. No release tag or package has
+been created. v0.5.0 remains the following approved feature stage.
+
 ## v0.5.0 — Dock Interactions (planned)
 
 - [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,

@@ -2,7 +2,7 @@
 
 KDockW's first standalone stable version was `0.1.0`. Starting with `0.3.0`,
 KDockW release tags use the permanent `kdockw-vX.Y.Z` form (for example,
-`kdockw-v0.4.2`). Historical Krema `v0.x.x` tags and release notes remain
+`kdockw-v0.4.3`). Historical Krema `v0.x.x` tags and release notes remain
 unchanged and are not renamed or reused. The release tools continue to
 recognize legacy `vX.Y.Z` tags so existing records remain verifiable.
 
@@ -34,9 +34,9 @@ Package formats use their own spelling for development builds:
 
 | Format | Stable example | Development equivalent | Rule |
 | --- | --- | --- | --- |
-| AppStream | `0.4.2` | `0.4.2-dev` | Stable releases omit `type="development"`; development builds include it. |
-| RPM | `0.4.2` | `0.4.2~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
-| Debian | `0.4.2-1` | `0.4.2~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
+| AppStream | `0.4.3` | `0.4.3-dev` | Stable releases omit `type="development"`; development builds include it. |
+| RPM | `0.4.3` | `0.4.3~dev` | RPM accepts `~` in `Version` and sorts the prerelease before stable. |
+| Debian | `0.4.3-1` | `0.4.3~dev-1` | Debian `~dev` sorts before stable; `-1` is the Debian revision. |
 
 These mappings follow [RPM version rules](https://rpm.org/docs/4.20.x/manual/spec.html) and
 [Debian Policy](https://www.debian.org/doc/debian-policy/policy.pdf). AppStream's

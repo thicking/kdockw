@@ -26,7 +26,10 @@ or publication in those services.
    required targets, plus documentation. Move the new user-facing entries from
    `[Unreleased]` into a dated version section in `CHANGELOG.md`.
 3. Build Release and run the complete Release CTest suite, localization,
-   desktop-entry, documentation, release-tooling, and packaging checks.
+   desktop-entry, documentation, release-tooling, and packaging checks. Verify
+   the compiled KI18n catalog inside each package at the installed locale path,
+   and check that the installed executable resolves catalogs from its own
+   prefix rather than a potentially stale catalog in another prefix.
 4. Commit and push the release source to `main` without rewriting history.
 5. Dispatch the required Distro E2E matrix with `targets=all` for the exact
    candidate commit. Every target in `release-targets.txt` must pass; the
