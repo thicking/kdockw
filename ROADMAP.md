@@ -249,25 +249,16 @@ Signed tag `kdockw-v0.4.3` points to that commit. The stable
 is public with verified packages, source archive, and `SHA256SUMS`. Work has now
 started on the approved v0.5.0 feature stage.
 
-## v0.5.0 — Dock Interactions (in progress)
+## v0.5.0 — Dock Interactions (done, published 2026-11-12)
 
-The typed pinned-entry persistence format, v0.4.3 launcher migration, unified
-ordered Folder Stacks, and Advanced Drag & Drop have passed owner acceptance on
-Plasma 6.6.6 / Wayland in three consecutive 24/24 cycles. Release preparation
-remains in progress. Production CTest passed 176/176 and diagnostic CTest passed
-177/177. The release matrix is Debian 13 and Ubuntu 26.04; Fedora 45 is
-experimental/unconfirmed after Qt 6.11.2 Distro E2E reported 188 passed, 13
-skipped, and 26 failed in a diagnostic repeat. The failure clusters span
-TaskManager identity, accessibility focus, popup/visibility, and task-zone
-navigation; Fedora remains available for manual investigation but is excluded
-from v0.5.0 release assets. See `docs/releases/v0.5.0.md` for the gate results.
+Folder Stacks and Advanced Drag & Drop were accepted on KDE Plasma 6.6.6 / Wayland in three consecutive 24/24 cycles. The release added mixed stable ordering for pinned tasks and Folder Stacks; folder browsing, file opening, customization, accessibility and popup improvements; safer drag-and-drop; and TaskManager identity/stability fixes.
 
-- [x] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
-  animation, and usable handling of long lists. Plan Downloads Stack and real
-  download progress as a linked extension; do not infer percentages from file
-  presence. Consider Fan only if technically justified.
-- [x] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin;
-  handle cancellation and unsupported data safely.
+Production Release CTest passed 176/176; Diagnostic Release CTest passed 177/177. Release tooling passed 154 tests with 1 optional LFS test skipped. Full required Distro E2E passed on Debian 13 and Ubuntu 26.04 for all configured scenarios on exact commit `ebb0527aaa26f7c7f3886d88c0b03811bf099719` ([run 43194552508](https://github.com/thicking/kdockw/actions/runs/43194552508)). The signed tag `kdockw-v0.5.0` and [public GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.0) were verified with source archive, both DEB packages, and `SHA256SUMS`.
+
+Fedora 45 remains experimental/unconfirmed: Qt 6.11.2 Distro E2E had 26 failures in the diagnostic rerun and was not part of the v0.5.0 release matrix. The maximized-window overlap after Plasma lock/unlock is tracked separately for v0.5.1 and is not included in this release. Stable v0.4.3 was not replaced automatically.
+
+- [x] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop, animation, and usable handling of long lists.
+- [x] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin; handle cancellation and unsupported data safely.
 
 ## v0.5.1 — Maximized Window Geometry After Unlock (planned)
 
