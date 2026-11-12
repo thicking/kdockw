@@ -41,6 +41,13 @@ function choose(background, preferredForeground) {
         ? "#000000" : "#ffffff"
 }
 
+function composite(foreground, background) {
+    const alpha = foreground.a === undefined ? 1 : foreground.a
+    return Qt.rgba(foreground.r * alpha + background.r * (1 - alpha),
+                   foreground.g * alpha + background.g * (1 - alpha),
+                   foreground.b * alpha + background.b * (1 - alpha), 1)
+}
+
 function contrastDescription(foreground, background) {
     const ratio = contrastRatio(foreground, background)
     return {

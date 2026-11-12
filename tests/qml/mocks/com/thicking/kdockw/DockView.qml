@@ -15,6 +15,7 @@ QtObject {
     property int floatingPadding: 3
     property int iconCacheVersion: 0
     property int tooltipReserve: 0
+    property rect screenGeometry: Qt.rect(0, 0, 800, 240)
     // Compositor pointer focus (DockView::pointerInside).
     property bool pointerInside: false
 
@@ -29,7 +30,7 @@ QtObject {
     }
 
     // Restores every property listed in _resettable to its declared value.
-    readonly property var _resettable: ["edge", "backgroundStyleType", "backgroundColor", "floatingPadding", "iconCacheVersion", "tooltipReserve", "pointerInside"]
+    readonly property var _resettable: ["edge", "backgroundStyleType", "backgroundColor", "floatingPadding", "iconCacheVersion", "tooltipReserve", "screenGeometry", "pointerInside"]
     property var _defaults: ({})
     Component.onCompleted: {
         for (const k of _resettable) _defaults[k] = this[k]

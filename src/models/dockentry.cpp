@@ -17,7 +17,7 @@ namespace kdockw
 namespace
 {
 
-constexpr int kSchemaVersion = 1;
+constexpr int kSchemaVersion = 2;
 
 QString taskId(const QUrl &url)
 {
@@ -60,12 +60,12 @@ bool parseType(const QString &value, DockEntryType *type)
 
 DockEntry DockEntry::task(const QUrl &url)
 {
-    return {taskId(url), DockEntryType::Task, url};
+    return {taskId(url), DockEntryType::Task, url, {}, {}};
 }
 
 DockEntry DockEntry::folderStack(const QUrl &url)
 {
-    return {QStringLiteral("folder:%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)), DockEntryType::FolderStack, url};
+    return {QStringLiteral("folder:%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces)), DockEntryType::FolderStack, url, {}, {}};
 }
 
 bool DockEntry::isValid() const
@@ -76,10 +76,11 @@ bool DockEntry::isValid() const
 
     switch (type) {
     case DockEntryType::Task:
-        return !url.scheme().isEmpty() && id == taskId(url);
+        return !url.scheme().isEmpty() && id == taskId(url) && iconName.isEmpty() && iconUrl.isEmpty();
     case DockEntryType::FolderStack:
         return isLocalDirectoryUrl(url) && id.startsWith(QLatin1String("folder:"))
-            && !QUuid(id.mid(QStringLiteral("folder:").size())).isNull();
+            && !QUuid(id.mid(QStringLiteral("folder:").size())).isNull()
+            && (iconUrl.isEmpty() || (iconUrl.isValid() && iconUrl.isLocalFile()));
     }
     return false;
 }
@@ -93,11 +94,18 @@ QString DockEntriesCodec::encode(const QList<DockEntry> &entries)
             continue;
         }
         ids.insert(entry.id);
-        serializedEntries.append(QJsonObject{
+        QJsonObject item{
             {QStringLiteral("id"), entry.id},
             {QStringLiteral("type"), typeName(entry.type)},
             {QStringLiteral("url"), entry.url.toString(QUrl::FullyEncoded)},
-        });
+        };
+        if (!entry.iconName.isEmpty()) {
+            item.insert(QStringLiteral("iconName"), entry.iconName);
+        }
+        if (!entry.iconUrl.isEmpty()) {
+            item.insert(QStringLiteral("iconUrl"), entry.iconUrl.toString(QUrl::FullyEncoded));
+        }
+        serializedEntries.append(item);
     }
 
     const QJsonObject document{
@@ -116,7 +124,8 @@ DockEntriesCodec::DecodeResult DockEntriesCodec::decode(const QString &serialize
     }
 
     const QJsonObject object = document.object();
-    if (object.value(QStringLiteral("version")).toInt(-1) != kSchemaVersion || !object.value(QStringLiteral("entries")).isArray()) {
+    const int version = object.value(QStringLiteral("version")).toInt(-1);
+    if ((version != 1 && version != kSchemaVersion) || !object.value(QStringLiteral("entries")).isArray()) {
         return {};
     }
 
@@ -135,6 +144,12 @@ DockEntriesCodec::DecodeResult DockEntriesCodec::decode(const QString &serialize
         }
         const QUrl url = QUrl::fromEncoded(item.value(QStringLiteral("url")).toString().toUtf8(), QUrl::StrictMode);
         DockEntry entry{item.value(QStringLiteral("id")).toString(), type, url};
+        if (version >= 2) {
+            entry.iconName = item.value(QStringLiteral("iconName")).toString();
+            if (item.contains(QStringLiteral("iconUrl"))) {
+                entry.iconUrl = QUrl::fromEncoded(item.value(QStringLiteral("iconUrl")).toString().toUtf8(), QUrl::StrictMode);
+            }
+        }
         if (!entry.isValid() || ids.contains(entry.id)) {
             continue;
         }

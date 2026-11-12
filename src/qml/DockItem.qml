@@ -26,7 +26,7 @@ Item {
     readonly property bool isFolderStack: model.entryType === "folderStack"
     readonly property int taskIndex: model.taskIndex !== undefined ? model.taskIndex : index
     readonly property string dockEntryId: model.entryId || ""
-    readonly property string iconName: isFolderStack ? "folder" : DockModel.iconName(taskIndex)
+    readonly property string iconName: isFolderStack ? (model.iconName || "folder") : DockModel.iconName(taskIndex)
     property Item dockRoot: null
 
     function openFolderStack() {
@@ -231,7 +231,7 @@ Item {
         interval: 100
         repeat: true
         running: typeof IconDiagnostics !== "undefined"
-            && IconDiagnostics.taskDiagnosticsEnabled && dockItem._showAttentionAnim
+            && !!IconDiagnostics.taskDiagnosticsEnabled && dockItem._showAttentionAnim
         onTriggered: {
             const center = iconImage.mapToItem(null, iconImage.width / 2, iconImage.height / 2)
             console.info("[KDOCKW_ATTENTION_MOTION] type=" + dockItem._attentionType
@@ -990,9 +990,12 @@ Item {
         visible: dockItem.isFolderStack
         index: dockItem.index
         model: dockItem.model
+        iconName: dockItem.iconName
+        iconUrl: model.iconUrl || ""
         rootItem: dockItem.dockRoot
         verticalDock: DockView.isVertical
         dockEdge: DockView.edge
+        maxZoomFactor: dockItem.maxZoomFactor
         Accessible.ignored: true
     }
 

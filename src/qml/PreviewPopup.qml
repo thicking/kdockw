@@ -68,6 +68,23 @@ Item {
         }, details || {})))
     }
 
+    function setThumbnailForWindow(index, entry) {
+        let existingIndex = -1
+        for (let i = 0; i < childWindowModel.count; i++) {
+            if (childWindowModel.get(i).winId === entry.winId) {
+                existingIndex = i
+                break
+            }
+        }
+        if (existingIndex >= 0 && existingIndex !== index) {
+            childWindowModel.move(existingIndex, index, 1)
+        } else if (existingIndex < 0 && index >= childWindowModel.count) {
+            childWindowModel.append(entry)
+            return
+        }
+        childWindowModel.set(index, entry)
+    }
+
     function rebuildChildModel(reason) {
         let parentIdx = PreviewController.parentIndex
         logPreviewLifecycle("model-rebuild-start", { reason: reason || "unspecified" })
@@ -102,7 +119,7 @@ Item {
         // KDE TasksModel tree: single window → rowCount(idx) = 0 (no children)
         // Group (2+ windows) → rowCount(idx) = N (N children)
         if (childCount === 0) {
-            if (allWinIds.length > 0) {
+            if (allWinIds.length === 1) {
                 let entry = {
                     winId: allWinIds[0],
                     title: DockModel.tasksModel.data(
@@ -121,14 +138,24 @@ Item {
                     minimized: entry.isMinimized,
                     cacheAvailable: PreviewController.previewFrameUrl(entry.winId).length > 0
                 })
-                if (childWindowModel.count > 0) {
-                    childWindowModel.set(0, entry)
-                } else {
-                    childWindowModel.append(entry)
-                }
+                // When a group collapses to one window, keep that window's
+                // existing delegate and PipeWire stream even if its child row
+                // moves to the parent row. Index-based reuse can otherwise
+                // replace it with a just-closed sibling's source.
+                setThumbnailForWindow(0, entry)
                 while (childWindowModel.count > 1) {
                     childWindowModel.remove(childWindowModel.count - 1)
                 }
+            } else if (DockModel.tasksModel.data(
+                           parentModelIdx, TaskManager.AbstractTasksModel.IsWindow)) {
+                // During group-to-single transitions KWin can publish an
+                // empty or stale multi-window WinIdList. Keep the current
+                // delegates until the parent row reports exactly one UUID.
+                logPreviewLifecycle("single-window-id-unresolved", {
+                    reason: reason || "unspecified",
+                    winIds: allWinIds,
+                    retainedThumbnails: childWindowModel.count
+                })
             } else {
                 // Launcher only (no windows) — clear model
                 while (childWindowModel.count > 0) {
@@ -173,11 +200,7 @@ Item {
                     cacheAvailable: PreviewController.previewFrameUrl(entry.winId).length > 0
                 })
 
-                if (matchedChildCount < childWindowModel.count) {
-                    childWindowModel.set(matchedChildCount, entry)
-                } else {
-                    childWindowModel.append(entry)
-                }
+                setThumbnailForWindow(matchedChildCount, entry)
                 matchedChildCount++
             }
 

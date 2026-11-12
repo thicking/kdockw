@@ -13,13 +13,20 @@
 #include <algorithm>
 #include <QCryptographicHash>
 #include <QFileInfo>
+#include <QFileDialog>
 #include <QGuiApplication>
+#include <QImageReader>
 #include <QIcon>
 #include <QLoggingCategory>
 #include <QRect>
 #include <QVariant>
 #include <QScreen>
 #include <QSet>
+#include <QDir>
+#include <QWindow>
+#include <QApplication>
+#include <KIconDialog>
+#include <KLocalizedString>
 #ifdef KDOCKW_DIAGNOSTIC_BUILD
 #include <QTimer>
 #endif
@@ -289,7 +296,9 @@ DockModel::DockModel(QObject *parent)
             }
     });
 
-    m_dockPresentationModel = std::make_unique<DockPresentationModel>(m_tasksModel.get(), m_dockEntriesModel.get(), this);
+    m_dockPresentationModel = std::make_unique<DockPresentationModel>(
+        m_tasksModel.get(), m_dockEntriesModel.get(), this, diagnosticTaskLoggingEnabled());
+    m_dockPresentationModel->setSeparateLaunchers(m_separateLaunchers);
     connect(m_dockPresentationModel.get(), &DockPresentationModel::pinnedEntryCountChanged, this, &DockModel::pinnedDockEntryCountChanged);
 }
 
@@ -313,6 +322,11 @@ DockPresentationModel *DockModel::dockPresentationModel() const
 int DockModel::pinnedDockEntryCount() const
 {
     return m_dockPresentationModel ? m_dockPresentationModel->pinnedEntryCount() : m_pinnedTaskCount;
+}
+
+bool DockModel::taskDiagnosticsEnabled() const
+{
+    return diagnosticTaskLoggingEnabled();
 }
 
 QString DockModel::dockEntries() const
@@ -368,6 +382,9 @@ void DockModel::setSeparateLaunchers(bool separate)
         return;
     }
     m_separateLaunchers = separate;
+    if (m_dockPresentationModel) {
+        m_dockPresentationModel->setSeparateLaunchers(separate);
+    }
     scheduleTaskPartition();
 }
 
@@ -634,6 +651,51 @@ QString DockModel::iconName(int index) const
     }
 
     return name;
+}
+
+bool DockModel::chooseFolderStackThemeIcon(const QString &entryId, QObject *transientParent)
+{
+    KIconDialog dialog(QApplication::activeWindow());
+    dialog.setup(KIconLoader::Panel, KIconLoader::Place, false, KIconLoader::SizeLarge);
+    dialog.setWindowTitle(i18nc("@title:window", "Choose folder icon"));
+    dialog.setWindowModality(Qt::ApplicationModal);
+
+    // A dock is a QQuickWindow rather than a QWidget, so it cannot be passed
+    // as KIconDialog's QWidget parent. Set the Wayland transient parent on
+    // the native dialog window instead, before KIconDialog starts its modal
+    // event loop.
+    if (auto *hostWindow = qobject_cast<QWindow *>(transientParent)) {
+        dialog.winId();
+        if (QWindow *dialogWindow = dialog.windowHandle()) {
+            dialogWindow->setTransientParent(hostWindow);
+        }
+    }
+
+    const QString selected = dialog.openDialog();
+    if (selected.isEmpty()) {
+        return false;
+    }
+    return m_dockEntriesModel->setFolderStackIcon(entryId, selected);
+}
+
+bool DockModel::chooseFolderStackImage(const QString &entryId)
+{
+    const QUrl selected = QFileDialog::getOpenFileUrl(nullptr, i18nc("@title:window", "Choose folder image"),
+                                                       QUrl::fromLocalFile(QDir::homePath()),
+                                                       i18nc("file filter", "Images (*.png *.jpg *.jpeg *.webp *.svg)"));
+    if (selected.isEmpty() || !selected.isLocalFile()) {
+        return false;
+    }
+    QImageReader reader(selected.toLocalFile());
+    if (!reader.canRead()) {
+        return false;
+    }
+    return m_dockEntriesModel->setFolderStackIcon(entryId, {}, selected);
+}
+
+bool DockModel::resetFolderStackIcon(const QString &entryId)
+{
+    return m_dockEntriesModel->setFolderStackIcon(entryId, {}, {});
 }
 
 QUrl DockModel::launcherUrl(int index) const

@@ -639,17 +639,50 @@ Item {
             show(1, "Konsole")
             let ts = waitThumbs(popup, 3)
             let closedSource = ts[1].captureItem
+            let survivingSource = ts[2].captureItem
             verify(closedSource)
+            verify(survivingSource)
             DockModel.tasksModel.removeChildTask(1, 1)
             let duringParentIdLag = waitThumbs(popup, 2)
             compare(duringParentIdLag.map(t => t.winId), ["k-1", "k-3"],
                     "child rows retain their own UUIDs while parent WinIdList is stale")
+            compare(duringParentIdLag[1].captureItem, survivingSource,
+                    "the surviving window keeps its PipeWire delegate when child rows shift")
             DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-1", "k-3"])
             let remaining = waitThumbs(popup, 2)
             compare(remaining.map(t => t.winId), ["k-1", "k-3"])
             tryVerify(() => ts[1].captureItem !== null && ts[1].captureItem !== closedSource)
             verify(!remaining.some(t => t.captureItem === closedSource),
                    "closed window's PipeWire source and cached texture must be released")
+        }
+
+        function test_groupCollapseWaitsForOneUuidAndRetainsItsDelegate() {
+            let popup = makePopup()
+            show(1, "Konsole")
+            let ts = waitThumbs(popup, 3)
+            const survivingSource = ts[2].captureItem
+            verify(survivingSource)
+
+            // Removing siblings shifts the surviving UUID toward row zero.
+            // Its source must follow that UUID rather than its former index.
+            DockModel.tasksModel.removeChildTask(1, 0)
+            DockModel.tasksModel.removeChildTask(1, 0)
+            let oneChild = waitThumbs(popup, 1)
+            compare(oneChild[0].winId, "k-3")
+            compare(oneChild[0].captureItem, survivingSource)
+
+            // KWin can publish the parent row before replacing the aggregate
+            // multi-window WinIdList with the remaining single UUID.
+            DockModel.tasksModel.removeChildTask(1, 0)
+            let duringTransition = waitThumbs(popup, 1)
+            compare(duringTransition[0].winId, "k-3")
+            compare(duringTransition[0].captureItem, survivingSource)
+
+            DockModel.tasksModel.setTaskData(1, "WinIdList", ["k-3"])
+            let singleWindow = waitThumbs(popup, 1)
+            compare(singleWindow[0].winId, "k-3")
+            compare(singleWindow[0].captureItem, survivingSource,
+                    "group-to-single transition must preserve the matching window's stream")
         }
 
         function test_launcherWithoutWindowsHasNoThumbnails() {
@@ -974,11 +1007,13 @@ Item {
             const popup = makePopup()
             show(1, "Konsole")
             const ts = waitThumbs(popup, 3)
-            // UUID k-1 moves from row 0 to row 2. Simulate the close callback
-            // arriving from a delegate whose cached childIndex is still 0.
+            // UUID k-1 moves from row 0 to row 2. The thumbnail delegates
+            // follow their UUIDs so each PipeWire source stays with its window.
             DockModel.tasksModel.setChildTaskData(1, 0, "WinIdList", ["k-3"])
             DockModel.tasksModel.setChildTaskData(1, 2, "WinIdList", ["k-1"])
-            tryCompare(ts[0], "winId", "k-3")
+            tryVerify(() => thumbs(popup).map(t => t.winId).join(",") === "k-3,k-2,k-1")
+            compare(thumbs(popup)[0], ts[2],
+                    "the k-3 thumbnail retains its delegate after moving to row zero")
             const cardPopup = T.findFirst(popup, o => o.objectName === "previewCardPopup")
             verify(cardPopup)
             compare(cardPopup.closeWindowByUuid("k-1"), true)

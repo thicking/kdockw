@@ -189,6 +189,7 @@ Q_SIGNALS:
 private:
     [[nodiscard]] int taskIndexForParent() const;
     void reconcileParentIndex();
+    void reconcileParentIndexNow();
     void updateInputRegion();
     void applyPreviewBackgroundEffect();
     void commitInputRegion();
@@ -220,6 +221,8 @@ private:
     bool m_held = false;
     int m_parentIndex = -1;
     QString m_parentEntryId;
+    QStringList m_parentWindowIds;
+    bool m_parentReconcilePending = false;
 
     qreal m_contentX = 0;
     qreal m_contentY = 0;

@@ -42,6 +42,10 @@ QVariant DockEntriesModel::data(const QModelIndex &index, int role) const
         return entry.type == DockEntryType::FolderStack ? QStringLiteral("folderStack") : QStringLiteral("task");
     case EntryUrlRole:
         return entry.url;
+    case IconNameRole:
+        return entry.iconName;
+    case IconUrlRole:
+        return entry.iconUrl;
     default:
         return {};
     }
@@ -54,6 +58,8 @@ QHash<int, QByteArray> DockEntriesModel::roleNames() const
         {EntryIdRole, "entryId"},
         {EntryTypeRole, "entryType"},
         {EntryUrlRole, "entryUrl"},
+        {IconNameRole, "iconName"},
+        {IconUrlRole, "iconUrl"},
     };
 }
 
@@ -147,6 +153,28 @@ bool DockEntriesModel::removeFolderStack(const QString &entryId)
         m_entries.removeAt(row);
         endRemoveRows();
         Q_EMIT countChanged();
+        Q_EMIT entriesChanged();
+        return true;
+    }
+    return false;
+}
+
+bool DockEntriesModel::setFolderStackIcon(const QString &entryId, const QString &iconName, const QUrl &iconUrl)
+{
+    if (entryId.isEmpty() || (!iconUrl.isEmpty() && (!iconUrl.isValid() || !iconUrl.isLocalFile()))) {
+        return false;
+    }
+    for (qsizetype row = 0; row < m_entries.size(); ++row) {
+        DockEntry &entry = m_entries[row];
+        if (entry.type != DockEntryType::FolderStack || entry.id != entryId) {
+            continue;
+        }
+        if (entry.iconName == iconName && entry.iconUrl == iconUrl) {
+            return true;
+        }
+        entry.iconName = iconName;
+        entry.iconUrl = iconUrl;
+        Q_EMIT dataChanged(index(row, 0), index(row, 0), {IconNameRole, IconUrlRole});
         Q_EMIT entriesChanged();
         return true;
     }

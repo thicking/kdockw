@@ -224,6 +224,27 @@ QIcon icon = KDE::icon("document-open", colors);
 
 ## Dock-Relevant Patterns
 
+### Folder icon selection
+
+`KIconDialog` from `KIconWidgets` is the KDE-provided chooser for selecting an
+installed theme icon. The application already links the `KF6::IconWidgets`
+target exported by the `KF6IconThemes` package. For the dock's QML-triggered
+chooser, close the native `Popup.Window` first and defer dialog creation until
+the next event-loop turn so the Wayland popup input grab is released. The dock
+is a `QQuickWindow`, not a `QWidget`; parent the dialog's native `QWindow`
+transiently to the dock window. `KIconDialog::setup()` configures its group,
+context, and size, and `openDialog()` returns the chosen theme name. For a user
+image, `QFileDialog::getOpenFileUrl()` uses Qt's platform dialog path; validate
+the selected local image with `QImageReader` before storing its URL. Persist
+the theme icon name or local image URL with the folder's stable dock entry ID
+rather than with its visible row index.
+
+Local API verification (2026-11-12): `/usr/include/KF6/KIconWidgets/kicondialog.h`
+declares `KIconDialog::setup()` and `openDialog()` as well as static
+`getIcon(Group, Context, strictIconSize, iconSize, user, parent, title)`; the
+installed `KF6IconThemesTargets.cmake` exports `KF6::IconWidgets`. The dialog's
+`QWindow` inherits `setTransientParent()` from QtGui.
+
 ### QML themed glyphs
 
 The installed `org.kde.kirigami.primitives/Icon` type is exported to QML as

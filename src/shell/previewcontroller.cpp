@@ -79,11 +79,13 @@ PreviewController::PreviewController(DockModel *model, DockView *dockView, KDock
     , m_settings(settings)
     , m_previewFrameCache(std::make_unique<PreviewFrameCache>())
 {
-    auto *presentationModel = m_model->dockPresentationModel();
-    connect(presentationModel, &QAbstractItemModel::rowsInserted, this, &PreviewController::reconcileParentIndex);
-    connect(presentationModel, &QAbstractItemModel::rowsRemoved, this, &PreviewController::reconcileParentIndex);
-    connect(presentationModel, &QAbstractItemModel::rowsMoved, this, &PreviewController::reconcileParentIndex);
-    connect(presentationModel, &QAbstractItemModel::modelReset, this, &PreviewController::reconcileParentIndex);
+    if (m_model) {
+        auto *presentationModel = m_model->dockPresentationModel();
+        connect(presentationModel, &QAbstractItemModel::rowsInserted, this, &PreviewController::reconcileParentIndex);
+        connect(presentationModel, &QAbstractItemModel::rowsRemoved, this, &PreviewController::reconcileParentIndex);
+        connect(presentationModel, &QAbstractItemModel::rowsMoved, this, &PreviewController::reconcileParentIndex);
+        connect(presentationModel, &QAbstractItemModel::modelReset, this, &PreviewController::reconcileParentIndex);
+    }
     // DockView's QML may start a one-shot preview prefetch before the overlay
     // QQuickWindow exists. Keep that early source CPU-only until initialize()
     // identifies the renderer.
@@ -300,15 +302,53 @@ int PreviewController::taskIndexForParent() const
 
 void PreviewController::reconcileParentIndex()
 {
+    if (m_parentReconcilePending) {
+        return;
+    }
+    m_parentReconcilePending = true;
+    QMetaObject::invokeMethod(this, [this]() {
+        m_parentReconcilePending = false;
+        reconcileParentIndexNow();
+    }, Qt::QueuedConnection);
+}
+
+void PreviewController::reconcileParentIndexNow()
+{
     if (m_parentEntryId.isEmpty()) {
         return;
     }
-    const int currentIndex = m_model->dockPresentationModel()->dockIndexForEntryId(m_parentEntryId);
+    const QString previousEntryId = m_parentEntryId;
+    auto *presentationModel = m_model->dockPresentationModel();
+    int currentIndex = presentationModel->dockIndexForEntryId(m_parentEntryId);
+    if (currentIndex < 0 && !m_parentWindowIds.isEmpty()) {
+        // Running-task IDs include the current window set. When a grouped row
+        // loses a window, its presentation ID changes; retain this preview by
+        // finding the new row that still contains one of its original windows.
+        for (int taskIndex = 0; taskIndex < m_model->tasksModel()->rowCount(); ++taskIndex) {
+            const QVariantList ids = m_model->windowIds(taskIndex);
+            const bool sharesWindow = std::any_of(ids.cbegin(), ids.cend(), [this](const QVariant &id) {
+                return m_parentWindowIds.contains(id.toString());
+            });
+            if (!sharesWindow) {
+                continue;
+            }
+            currentIndex = presentationModel->dockIndexForTaskIndex(taskIndex);
+            if (currentIndex >= 0) {
+                m_parentEntryId = presentationModel->entryIdForDockIndex(currentIndex);
+                break;
+            }
+        }
+    }
     if (currentIndex < 0) {
         hidePreview();
         return;
     }
-    if (currentIndex != m_parentIndex) {
+    const int taskIndex = presentationModel->taskIndexForDockIndex(currentIndex);
+    m_parentWindowIds.clear();
+    for (const QVariant &id : m_model->windowIds(taskIndex)) {
+        m_parentWindowIds.append(id.toString());
+    }
+    if (currentIndex != m_parentIndex || m_parentEntryId != previousEntryId) {
         m_parentIndex = currentIndex;
         Q_EMIT parentIndexChanged();
         Q_EMIT positionChanged();
@@ -546,6 +586,11 @@ void PreviewController::showPreview(int index, qreal itemSurfacePos, qreal itemE
     const bool indexChanged = (m_parentIndex != index);
     m_parentIndex = index;
     m_parentEntryId = m_model->dockPresentationModel()->entryIdForDockIndex(index);
+    m_parentWindowIds.clear();
+    const int taskIndex = m_model->dockPresentationModel()->taskIndexForDockIndex(index);
+    for (const QVariant &id : m_model->windowIds(taskIndex)) {
+        m_parentWindowIds.append(id.toString());
+    }
     m_itemPos = itemSurfacePos;
     m_itemExtent = itemExtent;
     updatePreviewAnchorGeometry(itemSurfacePos, itemExtent, iconRestEdgeInSurface,
@@ -756,6 +801,7 @@ void PreviewController::doHide()
     m_previewHovered = false;
     m_parentIndex = -1;
     m_parentEntryId.clear();
+    m_parentWindowIds.clear();
 
     // End preview keyboard nav if active
     if (m_previewKeyboardActive) {
@@ -853,8 +899,11 @@ void PreviewController::closePreviewThumbnail()
     const int count = previewThumbnailCount();
     if (m_focusedThumbnailIndex >= count - 1) {
         m_focusedThumbnailIndex = qMax(0, count - 2);
-        Q_EMIT focusedThumbnailIndexChanged();
     }
+    // Closing the focused child can replace the row at the same index with
+    // its next sibling. Even if the positional index stays unchanged, QML
+    // delegates and accessibility state need to re-evaluate that selection.
+    Q_EMIT focusedThumbnailIndexChanged();
 }
 
 int PreviewController::previewThumbnailCount() const

@@ -2,6 +2,33 @@
 
 > Source: `/usr/include/taskmanager/` headers
 
+## KDockW mixed pinned entries (v0.5.0)
+
+The dock is a `DockPresentationModel` projection of the typed
+`DockEntriesModel` and TaskManager rows. With pinned/running separation on,
+launcher tasks and Folder Stacks use their saved mixed order followed by
+unpinned tasks. With separation off, task rows follow TaskManager's live order
+and Folder Stacks remain anchored to their neighboring saved launchers. Each
+launcher task and Folder Stack has a stable entry ID;
+the QML delegate carries that ID through drag initiation and resolves the
+drop target against the current model. Do not persist a delegate index or
+reorder TaskManager rows to move a Folder Stack.
+
+Reordering a pinned task or Folder Stack updates the typed entry sequence.
+TaskManager launcher order is synchronized only for launcher entries, while
+unpinned running windows retain their TaskManager order. This preserves folder
+slots and avoids shifting a running task when a mixed dock order changes.
+Folder drops add local directories as stacks; file drops on a launcher send
+supported URLs to that application's open-URL action. Unsupported MIME data
+and canceled drags leave the saved order unchanged.
+
+Regression coverage exercises repeated mixed task/folder moves, insertion at
+both ends, cancellation, v1-to-v2 persistence migration, stable IDs, and
+unpinned task insert/remove while pinned entries remain present. The owner
+confirmed the Folder Stack, DnD, and TaskManager acceptance on Plasma 6.6.6 /
+Wayland in three consecutive 24/24 cycles. Automated and model-level tests do
+not replace that live-session observation for future changes.
+
 ## Overview
 
 TasksModel supports drag-and-drop for reordering tasks and launchers. DnD data is provided via roles (`MimeType`, `MimeData`) and reordering is done via `move()` + `syncLaunchers()`.
@@ -217,9 +244,8 @@ keyboard activation paths; KWin remains responsible for applying its
 activation policy. A QML timer test or a model-level activation test cannot
 prove that a file drag from Dolphin remains continuous through activation in a
 particular live KWin session, so that path still requires Wayland-session QA.
-The owner reported a manual multi-file Dolphin test on Plasma 6.6.6 / Wayland.
-That observation predates the current packaged desktop entry; repeat the live
-check for that entry before treating it as verified for a new release.
+The owner confirmed the multi-file Dolphin flow on Plasma 6.6.6 / Wayland as
+part of the latest three consecutive 24/24 acceptance cycles.
 
 ---
 

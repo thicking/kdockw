@@ -4,6 +4,7 @@
 #pragma once
 
 #include "scenegraph/clippedpipewiresourceitem.h"
+#include "models/folderstackmodel.h"
 #include "utils/springzoomcontroller.h"
 
 #include <QtQml>
@@ -15,4 +16,5 @@ inline void registerDockQmlTypes()
 {
     qmlRegisterType<kdockw::ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
     qmlRegisterType<kdockw::SpringZoomController>("com.thicking.kdockw", 1, 0, "SpringZoomController");
+    qmlRegisterType<kdockw::FolderStackModel>("com.thicking.kdockw", 1, 0, "FolderStackModel");
 }

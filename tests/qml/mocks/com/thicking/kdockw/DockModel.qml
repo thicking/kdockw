@@ -31,6 +31,7 @@ QtObject {
     property int pinnedTaskCount: 0
     readonly property int pinnedDockEntryCount: pinnedTaskCount + entries.count
     property var delegateGeometryRequests: []
+    property var folderThemeIconRequests: []
 
     function _role(i, name) { return tasksModel.get(i, name) }
     function isPinned(i) { return !!_role(i, "IsLauncher") }
@@ -42,6 +43,13 @@ QtObject {
     function isDesktopFile(url) { return url.toString().endsWith(".desktop") }
     function isLocalDirectory(url) { return url.toString() === "file:///tmp" || url.toString().endsWith("/") }
     function moveDockEntry(fromId, toId) { return tasksModel.moveByEntryId(fromId, toId) }
+    function chooseFolderStackThemeIcon(entryId, transientParent) {
+        folderThemeIconRequests = folderThemeIconRequests.concat([{
+            entryId: entryId,
+            hasTransientParent: !!transientParent,
+        }])
+        return true
+    }
 
     function publishDelegateGeometry(i, delegate) {
         delegateGeometryRequests = delegateGeometryRequests.concat([{
@@ -68,6 +76,7 @@ QtObject {
         currentDesktop = 1
         virtualDesktopMode = 0
         pinnedTaskCount = 0
+        folderThemeIconRequests = []
         resetDelegateGeometryRequests()
     }
 }

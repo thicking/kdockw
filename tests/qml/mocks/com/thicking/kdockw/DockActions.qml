@@ -16,7 +16,7 @@ QtObject {
     function activateOrMinimize(i) { _record("activateOrMinimize", arguments); return i >= 0 }
     function newInstance(i) { _record("newInstance", arguments) }
     function cycleWindows(i, forward) { _record("cycleWindows", arguments) }
-    function moveTask(from, to) { _record("moveTask", arguments) }
+    function moveTask(from, to) { _record("moveTask", arguments); return from >= 0 && to >= 0 }
     function addLauncher(url) { _record("addLauncher", arguments) }
     function addFolderStack(url) { _record("addFolderStack", arguments) }
     function removeLauncher(i) { _record("removeLauncher", arguments) }

@@ -25,9 +25,9 @@
 namespace
 {
 
-// Saved by Application::run()'s pinnedLaunchersChanged handler, not by
+// Saved by Application::run()'s dock model change handlers, not by
 // connectSettingsAutoSave().
-const QString kSeparatelySaved = QStringLiteral("PinnedLaunchers");
+const QSet<QString> kSeparatelySaved{QStringLiteral("PinnedLaunchers"), QStringLiteral("DockEntries")};
 // Internal update-check cache fields are written in batches by
 // ReleaseUpdateChecker::save(), not individually through the settings UI.
 const QSet<QString> kCheckerCacheSettings{
@@ -124,7 +124,7 @@ TEST_CASE("Changing any single setting persists it across a restart", "[settings
         KDockWSettings settings;
         const auto items = settings.items();
         for (const auto *item : items) {
-            if (item->name() != kSeparatelySaved && !kCheckerCacheSettings.contains(item->name())) {
+            if (!kSeparatelySaved.contains(item->name()) && !kCheckerCacheSettings.contains(item->name())) {
                 itemNames.append(item->name());
             }
         }

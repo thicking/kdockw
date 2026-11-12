@@ -21,6 +21,8 @@ public:
         EntryIdRole = Qt::UserRole + 1,
         EntryTypeRole,
         EntryUrlRole,
+        IconNameRole,
+        IconUrlRole,
     };
     Q_ENUM(Role)
 
@@ -38,6 +40,7 @@ public:
 
     Q_INVOKABLE bool appendFolderStack(const QUrl &url);
     Q_INVOKABLE bool removeFolderStack(const QString &entryId);
+    Q_INVOKABLE bool setFolderStackIcon(const QString &entryId, const QString &iconName, const QUrl &iconUrl = {});
     Q_INVOKABLE bool moveEntry(int fromIndex, int toIndex);
     Q_INVOKABLE bool moveEntryById(const QString &entryId, const QString &targetEntryId);
 

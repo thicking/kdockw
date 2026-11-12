@@ -939,6 +939,10 @@ TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge"
 {
     resetTo(MultiDockManager::PrimaryOnly);
     app().settings->setZoomStyle(0);
+    // Other integration cases can leave Spring selected in the shared
+    // settings fixture. This sweep checks the instantaneous classic layout,
+    // whose cursor and panel geometry are computed from the same sample.
+    app().settings->setMagnificationMode(0); // Classic
     // This test verifies the geometry at each sampled pointer position, not
     // the 180 ms zoom transition between positions. Keep the production layout
     // algorithm active while removing animation lag from the measurement.
@@ -971,15 +975,24 @@ TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge"
     REQUIRE(dock);
     auto *panel = dock->property("panelItem").value<QQuickItem *>();
     REQUIRE(panel);
+    auto *hoverArea = dock->findChild<QQuickItem *>(QStringLiteral("miniDockHoverArea"));
+    REQUIRE(hoverArea);
     const qreal pitch = dock->property("pitch").toReal();
     // Rest panel length (the page may already show the preview zoomed).
     const qreal restLength = dock->property("length").toReal();
+    const qreal primaryDockOrigin = dock->property("primaryDockOrigin").toReal();
+    const qreal primaryParentExtent = dock->property("primaryParentExtent").toReal();
     REQUIRE(pitch > 0);
 
     // Sweep one icon pitch across the middle of the row in 1 px steps.
     const QPointF centre = dock->mapToScene(QPointF(dock->width() / 2, dock->height() / 2));
-    const int from = qRound(centre.x() - pitch / 2);
-    const int to = qRound(centre.x() + pitch / 2);
+    const QPointF hoverOrigin = hoverArea->mapToScene(QPointF(0, 0));
+    // Keep the entire pointer path inside the miniature's actual input region.
+    // The full dock item's geometric centre can sit close enough to an edge
+    // that a one-pitch sweep exits hoverArea and starts the collapse behavior.
+    const int from = std::max(qRound(centre.x() - pitch / 2), qCeil(hoverOrigin.x() + 1));
+    const int to = std::min(qRound(centre.x() + pitch / 2), qFloor(hoverOrigin.x() + hoverArea->width() - 1));
+    REQUIRE(to > from);
     const int y = qRound(centre.y());
     QTest::mouseMove(dialog, QPoint(from, y));
     REQUIRE(QTest::qWaitFor(
@@ -1016,8 +1029,8 @@ TEST_CASE("Parabolic zoom in a settings preview matches the computed panel edge"
                                                     kdockw::ZoomStyle::Parabolic,
                                                     zoomAmount > 0.0,
                                                     cursor,
-                                                    -std::numeric_limits<double>::infinity(),
-                                                    std::numeric_limits<double>::infinity());
+                                                    -primaryDockOrigin - restStart,
+                                                    primaryParentExtent - primaryDockOrigin - restStart);
         const qreal dockLeft = dock->mapToScene(QPointF(0, 0)).x();
         const qreal left = panel->mapToScene(QPointF(0, 0)).x();
         minLeft = std::min(minLeft, left);

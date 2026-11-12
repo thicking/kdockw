@@ -8,6 +8,7 @@ src/config/screensettings.cpp (groups ``Screen-<output name>``).
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -109,3 +110,12 @@ def as_bool(value: str) -> bool:
 
 def as_list(value: str) -> list[str]:
     return [] if value == "" else _split_list(value)
+
+
+def dock_entries(settings: Mapping[str, Mapping[str, str]]) -> list[dict[str, str]]:
+    """Return the typed version-2 DockEntries records from a parsed config."""
+    raw = settings.get("General", {}).get("DockEntries", "")
+    document = json.loads(raw)
+    if document.get("version") != 2 or not isinstance(document.get("entries"), list):
+        raise ValueError("expected a version-2 DockEntries document")
+    return document["entries"]

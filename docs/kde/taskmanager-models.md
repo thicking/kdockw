@@ -95,27 +95,43 @@ Partition reconciliation is signal-driven, queued, coalesced, and guarded agains
 ### Typed Pinned Entry Store (v0.5.0 foundation)
 
 `DockEntriesModel` gives persisted pins an explicit `Task` or `FolderStack`
-type and keeps their mixed order. The version-1 `DockEntries` setting stores
+type and keeps their mixed order. The version-2 `DockEntries` setting stores
 that order as JSON records
-with stable IDs and URLs. Task IDs are deterministic hashes of their launcher
-URL; folder stack IDs are UUIDs, so two stacks may refer to the same directory.
-Folder-stack records accept local absolute `file://` URLs only.
+with stable IDs and URLs. Folder-stack records may also store a theme icon name
+or local image URL, attached to their stable UUID. The decoder continues to
+accept version-1 records without icon fields. Task IDs are deterministic
+hashes of their launcher URL; folder stack IDs are UUIDs, so two stacks may
+refer to the same directory. Folder-stack URLs accept local absolute `file://`
+URLs only.
 
 On first start with no `DockEntries` key, the migration seeds ordered `Task`
 records from `PinnedLaunchers` and leaves that legacy setting unchanged. An
 existing typed list, including an empty one, takes precedence.
 
 `DockPresentationModel` is a narrow presentation adapter over the existing
-`TaskManager::TasksModel` and `DockEntriesModel`. It renders the persisted
-mixed sequence of pinned `Task` and `FolderStack` entries first, then appends
-unmatched running task rows in TaskManager order. Stable persisted entry IDs
-anchor pinned rows while model moves preserve delegate identity. The adapter
-forwards TaskManager roles and exposes dock-to-task row mapping; activation,
-window grouping, previews, and task operations continue to use TaskManager.
-Internal reordering within the pinned region moves entries by ID and writes
-the filtered task launcher list back through the existing TaskManager API.
-Unpinned running rows retain their relative order, and a drag cannot cross the
-pinned boundary.
+`TaskManager::TasksModel` and `DockEntriesModel`. With pinned/running
+separation enabled, it renders the persisted mixed sequence of pinned `Task`
+and `FolderStack` entries first, then appends unmatched running task rows in
+TaskManager order. With separation disabled, Task rows follow TaskManager
+order and Folder Stacks stay anchored to the next saved launcher entry. Stable
+persisted entry IDs anchor pins while model moves preserve delegate identity.
+The adapter forwards TaskManager roles and exposes dock-to-task row mapping;
+activation, window grouping, previews, and task operations continue to use
+TaskManager. Internal reordering among pinned entries moves entries by ID and
+writes the filtered task launcher list through the existing TaskManager API.
+When separation is enabled, cross-zone drags remain clamped to their source
+zone. When it is disabled, a deliberate cross-zone drag reorders task rows
+through the existing `TasksModel::move()` path without pinning or unpinning an
+application. Unpinned task order otherwise follows TaskManager.
+
+TaskManager structural row signals are reconciled synchronously after the
+source model completes its insert/remove/move/reset. Deferring that update
+allowed delegates to read a stale `taskIndex` against the new TaskManager row
+order until the queued rebuild ran. Running row IDs use canonical sorted
+`WinIdList` identities where available; launcher and AppId plus a duplicate
+ordinal are the fallback. Diagnostic `[KDOCKW_DOCK_ROW]` records include the
+display and icon name alongside Desktop ID, launcher URL, stable ID, task
+index, and window/group flags.
 
 External drops accept local directories as Folder Stacks, files on task icons
 as URLs for that application, `.desktop` launchers, and Plasma task launcher

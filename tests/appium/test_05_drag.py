@@ -57,8 +57,8 @@ def kdockwrc(*pinned: str) -> dict:
     return {"PinnedLaunchers": [config.launcher(DESKTOP_IDS[n]) for n in pinned], "PreviewHoverDelay": 60000}
 
 
-def pinned_launchers(kdockw: KDockW) -> list[str]:
-    return config.as_list(kdockw.read_config()["General"]["PinnedLaunchers"])
+def saved_pinned_task_urls(kdockw: KDockW) -> list[str]:
+    return [entry["url"] for entry in config.dock_entries(kdockw.read_config()) if entry.get("type") == "task"]
 
 
 # --------------------------------------------------------------------- input
@@ -282,7 +282,7 @@ class Scene:
 # -------------------------------------------------------------------- tests
 
 
-@pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))
+@pytest.mark.kdockwrc({**kdockwrc(KWRITE, KFIND, TW, TW2), "SeparateLaunchers": False})
 def test_dnd_001_drag_reorders_dock_items(kdockw: KDockW, apps: TestWindows) -> None:
     focus = open_active_window(apps, FOCUS)
     scene = Scene.capture(kdockw, [KWRITE, KFIND, FOCUS, TW2])
@@ -314,13 +314,17 @@ def test_dnd_002_reorder_persists_after_restart(kdockw: KDockW) -> None:
     order = [KWRITE, TW2, KFIND, TW]
     wait_until(lambda: kdockw.item_names() == order, message=lambda: f"AT-SPI order {order} (have {kdockw.item_names()})")
     saved = [config.launcher(DESKTOP_IDS[n]) for n in order]
-    wait_until(lambda: pinned_launchers(kdockw) == saved, message=lambda: f"kdockwrc PinnedLaunchers {saved} (have {pinned_launchers(kdockw)})")
+    wait_until(lambda: saved_pinned_task_urls(kdockw) == saved,
+               message=lambda: f"DockEntries v2 task URLs {saved} (have {saved_pinned_task_urls(kdockw)})")
+    saved_ids = [entry["id"] for entry in config.dock_entries(kdockw.read_config()) if entry.get("type") == "task"]
 
     kdockw.restart()
     for n in order:
         kdockw.wait_for_item(n, timeout=15)
     wait_until(lambda: kdockw.item_names() == order, message=lambda: f"order after restart {order} (have {kdockw.item_names()})")
-    assert pinned_launchers(kdockw) == saved
+    entries_after_restart = config.dock_entries(kdockw.read_config())
+    assert [entry["url"] for entry in entries_after_restart if entry.get("type") == "task"] == saved
+    assert [entry["id"] for entry in entries_after_restart if entry.get("type") == "task"] == saved_ids
 
 
 @pytest.mark.kdockwrc(kdockwrc(KWRITE, KFIND, TW, TW2))

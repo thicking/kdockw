@@ -18,6 +18,7 @@
 #include <QQuickItem>
 #include <QAbstractListModel>
 #include <QRectF>
+#include <QHash>
 #include <QStandardItemModel>
 #include <QUrl>
 #include <QVariantMap>
@@ -38,11 +39,29 @@ public:
     int rowCount(const QModelIndex &parent = {}) const override
     {
         Q_UNUSED(parent);
-        return 0;
+        return m_entries.size();
     }
-    QVariant data(const QModelIndex &, int = Qt::DisplayRole) const override
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override
     {
-        return {};
+        if (!index.isValid() || index.row() < 0 || index.row() >= m_entries.size())
+            return {};
+        const auto &entry = m_entries.at(index.row());
+        switch (role) {
+        case Qt::DisplayRole:
+            return entry.display;
+        case Qt::UserRole + 1:
+            return entry.iconName;
+        case Qt::UserRole + 2:
+            return entry.isDirectory;
+        default:
+            return {};
+        }
+    }
+    QHash<int, QByteArray> roleNames() const override
+    {
+        return {{Qt::DisplayRole, "display"},
+                {Qt::UserRole + 1, "iconName"},
+                {Qt::UserRole + 2, "isDirectory"}};
     }
     QUrl rootUrl() const { return m_rootUrl; }
     QUrl currentUrl() const { return m_currentUrl; }
@@ -52,12 +71,33 @@ public:
     {
         m_rootUrl = url;
         m_currentUrl = url;
+        setRootEntries();
         Q_EMIT rootUrlChanged();
         Q_EMIT currentUrlChanged();
         return true;
     }
-    Q_INVOKABLE bool openItem(int) { return true; }
-    Q_INVOKABLE void goUp() {}
+    Q_INVOKABLE bool openItem(int row)
+    {
+        if (row < 0 || row >= m_entries.size())
+            return false;
+        const auto entry = m_entries.at(row);
+        if (entry.isDirectory) {
+            m_currentUrl = QUrl::fromLocalFile(m_currentUrl.toLocalFile() + QLatin1Char('/') + entry.display);
+            beginResetModel();
+            m_entries = {{QStringLiteral("nested.txt"), QStringLiteral("text-plain"), false}};
+            endResetModel();
+            Q_EMIT currentUrlChanged();
+        }
+        return true;
+    }
+    Q_INVOKABLE void goUp()
+    {
+        if (m_currentUrl == m_rootUrl)
+            return;
+        m_currentUrl = m_rootUrl;
+        setRootEntries();
+        Q_EMIT currentUrlChanged();
+    }
     Q_INVOKABLE void openCurrentFolder() {}
     Q_INVOKABLE void close() {}
 
@@ -68,8 +108,21 @@ Q_SIGNALS:
     void loadingChanged();
 
 private:
+    struct Entry {
+        QString display;
+        QString iconName;
+        bool isDirectory = false;
+    };
+    void setRootEntries()
+    {
+        beginResetModel();
+        m_entries = {{QStringLiteral("Nested"), QStringLiteral("folder"), true},
+                     {QStringLiteral("readme.txt"), QStringLiteral("text-plain"), false}};
+        endResetModel();
+    }
     QUrl m_rootUrl;
     QUrl m_currentUrl;
+    QList<Entry> m_entries;
 };
 
 // Mirrors the role names of TaskManager::AbstractTasksModel that KDockW's QML
@@ -135,6 +188,7 @@ public:
     Q_INVOKABLE void reset();
     Q_INVOKABLE int taskIndexForDockIndex(int dockIndex) const;
     Q_INVOKABLE int dockIndexForTaskIndex(int taskIndex) const;
+    Q_INVOKABLE int dockIndexForEntryId(const QString &entryId) const;
     Q_INVOKABLE QString entryIdForDockIndex(int dockIndex) const;
     Q_INVOKABLE bool isPinnedDockIndex(int dockIndex) const;
     Q_INVOKABLE bool moveByEntryId(const QString &entryId, const QString &targetEntryId);

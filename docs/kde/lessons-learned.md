@@ -515,3 +515,98 @@ logging before relying on QML parent relationships.
 
 **Key lesson:** QML visual parentage does not prove QSG node ancestry. Inspect
 Qt's scene-graph synchronization and log/test the actual QSG parent chain.
+## 26. In-scene popups cannot receive input outside a masked dock surface (2026-11)
+
+**Symptom:** A Folder Stack popup was visible over other windows, but clicks went
+to the window underneath. The popup could not reliably dismiss when clicking
+outside the dock, and its grid collapsed to the path/header row.
+
+**Cause:** Qt Quick Controls' default `Popup.Item` embeds its overlay in the
+parent scene. KDockW's Wayland dock surface sets an explicit input region around
+the panel and intentionally excludes popup-sized screen regions. The compositor
+therefore routes those coordinates to another surface. The popup also computed
+its available dimensions from the dock layer-surface size instead of the
+selected output. After moving to `Popup.Window`, its content layout still
+allowed the GridView to collapse to a one-pixel minimum while the native window
+was being sized.
+
+**Fix:** Use a `Popup.Window` (`Qt::Popup`) so QtWayland/KWin can route input
+and outside dismissal on a distinct transient popup surface. Calculate bounds
+from the assigned `QScreen` and the dock surface origin. Put the `ColumnLayout`
+inside an explicit, popup-sized content `Item` and give the fill-height
+`GridView` a useful minimum and preferred height. Observe deactivation on the popup window itself;
+do not use a global mouse hook or enlarge the dock's input region across other
+applications. The existing dock `QMenu::popup()` is the local Wayland precedent.
+
+**Key lesson:** A painted popup rectangle does not imply that the underlying
+Wayland surface owns that input region. For masked layer-shell windows, inspect
+the popup's native surface role, parent, input region, and screen-local geometry
+before changing delegates or hit-test code.
+
+## 27. Size a Wayland popup before its first surface commit (2026-11)
+
+**Symptom:** A Folder Stack popup was intermittently far from its icon on first
+open. Traces showed requested x/width changing while the native popup window
+kept the earlier position. The problem was usually absent on a later open.
+
+**Cause:** `Popup.Window` used the content item's initial implicit width while
+the placement calculation already used the requested width. In an offscreen
+regression, the requested width was 560 logical pixels but the first native
+window used 132 pixels (the initial content implicit width plus popup padding),
+so its center missed the anchor by 214 pixels. The first commit also happened
+while the asynchronous KIO listing still had zero rows, before GridView had a
+final content state. A Wayland `xdg_popup` position is established by its
+initial surface commit; later QML x/y changes are not a reliable move request.
+
+**Fix:** Wait for `FolderStackModel.loading` to finish, set the popup content's
+implicit dimensions to the final requested viewport, calculate the anchor and
+position, then call `open()`. Log model-ready, popup-opened, geometry-change,
+and actual window-position phases separately. The content size remains bounded
+by the selected screen and popup geometry. After the popup closes, resume hover
+only when the compositor pointer-focus tracker confirms the pointer is on the
+dock.
+
+**Key lesson:** Compare requested Popup geometry with the actual native window
+geometry before attributing a Wayland placement error to coordinate transforms.
+The first content implicit size can disagree with a later explicit popup size,
+and xdg_popup cannot be treated like an independently movable top-level window.
+
+## 28. Reconcile TaskManager row indices before delegates read them (2026-11)
+
+**Symptom:** During launch or close bursts, pinned icons briefly appeared in
+the unpinned region and running applications could show a neighbor's name or
+icon, then recover after the event loop caught up.
+
+**Cause:** `DockPresentationModel` queued its rebuild after
+`rowsInserted`/`rowsRemoved`/`rowsMoved`. Its existing rows still contained
+TaskManager indices from the previous structure, while QML queried the source
+model after the structure had already changed. The key for unpinned rows also
+used only `AppId`, which is not unique for separate root rows of one
+application.
+
+**Fix:** Reconcile presentation rows synchronously on completed structural
+signals, before returning to QML. Prefer sorted `WinIdList` values for running
+identity and use normalized launcher/AppId plus a duplicate ordinal only when
+TaskManager supplies no window identity. Keep launcher matching and window
+operations in the existing TaskManager; the adapter only maps presentation
+rows. Add diagnostic row metadata and repeated insert/remove coverage around
+a mixed Task/FolderStack pinned order.
+
+**Key lesson:** A queued presentation rebuild can be observably wrong even if
+it repairs itself a few milliseconds later. Model indices are only valid for
+the exact source-model structure that produced them.
+
+## 29. Keep standalone QML harness registrations in sync (2026-11)
+
+**Symptom:** Several private-KWin integration targets reported
+`FolderStackModel is not a type` while loading the production dock QML.
+
+**Cause:** Those tests build their own application/QML engine and mirror the
+types registered by `Application::run()`. The shared `registerDockQmlTypes()`
+helper and one preview-setting harness still registered only the pre-Folder
+Stack types.
+
+**Fix:** Register `FolderStackModel` in both standalone paths. The affected
+launcher, output, show-desktop, tooltip, hit-test, delegate-geometry and
+preview-setting tests then loaded the same Folder Stack type as production.
+Keep these harness registries aligned when a new C++ QML type is added.

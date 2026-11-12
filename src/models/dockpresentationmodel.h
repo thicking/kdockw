@@ -12,7 +12,9 @@ namespace kdockw
 
 /**
  * Presents pinned Task and FolderStack entries in their saved order, followed
- * by unpinned TaskManager rows in TaskManager order.
+ * by unpinned TaskManager rows when launcher separation is enabled. When it is
+ * disabled, Task rows follow TaskManager order and FolderStacks stay anchored
+ * to their neighboring saved launcher entries.
  *
  * TaskManager remains the source of all task/window data. This model only
  * adapts its root rows to the dock's mixed pinned sequence.
@@ -28,16 +30,20 @@ public:
         EntryIdRole,
         EntryTypeRole,
         EntryUrlRole,
+        IconNameRole,
+        IconUrlRole,
         IsPinnedRole,
     };
     Q_ENUM(Role)
 
-    DockPresentationModel(QAbstractItemModel *tasksModel, DockEntriesModel *entriesModel, QObject *parent = nullptr);
+    DockPresentationModel(QAbstractItemModel *tasksModel, DockEntriesModel *entriesModel, QObject *parent = nullptr,
+                         bool diagnosticsEnabled = false);
 
     [[nodiscard]] int rowCount(const QModelIndex &parent = {}) const override;
     [[nodiscard]] QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
     [[nodiscard]] int pinnedEntryCount() const;
+    void setSeparateLaunchers(bool separate);
 
     Q_INVOKABLE int taskIndexForDockIndex(int dockIndex) const;
     Q_INVOKABLE int dockIndexForTaskIndex(int taskIndex) const;
@@ -54,6 +60,8 @@ private:
         QString entryId;
         QString entryType;
         QUrl entryUrl;
+        QString iconName;
+        QUrl iconUrl;
         int taskIndex = -1;
         bool pinned = false;
 
@@ -69,6 +77,8 @@ private:
 
     QAbstractItemModel *m_tasksModel = nullptr;
     DockEntriesModel *m_entriesModel = nullptr;
+    bool m_diagnosticsEnabled = false;
+    bool m_separateLaunchers = true;
     QList<Row> m_rows;
     QVector<int> m_taskToDock;
     int m_pinnedEntryCount = 0;

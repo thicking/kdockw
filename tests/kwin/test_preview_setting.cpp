@@ -15,6 +15,7 @@
 
 #include "kdockw.h"
 #include "models/dockmodel.h"
+#include "models/folderstackmodel.h"
 #include "models/launcherentrytracker.h"
 #include "models/notificationtracker.h"
 #include "scenegraph/clippedpipewiresourceitem.h"
@@ -307,6 +308,7 @@ int main(int argc, char *argv[])
     initResources();
     qmlRegisterType<kdockw::ClippedPipeWireSourceItem>("com.thicking.kdockw", 1, 0, "ClippedPipeWireSourceItem");
     qmlRegisterType<kdockw::SpringZoomController>("com.thicking.kdockw", 1, 0, "SpringZoomController");
+    qmlRegisterType<kdockw::FolderStackModel>("com.thicking.kdockw", 1, 0, "FolderStackModel");
 
     return Catch::Session().run(argc, argv);
 }

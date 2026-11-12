@@ -159,8 +159,79 @@ Item {
         return DockModel.dockPresentationModel.isPinnedDockIndex(dockIndex)
     }
 
+    function entryTypeAtDockIndex(dockIndex) {
+        const item = dockRepeater.itemAt(dockIndex)
+        return item && item.isFolderStack ? "folderStack" : "task"
+    }
+
     function dockEntryIdAt(dockIndex) {
         return DockModel.dockPresentationModel.entryIdForDockIndex(dockIndex)
+    }
+
+    function dockRowTrace(index) {
+        const item = dockRepeater.itemAt(index)
+        if (!item) return { dockIndex: index, missingDelegate: true }
+        const taskIndex = taskIndexAtDockIndex(index)
+        return {
+            dockIndex: index,
+            type: item.isFolderStack ? "folderStack" : "task",
+            stableId: dockEntryIdAt(index),
+            pinned: isPinnedDockIndex(index),
+            taskIndex: taskIndex,
+            desktopId: taskIndex >= 0 ? DockModel.appId(taskIndex) : ""
+        }
+    }
+
+    function logDockOrderTrace(phase, sourceId, targetId, moved = null) {
+        if (!DockModel.taskDiagnosticsEnabled) return
+        let rows = []
+        for (let i = 0; i < dockRepeater.count; ++i)
+            rows.push(dockRowTrace(i))
+        console.info("[KDOCKW_DND_TRACE] " + JSON.stringify({
+            phase: phase,
+            sourceId: sourceId || "",
+            targetId: targetId || "",
+            moved: moved,
+            rows: rows
+        }))
+    }
+
+    // Resolve both endpoints from the presentation model at the last possible
+    // moment. Mixed pinned Task/FolderStack order is persisted by stable entry
+    // IDs; TaskManager rows are used for running-task and combined-zone moves.
+    function reorderDockItems(fromDockIndex, toDockIndex) {
+        if (fromDockIndex < 0 || toDockIndex < 0 || fromDockIndex === toDockIndex)
+            return false
+        return reorderDockEntries(dockEntryIdAt(fromDockIndex), dockEntryIdAt(toDockIndex))
+    }
+
+    function reorderDockEntries(sourceEntryId, targetEntryId) {
+        if (!sourceEntryId || !targetEntryId || sourceEntryId === targetEntryId)
+            return false
+        const fromDockIndex = DockModel.dockPresentationModel.dockIndexForEntryId(sourceEntryId)
+        const toDockIndex = DockModel.dockPresentationModel.dockIndexForEntryId(targetEntryId)
+        if (fromDockIndex < 0 || toDockIndex < 0 || fromDockIndex === toDockIndex)
+            return false
+        const sourcePinned = isPinnedDockIndex(fromDockIndex)
+        const targetPinned = isPinnedDockIndex(toDockIndex)
+        if (!DockSettings.separateLaunchers
+                && entryTypeAtDockIndex(fromDockIndex) === "task"
+                && entryTypeAtDockIndex(toDockIndex) === "task") {
+            const fromTaskIndex = taskIndexAtDockIndex(fromDockIndex)
+            const toTaskIndex = taskIndexAtDockIndex(toDockIndex)
+            return fromTaskIndex >= 0 && toTaskIndex >= 0
+                ? DockActions.moveTask(fromTaskIndex, toTaskIndex) : false
+        }
+        if (sourcePinned && targetPinned) {
+            return DockModel.moveDockEntry(sourceEntryId, targetEntryId)
+        }
+        if (!sourcePinned && !targetPinned) {
+            const fromTaskIndex = taskIndexAtDockIndex(fromDockIndex)
+            const toTaskIndex = taskIndexAtDockIndex(toDockIndex)
+            return fromTaskIndex >= 0 && toTaskIndex >= 0
+                ? DockActions.moveTask(fromTaskIndex, toTaskIndex) : false
+        }
+        return false
     }
 
     function startKeyboardNavigation() {
@@ -432,6 +503,9 @@ Item {
     property bool _dragActive: false
     property int _dragSourceIndex: -1
     property int _dragTargetIndex: -1
+    property string _dragStartEntryId: ""
+    property string _dragSourceEntryId: ""
+    property string _dragTargetEntryId: ""
     property real _dragCurrentX: 0
     property real _dragCurrentY: 0
     property real _dragStartX: 0
@@ -444,21 +518,38 @@ Item {
         id: dragHoldTimer
         interval: 300
         onTriggered: {
-            if (root.hoveredIndex >= 0) {
+            const resolvedSource = root._dragStartEntryId.length > 0
+                ? DockModel.dockPresentationModel.dockIndexForEntryId(root._dragStartEntryId) : -1
+            if (resolvedSource >= 0) {
                 root._dragPending = true
-                root._dragSourceIndex = root.hoveredIndex
+                root._dragSourceIndex = resolvedSource
+                root._dragSourceEntryId = root._dragStartEntryId
+                root._dragTargetIndex = resolvedSource
+                root._dragTargetEntryId = root._dragSourceEntryId
+                root.logDockOrderTrace("hold-start", root._dragSourceEntryId, root._dragTargetEntryId)
+            } else {
+                root.clearDragState()
             }
         }
+    }
+
+    function clearDragState() {
+        dragHoldTimer.stop()
+        _dragActive = false
+        _dragPending = false
+        _dragSourceIndex = -1
+        _dragTargetIndex = -1
+        _dragStartEntryId = ""
+        _dragSourceEntryId = ""
+        _dragTargetEntryId = ""
+        DockVisibility.setDragActive(false)
     }
 
     // Cancel an active internal drag without reordering (Escape). The button is
     // still held: _dragWasActive stays set so the eventual release is not a click.
     function cancelDrag() {
-        root._dragActive = false
-        root._dragPending = false
-        root._dragSourceIndex = -1
-        root._dragTargetIndex = -1
-        DockVisibility.setDragActive(false)
+        root.logDockOrderTrace("escape-cancel", root._dragSourceEntryId, root._dragTargetEntryId)
+        root.clearDragState()
     }
     // Return an item's unscaled rest-slot start in dockPanel coordinates.
     // The primary axis includes the allocated separator slot; the secondary
@@ -872,25 +963,52 @@ Item {
         PreviewController.hidePreviewDelayed()
         // Drag-out: if an active drag leaves the dock, unpin the launcher
         if (_dragActive) {
-            const sourceTaskIndex = taskIndexAtDockIndex(_dragSourceIndex)
-            if (isPinnedDockIndex(_dragSourceIndex) && sourceTaskIndex >= 0) {
+            const sourceDockIndex = DockModel.dockPresentationModel.dockIndexForEntryId(_dragSourceEntryId)
+            const sourceTaskIndex = taskIndexAtDockIndex(sourceDockIndex)
+            if (sourceDockIndex >= 0 && isPinnedDockIndex(sourceDockIndex) && sourceTaskIndex >= 0) {
                 DockActions.removeLauncher(sourceTaskIndex)
             }
-            _dragActive = false
-            _dragPending = false
-            _dragSourceIndex = -1
-            _dragTargetIndex = -1
-            DockVisibility.setDragActive(false)
-        } else if (_dragPending) {
-            _dragPending = false
-            _dragSourceIndex = -1
-            _dragTargetIndex = -1
-            dragHoldTimer.stop()
+            clearDragState()
+        } else if (_dragPending || _dragStartEntryId.length > 0) {
+            clearDragState()
         }
         // preview visible이면 dock hover 상태 유지 (입력 영역 축소 방지)
         if (!PreviewController.visible) {
             DockVisibility.setHovered(false)
         }
+    }
+
+    // Popup.Window can take pointer focus from the layer-shell surface. When
+    // it closes, re-evaluate hover only if KWin's Wayland focus tracker says
+    // the pointer is actually back over the dock. Do not infer hover from the
+    // popup's old anchor when the pointer was dismissed elsewhere.
+    function folderStackPopupClosed() {
+        Qt.callLater(() => {
+            if (!DockView.pointerInside) {
+                root._pointerLeft()
+                return
+            }
+            root._pointerOnDock = true
+            PreviewController.cancelHide()
+            DockVisibility.setHovered(true)
+            if (!root._menuHeld && !root.keyboardNavigating
+                    && root._pointerRootX >= 0 && root._pointerRootY >= 0) {
+                root.trackPointer(root._pointerRootX, root._pointerRootY)
+            }
+            if (DockModel.taskDiagnosticsEnabled) {
+                console.info("[KDOCKW_HOVER_RESTORE] " + JSON.stringify({
+                    pointerInside: DockView.pointerInside,
+                    pointerRoot: { x: root._pointerRootX, y: root._pointerRootY },
+                    hoveredIndex: root.hoveredIndex,
+                    zoomActive: root._zoomActive
+                }))
+            }
+        })
+    }
+
+    function suppressDockTooltip() {
+        tooltipTimer.stop()
+        tooltipItem.show = false
     }
 
     // Hold hover state while the context menu is open; on close, reconcile
@@ -994,6 +1112,7 @@ Item {
             if (mouse.button === Qt.LeftButton && root.hoveredIndex >= 0) {
                 root._dragStartX = mouse.x
                 root._dragStartY = mouse.y
+                root._dragStartEntryId = root.dockEntryIdAt(root.hoveredIndex)
                 dragHoldTimer.restart()
             }
         }
@@ -1002,35 +1121,31 @@ Item {
             dragHoldTimer.stop()
 
             if (root._dragActive) {
-                // Execute reorder
-                if (root._dragTargetIndex >= 0 && root._dragTargetIndex !== root._dragSourceIndex) {
-                    let item = dockRepeater.itemAt(root._dragSourceIndex)
+                const sourceId = root._dragSourceEntryId
+                const targetId = root._dragTargetEntryId
+                const sourceIndex = DockModel.dockPresentationModel.dockIndexForEntryId(sourceId)
+                const targetIndex = DockModel.dockPresentationModel.dockIndexForEntryId(targetId)
+                let moved = false
+                if (sourceIndex >= 0 && targetIndex >= 0 && sourceId !== targetId) {
+                    let item = dockRepeater.itemAt(sourceIndex)
                     let name = item ? item.displayName : ""
-                    const fromId = root.dockEntryIdAt(root._dragSourceIndex)
-                    const toId = root.dockEntryIdAt(root._dragTargetIndex)
-                    const sourcePinned = root.isPinnedDockIndex(root._dragSourceIndex)
-                    const targetPinned = root.isPinnedDockIndex(root._dragTargetIndex)
-                    const sourceTaskIndex = root.taskIndexAtDockIndex(root._dragSourceIndex)
-                    const targetTaskIndex = root.taskIndexAtDockIndex(root._dragTargetIndex)
-                    const moved = sourcePinned && targetPinned
-                        ? DockModel.moveDockEntry(fromId, toId)
-                        : (!sourcePinned && !targetPinned && sourceTaskIndex >= 0 && targetTaskIndex >= 0
-                           ? DockActions.moveTask(sourceTaskIndex, targetTaskIndex) : false)
+                    moved = root.reorderDockEntries(sourceId, targetId)
+                    root.logDockOrderTrace("drop", sourceId, targetId, moved)
                     if (moved) {
                         Accessible.announce(
-                            i18n("Moved %1 to position %2", name, root._dragTargetIndex + 1),
+                            i18n("Moved %1 to position %2", name, targetIndex + 1),
                             Accessible.Polite)
                     }
+                } else {
+                    root.logDockOrderTrace("drop-noop", sourceId, targetId, false)
                 }
-                // Reset drag state
-                root._dragActive = false
-                root._dragPending = false
-                root._dragSourceIndex = -1
-                root._dragTargetIndex = -1
-                DockVisibility.setDragActive(false)
-            } else {
-                root._dragPending = false
             }
+            root.clearDragState()
+        }
+
+        onCanceled: {
+            root.logDockOrderTrace("pointer-cancel", root._dragSourceEntryId, root._dragTargetEntryId)
+            root.clearDragState()
         }
 
         // Click handling: uses hoveredIndex from scaled hit testing
@@ -1122,6 +1237,18 @@ Item {
             }
 
             // --- Drag handling ---
+            if (root._dragPending || root._dragActive) {
+                const resolvedSource = DockModel.dockPresentationModel.dockIndexForEntryId(
+                    root._dragSourceEntryId || root._dragStartEntryId)
+                if (resolvedSource < 0) {
+                    root.logDockOrderTrace("source-disappeared",
+                                           root._dragSourceEntryId || root._dragStartEntryId,
+                                           root._dragTargetEntryId)
+                    root.clearDragState()
+                    return
+                }
+                root._dragSourceIndex = resolvedSource
+            }
             if (root._dragPending && !root._dragActive) {
                 let dx = mouse.x - root._dragStartX
                 let dy = mouse.y - root._dragStartY
@@ -1138,6 +1265,12 @@ Item {
                 root._dragCurrentX = mouse.x
                 root._dragCurrentY = mouse.y
                 root._dragTargetIndex = computeDropIndex(DockView.isVertical ? mouse.y : mouse.x)
+                const targetId = root._dragTargetIndex >= 0
+                    ? root.dockEntryIdAt(root._dragTargetIndex) : ""
+                if (targetId !== root._dragTargetEntryId) {
+                    root._dragTargetEntryId = targetId
+                    root.logDockOrderTrace("target-change", root._dragSourceEntryId, targetId)
+                }
                 return  // Skip normal zoom handling during drag
             }
 
@@ -1695,7 +1828,7 @@ Item {
 
 
                     // Drag and drop visual feedback
-                    isDragSource: root._dragActive && root._dragSourceIndex === index
+                    isDragSource: root._dragActive && root._dragSourceEntryId === root.dockEntryIdAt(index)
                     isExternalDropTarget: externalDropArea.containsDrag
                                           && externalDropArea.dropTargetIndex === index
                 }
@@ -1948,10 +2081,13 @@ Item {
         height: DockSettings.iconSize
         source: {
             if (!visible) return ""
-            let iconCacheVersion = DockView.iconCacheVersion
             const sourceItem = dockRepeater.itemAt(root._dragSourceIndex)
-            let name = sourceItem ? sourceItem.iconName : ""
-            return (name && name.length > 0) ? "image://icon/" + name + "?v=" + iconCacheVersion : ""
+            if (!sourceItem) return ""
+            if (sourceItem.isFolderStack && sourceItem.model.iconUrl)
+                return sourceItem.model.iconUrl
+            const name = sourceItem.iconName || ""
+            if (!name.length) return ""
+            return "image://icon/" + name + "?v=" + DockView.iconCacheVersion
         }
         sourceSize: Qt.size(DockSettings.iconSize, DockSettings.iconSize)
         x: root._dragCurrentX - width / 2
@@ -2072,6 +2208,12 @@ Item {
             // Row removed under the hover before the re-hit-test ran.
             if (root.hoveredIndex >= dockRepeater.count
                     || !dockRepeater.itemAt(root.hoveredIndex)) return
+            const hoveredItem = dockRepeater.itemAt(root.hoveredIndex)
+            if (hoveredItem.isFolderStack) {
+                if (!hoveredItem.popupVisible)
+                    tooltipItem.show = true
+                return
+            }
             const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
             if (taskIndex < 0) return
             let idx = DockModel.tasksModel.index(taskIndex, 0)

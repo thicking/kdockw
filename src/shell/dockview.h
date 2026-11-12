@@ -49,6 +49,7 @@ class DockView : public QQuickView
     Q_PROPERTY(int edge READ edge NOTIFY edgeChanged)
     Q_PROPERTY(bool isVertical READ isVertical NOTIFY edgeChanged)
     Q_PROPERTY(int tooltipReserve READ tooltipReserve WRITE setTooltipReserve NOTIFY tooltipReserveChanged)
+    Q_PROPERTY(QRect screenGeometry READ screenGeometry NOTIFY screenGeometryChanged)
     /// Whether the compositor's pointer focus is on the dock surface. Unlike
     /// Qt's hover state this ignores the leave QtWayland fakes for a popup
     /// grab (see PointerFocusTracker). False without a Wayland pointer.
@@ -73,6 +74,8 @@ public:
     [[nodiscard]] int edge() const;
     [[nodiscard]] bool isVertical() const;
     [[nodiscard]] int tooltipReserve() const;
+    /// Logical geometry of the output hosting this dock surface.
+    [[nodiscard]] QRect screenGeometry() const;
 
     /// Cross-axis extent needed for the in-scene tooltip, including its gap,
     /// maximum zoom overflow and shadow. Published by QML from live geometry.
@@ -138,6 +141,7 @@ Q_SIGNALS:
     void edgeChanged();
     void tooltipReserveChanged();
     void pointerInsideChanged();
+    void screenGeometryChanged();
 
 private:
     /// Extra height above the panel needed for zoomed icons.

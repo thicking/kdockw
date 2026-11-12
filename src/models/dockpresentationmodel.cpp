@@ -4,26 +4,39 @@
 #include "dockpresentationmodel.h"
 
 #include <taskmanager/abstracttasksmodel.h>
+#include <taskmanager/tasktools.h>
 
 #include <QFileInfo>
 #include <QCryptographicHash>
+#include <QHash>
+#include <QIcon>
 #include <QMetaObject>
+#include <QLoggingCategory>
 #include <QSet>
+#include <algorithm>
+
+Q_LOGGING_CATEGORY(lcDockPresentation, "kdockw.presentation")
 
 namespace kdockw
 {
 
-DockPresentationModel::DockPresentationModel(QAbstractItemModel *tasksModel, DockEntriesModel *entriesModel, QObject *parent)
+DockPresentationModel::DockPresentationModel(QAbstractItemModel *tasksModel, DockEntriesModel *entriesModel, QObject *parent,
+                                             bool diagnosticsEnabled)
     : QAbstractListModel(parent)
     , m_tasksModel(tasksModel)
     , m_entriesModel(entriesModel)
+    , m_diagnosticsEnabled(diagnosticsEnabled)
 {
     connect(m_entriesModel, &DockEntriesModel::entriesChanged, this, &DockPresentationModel::scheduleRebuild);
-    connect(m_tasksModel, &QAbstractItemModel::rowsInserted, this, &DockPresentationModel::scheduleRebuild);
-    connect(m_tasksModel, &QAbstractItemModel::rowsRemoved, this, &DockPresentationModel::scheduleRebuild);
-    connect(m_tasksModel, &QAbstractItemModel::rowsMoved, this, &DockPresentationModel::scheduleRebuild);
-    connect(m_tasksModel, &QAbstractItemModel::modelReset, this, &DockPresentationModel::scheduleRebuild);
-    connect(m_tasksModel, &QAbstractItemModel::layoutChanged, this, &DockPresentationModel::scheduleRebuild);
+    // Structural TaskManager signals are emitted after its row indices have
+    // changed. Reconcile immediately so delegates never read an old taskIndex
+    // against a new row order (the queued version briefly showed other apps'
+    // names and icons until the event loop reached the rebuild).
+    connect(m_tasksModel, &QAbstractItemModel::rowsInserted, this, [this] { rebuild(); });
+    connect(m_tasksModel, &QAbstractItemModel::rowsRemoved, this, [this] { rebuild(); });
+    connect(m_tasksModel, &QAbstractItemModel::rowsMoved, this, [this] { rebuild(); });
+    connect(m_tasksModel, &QAbstractItemModel::modelReset, this, [this] { rebuild(); });
+    connect(m_tasksModel, &QAbstractItemModel::layoutChanged, this, [this] { rebuild(); });
     connect(m_tasksModel, &QAbstractItemModel::dataChanged, this, &DockPresentationModel::forwardTaskDataChanged);
     scheduleRebuild();
 }
@@ -49,6 +62,10 @@ QVariant DockPresentationModel::data(const QModelIndex &index, int role) const
         return row.entryType;
     case EntryUrlRole:
         return row.entryUrl;
+    case IconNameRole:
+        return row.iconName;
+    case IconUrlRole:
+        return row.iconUrl;
     case IsPinnedRole:
         return row.pinned;
     default:
@@ -78,6 +95,8 @@ QHash<int, QByteArray> DockPresentationModel::roleNames() const
     names.insert(EntryIdRole, "entryId");
     names.insert(EntryTypeRole, "entryType");
     names.insert(EntryUrlRole, "entryUrl");
+    names.insert(IconNameRole, "iconName");
+    names.insert(IconUrlRole, "iconUrl");
     names.insert(IsPinnedRole, "isPinned");
     return names;
 }
@@ -85,6 +104,15 @@ QHash<int, QByteArray> DockPresentationModel::roleNames() const
 int DockPresentationModel::pinnedEntryCount() const
 {
     return m_pinnedEntryCount;
+}
+
+void DockPresentationModel::setSeparateLaunchers(bool separate)
+{
+    if (m_separateLaunchers == separate) {
+        return;
+    }
+    m_separateLaunchers = separate;
+    rebuild();
 }
 
 int DockPresentationModel::taskIndexForDockIndex(int dockIndex) const
@@ -132,21 +160,87 @@ bool DockPresentationModel::isPinnedDockIndex(int dockIndex) const
 QList<DockPresentationModel::Row> DockPresentationModel::desiredRows() const
 {
     QList<Row> rows;
-    QSet<int> usedTaskRows;
-    QHash<QString, int> taskByLauncher;
+    QVector<bool> usedTaskRows(m_tasksModel->rowCount(), false);
     const int launcherRole = TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon;
 
-    for (int taskIndex = 0; taskIndex < m_tasksModel->rowCount(); ++taskIndex) {
-        const QUrl launcherUrl = m_tasksModel->data(m_tasksModel->index(taskIndex, 0), launcherRole).toUrl();
-        if (launcherUrl.isValid()) {
-            taskByLauncher.insert(QString::fromLatin1(launcherUrl.toEncoded(QUrl::FullyEncoded)), taskIndex);
+    if (!m_separateLaunchers) {
+        const QList<DockEntry> entries = m_entriesModel->entries();
+        QHash<QString, QList<DockEntry>> foldersBeforeTask;
+        QList<DockEntry> pendingFolders;
+        for (const DockEntry &entry : entries) {
+            if (entry.type == DockEntryType::FolderStack) {
+                pendingFolders.append(entry);
+            } else {
+                foldersBeforeTask.insert(entry.id, pendingFolders);
+                pendingFolders.clear();
+            }
         }
+
+        QSet<QString> emittedEntryIds;
+        const auto appendEntry = [&rows, &emittedEntryIds](const DockEntry &entry, int taskIndex) {
+            Row row;
+            row.entryId = entry.id;
+            row.entryUrl = entry.url;
+            row.iconName = entry.iconName;
+            row.iconUrl = entry.iconUrl;
+            row.pinned = true;
+            row.entryType = entry.type == DockEntryType::FolderStack ? QStringLiteral("folderStack") : QStringLiteral("task");
+            row.key = QStringLiteral("entry:%1").arg(entry.id);
+            row.taskIndex = taskIndex;
+            rows.append(row);
+            emittedEntryIds.insert(entry.id);
+        };
+
+        for (int taskIndex = 0; taskIndex < m_tasksModel->rowCount(); ++taskIndex) {
+            const QUrl launcherUrl = m_tasksModel->data(m_tasksModel->index(taskIndex, 0), launcherRole).toUrl();
+            const auto pinnedEntry = std::find_if(entries.cbegin(), entries.cend(), [&launcherUrl, &emittedEntryIds](const DockEntry &entry) {
+                return entry.type == DockEntryType::Task && !emittedEntryIds.contains(entry.id)
+                    && TaskManager::launcherUrlsMatch(entry.url, launcherUrl, TaskManager::IgnoreQueryItems);
+            });
+            if (pinnedEntry != entries.cend()) {
+                for (const DockEntry &folder : foldersBeforeTask.value(pinnedEntry->id)) {
+                    if (!emittedEntryIds.contains(folder.id)) {
+                        appendEntry(folder, -1);
+                    }
+                }
+                appendEntry(*pinnedEntry, taskIndex);
+                usedTaskRows[taskIndex] = true;
+                continue;
+            }
+
+            Row row;
+            row.taskIndex = taskIndex;
+            row.entryType = QStringLiteral("task");
+            row.entryUrl = launcherUrl;
+            row.entryId = taskKey(taskIndex);
+            row.key = QStringLiteral("task:%1").arg(row.entryId);
+            rows.append(row);
+        }
+
+        // Keep launcher-only rows and stacks whose neighboring launcher is
+        // not currently represented by TaskManager visible, in their saved
+        // relative order after all live rows.
+        for (const DockEntry &entry : entries) {
+            if (entry.type == DockEntryType::FolderStack && !emittedEntryIds.contains(entry.id)) {
+                appendEntry(entry, -1);
+            } else if (entry.type == DockEntryType::Task && !emittedEntryIds.contains(entry.id)) {
+                for (const DockEntry &folder : foldersBeforeTask.value(entry.id)) {
+                    if (!emittedEntryIds.contains(folder.id)) {
+                        appendEntry(folder, -1);
+                    }
+                }
+                appendEntry(entry, -1);
+            }
+        }
+        return rows;
     }
 
     for (const DockEntry &entry : m_entriesModel->entries()) {
         Row row;
         row.entryId = entry.id;
         row.entryUrl = entry.url;
+        row.iconName = entry.iconName;
+        row.iconUrl = entry.iconUrl;
         row.pinned = true;
         if (entry.type == DockEntryType::FolderStack) {
             row.key = QStringLiteral("entry:%1").arg(entry.id);
@@ -154,29 +248,37 @@ QList<DockPresentationModel::Row> DockPresentationModel::desiredRows() const
         } else {
             row.key = QStringLiteral("entry:%1").arg(entry.id);
             row.entryType = QStringLiteral("task");
-            row.taskIndex = taskByLauncher.value(QString::fromLatin1(entry.url.toEncoded(QUrl::FullyEncoded)), -1);
-            if (row.taskIndex >= 0) {
-                usedTaskRows.insert(row.taskIndex);
+            // TaskManager compares launcher URLs without their query metadata
+            // (see launcherPosition()/launcherUrlsMatch()). Exact string keys
+            // leave an activated pin as an icon-only row when the TaskManager
+            // role carries icon/activity query data, then append the same live
+            // task again in the unpinned zone.
+            for (int taskIndex = 0; taskIndex < usedTaskRows.size(); ++taskIndex) {
+                const QUrl launcherUrl = m_tasksModel->data(m_tasksModel->index(taskIndex, 0), launcherRole).toUrl();
+                if (launcherUrl.isValid()
+                    && TaskManager::launcherUrlsMatch(entry.url, launcherUrl, TaskManager::IgnoreQueryItems)) {
+                    row.taskIndex = taskIndex;
+                    usedTaskRows[taskIndex] = true;
+                    break;
+                }
             }
         }
         rows.append(row);
     }
 
     for (int taskIndex = 0; taskIndex < m_tasksModel->rowCount(); ++taskIndex) {
-        if (usedTaskRows.contains(taskIndex)) {
+        if (usedTaskRows.at(taskIndex)) {
             continue;
         }
         Row row;
         row.taskIndex = taskIndex;
         row.entryType = QStringLiteral("task");
         row.entryUrl = m_tasksModel->data(m_tasksModel->index(taskIndex, 0), launcherRole).toUrl();
-        if (row.entryUrl.isValid()) {
-            row.entryId = DockEntry::task(row.entryUrl).id;
-            row.key = QStringLiteral("entry:%1").arg(row.entryId);
-        } else {
-            row.key = taskKey(taskIndex);
-            row.entryId = row.key;
-        }
+        // A running task is not a pinned entry. Give it its TaskManager
+        // identity so a launcher URL metadata mismatch cannot produce the
+        // same stable ID/key as a pinned row.
+        row.entryId = taskKey(taskIndex);
+        row.key = QStringLiteral("task:%1").arg(row.entryId);
         row.pinned = false;
         rows.append(row);
     }
@@ -190,17 +292,34 @@ QString DockPresentationModel::taskKey(int taskIndex, const QString &entryId) co
     }
 
     const QModelIndex index = m_tasksModel->index(taskIndex, 0);
+    const QVariantList rawWindowIds = index.data(TaskManager::AbstractTasksModel::WinIdList).toList();
+    if (!rawWindowIds.isEmpty()) {
+        QStringList canonicalIds;
+        canonicalIds.reserve(rawWindowIds.size());
+        for (const QVariant &windowId : rawWindowIds) {
+            canonicalIds.append(windowId.toString());
+        }
+        std::sort(canonicalIds.begin(), canonicalIds.end());
+        return QStringLiteral("running:%1").arg(QString::fromLatin1(QCryptographicHash::hash(
+                                                           canonicalIds.join(QLatin1Char('\x1f')).toUtf8(), QCryptographicHash::Sha256)
+                                                           .toHex()));
+    }
     const QString appId = index.data(TaskManager::AbstractTasksModel::AppId).toString();
-    if (!appId.isEmpty()) {
-        return QStringLiteral("running:%1").arg(appId);
+    const QUrl launcher = index.data(TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl();
+    int duplicateOrdinal = 0;
+    for (int row = 0; row < taskIndex; ++row) {
+        const QModelIndex prior = m_tasksModel->index(row, 0);
+        if (prior.data(TaskManager::AbstractTasksModel::WinIdList).toList().isEmpty()
+            && prior.data(TaskManager::AbstractTasksModel::AppId).toString() == appId
+            && prior.data(TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon).toUrl().toString(QUrl::RemoveQuery)
+                == launcher.toString(QUrl::RemoveQuery)) {
+            ++duplicateOrdinal;
+        }
     }
-    const QStringList windowIds = index.data(TaskManager::AbstractTasksModel::WinIdList).toStringList();
-    if (!windowIds.isEmpty()) {
-        return QStringLiteral("windows:%1").arg(QString::fromLatin1(QCryptographicHash::hash(
-                                                             windowIds.join(QLatin1Char('\x1f')).toUtf8(), QCryptographicHash::Sha256)
-                                                             .toHex()));
-    }
-    return QStringLiteral("row:%1").arg(taskIndex);
+    const QString identity = appId + QLatin1Char('\x1f') + launcher.toString(QUrl::RemoveQuery)
+        + QLatin1Char('\x1f') + QString::number(duplicateOrdinal);
+    const QByteArray digest = QCryptographicHash::hash(identity.toUtf8(), QCryptographicHash::Sha256).toHex();
+    return QStringLiteral("running:%1:%2").arg(QString::fromLatin1(digest), QString::number(taskIndex));
 }
 
 int DockPresentationModel::rowForTaskIndex(int taskIndex) const
@@ -277,6 +396,29 @@ void DockPresentationModel::rebuild()
     if (previousPinnedCount != m_pinnedEntryCount) {
         Q_EMIT pinnedEntryCountChanged();
     }
+
+    if (m_diagnosticsEnabled) {
+        for (int dockIndex = 0; dockIndex < m_rows.size(); ++dockIndex) {
+            const Row &row = m_rows.at(dockIndex);
+            const bool hasTask = row.taskIndex >= 0 && row.taskIndex < m_tasksModel->rowCount();
+            const QModelIndex taskIndex = hasTask ? m_tasksModel->index(row.taskIndex, 0) : QModelIndex{};
+            qCInfo(lcDockPresentation).noquote()
+                << "[KDOCKW_DOCK_ROW]"
+                << "dockIndex=" << dockIndex
+                << "type=" << row.entryType
+                << "stableId=" << row.entryId
+                << "pinned=" << row.pinned
+                << "taskIndex=" << row.taskIndex
+                << "desktopId=" << (hasTask ? taskIndex.data(TaskManager::AbstractTasksModel::AppId).toString() : QString{})
+                << "launcherUrl=" << (row.entryType == QLatin1String("task") ? row.entryUrl.toString() : QString{})
+                << "display=" << (hasTask ? taskIndex.data(Qt::DisplayRole).toString() : QFileInfo(row.entryUrl.toLocalFile()).fileName())
+                << "iconName=" << (hasTask ? taskIndex.data(Qt::DecorationRole).value<QIcon>().name() : row.iconName)
+                << "isLauncher=" << (hasTask && taskIndex.data(TaskManager::AbstractTasksModel::IsLauncher).toBool())
+                << "isWindow=" << (hasTask && taskIndex.data(TaskManager::AbstractTasksModel::IsWindow).toBool())
+                << "isGroupParent=" << (hasTask && taskIndex.data(TaskManager::AbstractTasksModel::IsGroupParent).toBool())
+                << "taskDataPresent=" << hasTask;
+        }
+    }
 }
 
 void DockPresentationModel::forwardTaskDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles)
@@ -285,7 +427,11 @@ void DockPresentationModel::forwardTaskDataChanged(const QModelIndex &topLeft, c
         return;
     }
     const int launcherRole = TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon;
-    if (roles.isEmpty() || roles.contains(launcherRole) || roles.contains(TaskManager::AbstractTasksModel::AppId)) {
+    if (roles.isEmpty() || roles.contains(launcherRole) || roles.contains(TaskManager::AbstractTasksModel::AppId)
+        || roles.contains(TaskManager::AbstractTasksModel::WinIdList)
+        || roles.contains(TaskManager::AbstractTasksModel::IsLauncher)
+        || roles.contains(TaskManager::AbstractTasksModel::IsWindow)
+        || roles.contains(TaskManager::AbstractTasksModel::IsGroupParent)) {
         scheduleRebuild();
     }
     for (int taskIndex = topLeft.row(); taskIndex <= bottomRight.row(); ++taskIndex) {

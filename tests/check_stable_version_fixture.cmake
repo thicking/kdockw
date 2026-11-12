@@ -42,8 +42,11 @@ if(source_version MATCHES "-dev$")
     file(WRITE "${FIXTURE_DIR}/CMakeLists.txt" "${contents}")
 
     file(READ "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" contents)
-    string(REPLACE "<release version=\"${source_version}\" type=\"development\">"
-        "<release version=\"${stable_version}\" date=\"2026-01-01\">" contents "${contents}")
+    string(REGEX MATCH "<release version=\"${source_version}\" date=\"[0-9-]+\" type=\"development\">" release_header "${contents}")
+    if(NOT release_header)
+        message(FATAL_ERROR "AppStream development release header is missing for ${source_version}")
+    endif()
+    string(REPLACE "${release_header}" "<release version=\"${stable_version}\" date=\"2026-01-01\">" contents "${contents}")
     file(WRITE "${FIXTURE_DIR}/src/com.thicking.kdockw.metainfo.xml" "${contents}")
 
     file(READ "${FIXTURE_DIR}/src/po/ru/kdockw.po" contents)

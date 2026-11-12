@@ -197,6 +197,16 @@ int MockTasksModel::dockIndexForTaskIndex(int taskIndex) const
     return -1;
 }
 
+int MockTasksModel::dockIndexForEntryId(const QString &entryId) const
+{
+    for (int row = 0; row < rowCount(); ++row) {
+        if (entryIdForDockIndex(row) == entryId) {
+            return row;
+        }
+    }
+    return -1;
+}
+
 QString MockTasksModel::entryIdForDockIndex(int dockIndex) const
 {
     if (dockIndex < 0 || dockIndex >= rowCount()) {

@@ -33,6 +33,7 @@ class DockModel : public QObject
     Q_PROPERTY(DockEntriesModel *dockEntriesModel READ dockEntriesModel CONSTANT)
     Q_PROPERTY(DockPresentationModel *dockPresentationModel READ dockPresentationModel CONSTANT)
     Q_PROPERTY(int pinnedDockEntryCount READ pinnedDockEntryCount NOTIFY pinnedDockEntryCountChanged)
+    Q_PROPERTY(bool taskDiagnosticsEnabled READ taskDiagnosticsEnabled CONSTANT)
     Q_PROPERTY(QString dockEntries READ dockEntries NOTIFY dockEntriesChanged)
     Q_PROPERTY(QStringList pinnedLaunchers READ pinnedLaunchers WRITE setPinnedLaunchers NOTIFY pinnedLaunchersChanged)
     Q_PROPERTY(int pinnedTaskCount READ pinnedTaskCount NOTIFY pinnedTaskCountChanged)
@@ -47,6 +48,7 @@ public:
     [[nodiscard]] DockEntriesModel *dockEntriesModel() const;
     [[nodiscard]] DockPresentationModel *dockPresentationModel() const;
     [[nodiscard]] int pinnedDockEntryCount() const;
+    [[nodiscard]] bool taskDiagnosticsEnabled() const;
     [[nodiscard]] QString dockEntries() const;
     void loadDockEntries(const QString &serialized);
     [[nodiscard]] TaskManager::VirtualDesktopInfo *virtualDesktopInfo() const;
@@ -77,6 +79,12 @@ public:
 
     /// Return the theme name or opaque raw source key for the task icon at @p index.
     Q_INVOKABLE QString iconName(int index) const;
+
+    /// Show KDE's installed icon chooser and store the result on this stack ID.
+    Q_INVOKABLE bool chooseFolderStackThemeIcon(const QString &entryId, QObject *transientParent = nullptr);
+    /// Show the platform file chooser and store a local image on this stack ID.
+    Q_INVOKABLE bool chooseFolderStackImage(const QString &entryId);
+    Q_INVOKABLE bool resetFolderStackIcon(const QString &entryId);
 
     /// Return the launcher URL for the task at @p index.
     Q_INVOKABLE QUrl launcherUrl(int index) const;

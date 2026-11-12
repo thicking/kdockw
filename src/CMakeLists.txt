@@ -127,6 +127,7 @@ target_link_libraries(kdockw_lib PUBLIC
     KF6::GlobalAccel
     KF6::ColorScheme
     KF6::IconThemes
+    KF6::IconWidgets
     KF6::Crash
     KF6::XmlGui
     KF6::Service

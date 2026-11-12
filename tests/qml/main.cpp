@@ -48,6 +48,21 @@ public:
   }
 };
 
+class MockIconImageProvider final : public QQuickImageProvider {
+public:
+  MockIconImageProvider() : QQuickImageProvider(QQuickImageProvider::Pixmap) {}
+
+  QPixmap requestPixmap(const QString &, QSize *size,
+                        const QSize &requestedSize) override {
+    const QSize pixmapSize = requestedSize.isValid() ? requestedSize : QSize(32, 32);
+    if (size)
+      *size = pixmapSize;
+    QPixmap pixmap(pixmapSize);
+    pixmap.fill(QColor(QStringLiteral("#5277aa")));
+    return pixmap;
+  }
+};
+
 class MockIconDiagnostics : public QObject {
   Q_OBJECT
   Q_PROPERTY(
@@ -200,6 +215,7 @@ public Q_SLOTS:
     engine->setImportPathList(paths);
     engine->addImageProvider(QStringLiteral("previewframes"),
                              new MockPreviewFrameImageProvider);
+    engine->addImageProvider(QStringLiteral("icon"), new MockIconImageProvider);
     engine->rootContext()->setContextProperty(QStringLiteral("IconDiagnostics"),
                                               &iconDiagnostics);
     engine->rootContext()->setContextProperty(QStringLiteral("SettingsWindow"),

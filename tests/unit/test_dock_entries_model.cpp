@@ -51,6 +51,20 @@ TEST_CASE("Dock entries model appends, moves, and removes only folder stacks", "
     CHECK_FALSE(model.appendFolderStack(QUrl(QStringLiteral("smb://server/share"))));
     REQUIRE(model.appendFolderStack(QUrl::fromLocalFile(QStringLiteral("/tmp/Downloads"))));
     REQUIRE(model.appendFolderStack(QUrl::fromLocalFile(QStringLiteral("/tmp/Pictures"))));
+
+    const QString firstId = model.entries().at(1).id;
+    REQUIRE(model.setFolderStackIcon(firstId, QStringLiteral("folder-development")));
+    CHECK(model.data(model.index(1, 0), kdockw::DockEntriesModel::IconNameRole).toString()
+          == QStringLiteral("folder-development"));
+    REQUIRE(model.moveEntryById(firstId, model.entries().last().id));
+    CHECK(model.entries().last().id == firstId);
+    CHECK(model.data(model.index(2, 0), kdockw::DockEntriesModel::IconNameRole).toString()
+          == QStringLiteral("folder-development"));
+    REQUIRE(model.setFolderStackIcon(firstId, {}, QUrl::fromLocalFile(QStringLiteral("/tmp/folder.svg"))));
+    CHECK(model.data(model.index(2, 0), kdockw::DockEntriesModel::IconUrlRole).toUrl()
+          == QUrl::fromLocalFile(QStringLiteral("/tmp/folder.svg")));
+    CHECK_FALSE(model.setFolderStackIcon(firstId, {}, QUrl(QStringLiteral("https://example.test/icon.png"))));
+    CHECK(model.entries().last().iconUrl == QUrl::fromLocalFile(QStringLiteral("/tmp/folder.svg")));
     CHECK(model.rowCount() == 3);
 
     CHECK(model.moveEntry(2, 0));

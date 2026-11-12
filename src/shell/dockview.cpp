@@ -186,6 +186,11 @@ int DockView::tooltipReserve() const
     return m_tooltipReserve;
 }
 
+QRect DockView::screenGeometry() const
+{
+    return dockScreen() ? dockScreen()->geometry() : QRect();
+}
+
 void DockView::setTooltipReserve(int reserve)
 {
     if (m_tooltipReserve == reserve) {
@@ -355,6 +360,7 @@ void DockView::handleScreenChanged(QScreen *newScreen)
                                          &DockView::handleScreenGeometryChanged);
 
     const QRect geo = dockScreen()->geometry();
+    Q_EMIT screenGeometryChanged();
     qCDebug(lcDockView) << "Screen changed:" << newScreen->name() << "geometry=" << geo;
 
     // Skip recovery if geometry is invalid (placeholder screen during DPMS off)
@@ -389,6 +395,7 @@ void DockView::handleScreenGeometryChanged()
     }
 
     const QRect geo = dockScreen()->geometry();
+    Q_EMIT screenGeometryChanged();
     qCDebug(lcDockView) << "Screen geometry changed:" << geo;
 
     if (geo.width() <= 0 || geo.height() <= 0) {

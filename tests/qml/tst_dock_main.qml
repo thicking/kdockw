@@ -5,10 +5,12 @@
 // settings, pointer-driven zoom, hover/tooltip/preview, clicks, wheel,
 // keyboard navigation and drag reorder.
 import QtQuick
+import QtQuick.Controls as QQC2
 import QtTest
 import org.kde.kirigami as Kirigami
 import com.thicking.kdockw 1.0
 import "TestUtils.js" as T
+import "../../src/qml/BadgeTextColor.js" as BadgeTextColor
 
 // TestCase is an invisible Item: visual fixtures live under `stage`, a visible
 // sibling, so effective visibility, layout and pointer delivery are real.
@@ -72,6 +74,56 @@ Item {
                 IsActive: false,
             })
             return row
+        }
+
+        function addMixedPinnedRows() {
+            DockSettings.separateLaunchers = true
+            DockModel.pinnedTaskCount = 3
+            DockModel.tasksModel.addTask({
+                display: "OpenCode",
+                AppId: "opencode",
+                LauncherUrlWithoutIcon: "applications:opencode.desktop",
+                entryType: "task",
+                entryId: "task:opencode",
+                IsLauncher: true,
+                isPinned: true,
+                IsWindow: true,
+            })
+            DockModel.tasksModel.addTask({
+                display: "Projects",
+                AppId: "folder-stack",
+                entryType: "folderStack",
+                entryId: "folder:/tmp/projects",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                IsLauncher: true,
+                isPinned: true,
+            })
+            DockModel.tasksModel.addTask({
+                display: "Kate",
+                AppId: "kate",
+                LauncherUrlWithoutIcon: "applications:org.kde.kate.desktop",
+                entryType: "task",
+                entryId: "task:kate",
+                IsLauncher: true,
+                isPinned: true,
+                IsWindow: true,
+            })
+            DockModel.tasksModel.addTask({
+                display: "Terminal window",
+                AppId: "terminal",
+                entryType: "task",
+                entryId: "running:terminal",
+                IsLauncher: false,
+                isPinned: false,
+                IsWindow: true,
+            })
+        }
+
+        function entryOrder() {
+            let order = []
+            for (let i = 0; i < DockModel.tasksModel.count; ++i)
+                order.push(DockModel.tasksModel.get(i, "entryId"))
+            return order
         }
 
         function dockTooltip(dock) {
@@ -331,12 +383,582 @@ Item {
             DockModel.dockEntriesModel.append(entry)
             DockModel.tasksModel.addTask(entry)
             let dock = makeDock(1)
-            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem" && o.visible)
             verify(stack)
             compare(stack.displayName, "tmp")
             stack.openStack()
             tryVerify(() => stack.popupVisible)
-            compare(stack.popupItemCount, 0)
+            compare(stack.popupItemCount, 2)
+        }
+
+        function test_folderStackPopupClosesOnEscapeSelectionAndWindowDeactivation() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            let dock = makeDock(1)
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            verify(stack.popupControl.usesSeparateWindow,
+                   "Folder Stack popup must use a native window, not the masked dock scene")
+            let popupContent = stack.popupControl.contentItem
+            verify(popupContent)
+            verify(popupContent.Window.window !== stack.Window.window,
+                   "Popup.Window must own a separate input surface")
+            verify(stack.popupControl.closeOnOutsideEnabled,
+                   "native outside dismissal must be enabled")
+            popupContent.forceActiveFocus()
+            keyClick(popupContent, Qt.Key_Escape)
+            tryVerify(() => !stack.popupVisible)
+
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            stack.activateGridItem(0, true)
+            verify(stack.popupVisible, "navigating into a directory keeps the grid open")
+            stack.activateGridItem(0, false)
+            tryVerify(() => !stack.popupVisible, 2000, "choosing a file closes the popup")
+
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            stack.closeForWindowDeactivation(false)
+            tryVerify(() => !stack.popupVisible, 2000,
+                      "loss of popup-window activity closes the popup")
+        }
+
+        function test_folderStackContextMenuUsesDismissibleWindowAndDefersThemeChooser() {
+            const entryId = "folder:/tmp/theme-test"
+            DockModel.dockEntriesModel.append({
+                entryType: "folderStack",
+                entryId: entryId,
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "theme-test",
+                taskIndex: -1,
+                isPinned: true,
+            })
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: entryId,
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "theme-test",
+                IsLauncher: true,
+                isPinned: true,
+            })
+
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+            const menu = stack.contextMenuControl
+            compare(menu.popupType, QQC2.Popup.Window)
+            verify((menu.closePolicy & QQC2.Popup.CloseOnPressOutside) !== 0,
+                   "folder menu outside clicks must be handled by its own Wayland popup surface")
+            verify((menu.closePolicy & QQC2.Popup.CloseOnEscape) !== 0,
+                   "Escape must close the folder menu")
+
+            stack.openContextMenu()
+            tryVerify(() => menu.visible)
+            stack.closeContextMenuForWindowDeactivation(false)
+            tryVerify(() => !menu.visible, 2000,
+                      "switching away from the native folder menu must dismiss it")
+
+            stack.openContextMenu()
+            tryVerify(() => menu.visible)
+            stack.chooseThemeIconFromMenu()
+            tryVerify(() => !menu.visible)
+            tryVerify(() => DockModel.folderThemeIconRequests.length === 1)
+            compare(DockModel.folderThemeIconRequests[0].entryId, entryId,
+                   "the deferred chooser must retain the selected stack stable ID")
+            verify(DockModel.folderThemeIconRequests[0].hasTransientParent,
+                   "the chooser must receive the dock's native window as transient parent")
+        }
+
+        function test_folderStackPopupFitsAllDockEdges_data() {
+            return dockEdges()
+        }
+
+        function test_folderStackPopupFitsAllDockEdges(data) {
+            DockView.edge = data.edge
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            let dock = makeDock(1)
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            verify(stack.popupScreenX >= DockView.screenGeometry.x - 0.5
+                   && stack.popupScreenY >= DockView.screenGeometry.y - 0.5)
+            verify(stack.popupScreenX + stack.popupWidth
+                   <= DockView.screenGeometry.x + DockView.screenGeometry.width + 0.5,
+                   "popup window must remain inside the selected output width")
+            verify(stack.popupScreenY + stack.popupHeight
+                   <= DockView.screenGeometry.y + DockView.screenGeometry.height + 0.5,
+                   "popup window must remain inside the selected output height")
+            verify(stack.popupGridHeight > 0, "GridView must receive the popup's remaining layout height")
+            const expectedSurface = DockView.backgroundColor.a > 0
+                ? BadgeTextColor.composite(DockView.backgroundColor, Kirigami.Theme.backgroundColor)
+                : BadgeTextColor.composite(Qt.alpha(Kirigami.Theme.backgroundColor,
+                                                      DockSettings.backgroundOpacity),
+                                            Kirigami.Theme.backgroundColor)
+            compare(stack.popupCardColor, expectedSurface,
+                    "Folder Stack must use the same resolved surface color as Window Preview")
+            const customSurface = DockView.backgroundColor
+            DockView.backgroundColor = "transparent"
+            compare(stack.popupCardColor,
+                    BadgeTextColor.composite(Qt.alpha(Kirigami.Theme.backgroundColor,
+                                                        DockSettings.backgroundOpacity),
+                                              Kirigami.Theme.backgroundColor),
+                    "a transparent dock must use the current theme background")
+            DockView.backgroundColor = customSurface
+            compare(stack.popupCardPadding, DockSettings.previewCardPadding,
+                    "Folder Stack must use the Window Preview card padding setting")
+            fuzzyCompare(stack.popupShadowMargin, Kirigami.Units.smallSpacing * 2, 0.1)
+            const pathHeader = T.findFirst(stack.popupControl.contentItem,
+                                           o => o.objectName === "folderStackPath")
+            const scrollBar = T.findFirst(stack.popupControl.contentItem,
+                                          o => o.objectName === "folderStackScrollBar")
+            verify(pathHeader && pathHeader.elide === Text.ElideMiddle,
+                   "long paths must remain inside the card header")
+            verify(scrollBar, "the grid must retain its card-styled vertical scrollbar")
+            const previewClearance = DockSettings.previewDockGap
+                + DockSettings.iconSize * (DockSettings.maxZoomFactor - 1)
+            const cardLeft = stack.popupScreenX + stack.popupShadowMargin
+            const cardRight = stack.popupScreenX + stack.popupWidth - stack.popupShadowMargin
+            const cardTop = stack.popupScreenY + stack.popupShadowMargin
+            const cardBottom = stack.popupScreenY + stack.popupHeight - stack.popupShadowMargin
+            switch (DockView.edge) {
+            case 0:
+                fuzzyCompare(cardTop, stack.popupAnchorScreenRect.y
+                             + stack.popupAnchorScreenRect.height + previewClearance, 1.0)
+                break
+            case 1:
+                fuzzyCompare(cardBottom, stack.popupAnchorScreenRect.y - previewClearance, 1.0)
+                break
+            case 2:
+                fuzzyCompare(cardLeft, stack.popupAnchorScreenRect.x
+                             + stack.popupAnchorScreenRect.width + previewClearance, 1.0)
+                break
+            case 3:
+                fuzzyCompare(cardRight, stack.popupAnchorScreenRect.x - previewClearance, 1.0)
+                break
+            }
+            if (!DockView.isVertical)
+                compare(stack.popupWidth, Math.min(560, stage.width - Kirigami.Units.largeSpacing * 2))
+        }
+
+        function test_folderStackPopupWindowGridReceivesClicksAndListsFiles() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "icons",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            let dock = makeDock(1)
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem" && o.visible)
+            verify(stack)
+            stack.openStack()
+            verify(stack.popupPendingOpen,
+                   "the first native popup surface must wait for the asynchronous folder listing")
+            verify(!stack.popupVisible,
+                   "the xdg_popup must not be committed with its empty pre-listing geometry")
+            tryVerify(() => stack.popupVisible)
+            verify(stack.popupControl.usesSeparateWindow)
+            compare(stack.popupItemCount, 2,
+                    "the popup must bind the model rows into its grid")
+            compare(stack.popupModelCount, 2,
+                    "the FolderStackModel rows must reach the popup")
+            verify(stack.popupContentVisible,
+                   "the native popup content item must be visible")
+            verify(stack.popupContentWidth > 100 && stack.popupContentHeight > 100,
+                   "the popup content item must receive its bounded window geometry")
+            const grid = T.findFirst(stack.popupControl.contentItem,
+                                     o => o.objectName === "folderStackGrid")
+            verify(grid)
+            verify(stack.popupGridVisible && stack.popupGridWidth > 100
+                   && stack.popupGridHeight >= 80,
+                   "the visible GridView must have usable width and height")
+            tryVerify(() => grid.itemAtIndex(0) !== null)
+            tryVerify(() => stack.popupFirstDelegateVisible)
+            const firstDirectory = grid.itemAtIndex(0)
+            verify(firstDirectory)
+            verify(firstDirectory.width > 80 && firstDirectory.height >= grid.cellHeight,
+                   "the first delegate must have visible cell geometry")
+            const filenameLabel = T.findFirst(firstDirectory,
+                                               o => o.objectName === "folderStackFilename")
+            verify(filenameLabel && filenameLabel.wrapMode === Text.NoWrap
+                   && filenameLabel.elide === Text.ElideRight,
+                   "long filenames must stay on one neatly elided line")
+            mouseClick(firstDirectory, firstDirectory.width / 2, firstDirectory.height / 2)
+            tryVerify(() => stack.popupCurrentUrl !== "file:///tmp", 3000,
+                      "a click on the popup grid must reach its directory delegate")
+            verify(stack.popupVisible, "folder navigation must keep the popup open")
+            const goUp = T.findFirst(stack.popupControl.contentItem,
+                                     o => o.objectName === "folderStackGoUpButton")
+            verify(goUp && goUp.enabled)
+            mouseClick(goUp)
+            tryVerify(() => stack.popupCurrentUrl === "file:///tmp",
+                      3000, "the popup header must navigate to the parent folder")
+            const firstFile = grid.itemAtIndex(1)
+            verify(firstFile)
+            mouseClick(firstFile, firstFile.width / 2, firstFile.height / 2)
+            tryVerify(() => !stack.popupVisible,
+                      3000, "selecting a file from the GridView must close the popup")
+            stack.openStack()
+            tryVerify(() => stack.popupVisible, 2000,
+                      "the popup must be reusable after a completed content interaction")
+            compare(stack.popupModelCount, 2,
+                    "a repeated open must reload the same Folder Stack contents")
+            stack.popupControl.close()
+        }
+
+        function test_folderStackGridHoverKeyboardHandoffAndPointerExit() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack-selection",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            const grid = T.findFirst(stack.popupControl.contentItem,
+                                     o => o.objectName === "folderStackGrid")
+            verify(grid)
+            grid.forceActiveFocus()
+            verify(grid.activeFocus, "keyboard navigation must have a stable focus target")
+
+            keyClick(Qt.Key_Right)
+            tryCompare(grid, "currentIndex", 1)
+            verify(grid.keyboardSelectionActive)
+            compare(grid.hoveredIndex, -1)
+            let secondHighlight = T.findFirst(grid.itemAtIndex(1),
+                                              o => o.objectName === "folderStackCellHighlight")
+            verify(secondHighlight && secondHighlight.keyboardActive)
+
+            const firstCell = grid.itemAtIndex(0)
+            mouseMove(grid, firstCell.x + firstCell.width / 2,
+                      firstCell.y + firstCell.height / 2)
+            tryCompare(grid, "hoveredIndex", 0)
+            tryCompare(grid, "currentIndex", 0)
+            verify(!grid.keyboardSelectionActive,
+                   "mouse movement must become the active visual selection")
+            verify(grid.activeFocus, "mouse hover must not steal keyboard focus")
+            const firstHighlight = T.findFirst(firstCell,
+                                               o => o.objectName === "folderStackCellHighlight")
+            verify(firstHighlight && firstHighlight.visible && firstHighlight.hoverActive)
+
+            mouseMove(grid, grid.width / 2, grid.cellHeight + 12)
+            tryCompare(grid, "hoveredIndex", -1)
+            verify(!firstHighlight.visible,
+                   "leaving a cell must remove its hover highlight")
+            verify(grid.activeFocus, "pointer exit must not clear grid keyboard focus")
+
+            keyClick(Qt.Key_Right)
+            tryCompare(grid, "currentIndex", 1)
+            verify(grid.keyboardSelectionActive,
+                   "keyboard input after pointer exit must restore keyboard selection styling")
+            verify(secondHighlight.visible && secondHighlight.keyboardActive)
+            stack.popupControl.close()
+        }
+
+        function test_folderStackGridThemeSelectionColorsKeepTextContrast() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack-contrast",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            const popup = stack.popupControl
+            verify(popup.gridHoverTintOpacity > 0 && popup.gridHoverTintOpacity < 0.15)
+            verify(popup.gridSelectionTintOpacity > popup.gridHoverTintOpacity
+                   && popup.gridSelectionTintOpacity < 0.3)
+            verify(popup.gridCellInset >= 6 && popup.gridCellRadius >= 10
+                   && popup.gridCellRadius <= 12)
+            verify(BadgeTextColor.contrastRatio(popup.gridHoverForegroundColor,
+                                                popup.gridHoverSurfaceColor) >= 4.5,
+                   "hover text must keep WCAG normal-text contrast against its themed fill")
+            verify(BadgeTextColor.contrastRatio(popup.gridSelectionForegroundColor,
+                                                popup.gridSelectionSurfaceColor) >= 4.5,
+                   "keyboard-selection text must keep WCAG normal-text contrast against its themed fill")
+            compare(popup.gridHoverSurfaceColor,
+                    BadgeTextColor.composite(Qt.alpha(Kirigami.Theme.highlightColor,
+                                                       popup.gridHoverTintOpacity),
+                                             popup.surfaceColor),
+                    "the hover tint must derive from the active KDE theme color")
+            stack.popupControl.close()
+        }
+
+        function test_folderStackGridKeyboardEnterNavigatesAndOpensFiles() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack-keyboard",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem")
+            verify(stack)
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            const grid = T.findFirst(stack.popupControl.contentItem,
+                                     o => o.objectName === "folderStackGrid")
+            verify(grid)
+            grid.forceActiveFocus()
+            keyClick(Qt.Key_Right)
+            tryCompare(grid, "currentIndex", 1)
+            keyClick(Qt.Key_Left)
+            tryCompare(grid, "currentIndex", 0)
+            keyClick(Qt.Key_Return)
+            tryVerify(() => stack.popupCurrentUrl === "file:///tmp/Nested", 2000,
+                      "Enter on a directory must navigate into it")
+            verify(stack.popupVisible, "Enter on a directory must navigate without closing the grid")
+
+            keyClick(Qt.Key_Return)
+            tryVerify(() => !stack.popupVisible,
+                      2000, "Enter on a file must open it and close the popup")
+        }
+
+        function test_folderStackPopupAnchorsToMagnifiedItemGeometry() {
+            DockView.edge = 1
+            DockSettings.magnificationMode = 1
+            DockSettings.maxZoomFactor = 1.7
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const delegate = items(dock)[0]
+            const stack = T.findFirst(delegate, o => o.objectName === "folderStackItem")
+            verify(stack)
+            hoverItem(delegate)
+            tryVerify(() => delegate.currentScale > 1.05,
+                      2000, "Spring Magnification must transform the Folder Stack anchor")
+
+            const restGeometry = delegate.delegateGeometryTarget
+            verify(restGeometry)
+            const restOrigin = restGeometry.mapToItem(dock, 0, 0)
+            const expectedRestCenter = Qt.point(
+                restOrigin.x + (restGeometry.width - stack.iconSize) / 2 + stack.iconSize / 2,
+                restOrigin.y + (restGeometry.height - stack.iconSize) / 2 + stack.iconSize / 2)
+            const mappedCenter = stack.mapToItem(dock, stack.width / 2, stack.height / 2)
+            stack.openStack()
+            tryVerify(() => stack.popupPendingOpen || stack.popupVisible)
+            tryVerify(() => stack.popupVisible)
+            fuzzyCompare(stack.popupAnchorCenter.x, expectedRestCenter.x, 0.5)
+            fuzzyCompare(stack.popupAnchorCenter.y, expectedRestCenter.y, 0.5)
+            verify(stack.popupTransformedAnchorRect.width > stack.popupAnchorRect.width,
+                   "diagnostics must preserve the live Spring-transformed anchor separately")
+            verify(Math.abs(stack.popupAnchorCenter.x - mappedCenter.x) > 0.5
+                   || Math.abs(stack.popupAnchorCenter.y - mappedCenter.y) > 0.5,
+                   "the native popup must use the stable rest slot while Spring is active")
+            fuzzyCompare(stack.popupWidth, stack.popupControl.requestedPopupWidth, 0.5)
+            fuzzyCompare(stack.popupHeight, stack.popupControl.requestedPopupHeight, 0.5)
+            fuzzyCompare(stack.popupScreenX + stack.popupWidth / 2,
+                         stack.popupAnchorScreenRect.x + stack.popupAnchorScreenRect.width / 2,
+                         0.5)
+            const springOverflow = DockSettings.iconSize * (DockSettings.maxZoomFactor - 1)
+            const previewClearance = DockSettings.previewDockGap + springOverflow
+            fuzzyCompare(stack.popupScreenY + stack.popupHeight - stack.popupShadowMargin,
+                         stack.popupAnchorScreenRect.y - previewClearance,
+                         1.0)
+            stack.popupControl.close()
+        }
+
+        function test_folderStackPopupRestoresSpringOnlyWhenWaylandPointerReturns() {
+            DockView.edge = 1
+            DockSettings.magnificationMode = 1
+            DockSettings.maxZoomFactor = 1.7
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const delegate = items(dock)[0]
+            const stack = T.findFirst(delegate, o => o.objectName === "folderStackItem")
+            verify(stack)
+            hoverItem(delegate)
+            tryVerify(() => delegate.currentScale > 1.05)
+            DockView.pointerInside = true
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            stack.popupControl.close()
+            tryVerify(() => dock.hoveredIndex === 0,
+                      2000, "closing over a dock focused by Wayland must re-hit-test the saved pointer")
+            tryVerify(() => delegate.currentScale > 1.05,
+                      2000, "Spring Magnification must resume at the saved in-dock pointer")
+
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            DockView.pointerInside = false
+            stack.popupControl.close()
+            tryVerify(() => dock.hoveredIndex === -1,
+                      2000, "closing after focus moved outside must not restore stale hover")
+            verify(!dock._zoomActive,
+                   "the dock must not stay magnified when Wayland focus is outside")
+        }
+
+        function test_folderStackIconUsesMaximumZoomSourceSize() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "tmp",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem" && o.visible)
+            verify(stack)
+            compare(stack.folderIconSourceSize.width,
+                    Math.ceil(stack.iconSize * stack.maxZoomFactor * Screen.devicePixelRatio))
+            compare(stack.folderIconSourceSize.height,
+                    Math.ceil(stack.iconSize * stack.maxZoomFactor * Screen.devicePixelRatio))
+            compare(stack.popupCardColor.a, 1,
+                    "the folder popup surface is opaque so text contrast is independent of the window behind it")
+            verify(BadgeTextColor.contrastRatio(stack.popupControl.foregroundColor,
+                                                stack.popupCardColor) >= 4.5)
+        }
+
+        function test_folderStackUsesDockTooltipAndHidesItForPopup() {
+            DockModel.tasksModel.addTask({
+                entryType: "folderStack",
+                entryId: "fixture-named-stack",
+                entryUrl: Qt.resolvedUrl("file:///tmp"),
+                display: "Project archive",
+                taskIndex: -1,
+                IsLauncher: true,
+                isPinned: true,
+            })
+            const dock = makeDock(1)
+            const stack = T.findFirst(dock, o => o.objectName === "folderStackItem" && o.visible)
+            const tooltip = T.findFirst(dock, o => o.objectName === "dockTooltip")
+            verify(stack)
+            verify(tooltip)
+            compare(stack.displayName, "Project archive")
+            hoverItem(stack)
+            tryVerify(() => tooltip.visible)
+            stack.openStack()
+            tryVerify(() => stack.popupVisible)
+            verify(!tooltip.visible, "the shared dock tooltip must not cover an open folder popup")
+        }
+
+        function test_mixedPinnedReorderUsesStableEntryIds() {
+            addMixedPinnedRows()
+            let dock = makeDock(4)
+            compare(entryOrder().join(","),
+                    "task:opencode,folder:/tmp/projects,task:kate,running:terminal")
+
+            verify(dock.reorderDockItems(0, 2), "the selected pinned app should move by stable ID")
+            compare(entryOrder().join(","),
+                    "folder:/tmp/projects,task:kate,task:opencode,running:terminal")
+
+            verify(dock.reorderDockItems(0, 2), "the folder stack should move across pinned apps")
+            compare(entryOrder().join(","),
+                    "task:kate,task:opencode,folder:/tmp/projects,running:terminal")
+            compare(entryOrder()[3], "running:terminal",
+                    "moving pinned entries must not reorder an unpinned running task")
+
+            const repeatedMoves = [[2, 0], [0, 1], [1, 2], [2, 0], [1, 0], [0, 2],
+                                   [2, 1], [0, 2], [1, 0], [0, 1], [1, 2], [2, 0]]
+            for (const move of repeatedMoves) {
+                const sourceId = DockModel.dockPresentationModel.entryIdForDockIndex(move[0])
+                const targetId = DockModel.dockPresentationModel.entryIdForDockIndex(move[1])
+                verify(sourceId && targetId && sourceId !== targetId)
+                verify(dock.reorderDockEntries(sourceId, targetId),
+                       "repeated mixed reorder must resolve both endpoints by stable ID")
+                const ids = []
+                for (let i = 0; i < DockModel.dockPresentationModel.rowCount(); ++i)
+                    ids.push(DockModel.dockPresentationModel.entryIdForDockIndex(i))
+                compare(new Set(ids).size, ids.length,
+                        "repeated moves must not duplicate presentation IDs")
+                compare(ids[3], "running:terminal",
+                        "the unpinned TaskManager row must stay after the pinned zone")
+
+            }
+        }
+
+        function test_combinedTaskZonesAllowCrossZoneTaskReorder() {
+            addMixedPinnedRows()
+            DockSettings.separateLaunchers = false
+            let dock = makeDock(4)
+            const sourceId = DockModel.dockPresentationModel.entryIdForDockIndex(3)
+            const targetId = DockModel.dockPresentationModel.entryIdForDockIndex(0)
+
+            verify(dock.reorderDockEntries(sourceId, targetId),
+                   "combined pinned/running mode should delegate cross-zone task moves to TaskManager")
+            const moves = DockActions.callsTo("moveTask")
+            compare(moves.length, 1)
+            compare(moves[0].args[0], 3)
+            compare(moves[0].args[1], 0)
+        }
+
+        function test_folderStackMouseStartsInternalDragAndDoesNotOpenPopup() {
+            addMixedPinnedRows()
+            let dock = makeDock(4)
+            let rows = items(dock)
+            let stack = T.findFirst(dock, o => o.objectName === "folderStackItem" && o.visible)
+            verify(stack)
+            const start = stack.mapToItem(stage, stack.width / 2, stack.height / 2)
+            const target = rows[0].mapToItem(stage, rows[0].width / 2, rows[0].height / 2)
+
+            mousePress(stage, start.x, start.y, Qt.LeftButton)
+            tryVerify(() => dock._dragPending, 1500, "Folder Stack press must reach the dock drag handler")
+            compare(dock._dragSourceIndex, 1, "the stack must remain the source row throughout the press")
+            wait(350)
+            verify(dock._dragPending)
+            verify(!stack.popupVisible, "holding to drag must not open the folder popup")
+            mouseMove(stage, start.x + (DockView.isVertical ? 0 : 12),
+                      start.y + (DockView.isVertical ? 12 : 0), -1, Qt.LeftButton)
+            tryVerify(() => dock._dragActive)
+            mouseMove(stage, target.x, target.y, -1, Qt.LeftButton)
+            compare(dock._dragTargetIndex, 0, "the first app must remain the selected drop target")
+            mouseRelease(stage, target.x, target.y, Qt.LeftButton)
+            tryVerify(() => entryOrder()[0] === "folder:/tmp/projects", 2000,
+                      "dragging the Folder Stack before the first app should persist that order")
+            compare(entryOrder()[3], "running:terminal")
+
         }
 
         function test_iconSizeAndSpacingDriveLayout_data() {
@@ -2633,6 +3255,27 @@ Item {
             verify(!its[0].isDragSource)
             mouseRelease(stage, centerOf(its[1]).x, to.y, Qt.LeftButton)
             verify(!PreviewController.visible)
+
+            const beforeCancelledMoves = entryOrder().join(",")
+            for (let attempt = 0; attempt < 3; ++attempt) {
+                const source = centerOf(its[1])
+                const target = centerOf(its[0])
+                mouseMove(stage, source.x, source.y)
+                mousePress(stage, source.x, source.y, Qt.LeftButton)
+                let nudge = 18
+                tryVerify(() => {
+                    mouseMove(stage, source.x + nudge, source.y, -1, Qt.LeftButton)
+                    nudge = nudge === 18 ? 19 : 18
+                    return its[1].isDragSource
+                }, 2000, "repeated drag attempt did not reach active state")
+                mouseMove(stage, target.x, target.y, -1, Qt.LeftButton)
+                keyClick(Qt.Key_Escape)
+                tryCompare(its[1], "isDragSource", false, 2000)
+                compare(DockVisibility.dragActive, false)
+                compare(entryOrder().join(","), beforeCancelledMoves,
+                        "cancelling must never persist a partial reorder")
+                mouseRelease(stage, target.x, target.y, Qt.LeftButton)
+            }
         }
 
         // Samples dockPanel.zoomAmount on Qt's shared animation clock, not

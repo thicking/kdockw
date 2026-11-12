@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.4.3\n"
+"Project-Id-Version: KDockW 0.5.0\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-10 15:22+0500\n"
@@ -1615,8 +1615,39 @@ msgid "Folder stack"
 msgstr "Стек папки"
 
 #: src/qml/FolderStackItem.qml
-msgid "Remove folder stack from dock"
-msgstr "Убрать стек папки из дока"
+msgid "Remove from dock"
+msgstr "Убрать из дока"
+
+#: src/qml/FolderStackItem.qml
+msgid "Change icon…"
+msgstr "Изменить значок…"
+
+#: src/qml/FolderStackItem.qml
+msgid "Choose an icon from the theme…"
+msgstr "Выбрать значок из темы…"
+
+#: src/qml/FolderStackItem.qml
+msgid "Choose an image from disk…"
+msgstr "Выбрать изображение на диске…"
+
+#: src/qml/FolderStackItem.qml
+msgid "Restore default icon"
+msgstr "Восстановить значок по умолчанию"
+
+#: src/models/dockmodel.cpp
+msgctxt "@title:window"
+msgid "Choose folder icon"
+msgstr "Выбор значка папки"
+
+#: src/models/dockmodel.cpp
+msgctxt "@title:window"
+msgid "Choose folder image"
+msgstr "Выбор изображения папки"
+
+#: src/models/dockmodel.cpp
+msgctxt "file filter"
+msgid "Images (*.png *.jpg *.jpeg *.webp *.svg)"
+msgstr "Изображения (*.png *.jpg *.jpeg *.webp *.svg)"
 
 #: src/qml/FolderStackItem.qml
 msgid "Go up one folder"

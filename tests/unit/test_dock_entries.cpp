@@ -80,6 +80,42 @@ TEST_CASE("Typed dock entry decoding rejects unsupported documents and malformed
     CHECK(decoded.entries.isEmpty());
 }
 
+TEST_CASE("Folder icon choice persists by stable entry ID and version 1 entries migrate", "[dock-entries][migration]")
+{
+    const QUrl folder = QUrl::fromLocalFile(QStringLiteral("/home/test/Projects"));
+    auto stack = kdockw::DockEntry::folderStack(folder);
+    stack.iconName = QStringLiteral("folder-development");
+    const auto themeEncoded = kdockw::DockEntriesCodec::encode({stack});
+    const auto themeDecoded = kdockw::DockEntriesCodec::decode(themeEncoded);
+    REQUIRE(themeDecoded.validDocument);
+    REQUIRE(themeDecoded.entries.size() == 1);
+    CHECK(themeDecoded.entries.first().id == stack.id);
+    CHECK(themeDecoded.entries.first().iconName == QStringLiteral("folder-development"));
+    CHECK(themeDecoded.entries.first().iconUrl.isEmpty());
+
+    const QUrl image = QUrl::fromLocalFile(QStringLiteral("/home/test/folder.png"));
+    stack = themeDecoded.entries.first();
+    stack.iconName.clear();
+    stack.iconUrl = image;
+
+    const auto encoded = kdockw::DockEntriesCodec::encode({stack});
+    const auto decoded = kdockw::DockEntriesCodec::decode(encoded);
+    REQUIRE(decoded.validDocument);
+    REQUIRE(decoded.entries.size() == 1);
+    CHECK(decoded.entries.first().id == stack.id);
+    CHECK(decoded.entries.first().iconUrl == image);
+    CHECK(decoded.entries.first().iconName.isEmpty());
+
+    const QString legacy = QStringLiteral(
+        R"({"version":1,"entries":[{"id":"folder:00000000-0000-0000-0000-000000000001","type":"folderStack","url":"file:///home/test/Projects"}]})");
+    const auto migrated = kdockw::DockEntriesCodec::decode(legacy);
+    REQUIRE(migrated.validDocument);
+    REQUIRE(migrated.entries.size() == 1);
+    CHECK(migrated.entries.first().iconName.isEmpty());
+    CHECK(migrated.entries.first().iconUrl.isEmpty());
+    CHECK(kdockw::DockEntriesCodec::decode(kdockw::DockEntriesCodec::encode(migrated.entries)).validDocument);
+}
+
 TEST_CASE("Legacy launcher migration preserves order and existing launcher settings", "[dock-entries][migration]")
 {
     const ScopedConfigHome home;

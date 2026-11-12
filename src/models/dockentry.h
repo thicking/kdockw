@@ -20,6 +20,8 @@ struct DockEntry {
     QString id;
     DockEntryType type = DockEntryType::Task;
     QUrl url;
+    QString iconName;
+    QUrl iconUrl;
 
     [[nodiscard]] static DockEntry task(const QUrl &url);
     [[nodiscard]] static DockEntry folderStack(const QUrl &url);
