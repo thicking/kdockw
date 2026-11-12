@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+test_binary="$(readlink -f -- "${repo_root}/build/v040-launch-attention-diagnostic/bin/kdockw")"
+installed_binary="/usr/bin/kdockw"
+desktop_file="${HOME}/.local/share/applications/com.thicking.kdockw.desktop"
+state_dir="${repo_root}/diagnostics/v040-launch-attention/launcher-state"
+desktop_candidate="${state_dir}/candidate.desktop"
+test_service="kdockw-v040-launch-attention-test.service"
+restore_service="kdockw-v040-installed-restore.service"
+
+fail() { printf 'KDockW diagnostic restore refused: %s\n' "$1" >&2; exit 1; }
+
+if systemctl --user is-active --quiet "$test_service"; then
+    main_pid="$(systemctl --user show "$test_service" -p MainPID --value)"
+    [[ "$main_pid" =~ ^[1-9][0-9]*$ ]] || fail "diagnostic service has no valid MainPID"
+    [[ "$(readlink -f "/proc/${main_pid}/exe" 2>/dev/null || true)" == "$test_binary" ]] \
+        || fail "active service is not running the expected candidate binary"
+    systemctl --user stop "$test_service"
+fi
+for _ in {1..50}; do
+    systemctl --user is-active --quiet "$test_service" || break
+    sleep 0.1
+done
+systemctl --user is-active --quiet "$test_service" && fail "diagnostic service did not stop"
+
+if [[ -f "${state_dir}/desktop-entry-backup" ]]; then
+    cmp -s "$desktop_candidate" "$desktop_file" || fail "temporary desktop entry changed; refusing to overwrite user edits"
+    install -D -m "$(stat -c '%a' "${state_dir}/desktop-entry-backup")" "${state_dir}/desktop-entry-backup" "$desktop_file"
+elif [[ -f "${state_dir}/desktop-entry-was-absent" ]]; then
+    cmp -s "$desktop_candidate" "$desktop_file" || fail "temporary desktop entry changed; refusing to remove it"
+    rm -f -- "$desktop_file"
+elif [[ -e "$desktop_file" && -e "$desktop_candidate" ]] && cmp -s "$desktop_candidate" "$desktop_file"; then
+    fail "temporary entry matches the candidate but no restore record exists"
+fi
+rm -f -- "${state_dir}/desktop-entry-backup" "${state_dir}/desktop-entry-was-absent" "$desktop_candidate"
+kbuildsycoca6
+
+mapfile -t running_pids < <(pgrep -x kdockw || true)
+if ((${#running_pids[@]})); then
+    for pid in "${running_pids[@]}"; do
+        exe="$(readlink -f "/proc/${pid}/exe" 2>/dev/null || true)"
+        [[ "$exe" == "$installed_binary" ]] || fail "unexpected KDockW process remains (${pid}:${exe:-unknown}); will not start another instance"
+    done
+    printf 'Restored the original desktop entry. Installed KDockW is already running and was left untouched.\n'
+    exit 0
+fi
+
+[[ -x "$installed_binary" ]] || fail "installed KDockW is missing: $installed_binary"
+systemctl --user is-active --quiet "$restore_service" && fail "$restore_service is already active"
+systemd-run --user --no-block --collect --unit="$restore_service" --property=Type=exec "$installed_binary"
+printf 'Restored the original desktop entry and started the installed KDockW: %s\n' "$installed_binary"

@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+build_dir="${repo_root}/build/v040-window-preview-fix"
+binary="${build_dir}/bin/kdockw"
+metadata_checker="${build_dir}/bin/kdockw_diagnostic_metadata_check"
+ru_catalog="${build_dir}/src/locale/ru/LC_MESSAGES/kdockw.mo"
+desktop_file="${HOME}/.local/share/applications/com.thicking.kdockw.desktop"
+state_dir="${repo_root}/diagnostics/v040-window-preview-fix/launcher-state"
+desktop_candidate="${state_dir}/candidate.desktop"
+desktop_backup="${state_dir}/desktop-entry-backup"
+desktop_was_absent="${state_dir}/desktop-entry-was-absent"
+external_desktop_saved="${state_dir}/desktop-entry-edited-during-test"
+state_file="${state_dir}/restore-state"
+config_file="${repo_root}/diagnostics/v040-window-preview-fix/config/kdockwrc"
+log_file="${repo_root}/diagnostics/v040-window-preview-fix/logs/kdockw.log"
+service="kdockw-v040-window-preview-fix.service"
+old_service="kdockw-v040-launch-attention-test.service"
+
+fail() { printf 'KDockW window-preview-fix launcher refused: %s\n' "$1" >&2; exit 1; }
+
+[[ -x "$binary" ]] || fail "diagnostic binary is missing: $binary"
+[[ -x "$metadata_checker" ]] || fail "KService metadata checker is missing: $metadata_checker"
+[[ -s "$ru_catalog" ]] || fail "Russian translation catalog is missing: $ru_catalog"
+[[ -f "${build_dir}/CMakeCache.txt" ]] || fail "CMake cache is missing"
+grep -Fxq 'CMAKE_BUILD_TYPE:STRING=Release' "${build_dir}/CMakeCache.txt" || fail "candidate must be Release"
+grep -Fxq 'KDOCKW_DIAGNOSTIC_BUILD:BOOL=ON' "${build_dir}/CMakeCache.txt" || fail "candidate must use KDOCKW_DIAGNOSTIC_BUILD=ON"
+canonical_binary="$(readlink -f -- "$binary")"
+[[ "$canonical_binary" != *' '* ]] || fail "binary path contains spaces unsupported by Desktop Exec"
+
+manager_env="$(systemctl --user show-environment)" || fail "cannot read Plasma user-manager environment"
+for required in XDG_RUNTIME_DIR WAYLAND_DISPLAY DBUS_SESSION_BUS_ADDRESS XDG_CURRENT_DESKTOP KDE_SESSION_VERSION XDG_DATA_DIRS; do
+    grep -q "^${required}=" <<<"$manager_env" || fail "user manager lacks $required"
+done
+grep -Fxq "XDG_RUNTIME_DIR=/run/user/$(id -u)" <<<"$manager_env" || fail "manager runtime directory does not match this user"
+grep -Fxq 'XDG_CURRENT_DESKTOP=KDE' <<<"$manager_env" || fail "manager is not in a KDE session"
+grep -Fxq 'KDE_SESSION_VERSION=6' <<<"$manager_env" || fail "manager is not in Plasma 6"
+wayland_display="$(sed -n 's/^WAYLAND_DISPLAY=//p' <<<"$manager_env")"
+dbus_address="$(sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' <<<"$manager_env")"
+[[ -S "/run/user/$(id -u)/${wayland_display}" ]] || fail "Wayland socket is unavailable"
+[[ "$dbus_address" == "unix:path=/run/user/$(id -u)/bus" && -S "/run/user/$(id -u)/bus" ]] || fail "user D-Bus is unavailable"
+grep -Fxq 'KWIN_WAYLAND_NO_PERMISSION_CHECKS=1' <<<"$manager_env" && fail "KWin permission checks are disabled"
+if grep -Eq '^(KDOCKW_DIAGNOSTIC_[^=]*|KDOCKW_TASK_DIAGNOSTICS|KDOCKW_PREVIEW_CAPTURE_MODE|KDOCKW_PREVIEW_[^=]*_TEST|KDOCKW_ICON_[^=]*|QT_LOGGING_RULES|QT_LOGGING_CONF)=' <<<"$manager_env"; then
+    fail "Plasma manager has a pre-existing diagnostic override"
+fi
+for xdg_name in XDG_CONFIG_HOME XDG_CONFIG_DIRS XDG_DATA_HOME XDG_CACHE_HOME; do
+    xdg_value="$(sed -n "s/^${xdg_name}=//p" <<<"$manager_env")"
+    [[ "$xdg_value" == *"${repo_root}/diagnostics"* ]] && fail "manager has a diagnostic override in $xdg_name"
+done
+
+systemctl --user is-active --quiet "$service" && fail "$service is already active"
+systemctl --user is-active --quiet "$old_service" && fail "$old_service is active"
+[[ ! -e "$state_file" && ! -e "$desktop_backup" && ! -e "$desktop_was_absent" ]] || fail "a previous window-preview-fix override needs restoration first"
+[[ ! -e "$external_desktop_saved" ]] || fail "a desktop-entry edit from a previous diagnostic run is preserved at $external_desktop_saved; review it first"
+[[ ! -e "${repo_root}/diagnostics/v040-launch-attention/launcher-state/desktop-entry-backup" \
+    && ! -e "${repo_root}/diagnostics/v040-launch-attention/launcher-state/desktop-entry-was-absent" ]] \
+    || fail "the previous v040 launcher still owns the desktop-entry override"
+mapfile -t running_pids < <(pgrep -x kdockw || true)
+((${#running_pids[@]} == 0)) || fail "a KDockW process is already running (PIDs: ${running_pids[*]}); close it normally before launch"
+
+mkdir -p "$state_dir" "$(dirname -- "$config_file")" "$(dirname -- "$log_file")"
+[[ ! -e "$desktop_candidate" ]] || fail "a stale generated desktop entry needs restoration"
+[[ ! -e "$desktop_file" || -f "$desktop_file" ]] || fail "user desktop entry is not a regular file"
+if [[ -e "$desktop_file" ]]; then
+    cp -p -- "$desktop_file" "$desktop_backup"
+else
+    : > "$desktop_was_absent"
+fi
+
+restore_desktop_entry() {
+    if [[ -f "$desktop_backup" ]]; then
+        if [[ -e "$desktop_file" ]] && ! cmp -s "$desktop_candidate" "$desktop_file" \
+                && ! cmp -s "$desktop_backup" "$desktop_file"; then
+            [[ ! -e "$external_desktop_saved" ]] || fail "an earlier concurrent desktop edit is already preserved at $external_desktop_saved"
+            cp -p -- "$desktop_file" "$external_desktop_saved"
+        fi
+        install -D -m "$(stat -c '%a' "$desktop_backup")" "$desktop_backup" "$desktop_file"
+    elif [[ -f "$desktop_was_absent" ]]; then
+        if [[ -e "$desktop_file" ]] && ! cmp -s "$desktop_candidate" "$desktop_file"; then
+            [[ ! -e "$external_desktop_saved" ]] || fail "an earlier concurrent desktop edit is already preserved at $external_desktop_saved"
+            cp -p -- "$desktop_file" "$external_desktop_saved"
+        fi
+        [[ ! -e "$desktop_file" ]] || rm -f -- "$desktop_file"
+    else
+        fail "desktop-entry restore record is missing"
+    fi
+    rm -f -- "$desktop_backup" "$desktop_was_absent" "$desktop_candidate" "$state_file"
+    kbuildsycoca6 >/dev/null
+    [[ ! -e "$external_desktop_saved" ]] || printf 'Preserved a concurrent desktop-entry edit at %s\n' "$external_desktop_saved" >&2
+}
+
+cleanup_failed_start() {
+    result=$?
+    trap - EXIT
+    if ((result != 0)) && [[ "${restore_pending:-false}" == true ]]; then
+        if systemctl --user is-active --quiet "$service"; then
+            main_pid="$(systemctl --user show "$service" -p MainPID --value 2>/dev/null || true)"
+            if [[ "$main_pid" =~ ^[1-9][0-9]*$ ]] && [[ "$(readlink -f "/proc/${main_pid}/exe" 2>/dev/null || true)" == "$canonical_binary" ]]; then
+                systemctl --user stop "$service" || true
+            else
+                printf 'Candidate service identity is uncertain; retaining restore records at %s\n' "$state_dir" >&2
+                exit "$result"
+            fi
+        fi
+        if ! systemctl --user is-active --quiet "$service"; then
+            restore_desktop_entry || printf 'Automatic restore failed; run the stop-and-restore command: %s/tools/kdockw-v040-window-preview-fix-stop-and-restore\n' "$repo_root" >&2
+        fi
+    fi
+    exit "$result"
+}
+
+restore_pending=true
+trap cleanup_failed_start EXIT
+
+cat > "$desktop_candidate" <<EOF
+[Desktop Entry]
+Type=Application
+Name=KDockW v0.4.0 Window Preview Fix
+NoDisplay=false
+Terminal=false
+Exec=${canonical_binary}
+Icon=com.thicking.kdockw
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,zkde_screencast_unstable_v1
+EOF
+chmod 0644 "$desktop_candidate"
+desktop-file-validate "$desktop_candidate" || fail "generated desktop entry is invalid"
+grep -Fxq "Exec=${canonical_binary}" "$desktop_candidate" || fail "desktop Exec does not match the candidate binary"
+grep -Fxq 'X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,zkde_screencast_unstable_v1' "$desktop_candidate" || fail "required KWin interfaces are missing"
+install -D -m 0644 -- "$desktop_candidate" "$desktop_file"
+kbuildsycoca6
+"$metadata_checker" "$canonical_binary" com.thicking.kdockw.desktop \
+    || fail "KService did not resolve runtime Desktop ID com.thicking.kdockw with candidate Exec and KWin interfaces"
+
+touch "$config_file" "$log_file"
+systemd-run --user --no-block --collect --unit="$service" \
+    --property=Type=exec \
+    --property="StandardOutput=append:${log_file}" \
+    --property="StandardError=append:${log_file}" \
+    --setenv="KDOCKW_DIAGNOSTIC_CONFIG=${config_file}" \
+    --setenv=KDOCKW_TASK_DIAGNOSTICS=1 \
+    --setenv=KDOCKW_PREVIEW_CAPTURE_MODE=cpu-only \
+    "$binary"
+printf '%s\n' "$canonical_binary" > "$state_file"
+started=false
+for _ in {1..50}; do
+    if systemctl --user is-active --quiet "$service"; then
+        main_pid="$(systemctl --user show "$service" -p MainPID --value 2>/dev/null || true)"
+        if [[ "$main_pid" =~ ^[1-9][0-9]*$ ]] && [[ "$(readlink -f "/proc/${main_pid}/exe" 2>/dev/null || true)" == "$canonical_binary" ]]; then
+            started=true
+            break
+        fi
+    fi
+    sleep 0.1
+done
+[[ "$started" == true ]] || fail "diagnostic service did not become active with the expected executable"
+restore_pending=false
+trap - EXIT
+
+printf 'Started %s\nBinary: %s\nRuntime Desktop ID: com.thicking.kdockw\nPreview capture: CPU-only\nRussian catalog: %s\nSeparate settings: %s\nTask diagnostics: enabled\nLog: %s\n' \
+    "$service" "$canonical_binary" "$ru_catalog" "$config_file" "$log_file"
+printf 'After testing, run: %s/tools/kdockw-v040-window-preview-fix-stop-and-restore\n' "$repo_root"

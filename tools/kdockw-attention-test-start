@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+script_file="${repo_root}/tools/kdockw-attention-test.js"
+state_dir="${repo_root}/diagnostics/v040-launch-attention/attention-test"
+state_file="${state_dir}/loaded-script"
+run_id="$(date +%s)-$$"
+plugin_name="kdockw-attention-test-${run_id}"
+runtime_script="${state_dir}/${plugin_name}.js"
+trace_file="${state_dir}/${plugin_name}.trace"
+monitor_error_file="${state_dir}/${plugin_name}.monitor-error"
+monitor_pid=""
+script_id=""
+loaded=false
+
+fail() { printf 'KDockW attention test refused: %s\n' "$1" >&2; exit 1; }
+command -v qdbus6 >/dev/null || fail "qdbus6 is not available"
+command -v journalctl >/dev/null || fail "journalctl is not available"
+[[ -r "$script_file" ]] || fail "KWin test script is missing"
+[[ -n "${WAYLAND_DISPLAY:-}" && -S "/run/user/$(id -u)/${WAYLAND_DISPLAY}" ]] || fail "this is not an active Wayland session"
+[[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]] || fail "session D-Bus is unavailable"
+[[ ! -e "$state_file" ]] || fail "an attention test script is already recorded; run the stop command first"
+
+mkdir -p "$state_dir"
+sed "s/__RUN_ID__/${run_id}/g" "$script_file" > "$runtime_script"
+# KWin's official scripting documentation routes print() to the journal under
+# the js/kwin_scripting categories. Filter by this run's token to avoid copying
+# unrelated script output or window data into the trace.
+journalctl --follow --since=now --output=cat --grep="$run_id" \
+    QT_CATEGORY=js QT_CATEGORY=kwin_scripting > "$trace_file" 2>"$monitor_error_file" &
+monitor_pid=$!
+
+cleanup_on_error() {
+    result=$?
+    trap - EXIT
+    if ((result != 0)); then
+        if [[ "$loaded" == true ]]; then
+            if ! qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript "$plugin_name"; then
+                printf 'Could not unload diagnostic KWin script %s; recorded state retained at %s\n' "$plugin_name" "$state_file" >&2
+                exit "$result"
+            fi
+        fi
+        if [[ "$monitor_pid" =~ ^[1-9][0-9]*$ ]]; then
+            kill "$monitor_pid" >/dev/null 2>&1 || true
+            wait "$monitor_pid" 2>/dev/null || true
+        fi
+        rm -f -- "$state_file"
+        printf 'Diagnostic artifacts retained at %s\n' "$trace_file" >&2
+    fi
+    exit "$result"
+}
+trap cleanup_on_error EXIT
+
+sleep 0.2
+script_id="$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.loadScript "$runtime_script" "$plugin_name")" \
+    || fail "KWin refused to load the temporary script"
+script_id="$(grep -oE '[0-9]+$' <<<"$script_id" | tail -n 1)"
+[[ "$script_id" =~ ^[0-9]+$ ]] || fail "KWin returned an invalid script id"
+loaded=true
+printf '%s\n%s\n%s\n%s\n%s\n' "$script_id" "$plugin_name" "$run_id" "$trace_file" "$monitor_pid" > "$state_file"
+
+qdbus6 org.kde.KWin "/Scripting/Script${script_id}" org.kde.kwin.Script.run \
+    || fail "KWin could not run the attention test script"
+
+for _ in {1..50}; do
+    grep -Eq 'phase=(script-enter|setter-readback|no-eligible-window|script-error)' "$trace_file" && break
+    sleep 0.1
+done
+
+if grep -q 'phase=setter-readback.*after=true' "$trace_file"; then
+    printf 'Execution confirmed; genuine demandsAttention request is active.\n'
+elif grep -q 'phase=setter-readback.*after=false' "$trace_file"; then
+    printf 'Execution confirmed; KWin rejected or cleared the demandsAttention setter.\n'
+elif grep -q 'phase=no-eligible-window' "$trace_file"; then
+    printf 'Execution confirmed; no eligible inactive task window was found.\n'
+elif grep -q 'phase=script-error' "$trace_file"; then
+    printf 'Execution confirmed; the KWin script reported an error (details withheld).\n'
+else
+    printf 'KWin run() returned successfully, but no token-matched journal output arrived; execution is UNKNOWN, not confirmed.\n'
+    if [[ -s "$monitor_error_file" ]]; then
+        printf 'Journal monitor diagnostic: %s\n' "$(head -n 1 "$monitor_error_file")"
+    fi
+fi
+
+printf 'The helper targets one inactive taskbar window and logs no title, UUID, or content.\n'
+printf 'After testing, unload it with: %s/tools/kdockw-attention-test-stop\n' "$repo_root"
+printf 'State: %s\nTrace: %s\n' "$state_file" "$trace_file"
+trap - EXIT

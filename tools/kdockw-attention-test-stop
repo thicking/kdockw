@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+state_file="${repo_root}/diagnostics/v040-launch-attention/attention-test/loaded-script"
+
+fail() { printf 'KDockW attention test cleanup refused: %s\n' "$1" >&2; exit 1; }
+command -v qdbus6 >/dev/null || fail "qdbus6 is not available"
+[[ -f "$state_file" ]] || fail "no attention test script is recorded"
+mapfile -t script_state < "$state_file"
+[[ ${#script_state[@]} -eq 5 \
+    && "${script_state[0]}" =~ ^[0-9]+$ \
+    && "${script_state[1]}" =~ ^kdockw-attention-test-[0-9]+-[0-9]+$ \
+    && "${script_state[2]}" =~ ^[0-9]+-[0-9]+$ \
+    && -f "${script_state[3]}" \
+    && "${script_state[4]}" =~ ^[0-9]+$ ]] || fail "recorded script state is invalid"
+
+trace_file="${script_state[3]}"
+monitor_pid="${script_state[4]}"
+request_state="unknown"
+last_state="$(grep -oE 'after=(true|false)|demandsAttention=(true|false)' "$trace_file" | tail -n 1 || true)"
+case "$last_state" in
+    after=true|demandsAttention=true) request_state="active" ;;
+    after=false|demandsAttention=false) request_state="reset" ;;
+    *) request_state="unknown" ;;
+esac
+
+# Unloading is always permitted after recording the state. Missing trace output
+# must never strand a KWin script; request state is reported separately below.
+unload_result="$(qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript "${script_state[1]}")" \
+    || fail "KWin could not unload the test script; state file and monitor were retained"
+[[ "$unload_result" == "true" ]] || fail "KWin did not confirm unloading the test script; state file was retained"
+
+if [[ "$monitor_pid" =~ ^[1-9][0-9]*$ ]]; then
+    monitor_exe="$(readlink -f "/proc/${monitor_pid}/exe" 2>/dev/null || true)"
+    journalctl_exe="$(readlink -f "$(command -v journalctl)")"
+    if [[ "$monitor_exe" == "$journalctl_exe" ]]; then
+        kill "$monitor_pid" >/dev/null 2>&1 || true
+        wait "$monitor_pid" 2>/dev/null || true
+    fi
+fi
+rm -f -- "$state_file"
+
+printf 'Unloaded the temporary KWin script. demandsAttention state at cleanup: %s.\n' "$request_state"
+if [[ "$request_state" == active ]]; then
+    printf 'The genuine attention request may remain until that window is activated; no KWin script remains loaded.\n'
+elif [[ "$request_state" == unknown ]]; then
+    printf 'The trace did not establish whether KWin cleared the attention request; no KWin script remains loaded.\n'
+fi
+printf 'Trace retained at %s\n' "$trace_file"
