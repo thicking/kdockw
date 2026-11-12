@@ -206,6 +206,7 @@ systemd-run --user --no-block --collect --unit="$service" \
     --property="StandardOutput=append:${log_file}" \
     --property="StandardError=append:${log_file}" \
     --setenv="KDOCKW_DIAGNOSTIC_CONFIG=${config_file}" \
+    --setenv=KDOCKW_TASK_DIAGNOSTICS=1 \
     --setenv="XDG_DATA_HOME=${data_home}" \
     --setenv="XDG_DATA_DIRS=${manager_data_dirs}" \
     --setenv=KDOCKW_PREVIEW_CAPTURE_MODE=cpu-only \
