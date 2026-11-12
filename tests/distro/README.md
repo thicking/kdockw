@@ -231,15 +231,17 @@ build is fast.
 
 ## Targets
 
-The required GitHub release gate is the three IDs in
-`tests/distro/release-targets.txt`. Package details, including digest-pinned
-base images, are resolved from `targets.tsv`:
+The required GitHub release gate is the IDs in
+`tests/distro/release-targets.txt` (Debian 13 and Ubuntu 26.04 for v0.5.0).
+Fedora 45 remains a manual experimental target while Qt 6.11 compatibility is
+unconfirmed. Package details, including digest-pinned base images, are
+resolved from `targets.tsv`:
 
 | Required release target | Family | Base image |
 | --- | --- | --- |
 | `debian-13` | Debian stable | `debian:13-slim` |
 | `ubuntu-26.04` | Ubuntu LTS | `ubuntu:26.04` |
-| `fedora-45` | Fedora stable | `fedora:45` |
+| `fedora-45` | Fedora 45 experimental, manual only | `fedora:45` |
 
 Additional compatibility rows remain in `tests/distro/targets.tsv` for
 explicit manual runs. They are not selected by `targets=all`, scheduled image
@@ -264,9 +266,10 @@ amd64 emulation (qemu-user binfmt) and is otherwise CI-only.
 
 `release-targets.txt` selects packages for GitHub releases. The fifth column
 of `targets.tsv` is a legacy package identifier and does not select or contact
-an external repository. The release watcher tracks new Debian stable, Ubuntu
-LTS, and Fedora stable representatives; add a package row, lock its image
-digest, validate it, then update `release-targets.txt` and the README.
+an external repository. The release watcher tracks new Debian stable and
+Ubuntu LTS representatives; add a package row, lock its image digest, validate
+it, then update `release-targets.txt` and the README. Re-enable Fedora as a
+release target only after owner approval and a green full Distro E2E run.
 
 The pass criterion per target is Tier 2's result for the same suite. A
 difference that only one distro shows is root-caused: harness or image

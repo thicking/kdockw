@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.5.0-dev")
+set(KDOCKW_VERSION "0.5.0")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")

@@ -73,10 +73,10 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
-    <release version="0.5.0-dev" date="2026-11-11" type="development">
+    <release version="0.5.0" date="2026-11-12">
       <description>
-        <p>Adds a unified order for pinned applications and Folder Stacks, plus file and launcher drag-and-drop.</p>
-        <p xml:lang="ru">Добавляет единый порядок закреплённых приложений и стеков папок, а также перетаскивание файлов и ярлыков.</p>
+        <p>Adds persistent Folder Stacks, a shared order for pinned apps and folders, and file and launcher drag-and-drop. Task identity and popup interaction reliability were improved.</p>
+        <p xml:lang="ru">Добавлены стеки папок, общий порядок закреплённых приложений и папок, а также перетаскивание файлов и ярлыков. Улучшены идентификация задач и надёжность всплывающих окон.</p>
       </description>
     </release>
     <release version="0.4.3" date="2026-11-11">

@@ -1,4 +1,11 @@
-kdockw (0.4.3-1) unstable; urgency=medium
+kdockw (0.5.0-1) unstable; urgency=medium
+
+  * Add persistent Folder Stacks and unified ordering with pinned applications.
+  * Improve file drops, popup navigation, and TaskManager row reconciliation.
+
+ -- thicking <thicking@gmail.com>  Thu, 12 Nov 2026 00:00:00 +0500
+
+kdockw (0.5.0~dev-1) unstable; urgency=medium
 
   * Load the current Russian settings catalog from the installed application prefix.
   * Retain minimized-window frames with a bounded, minimized-first cache policy.

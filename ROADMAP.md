@@ -251,17 +251,35 @@ started on the approved v0.5.0 feature stage.
 
 ## v0.5.0 — Dock Interactions (in progress)
 
-Implementation has the typed pinned-entry persistence format, v0.4.3 launcher
-migration, initial local Folder Stacks, and a live presentation adapter that
-places pinned applications and stacks in one saved order. Advanced drop handling
-and real-session visual acceptance remain in progress.
+The typed pinned-entry persistence format, v0.4.3 launcher migration, unified
+ordered Folder Stacks, and Advanced Drag & Drop have passed owner acceptance on
+Plasma 6.6.6 / Wayland in three consecutive 24/24 cycles. Release preparation
+remains in progress. Production CTest passed 176/176 and diagnostic CTest passed
+177/177. The release matrix is Debian 13 and Ubuntu 26.04; Fedora 45 is
+experimental/unconfirmed after Qt 6.11.2 Distro E2E reported 188 passed, 13
+skipped, and 26 failed in a diagnostic repeat. The failure clusters span
+TaskManager identity, accessibility focus, popup/visibility, and task-zone
+navigation; Fedora remains available for manual investigation but is excluded
+from v0.5.0 release assets. See `docs/releases/v0.5.0.md` for the gate results.
 
-- [ ] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
+- [x] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop,
   animation, and usable handling of long lists. Plan Downloads Stack and real
   download progress as a linked extension; do not infer percentages from file
   presence. Consider Fan only if technically justified.
-- [ ] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin;
+- [x] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin;
   handle cancellation and unsupported data safely.
+
+## v0.5.1 — Maximized Window Geometry After Unlock (planned)
+
+Owner-approved follow-up: investigate and fix maximized windows overlapping the
+dock after locking and unlocking Plasma/Wayland. This correction is outside
+v0.5.0; root cause and exact monitor/edge conditions are not yet established.
+
+## Fedora 45 Qt 6.11 compatibility (technical debt)
+
+Fedora 45 is not confirmed for v0.5.0 and is excluded from required release
+packages. Re-enable it only after targeted Qt/KF compatibility work and a green
+full Distro E2E run on an approved candidate.
 
 ## v0.6.0 — Visual Effects & KWin Integration (planned)
 

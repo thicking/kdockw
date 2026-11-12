@@ -1,8 +1,9 @@
 # Inactive external package adapters
 
-GitHub Releases is the only publication channel for KDockW. From v0.3.2, the
-required release matrix builds and tests one package each for current Debian
-stable, Ubuntu LTS, and stable Fedora. See the
+GitHub Releases is the only publication channel for KDockW. The required
+release matrix is recorded in `tests/distro/release-targets.txt`. Fedora 45 is
+experimental/unconfirmed for v0.5.0 due to unresolved Qt 6.11 compatibility
+and is excluded from release assets. See the
 [Distribution Support Policy](distribution-support-policy.md) and
 `tests/distro/release-targets.txt` for current representatives.
 

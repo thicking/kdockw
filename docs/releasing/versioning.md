@@ -24,9 +24,9 @@ signed release tag. A stable release is not considered published until its
 tagged source passes the full Distro E2E gate and all GitHub assets are
 verified. GitHub Releases is the only publication channel. From v0.3.2,
 packages are built for the required targets in
-`tests/distro/release-targets.txt`: current Debian stable, Ubuntu LTS, and
-stable Fedora. Older compatibility rows are not required gates or release
-assets.
+`tests/distro/release-targets.txt`. Fedora 45 is experimental and excluded from
+the v0.5.0 release gate while Qt 6.11 compatibility remains unconfirmed.
+Manual compatibility rows are not required gates or release assets.
 
 ## Package version forms
 
@@ -49,9 +49,10 @@ required target in `release-targets.txt`; only artifacts from the full
 successful matrix for the exact release commit are eligible for GitHub Release
 uploads. `SHA256SUMS` covers the source archive and every package asset.
 
-KDockW supports release packages only for Debian 13, Ubuntu 26.04 LTS, and
-Fedora 45. Arch Linux packaging was removed; it is not a manual compatibility
-target or a release gate. Existing signed tags and historical release assets
+KDockW v0.5.0 release packages target Debian 13 and Ubuntu 26.04 LTS. Fedora
+45 is experimental/unconfirmed and not included in the release assets; its
+compatibility row remains available for manual E2E investigation. Arch Linux
+packaging was removed. Existing signed tags and historical release assets
 remain unchanged.
 
 The JSON and research files under `packaging/submissions/` and the local

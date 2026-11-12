@@ -67,7 +67,7 @@ https://github.com/user-attachments/assets/da075b0f-4fcf-4d15-a608-a3b91eddcfcf
 - **Smooth dock interaction** — Classic Zoom, adjustable animation, launch feedback, and configurable running-app indicators.
 - **Live window previews** — Preview open and minimized windows, browse grouped apps, and activate a window with a click.
 - **Personalized appearance** — Adjust panel styling, icon opacity, notification badges, and preview-card sizes.
-- **Verified Linux packages** — KDockW packages are published on GitHub Releases. Starting with v0.3.2, the required release matrix covers Debian 13, Ubuntu 26.04 LTS, and Fedora 45.
+- **Verified Linux packages** — KDockW packages are published on GitHub Releases. The v0.5.0 release targets Debian 13 and Ubuntu 26.04 LTS; Fedora 45 is experimental while Qt 6.11 compatibility is investigated.
 
 For implementation and troubleshooting details, see the [window-preview architecture and diagnostics](docs/architecture/window-previews.md), [KDE TaskManager model notes](docs/kde/taskmanager-models.md), and [NVIDIA PRIME / Wayland troubleshooting](docs/troubleshooting/nvidia-prime-wayland.md). Optional task-model diagnostics log row and role changes without recording window titles.
 
@@ -82,6 +82,7 @@ For implementation and troubleshooting details, see the [window-preview architec
 - **Running App Indicators** — Configure Dot, Line, Pill, Glow, or Bar markers, their placement, size, and color
 - **First-Run Appearance** — The default layout uses 40 px icons, 13 px spacing, 8/8/8/0 px insets, 1.7 zoom, and a tinted `#4b4144` panel with shadow
 - **Pin/Unpin** — Keep favorite apps in the dock
+- **Folder Stacks** — Pin local folders, browse nested directories, open files with their default apps, and choose a folder icon
 - **Context Menu** — Right-click for pin, close, new instance, and the app's own actions like "New Private Window" (KDE Breeze native)
 - **Mouse Wheel Cycling** — Scroll to switch between windows of the same app
 - **Single-Window Click Action** — Activate by default; optionally minimize the active window with a left click, while clicking a minimized or background window still restores or focuses it
@@ -148,25 +149,24 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW 0.4.3 is the latest stable release. Download the source archive, packages, and checksums from the [KDockW 0.4.3 GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.4.3). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW 0.5.0 is the latest stable release. Download the source archive, packages, and checksums from the [KDockW 0.5.0 GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.0). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
-The v0.4.3 release provides packages for Debian 13, Ubuntu 26.04 LTS, and Fedora 45. These are the required package-build and Distro E2E targets; older compatibility recipes are available for manual checks but are not release assets. GitHub Releases is the only publication channel.
+The v0.5.0 release provides packages for Debian 13 and Ubuntu 26.04 LTS. Fedora 45 is experimental/unconfirmed with Qt 6.11.2 and is excluded from release assets; its compatibility target remains available for manual E2E investigation. Older compatibility recipes are also available for manual checks. GitHub Releases is the only publication channel.
 
 Building KDockW from source requires Qt 6.8 or newer and KDE Frameworks 6.0 or newer.
 
 | Package | Release target |
 | --- | --- |
 | .deb | Debian 13; Ubuntu 26.04 LTS |
-| .rpm | Fedora 45 |
+| .rpm | Not included in v0.5.0 |
 
 Install a downloaded package with the system package manager:
 
 ```bash
-sudo apt install ./kdockw-0.4.3-debian-13.deb
-sudo apt install ./kdockw-0.4.3-ubuntu-26.04.deb
-sudo dnf install ./kdockw-0.4.3-fedora-45.rpm
+sudo apt install ./kdockw-0.5.0-debian-13.deb
+sudo apt install ./kdockw-0.5.0-ubuntu-26.04.deb
 ```
 
 ```bash

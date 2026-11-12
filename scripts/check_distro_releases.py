@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Track new supported release representatives missing from KDockW's GitHub matrix.
 
-The workflow checks upstream release dates and compares Debian stable, Ubuntu
-LTS, and Fedora stable with ``tests/distro/release-targets.txt``. Manual
-compatibility targets in ``targets.tsv`` do not create release-watch gaps.
+The workflow checks upstream release dates for families currently eligible
+for the GitHub package matrix. Fedora 45 is experimental for v0.5.0, so Fedora
+is not release-watched until its compatibility is confirmed and the owner
+re-enables it. Manual compatibility targets in ``targets.tsv`` do not create
+release-watch gaps.
 Packages are published only as GitHub Release assets after the required matrix
 passes; no external package repository is contacted.
 
@@ -45,7 +47,6 @@ TARGET_PATTERNS = {
     "debian": re.compile(r"^debian-(\d+(?:\.\d+)*)$"),
 }
 DISTROS = (
-    ("fedora", "Fedora", "fedora"),
     ("ubuntu", "Ubuntu", "ubuntu"),
     ("debian", "Debian", "debian"),
 )

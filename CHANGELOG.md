@@ -8,10 +8,33 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-12
+
 ### Added
 
 - Added initial local Folder Stack support: dropped folders persist as distinct dock entries and open in an asynchronous, scrollable Grid with nested-folder navigation and default-app file opening.
 - Added a unified dock order for pinned applications and Folder Stacks, with stable entry IDs and persisted drag reordering. Dropped directories create stacks, while dropped files open with the targeted application.
+- Restored crisp Folder Stack icons at Spring Magnification sizes, routed popup input through a native Wayland popup surface, and gave the content grid an explicit fill container with usable minimum height.
+- Added per-folder theme and image icon selection, saved with each Folder Stack's stable ID and restored from the versioned dock-entry configuration.
+
+### Fixed
+
+- Folder Stack grid selection now follows mouse hover and keyboard navigation with inset, rounded, theme-derived highlights and contrast-checked text.
+- Folder Stack context menus now dismiss on outside clicks, Escape, and window deactivation, and the KDE theme icon chooser opens after the menu releases its Wayland popup grab.
+- Matched pinned launchers to TaskManager rows while ignoring launcher query metadata, preventing duplicate icon-only pins and running tasks after repeated reorder operations.
+- Kept Folder Stack popup placement stable as Spring Magnification changes and added opt-in row, drag, and popup geometry diagnostics for Wayland verification.
+- Delayed first Folder Stack popup creation until its asynchronous KIO listing completes, sized the native popup surface from its final requested content geometry, and resumed Spring hover only when Wayland pointer focus returns to the dock.
+- Reconciled TaskManager row insertions, removals, moves, and resets before returning to QML, preventing delegates from briefly displaying a neighboring application's name or icon; diagnostic row logs now include display, icon, and window grouping state.
+- Preserved free TaskManager ordering and cross-zone task reordering when pinned/running separation is disabled, while keeping Folder Stacks anchored to the saved pinned launcher order.
+- Kept Folder Stack popup text at 4.5:1 contrast on an opaque composited card and on selected or hovered grid items, and showed folder names through the dock's existing tooltip.
+- Kept the keyboard selection on the remaining window thumbnail after closing its focused sibling, and preserved thumbnail delegates by window UUID as TaskManager groups collapse.
+
+### Changed
+
+- Styled Folder Stack popups to match Window Preview cards, including their resolved surface color, contrast-aware heading, padding, border, corner radius, shadow, and scrollbar. The visible card now clears the dock by the configured preview gap plus maximum Spring overflow.
+- Shortened the Folder Stack removal action to “Remove from dock” and added theme/image icon chooser actions.
+- Marked Fedora 45 as experimental and excluded it from the v0.5.0 release package matrix while Qt 6.11 compatibility remains unconfirmed; Debian 13 and Ubuntu 26.04 LTS remain the tested package targets.
+- Recorded that maximized windows can overlap the dock after locking and unlocking Plasma; investigation and correction are tracked separately for v0.5.1.
 
 ## [0.4.3] - 2026-11-11
 
