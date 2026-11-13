@@ -260,24 +260,25 @@ Fedora 45 was experimental for v0.5.0. The v0.5.1 candidate fixed the stale Task
 - [x] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop, animation, and usable handling of long lists.
 - [x] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin; handle cancellation and unsupported data safely.
 
-## v0.5.1 — Wayland Geometry & Fedora Compatibility (in progress)
+## v0.5.1 — Wayland Geometry & Fedora Compatibility (done, published 2026-11-13)
 
-- [ ] **92e4ea553c084196 Maximized Window Geometry After Unlock:** capture real
+- [x] **92e4ea553c084196 Maximized Window Geometry After Unlock:** capture real
   Wayland evidence for lock/unlock changes to the LayerShell exclusive zone,
   surface commit, and KWin available geometry; preserve the Layer Shell surface
   when unlock parameters are unchanged. The owner confirmed the real Plasma
   6.6.6 / Wayland maximized-browser scenario after unlock: frameGeometry and
-  MaximizeArea both measured 1920×989 with no 59 px overlap. Broader recovery
-  modes and release gates remain to be verified.
-- [ ] **f87e3fa5d8554eb7 Dock-to-Window Gap:** add an independent persistent
+  MaximizeArea both measured 1920×989 with no 59 px overlap. The accepted
+  v0.5.1-dev candidate passed release checks and was published as v0.5.1.
+- [x] **f87e3fa5d8554eb7 Dock-to-Window Gap:** add an independent persistent
   0–20 px window gap through the Layer Shell exclusive zone, with live updates,
   all four dock edges, no permanent reservation in Auto Hide/Dodge, and geometry
-  regression coverage. Default is 0 px.
-- [ ] **a4c96e73b5f2810d Context Menu UX Cleanup:** preserve application and
+  regression coverage. Default is 0 px. The final distro matrix passed, and the
+  owner accepted the candidate in real Plasma/Wayland.
+- [x] **a4c96e73b5f2810d Context Menu UX Cleanup:** preserve application and
   Desktop Actions, distinguish Close Application from closing one window in a
   group, and move Settings, About KDockW, and Quit KDockW into the KDockW
-  submenu. Automated regressions are added; real Plasma/Wayland acceptance is
-  pending.
+  submenu. Automated regressions and the owner's real Plasma/Wayland acceptance
+  are complete.
 - [x] **6b3b5084bd3c479f Fedora 45 / Qt 6.11 Compatibility:** fixed the
   stale TaskManager display role on structural replacement; Debian 13,
   Ubuntu 26.04, and Fedora 45 packages built, and the full Fedora 45 suite
@@ -291,14 +292,14 @@ separately, keeps the 190 ms limit on actual input dispatch, verifies the
 KWin-reported cursor position, and checks that the popup stays open. The
 instrumented isolated retry and the complete rerun passed.
 
-Candidate verification: Production Release CTest **180/180**, Diagnostic
-Release CTest **181/181**; Debian 13 **210 passed / 21 skipped / 0 failed**;
-Ubuntu 26.04 **218 / 13 / 0**; Fedora 45 / Qt 6.11.2 **218 / 13 / 0**. The
-original failed Ubuntu full-run result remains preserved as historical evidence.
-The owner accepted the reported maximized-browser unlock case; a candidate
-lock/unlock check and manual Plasma checks for fullscreen, Auto Hide, Dodge,
-all edges, scaling, and TaskManager/previews remain open. v0.5.1 stays in
-progress pending that live acceptance; no release or tag has been created.
+Final verification on release commit `c8819342abc9156b65904726925670fbf2467975`:
+Production Release CTest **187/187**, Diagnostic Release CTest **190/190**,
+release tooling **153 passed / 1 skipped**; Debian 13 **212 passed / 21
+skipped / 0 failed**, Ubuntu 26.04 **220 / 13 / 0**, Fedora 45 / Qt 6.11.2
+**220 / 13 / 0**. The earlier failed full runs remain historical evidence;
+the final exact-SHA matrix passed in [workflow run 43433604968](https://github.com/thicking/kdockw/actions/runs/43433604968).
+The signed tag and all five release assets were verified on the
+[v0.5.1 GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.1).
 
 ## v0.6.0 — Visual Effects & KWin Integration (planned)
 
