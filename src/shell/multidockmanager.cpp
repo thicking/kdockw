@@ -337,6 +337,17 @@ void MultiDockManager::setupFollowActive()
 
     if (trigger == TriggerFocus || trigger == TriggerComposite) {
         // Watch TasksModel for active window changes
+        // activeTaskChanged is the model-level signal for a changed active
+        // task. Some TaskManager versions update this before (or instead of)
+        // emitting dataChanged for the IsActive role, so follow-active must
+        // observe both notifications.
+        connect(m_model->tasksModel(),
+                &TaskManager::TasksModel::activeTaskChanged,
+                this,
+                [this]() {
+                    qCDebug(lcMultiDock) << "Follow Active TaskManager active task changed";
+                    onActiveWindowChanged();
+                });
         connect(m_model->tasksModel(),
                 &QAbstractItemModel::dataChanged,
                 this,

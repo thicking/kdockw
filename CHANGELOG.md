@@ -18,6 +18,7 @@ carried forward from the Krema-based development period.
 
 - Avoided recreating an unchanged dock surface when unlocking the screen, preserving its existing Layer Shell reservation.
 - Refreshed pinned task names when TaskManager replaces launcher rows with running windows, preserving the correct app identity and visible order on Qt 6.11.
+- Followed active-window changes through TaskManager's active-task notification on Qt 6.11, including windows on secondary outputs.
 - Added Fedora 45 / Qt 6.11.2 to the release package and Distro E2E matrix.
 
 ### Changed
