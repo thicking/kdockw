@@ -35,6 +35,7 @@ if(KWIN_WAYLAND_EXECUTABLE AND DBUS_RUN_SESSION_EXECUTABLE)
         COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh $<TARGET_FILE:kdockw_launcher_entry_tests>
     )
     set_tests_properties(kdockw_integration_tests kdockw_launcher_entry_tests PROPERTIES TIMEOUT 180)
+    set_tests_properties(kdockw_integration_tests PROPERTIES RUN_SERIAL TRUE)
 else()
     message(STATUS "kwin_wayland or dbus-run-session not found: kdockw_integration_tests is built but not registered with CTest")
 endif()

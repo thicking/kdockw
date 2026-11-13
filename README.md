@@ -149,24 +149,25 @@ In Selected monitors mode, Toggle Dock and app-number shortcuts target the selec
 
 ## Installation
 
-KDockW 0.5.0 is the latest stable release. Download the source archive, packages, and checksums from the [KDockW 0.5.0 GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.0). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
+KDockW 0.5.1 is the latest stable release. Download the source archive, packages, and checksums from the [KDockW 0.5.1 GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.1). See the [release process](docs/releasing/release-process.md), [versioning policy](docs/releasing/versioning.md), and, on TUXEDO OS, the [build guide](docs/building/tuxedo-os.md) for current Qt/KDE package names and release-build instructions.
 
 ### Linux package targets
 
-The published v0.5.0 release provides packages for Debian 13 and Ubuntu 26.04 LTS. Fedora 45 was excluded from those assets. Its full Qt 6.11.2 E2E run passed for the v0.5.1 candidate, so Fedora 45 is now in the candidate release matrix. Debian 13 and Fedora 45 full E2E passed; Ubuntu 26.04 had one Preview timing failure that passed on isolated retry, so the v0.5.1 matrix is not yet green. Package publication awaits the remaining v0.5.1 gates and owner acceptance. Older compatibility recipes are also available for manual checks. GitHub Releases is the only publication channel.
+The v0.5.1 release provides packages for Debian 13, Ubuntu 26.04 LTS, and Fedora 45. These are the required package and Distro E2E targets; older compatibility recipes remain available for manual checks but are not release assets. GitHub Releases is the only publication channel.
 
 Building KDockW from source requires Qt 6.8 or newer and KDE Frameworks 6.0 or newer.
 
 | Package | Release target |
 | --- | --- |
 | .deb | Debian 13; Ubuntu 26.04 LTS |
-| .rpm | Fedora 45 is included in the v0.5.1 candidate matrix; not yet published |
+| .rpm | Fedora 45 |
 
 Install a downloaded package with the system package manager:
 
 ```bash
-sudo apt install ./kdockw-0.5.0-debian-13.deb
-sudo apt install ./kdockw-0.5.0-ubuntu-26.04.deb
+sudo apt install ./kdockw-0.5.1-debian-13.deb
+sudo apt install ./kdockw-0.5.1-ubuntu-26.04.deb
+sudo dnf install ./kdockw-0.5.1-fedora-45.rpm
 ```
 
 ```bash

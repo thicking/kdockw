@@ -12,8 +12,9 @@ string(REGEX MATCH "set\\(KDOCKW_VERSION \"([^\"]+)\"\\)" _ "${cmake_source}")
 if(NOT CMAKE_MATCH_1 STREQUAL KDOCKW_VERSION)
     message(FATAL_ERROR "CMakeLists.txt version '${CMAKE_MATCH_1}' does not match ${KDOCKW_VERSION}")
 endif()
-if(NOT cmake_source MATCHES "KDOCKW_VERSION_STRING=\\\"\\$\\{KDOCKW_VERSION\\}\\\"")
-    message(FATAL_ERROR "CMake does not pass KDOCKW_VERSION to the application")
+if(NOT cmake_source MATCHES "set\\(KDOCKW_DISPLAY_VERSION \\\"\\$\\{KDOCKW_VERSION\\}\\\"\\)"
+   OR NOT cmake_source MATCHES "KDOCKW_VERSION_STRING=\\\"\\$\\{KDOCKW_DISPLAY_VERSION\\}\\\"")
+    message(FATAL_ERROR "CMake does not derive the application version from canonical KDOCKW_VERSION")
 endif()
 
 file(READ "${SOURCE_DIR}/src/main.cpp" main_source)

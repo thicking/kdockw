@@ -8,6 +8,8 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-13
+
 ### Added
 
 - Added a live, persistent 0–20 px gap between the dock and maximized windows, reserved through Layer Shell.
@@ -16,7 +18,13 @@ carried forward from the Krema-based development period.
 
 - Avoided recreating an unchanged dock surface when unlocking the screen, preserving its existing Layer Shell reservation.
 - Refreshed pinned task names when TaskManager replaces launcher rows with running windows, preserving the correct app identity and visible order on Qt 6.11.
-- Added Fedora 45 / Qt 6.11.2 to the v0.5.1 candidate package and Distro E2E matrix after its full E2E run passed.
+- Added Fedora 45 / Qt 6.11.2 to the release package and Distro E2E matrix.
+
+### Changed
+
+- Clarified the Russian label for the dock-to-window gap setting.
+- Grouped Settings, About KDockW, and quitting the dock under a dedicated KDockW submenu.
+- Distinguished closing one window or an application's current window group from quitting KDockW.
 
 ## [0.5.0] - 2026-11-12
 

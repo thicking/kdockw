@@ -46,6 +46,7 @@ set(KDOCKW_QML_TEST_FILES
     tst_icons_page_magnification
     tst_animation_settings
     tst_settings_mini_dock
+    tst_settings_layout
     tst_rounded_clip
     tst_dock_main
     tst_preview_popup
@@ -84,6 +85,16 @@ if(KDOCKW_DIAGNOSTIC_BUILD)
             AnimationSettingsRussian::test_translationCatalogIsLoaded
     )
     set_tests_properties(qml_animation_settings_ru PROPERTIES
+        LABELS "qml;localization"
+        TIMEOUT 120
+        ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;LANG=ru_RU.UTF-8;LC_MESSAGES=ru_RU.UTF-8;LANGUAGE=ru;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"
+    )
+
+    add_test(NAME qml_settings_layout_ru
+        COMMAND kdockw_qml_tests -input ${CMAKE_CURRENT_SOURCE_DIR}/tst_settings_layout.qml
+            SettingsLayout::test_windowGapLabelIsTranslatedInRussian
+    )
+    set_tests_properties(qml_settings_layout_ru PROPERTIES
         LABELS "qml;localization"
         TIMEOUT 120
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software;QT_QUICK_CONTROLS_STYLE=Basic;LANG=ru_RU.UTF-8;LC_MESSAGES=ru_RU.UTF-8;LANGUAGE=ru;XDG_CONFIG_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-config;XDG_CACHE_HOME=${CMAKE_CURRENT_BINARY_DIR}/xdg-cache"

@@ -4,7 +4,9 @@ set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 repo_root="$(cd -- "${script_dir}/.." && pwd -P)"
 build_dir="${repo_root}/build/v051-dev-diagnostic"
+source_binary="${build_dir}/bin/kdockw"
 binary="${build_dir}/stage/bin/kdockw"
+source "${script_dir}/lib/kdockw-stage-build-id.sh"
 metadata_checker="${build_dir}/bin/kdockw_diagnostic_metadata_check"
 diagnostic_root="${repo_root}/diagnostics/v051-dev"
 state_dir="${diagnostic_root}/launcher-state"
@@ -33,14 +35,12 @@ if [[ "$wayland_debug" == true ]]; then
     wayland_debug_args+=(--setenv=WAYLAND_DEBUG=client)
 fi
 
-[[ -x "$binary" ]] || fail "diagnostic binary is missing: $binary"
+[[ -x "$source_binary" ]] || fail "diagnostic build binary is missing: $source_binary"
 [[ -x "$metadata_checker" ]] || fail "KService metadata checker is missing: $metadata_checker"
 [[ -f "${build_dir}/CMakeCache.txt" ]] || fail "CMake cache is missing"
 grep -Fxq 'CMAKE_BUILD_TYPE:STRING=Release' "${build_dir}/CMakeCache.txt" || fail "candidate must use Release"
 grep -Fxq 'KDOCKW_DIAGNOSTIC_BUILD:BOOL=ON' "${build_dir}/CMakeCache.txt" || fail "candidate must use KDOCKW_DIAGNOSTIC_BUILD=ON"
-[[ "$("$binary" --version)" == 'kdockw 0.5.1-dev' ]] || fail "candidate binary is not KDockW 0.5.1-dev"
-canonical_binary="$(readlink -f -- "$binary")"
-[[ "$canonical_binary" != *' '* ]] || fail "binary path contains spaces unsupported by Desktop Exec"
+[[ "$("$source_binary" --version)" == 'kdockw 0.5.1-dev' ]] || fail "build binary is not KDockW 0.5.1-dev"
 
 stable_binary="$(command -v kdockw || true)"
 [[ -n "$stable_binary" && -x "$stable_binary" ]] || fail "installed KDockW v0.5.0 executable was not found"
@@ -80,6 +80,51 @@ desktop_file="${data_home}/applications/com.thicking.kdockw.desktop"
 [[ ! -e "$desktop_file" || -f "$desktop_file" ]] || fail "per-user Desktop ID entry is not a regular file: $desktop_file"
 systemctl --user is-active --quiet "$service" && fail "$service is already active"
 
+# Never replace the isolated install tree while the diagnostic candidate is
+# running. A stable /usr/bin/kdockw does not execute files from this stage and
+# may remain running during a read-only preflight.
+mapfile -t running_pids < <(pgrep -x kdockw || true)
+if ((${#running_pids[@]} > 0)); then
+    for running_pid in "${running_pids[@]}"; do
+        running_executable="$(readlink -f "/proc/${running_pid}/exe" 2>/dev/null || true)"
+        if [[ "$running_executable" == "$(readlink -f -- "$binary" 2>/dev/null || true)" ]]; then
+            fail "diagnostic candidate is already running (PID ${running_pid}); refusing to replace its executable"
+        fi
+        if [[ "$preflight_only" != true || "$running_executable" != "$stable_binary" ]]; then
+            printf 'KDockW is already running; launch refused (PID %s, executable %s).\n' \
+                "$running_pid" "${running_executable:-unknown}" >&2
+            exit 1
+        fi
+    done
+fi
+
+cmake --build "$build_dir" --target install --parallel \
+    || fail "could not refresh the isolated diagnostic install tree"
+[[ -x "$binary" ]] || fail "installed diagnostic binary is missing: $binary"
+[[ "$("$binary" --version)" == 'kdockw 0.5.1-dev' ]] || fail "installed candidate is not KDockW 0.5.1-dev"
+source_build_id="$(kdockw_elf_build_id "$source_binary")" \
+    || fail "could not read ELF GNU Build ID from $source_binary"
+staged_build_id="$(kdockw_elf_build_id "$binary")" \
+    || fail "could not read ELF GNU Build ID from $binary"
+if [[ "$source_build_id" != "$staged_build_id" ]]; then
+    printf 'CMake install left a stale stage binary (source %s: %s; stage %s: %s); invalidating only the inactive staged executable and retrying install.\n' \
+        "$source_binary" "$source_build_id" "$binary" "$staged_build_id" >&2
+    rm -f -- "$binary"
+    cmake --build "$build_dir" --target install --parallel \
+        || fail "could not re-install the stale diagnostic stage executable"
+    [[ -x "$binary" ]] || fail "re-installed diagnostic executable is missing: $binary"
+    staged_build_id="$(kdockw_elf_build_id "$binary")" \
+        || fail "could not read ELF GNU Build ID from re-installed $binary"
+fi
+[[ "$source_build_id" == "$staged_build_id" ]] \
+    || fail "staged ELF GNU Build ID still differs (source $source_binary: $source_build_id; stage $binary: $staged_build_id)"
+source_catalog="${build_dir}/src/locale/ru/LC_MESSAGES/kdockw.mo"
+staged_catalog="${build_dir}/stage/share/locale/ru/LC_MESSAGES/kdockw.mo"
+[[ -f "$source_catalog" && -f "$staged_catalog" ]] || fail "candidate Russian translation catalog is missing"
+cmp -s "$source_catalog" "$staged_catalog" || fail "staged Russian catalog does not match the current build"
+canonical_binary="$(readlink -f -- "$binary")"
+[[ "$canonical_binary" != *' '* ]] || fail "binary path contains spaces unsupported by Desktop Exec"
+
 check_candidate_metadata() {
     local temporary_home
     temporary_home="$(mktemp -d "${TMPDIR:-/tmp}/kdockw-v051-preflight.XXXXXX")"
@@ -110,18 +155,12 @@ EOF
 }
 
 check_candidate_metadata
-
-mapfile -t running_pids < <(pgrep -x kdockw || true)
-if ((${#running_pids[@]} > 0)); then
-    printf 'KDockW is already running; launch refused (PIDs: %s). Close it normally, then rerun this command.\n' \
-        "${running_pids[*]}" >&2
-    if [[ "$preflight_only" == true ]]; then
-        printf 'Candidate metadata preflight passed; no user files or services were changed.\n'
-    fi
-    exit 1
-fi
 [[ "$preflight_only" == false ]] || {
-    printf 'Preflight passed: KDockW is stopped, candidate metadata resolves, and launch state is clear.\n'
+    if ((${#running_pids[@]} > 0)); then
+        printf 'Preflight passed: candidate metadata resolves; stable KDockW remains running and was not changed.\n'
+    else
+        printf 'Preflight passed: KDockW is stopped, candidate metadata resolves, and launch state is clear.\n'
+    fi
     exit 0
 }
 

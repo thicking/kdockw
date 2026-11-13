@@ -2,13 +2,13 @@
 # SPDX-FileCopyrightText: 2026 Krema Contributors
 
 Name:           kdockw
-Version:        0.5.1~dev
+Version:        0.5.1
 Release:        1%{?dist}
 Summary:        A lightweight dock for KDE Plasma 6
 
 License:        GPL-3.0-or-later AND MIT-CMU
 URL:            https://github.com/thicking/kdockw/
-%global upstream_version 0.5.1-dev
+%global upstream_version 0.5.1
 Source0:        https://github.com/thicking/%{name}/archive/refs/tags/kdockw-v%{upstream_version}.tar.gz
 
 BuildRequires:  cmake >= 3.22

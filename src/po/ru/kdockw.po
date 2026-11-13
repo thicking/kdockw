@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.5.1-dev\n"
+"Project-Id-Version: KDockW 0.5.1\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-10 15:22+0500\n"
@@ -219,7 +219,7 @@ msgid "Floating margin"
 msgstr "Отступ от края"
 
 msgid "Gap to maximized windows"
-msgstr "Зазор до развёрнутых окон"
+msgstr "Зазор между доком и окнами"
 
 msgid "Reserve space between the dock and maximized windows"
 msgstr "Резервировать пространство между доком и развёрнутыми окнами"
@@ -1329,10 +1329,20 @@ msgctxt "@action:inmenu"
 msgid "Clear Notifications"
 msgstr "Очистить уведомления"
 
-#: src/models/dockcontextmenu.cpp:108
+#: src/models/dockcontextmenu.cpp
 msgctxt "@action:inmenu"
-msgid "Close"
-msgstr "Закрыть"
+msgid "Close Application"
+msgstr "Закрыть приложение"
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@action:inmenu"
+msgid "Close Window"
+msgstr "Закрыть окно"
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@action:inmenu"
+msgid "Close window %1"
+msgstr "Закрыть окно %1"
 
 #: src/models/dockcontextmenu.cpp:115
 msgctxt "@action:inmenu"
@@ -1344,10 +1354,15 @@ msgctxt "@action:inmenu"
 msgid "About KDockW"
 msgstr "О KDockW"
 
-#: src/models/dockcontextmenu.cpp:124
+#: src/models/dockcontextmenu.cpp
 msgctxt "@action:inmenu"
-msgid "Quit"
-msgstr "Выход"
+msgid "Quit KDockW"
+msgstr "Выйти из KDockW"
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@action:inmenu"
+msgid "KDockW"
+msgstr "KDockW"
 
 #: src/app/application.cpp:59
 msgid "KDockW"

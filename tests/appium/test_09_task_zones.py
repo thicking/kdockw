@@ -341,7 +341,7 @@ def test_tzone003_grouped_instances_keep_one_pinned_slot_and_close_differently(
     kdockw.wait_for_item(UNPINNED_A)
     menu = kdockw.open_context_menu(UNPINNED_A)
     assert menu.pid == kdockw.pid
-    kdockw.choose_context_menu_entry("Close", context_menu_entries(pinned=False, is_window=True))
+    kdockw.choose_context_menu_entry("Close Window", context_menu_entries(pinned=False, is_window=True))
     wait_until(lambda: not [w for w in apps.open_windows if w.refresh()], message="unpinned fixture window to close")
     kdockw.wait_for_no_item(UNPINNED_A)
     assert kdockw.item_names() == [env.TEST_APP_NAME]

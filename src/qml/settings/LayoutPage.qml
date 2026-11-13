@@ -249,6 +249,7 @@ SettingsPage {
 
         SliderDelegate {
             id: windowGapSlider
+            objectName: "windowGapSlider"
             text: i18n("Gap to maximized windows")
             description: i18n("Reserve space between the dock and maximized windows")
             from: 0

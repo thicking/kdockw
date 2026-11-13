@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.22)
 
 # This is the canonical product version. CMake's project VERSION only accepts
 # numeric components, so derive its compatibility value from this string.
-set(KDOCKW_VERSION "0.5.1-dev")
+set(KDOCKW_VERSION "0.5.1")
 string(REGEX MATCH "^[0-9]+\\.[0-9]+\\.[0-9]+" KDOCKW_CMAKE_VERSION "${KDOCKW_VERSION}")
 if(NOT KDOCKW_CMAKE_VERSION)
     message(FATAL_ERROR "KDOCKW_VERSION must start with a SemVer core (x.y.z)")
@@ -106,11 +106,13 @@ check_cxx_source_compiles("
 int main() { static_cast<LayerShellQt::Window*>(nullptr)->setScreen(static_cast<QScreen*>(nullptr)); }
 " _HAVE_LAYERSHELLQT_SET_SCREEN)
 
-add_compile_definitions(KDOCKW_VERSION_STRING="${KDOCKW_VERSION}")
 option(KDOCKW_DIAGNOSTIC_BUILD "Enable opt-in diagnostic-only configuration routing" OFF)
+set(KDOCKW_DISPLAY_VERSION "${KDOCKW_VERSION}")
 if(KDOCKW_DIAGNOSTIC_BUILD)
+    string(APPEND KDOCKW_DISPLAY_VERSION "-dev")
     add_compile_definitions(KDOCKW_DIAGNOSTIC_BUILD)
 endif()
+add_compile_definitions(KDOCKW_VERSION_STRING="${KDOCKW_DISPLAY_VERSION}")
 if(NOT _HAVE_LAYERSHELLQT_DESIRED_SIZE)
     add_compile_definitions(KDOCKW_COMPAT_NO_LAYERSHELL_DESIRED_SIZE)
 endif()

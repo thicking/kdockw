@@ -677,7 +677,7 @@ Input and UI flows:
 | `move_away(close_preview=True)` | Glide the pointer to the top centre, then wait for the preview popup to be dismissed (the item stays zoomed while the preview is open). `close_preview=False` only moves the pointer. |
 | `open_context_menu(name) -> kwin.Window` | Right-click and wait for the QMenu popup; returns its KWin window (screen geometry). |
 | `choose_context_menu_entry(label, entries)` | Keyboard selection (Down x position, Return) in the open menu. |
-| `context_menu_entries(pinned, is_window, has_notifications=False, desktop_actions=()) -> list[str]` (module function) | Enabled menu entries in order, mirroring `src/models/dockcontextmenu.cpp`; `desktop_actions` are the app's visible .desktop actions, listed first. |
+| `context_menu_entries(pinned, is_window, has_notifications=False, desktop_actions=(), grouped=False, window_titles=()) -> list[str]` (module function) | Enabled top-level menu entries in order, mirroring `src/models/dockcontextmenu.cpp`; grouped tasks also carry the current window titles for their Close Window submenu. |
 | `open_settings(via_item, entries=None) -> kwin.Window` | Open Settings through an item's context menu; returns the "Settings" window. |
 | `screenshot(name, area=None) -> PIL.Image.Image` | RGB screen image, also saved to `artifacts/<name of kdockw>/<name>.png`. With `area` only that part is captured, the rest is black, and the PNG holds only the area (see "Screenshots and previews"). |
 
@@ -986,8 +986,10 @@ How to use the menu anyway, as implemented in `KDockW`:
 * The popup takes the keyboard grab, so Down/Return navigation works
   (`choose_context_menu_entry`). The disabled app-name header and separators
   are skipped, and the order of enabled entries comes from
-  `context_menu_entries()`. Choosing "Close" this way closed the window.
-  Choosing "Settings..." opened "Settings — KDockW", whose AT-SPI frame
+  `context_menu_entries()`. Choosing "Close Window" this way closes only a
+  single task; grouped items distinguish "Close Application" from per-window
+  "Close Window" actions. Choosing "Settings..." through the KDockW submenu
+  opened "Settings — KDockW", whose AT-SPI frame
   (`name="Settings"`) matches the KWin client geometry.
 
 ### 4. Historical issue #55: AT-SPI visibility preceded the input-region commit.

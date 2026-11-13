@@ -526,9 +526,30 @@ class KDockW:
         )
 
     def choose_context_menu_entry(self, label: str, entries: list[str]) -> None:
-        """Activate ``label`` in the open context menu with the keyboard
-        (Down x position, Return). ``entries`` are the enabled entries in
-        order, see :func:`context_menu_entries`."""
+        """Activate a top-level or KDockW submenu entry with the keyboard.
+
+        ``entries`` lists enabled top-level rows; the KDockW submenu children
+        are selected with Right/Down after entering that submenu.
+        """
+        dock_actions = ("Settings...", "About KDockW", "Quit KDockW")
+        if label in dock_actions:
+            for _ in range(entries.index("KDockW") + 1):
+                inp.key("Down")
+            inp.key("Right")
+            for _ in range(dock_actions.index(label)):
+                inp.key("Down")
+            inp.key("Return")
+            return
+        if label.startswith("Close Window: "):
+            title = label.removeprefix("Close Window: ")
+            for _ in range(entries.index("Close Window") + 1):
+                inp.key("Down")
+            inp.key("Right")
+            window_titles = [entry.removeprefix("Window: ") for entry in entries if entry.startswith("Window: ")]
+            for _ in range(window_titles.index(title)):
+                inp.key("Down")
+            inp.key("Return")
+            return
         for _ in range(entries.index(label) + 1):
             inp.key("Down")
         inp.key("Return")
@@ -592,17 +613,31 @@ class DescriptionChanges:
         self._registry.deregisterEventListener(self._on_event, self.EVENT)
 
 
-def context_menu_entries(pinned: bool, is_window: bool, has_notifications: bool = False, desktop_actions: Sequence[str] = ()) -> list[str]:
+def context_menu_entries(
+    pinned: bool,
+    is_window: bool,
+    has_notifications: bool = False,
+    desktop_actions: Sequence[str] = (),
+    grouped: bool = False,
+    window_titles: Sequence[str] = (),
+) -> list[str]:
     """Enabled entries of a dock item's context menu in order (the disabled
     app-name header and separators are skipped by keyboard navigation);
     mirrors src/models/dockcontextmenu.cpp. ``desktop_actions`` are the
     visible desktop-file actions of the app, in their Actions= order."""
     entries = [*desktop_actions, "Unpin from Dock" if pinned else "Pin to Dock", "New Instance"]
+    nested_window_titles: list[str] = []
     if has_notifications:
         entries.append("Clear Notifications")
     if is_window:
-        entries.append("Close")
-    return entries + ["Settings...", "About KDockW", "Quit"]
+        if grouped:
+            entries.extend(("Close Application", "Close Window"))
+            nested_window_titles = [f"Window: {title}" for title in window_titles]
+        else:
+            entries.append("Close Window")
+    entries.append("KDockW")
+    entries.extend(nested_window_titles)
+    return entries
 
 
 def _xpath_str(s: str) -> str:

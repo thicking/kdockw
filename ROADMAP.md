@@ -273,6 +273,11 @@ Fedora 45 was experimental for v0.5.0. The v0.5.1 candidate fixed the stale Task
   0–20 px window gap through the Layer Shell exclusive zone, with live updates,
   all four dock edges, no permanent reservation in Auto Hide/Dodge, and geometry
   regression coverage. Default is 0 px.
+- [ ] **a4c96e73b5f2810d Context Menu UX Cleanup:** preserve application and
+  Desktop Actions, distinguish Close Application from closing one window in a
+  group, and move Settings, About KDockW, and Quit KDockW into the KDockW
+  submenu. Automated regressions are added; real Plasma/Wayland acceptance is
+  pending.
 - [x] **6b3b5084bd3c479f Fedora 45 / Qt 6.11 Compatibility:** fixed the
   stale TaskManager display role on structural replacement; Debian 13,
   Ubuntu 26.04, and Fedora 45 packages built, and the full Fedora 45 suite
@@ -297,11 +302,6 @@ progress pending that live acceptance; no release or tag has been created.
 
 ## v0.6.0 — Visual Effects & KWin Integration (planned)
 
-- [ ] **Context Menu UX Cleanup:** group KDockW settings/about/quit actions in a
-  `KDockW` submenu; rename the selected application's `Quit` action to
-  `Close application` without terminating the dock; preserve remaining system
-  and application actions for pinned apps, unpinned tasks, and window groups.
-  Add regression tests and manual Wayland verification.
 - [ ] Research supported KWin/Wayland interfaces for window animations and
   evaluate Scale/Genie and dock-icon association. Document Plasma compatibility
   and public/private API boundaries; build no prototype without a separate

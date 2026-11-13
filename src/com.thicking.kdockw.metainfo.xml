@@ -73,10 +73,10 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
-    <release version="0.5.1-dev" date="2026-11-12" type="development">
+    <release version="0.5.1" date="2026-11-13">
       <description>
-        <p>Development build for Wayland unlock-geometry diagnostics and Fedora 45 / Qt 6.11 compatibility work.</p>
-        <p xml:lang="ru">Диагностическая сборка для анализа геометрии Wayland после разблокировки и совместимости Fedora 45 / Qt 6.11.</p>
+        <p>Preserves maximized-window geometry across screen unlock, adds a saved dock-to-window gap, improves application context menus, and supports Fedora 45 / Qt 6.11.</p>
+        <p xml:lang="ru">Сохраняет геометрию развёрнутых окон после разблокировки, добавляет сохраняемый зазор между доком и окнами, улучшает контекстное меню и поддерживает Fedora 45 / Qt 6.11.</p>
       </description>
     </release>
     <release version="0.5.0" date="2026-11-12">

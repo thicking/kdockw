@@ -1,9 +1,10 @@
-kdockw (0.5.1~dev-1) unstable; urgency=medium
+kdockw (0.5.1-1) unstable; urgency=medium
 
-  * Reconcile TaskManager row replacements for Fedora Qt 6.11.
-  * Add diagnostic instrumentation for Plasma unlock geometry.
+  * Release KDockW 0.5.1 with stable maximized-window geometry after unlock.
+  * Add the saved dock-to-window gap and clarify application context menus.
+  * Support Fedora 45 and Qt 6.11 TaskManager model changes.
 
- -- thicking <thicking@gmail.com>  Thu, 12 Nov 2026 00:00:00 +0500
+ -- thicking <thicking@gmail.com>  Fri, 13 Nov 2026 00:00:00 +0500
 
 kdockw (0.5.0-1) unstable; urgency=medium
 

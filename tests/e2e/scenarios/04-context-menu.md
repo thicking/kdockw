@@ -53,19 +53,21 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 - Menu header shows app name
 - Menu items (top to bottom): AppName, [the app's .desktop actions, then a
   separator — only when the app declares visible actions, see CTX-008],
-  Pin/Unpin, New Instance, Close, separator, Settings..., About KDockW, Quit
+  Pin/Unpin, New Instance, [Clear Notifications when present], [Close
+  Application for grouped tasks, or Close Window for a single window], optional
+  per-window Close Window submenu, separator, KDockW submenu (Settings...,
+  About KDockW, Quit KDockW)
 
 **Menu item positions** (approximate y-offsets from menu top):
 - AppName: +0px
 - Pin to Dock / Unpin: +25px
 - New Instance: +57px
-- Close: +90px
-- Settings...: +123px
-- About KDockW: +158px
-- Quit: +180px
+- Close Application / Close Window: after New Instance (when running)
+- KDockW: after task actions; its submenu contains Settings..., About KDockW,
+  and Quit KDockW
 
 **Verification:** screenshot only (menu visible with expected entries)
-**Automated:** tests/appium/test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item, tests/appium/test_04_context_menu.py::test_ctx001_about_kdockw_is_the_fifth_entry, tests/appium/test_04_context_menu.py::test_ctx001_quit_is_the_last_entry (entry order is verified by effect for every enabled position; the header label text itself is not read since QMenu is not in AT-SPI — its presence as a disabled row is verified by the keyboard highlight skipping it)
+**Automated:** tests/appium/test_04_context_menu.py::test_ctx001_right_click_opens_native_menu_at_the_item, tests/appium/test_04_context_menu.py::test_ctx001_about_kdockw_is_in_the_kdockw_submenu, tests/appium/test_04_context_menu.py::test_ctx001_quit_is_in_the_kdockw_submenu (entry order is verified by effect for every enabled position; the header label text itself is not read since QMenu is not in AT-SPI — its presence as a disabled row is verified by the keyboard highlight skipping it)
 
 ---
 
@@ -127,23 +129,25 @@ entries with the keyboard (Down/Return) or by position on a screenshot.
 
 ---
 
-## TC CTX-005: Close All Windows
+## TC CTX-005: Close Application or One Window
 
 **Precondition:** App with 2+ open windows.
 **Steps:**
 1. Note the app's windows in the window list
 2. Right-click the app's dock item
-3. Click "Close"
+3. Click "Close Application" to close the group's current windows, or choose
+   one title from the "Close Window" submenu to close only that window.
 4. Wait 1000ms
 5. Check the window list — all windows of that app are closed
 
 **Expected:**
-- All windows of the app are closed
+- "Close Application" closes all windows currently in the group
+- "Close Window" closes only the chosen window and leaves sibling windows open
 - If app was pinned, icon remains (no indicator)
 - If app was not pinned, icon removed
 
 **Verification:** window list (no windows for that app)
-**Automated:** tests/appium/test_04_context_menu.py::test_ctx005_close_closes_every_window_of_an_unpinned_app, tests/appium/test_04_context_menu.py::test_ctx005_close_keeps_a_pinned_app_without_indicator
+**Automated:** tests/appium/test_04_context_menu.py::test_ctx005_close_application_closes_every_window_of_an_unpinned_app, tests/appium/test_04_context_menu.py::test_ctx005_close_window_keeps_its_group_siblings_open, tests/appium/test_04_context_menu.py::test_ctx005_close_application_keeps_a_pinned_app_without_indicator
 
 ---
 

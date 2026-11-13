@@ -17,7 +17,7 @@ class GitHubMatrixWatcherTest(unittest.TestCase):
         path = ROOT / "tests/distro/targets.tsv"
         gate_path = ROOT / "tests/distro/release-targets.txt"
         targets = watcher.parse_targets(gate_path)
-        self.assertEqual(targets["fedora"], set())
+        self.assertEqual(targets["fedora"], {(45,)})
         self.assertIn((26, 4), targets["ubuntu"])
         self.assertIn((13,), targets["debian"])
         self.assertEqual(set(targets), {"fedora", "ubuntu", "debian"})

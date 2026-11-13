@@ -417,7 +417,7 @@ class GateTests(unittest.TestCase):
     def test_repository_release_gate_is_small_and_uses_current_representatives(self) -> None:
         tsv = (ROOT / "tests/distro/targets.tsv").read_text()
         gates = (ROOT / "tests/distro/release-targets.txt").read_text()
-        expected = ["debian-13", "ubuntu-26.04"]
+        expected = ["debian-13", "ubuntu-26.04", "fedora-45"]
         self.assertEqual(release.expected_targets(tsv, gates), expected)
         self.assertFalse(any(target.startswith("opensuse-") for target in expected))
 

@@ -149,9 +149,11 @@ While Settings is open, the same application also has a settings frame
 
 7. **QMenu context menu not in AT-SPI**: The native QMenu (right-click) is a
    `Qt::Popup` window, which Qt does not expose in the AT-SPI tree. Navigate it
-   with the keyboard (Down/Return) or locate entries on a screenshot.
-   Menu items are in fixed order: AppName, Pin/Unpin, New Instance, Close,
-   separator, Settings..., About KDockW, Quit.
+   with the keyboard (Down/Return; use Right to enter a submenu) or locate
+   entries on a screenshot. The menu keeps application actions first, then
+   Pin/Unpin and New Instance. Running windows expose Close Window; grouped
+   tasks expose Close Application plus a per-window Close Window submenu.
+   Settings..., About KDockW, and Quit KDockW are in the KDockW submenu.
 
 8. **Dock-to-preview mouse transition**: Moving the pointer from the dock to the
    preview popup must be gradual (step by step, ~20px increments). A direct jump

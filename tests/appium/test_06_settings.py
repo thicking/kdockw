@@ -1010,7 +1010,7 @@ def test_set008_follow_active_shortcuts_act_on_the_shown_dock(kdockw: KDockW, ap
 # ------------------------------------------------------------------- SET-009
 def _quit_via_menu(k: KDockW) -> int:
     open_menu(k)
-    k.choose_context_menu_entry("Quit", ENTRIES)
+    k.choose_context_menu_entry("Quit KDockW", ENTRIES)
     assert k.process is not None
     return k.process.wait(20)
 

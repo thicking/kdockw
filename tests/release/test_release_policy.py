@@ -44,7 +44,7 @@ class GitHubOnlyReleasePolicyTest(unittest.TestCase):
             line for line in gate_text.splitlines()
             if line.strip() and not line.lstrip().startswith("#")
         ]
-        self.assertEqual(gates, ["debian-13", "ubuntu-26.04"])
+        self.assertEqual(gates, ["debian-13", "ubuntu-26.04", "fedora-45"])
         self.assertIn("v0.3.2", policy)
         self.assertIn("release-targets.txt", runbook)
         self.assertIn("Arch Linux is not a supported package target", runbook)

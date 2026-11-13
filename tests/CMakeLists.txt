@@ -27,6 +27,20 @@ add_test(NAME kdockw_config_migration
 )
 set_tests_properties(kdockw_config_migration PROPERTIES LABELS "migration" TIMEOUT 30)
 
+if(UNIX AND EXISTS "/usr/bin/readelf" AND EXISTS "/usr/bin/true" AND EXISTS "/usr/bin/false")
+    add_test(NAME kdockw_stage_build_id
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_kdockw_stage_build_id.sh
+    )
+    set_tests_properties(kdockw_stage_build_id PROPERTIES LABELS "diagnostic;launcher" TIMEOUT 10)
+endif()
+
+if(KDOCKW_DIAGNOSTIC_BUILD)
+    add_test(NAME kdockw_v051_launcher_active_guard
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/unit/test_kdockw_v051_launcher_active_guard.sh
+    )
+    set_tests_properties(kdockw_v051_launcher_active_guard PROPERTIES LABELS "diagnostic;launcher" TIMEOUT 30)
+endif()
+
 add_test(NAME kdockw_version_metadata
     COMMAND ${CMAKE_COMMAND}
         -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
@@ -98,7 +112,7 @@ find_program(DBUS_RUN_SESSION_EXECUTABLE dbus-run-session)
 if(KWIN_WAYLAND_EXECUTABLE AND DBUS_RUN_SESSION_EXECUTABLE)
     add_test(NAME kdockw_cli_version_while_running
         COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh
-            ${CMAKE_CURRENT_SOURCE_DIR}/version-while-running.sh $<TARGET_FILE:kdockw> "kdockw ${KDOCKW_VERSION}"
+            ${CMAKE_CURRENT_SOURCE_DIR}/version-while-running.sh $<TARGET_FILE:kdockw> "kdockw ${KDOCKW_DISPLAY_VERSION}"
     )
     add_test(NAME kdockw_cli_unknown_option
         COMMAND ${DBUS_RUN_SESSION_EXECUTABLE} -- ${CMAKE_SOURCE_DIR}/tests/run-with-kwin.sh

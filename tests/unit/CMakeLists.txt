@@ -26,6 +26,7 @@ add_executable(kdockw_unit_tests
     test_taskiconprovider.cpp
     test_icondiag.cpp
     test_desktop_actions.cpp
+    test_dock_context_menu.cpp
     test_about_data.cpp
     test_preview_capture_mode.cpp
     test_release_update_checker.cpp

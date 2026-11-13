@@ -5,12 +5,55 @@
 
 #include <QObject>
 
+#include <QIcon>
+#include <QList>
+#include <QMenu>
+#include <QString>
+
+#include <functional>
+
 namespace kdockw
 {
 
 class DockModel;
 class DockActions;
 class NotificationTracker;
+
+struct ContextMenuAction
+{
+    QString text;
+    QIcon icon;
+    bool separator = false;
+    std::function<void()> trigger;
+};
+
+struct ContextMenuWindowAction
+{
+    QString title;
+    std::function<void()> close;
+};
+
+struct ContextMenuData
+{
+    QString title;
+    QList<ContextMenuAction> applicationActions;
+    QString pinText;
+    QIcon pinIcon;
+    std::function<void()> togglePinned;
+    std::function<void()> newInstance;
+    QString clearNotificationsText;
+    std::function<void()> clearNotifications;
+    QString closeText;
+    std::function<void()> closeApplication;
+    QList<ContextMenuWindowAction> windows;
+    std::function<void()> settings;
+    std::function<void()> about;
+    std::function<void()> quit;
+};
+
+/// Construct one native menu from a task snapshot. Split out so menu state
+/// and command routing can be covered without a live Wayland session.
+QMenu *createContextMenu(const ContextMenuData &data, QObject *context);
 
 /**
  * Context menu for dock items.

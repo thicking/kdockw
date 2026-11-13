@@ -59,6 +59,8 @@ LAUNCHER = config.launcher(APP)
 UNPINNED_WINDOW = context_menu_entries(pinned=False, is_window=True)
 PINNED_WINDOW = context_menu_entries(pinned=True, is_window=True)
 PINNED_LAUNCHER = context_menu_entries(pinned=True, is_window=False)
+UNPINNED_GROUPED = context_menu_entries(pinned=False, is_window=True, grouped=True, window_titles=("First", "Second"))
+PINNED_GROUPED = context_menu_entries(pinned=True, is_window=True, grouped=True, window_titles=("First", "Second"))
 
 
 # ------------------------------------------------------------------- oracles
@@ -207,7 +209,7 @@ def test_ctx001_right_click_opens_native_menu_at_the_item(kdockw: KDockW, apps: 
     assert kdockw.item("Alpha") is not None
 
 
-def test_ctx001_about_kdockw_is_the_fifth_entry(kdockw: KDockW, apps: TestWindows) -> None:
+def test_ctx001_about_kdockw_is_in_the_kdockw_submenu(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
     kdockw.open_context_menu("Alpha")
     kdockw.choose_context_menu_entry("About KDockW", UNPINNED_WINDOW)
@@ -221,12 +223,12 @@ def test_ctx001_about_kdockw_is_the_fifth_entry(kdockw: KDockW, apps: TestWindow
     assert checked == ["About KDockW"], f"sidebar selection {checked}"
 
 
-def test_ctx001_quit_is_the_last_entry(kdockw: KDockW, apps: TestWindows) -> None:
+def test_ctx001_quit_is_in_the_kdockw_submenu(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
     process = kdockw.process
     assert process is not None
     kdockw.open_context_menu("Alpha")
-    kdockw.choose_context_menu_entry("Quit", UNPINNED_WINDOW)
+    kdockw.choose_context_menu_entry("Quit KDockW", UNPINNED_WINDOW)
 
     wait_until(lambda: process.poll() is not None, timeout=15, message="kdockw to quit")
     assert process.returncode == 0, f"kdockw exited with {process.returncode}; see {kdockw.log_path}"
@@ -337,29 +339,53 @@ def test_ctx004_new_instance_launches_another_window(kdockw: KDockW, apps: TestW
 
 
 # ------------------------------------------------------------------ CTX-005
-def test_ctx005_close_closes_every_window_of_an_unpinned_app(kdockw: KDockW, apps: TestWindows) -> None:
+def test_ctx005_close_window_closes_only_a_single_running_task(kdockw: KDockW, apps: TestWindows) -> None:
+    apps.open("Alpha")
+    kdockw.wait_for_item(APP_NAME)
+    kdockw.open_context_menu(APP_NAME)
+    kdockw.choose_context_menu_entry("Close Window", UNPINNED_WINDOW)
+
+    wait_until(lambda: app_windows() == [], timeout=10, message="single app window to close")
+    kdockw.wait_for_no_item(APP_NAME, timeout=5)
+
+
+def test_ctx005_close_application_closes_every_window_of_an_unpinned_app(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
     apps.open("Beta")
     kdockw.wait_for_item(APP_NAME)
     assert sorted(w.title for w in app_windows()) == ["Alpha", "Beta"]
 
     kdockw.open_context_menu(APP_NAME)
-    kdockw.choose_context_menu_entry("Close", UNPINNED_WINDOW)
+    kdockw.choose_context_menu_entry("Close Application", UNPINNED_GROUPED)
 
     wait_until(lambda: app_windows() == [], timeout=10, message="all app windows to close")
     kdockw.wait_for_no_item(APP_NAME, timeout=5)
     assert kdockw.item_names() == []
 
 
-@pytest.mark.kdockwrc({"PinnedLaunchers": [LAUNCHER]})
-def test_ctx005_close_keeps_a_pinned_app_without_indicator(kdockw: KDockW, apps: TestWindows) -> None:
+def test_ctx005_close_window_keeps_its_group_siblings_open(kdockw: KDockW, apps: TestWindows) -> None:
     apps.open("Alpha")
     apps.open("Beta")
     kdockw.wait_for_item(APP_NAME)
     wait_until(lambda: "2 windows" in description(kdockw, APP_NAME), timeout=5, message="grouped item")
 
     kdockw.open_context_menu(APP_NAME)
-    kdockw.choose_context_menu_entry("Close", PINNED_WINDOW)
+    kdockw.choose_context_menu_entry("Close Window: First", UNPINNED_GROUPED)
+
+    wait_until(lambda: len(app_windows()) == 1, timeout=10, message="one selected group window to close")
+    assert kdockw.item(APP_NAME) is not None
+    wait_until(lambda: "1 window" in description(kdockw, APP_NAME), timeout=5, message="one grouped window to remain")
+
+
+@pytest.mark.kdockwrc({"PinnedLaunchers": [LAUNCHER]})
+def test_ctx005_close_application_keeps_a_pinned_app_without_indicator(kdockw: KDockW, apps: TestWindows) -> None:
+    apps.open("Alpha")
+    apps.open("Beta")
+    kdockw.wait_for_item(APP_NAME)
+    wait_until(lambda: "2 windows" in description(kdockw, APP_NAME), timeout=5, message="grouped item")
+
+    kdockw.open_context_menu(APP_NAME)
+    kdockw.choose_context_menu_entry("Close Application", PINNED_GROUPED)
 
     wait_until(lambda: app_windows() == [], timeout=10, message="all app windows to close")
     assert wait_stable(kdockw.item_names, duration=1.0) == [APP_NAME]
@@ -635,20 +661,20 @@ def test_ctx009_zoom_releases_when_menu_closes_away_from_the_dock(kdockw: KDockW
         menu = right_click_in_place(kdockw)
         wait_until(lambda: not kdockw.preview_visible(), timeout=1.0, message="preview to close when the context menu opens")
 
-        # Locate the "Settings..." row: highlight it with the keyboard and diff
-        # the menu against its unhighlighted frame (QMenu is not in AT-SPI).
-        area = Rect(*menu.client_geometry)
-        shot = crop(settled_capture(kdockw, "hold-menu-open", area), area)
-        for _ in range(PINNED_WINDOW.index("Settings...") + 1):
+        # Enter the dock-owned submenu with the keyboard, then use its native
+        # popup geometry to click the first child (Settings...).
+        for _ in range(PINNED_WINDOW.index("KDockW") + 1):
             inp.key("Down")
-        row = wait_stable(
-            lambda: ImageChops.difference(shot, crop(capture(kdockw, "hold-menu-settings", area), area)).getbbox(),
-            duration=0.5,
+        inp.key("Right")
+        submenu = wait_until(
+            lambda: next((w for w in kwin.windows() if not w.normal_window and w.internal_id != menu.internal_id), None),
+            timeout=5,
+            message="KDockW submenu popup",
         )
-        assert row is not None, "keyboard highlight of 'Settings...' not visible in the menu"
-        target = (area.x + (row[0] + row[2]) // 2, area.y + (row[1] + row[3]) // 2)
+        area = Rect(*submenu.client_geometry)
+        target = (area.x + area.width // 2, area.y + area.height // 6)
         zoomed_top = dock.y + zoomed.y
-        assert target[1] < zoomed_top, f"'Settings...' row at {target} is not above the magnified icon (top {zoomed_top})"
+        assert target[1] < zoomed_top, f"'Settings...' submenu row at {target} is not above the magnified icon (top {zoomed_top})"
 
         # Click the entry with the pointer: the menu closes with the pointer on
         # the menu's former place, off the dock.
