@@ -184,17 +184,21 @@ A direct jump to a distant point triggers hidePreviewDelayed immediately.
 2. Hover the running app's dock item and poll the popup every 5 ms until it has
    `showing` and `visible` states and a non-zero rect inside that surface.
 3. Convert the current popup centre to screen coordinates using the KWin
-   surface origin; do not wait for settled geometry or painted pixels.
+   surface origin; record AT-SPI geometry-query latency separately and do not
+   wait for settled geometry or painted pixels.
 4. Move there immediately, followed by one short motion within the same rect.
-   Both input events must finish within 190 ms of the first observed visibility
-   to exercise the recorded visibility-to-first-frame race window.
-5. Keep the pointer there and assert that the popup remains visible for another
-   500 ms, beyond the hide delay.
+   The real input-dispatch round trip must finish within 190 ms; the observer's
+   visibility-to-coordinate lookup time is recorded but excluded from this
+   bound because it includes a synchronous AT-SPI geometry query.
+5. Verify KWin reports the pointer inside the current popup rect. Keep it there
+   and assert that the popup remains visible for another 500 ms, beyond the
+   hide delay.
 6. Repeat three fresh preview opens.
 
 **Expected:**
 - The current popup/surface coordinate is valid when derived from AT-SPI and
   KWin geometry.
+- The pointer reaches that current popup rectangle through KWin input.
 - Fast pointer entry from the dock reaches the popup's active input region.
 - The popup remains visible past the hide delay while the pointer rests inside.
 

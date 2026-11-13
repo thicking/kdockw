@@ -77,14 +77,15 @@ def close_button_center(thumbnail: Rect) -> tuple[int, int]:
 
 def fast_pointer_entry(
     kdockw: KDockW, item: str, timeout: float = 10.0, *, output_x: int | None = None
-) -> tuple[Rect, float]:
+) -> tuple[Rect, dict[str, float]]:
     """Enter the current popup as soon as AT-SPI reports it visible.
 
     Cache the in-process Accessible and the already mapped preview surface
     before hovering. Polling the Accessible avoids serializing the whole
     webdriver tree during the short visibility-to-input window. Unlike
     :func:`wait_on_screen`, this waits for neither pixels nor settled layout.
-    Return the popup rect used for entry and the elapsed time since visibility.
+    Return the popup rect and timings that separate AT-SPI observation from
+    the actual pointer-input dispatch.
     """
     import pyatspi  # noqa: PLC0415 - only this timing-sensitive helper needs it
 
@@ -106,11 +107,12 @@ def fast_pointer_entry(
     )
 
     first_visible: float | None = None
+    entry_ready: float | None = None
     component: Any | None = popup.get_component_iface()
     geometry: Rect | None = None
 
     def current() -> Rect | None:
-        nonlocal component, geometry, first_visible
+        nonlocal component, geometry, first_visible, entry_ready
         popup.clear_cache()
         states = popup.getState()
         if states.contains(pyatspi.STATE_VISIBLE) and first_visible is None:
@@ -139,6 +141,8 @@ def fast_pointer_entry(
             return None
         if geometry is None:
             return None
+        if entry_ready is None:
+            entry_ready = time.monotonic()
         return Rect(surface.x + geometry.x, surface.y + geometry.y, geometry.width, geometry.height)
 
     kdockw.hover_item(item)
@@ -151,9 +155,16 @@ def fast_pointer_entry(
     x, y = rect.center
     # The second event is motion inside the popup, which its HoverHandler
     # needs after wl_pointer.enter. Both points lie inside this current rect.
+    input_started = time.monotonic()
     inp.move_path([(x, y), (x + 4, y)], step_ms=5)
-    assert first_visible is not None
-    return rect, time.monotonic() - first_visible
+    input_finished = time.monotonic()
+    assert first_visible is not None and entry_ready is not None
+    return rect, {
+        "visibility_to_entry_ready_s": entry_ready - first_visible,
+        "entry_ready_to_dispatch_s": input_started - entry_ready,
+        "input_dispatch_s": input_finished - input_started,
+        "visibility_to_dispatch_complete_s": input_finished - first_visible,
+    }
 
 
 def open_by_hover(kdockw: KDockW, item: str, timeout: float = 10.0) -> WebElement:

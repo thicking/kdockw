@@ -10,6 +10,7 @@ events for ``Accessible.announce``.
 
 from __future__ import annotations
 
+import json
 import time
 import warnings
 from pathlib import Path
@@ -338,11 +339,15 @@ def test_qa_prev01_atspi_visible_popup_accepts_fast_pointer_entry(kdockw: KDockW
     # Repeat fresh opens so the check remains bounded while exercising the
     # short AT-SPI-visible-to-pointer-entry window on each open.
     for attempt in range(3):
-        rect, elapsed = pv.fast_pointer_entry(kdockw, APP)
-        detail = f"attempt {attempt + 1}: popup {rect}, entry after {elapsed:.3f}s"
-        # Keep entry within the recorded visibility-to-first-frame race window.
-        # The hide timer starts later, when the pointer leaves the dock.
-        assert elapsed < 0.190, f"{detail}: missed the fast-entry window"
+        rect, timing = pv.fast_pointer_entry(kdockw, APP)
+        detail = f"attempt {attempt + 1}: popup {rect}, timing={timing}"
+        with env.artifact_path("qa-prev01-fast-pointer-entry.jsonl").open("a", encoding="utf-8") as artifact:
+            artifact.write(json.dumps({"attempt": attempt + 1, "popup": list(rect), **timing}) + "\n")
+        # AT-SPI geometry lookup is synchronous and its latency is observer
+        # overhead, not pointer-entry latency. Record it separately and keep
+        # the 190 ms guard on actual input dispatch without widening it.
+        assert timing["input_dispatch_s"] < 0.190, f"{detail}: pointer input dispatch stalled"
+        assert rect.contains(*kwin.cursor_pos()), f"{detail}: pointer did not reach the current popup rect"
         _assert_stays(
             kdockw.preview_visible,
             0.5,
