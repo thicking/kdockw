@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+repo_root="$(cd -- "${script_dir}/.." && pwd -P)"
+diagnostic_dir="${repo_root}/diagnostics/v051-dev"
+observer_template="${diagnostic_dir}/kwin-geometry-observer.js"
+list_template="${diagnostic_dir}/kwin-geometry-window-list.js"
+log_file="${diagnostic_dir}/logs/kwin-geometry.log"
+state_dir="${diagnostic_dir}/observer-state"
+state_file="${state_dir}/active"
+plugin="kdockw_v051_geometry_observer"
+qdbus=(qdbus6 org.kde.KWin /Scripting)
+
+fail() { printf 'KDockW geometry observer refused: %s\n' "$1" >&2; exit 1; }
+
+check_kwin_version() {
+    local version
+    version="$(kwin_wayland --version 2>&1 | sed -n 's/.*kwin \([0-9][^ ]*\).*/\1/p' | head -1)"
+    [[ "$version" == 6.6.6 ]] || fail "verified for installed KWin 6.6.6; found ${version:-unknown}"
+}
+
+run_list() {
+    local token list_plugin cursor script_id script_path output
+    [[ $# == 0 ]] || fail 'usage: list | start WINDOW_UUID | mark LABEL | stop'
+    [[ -f "$list_template" ]] || fail "candidate-list script is missing: $list_template"
+    check_kwin_version
+    mkdir -p "$state_dir"
+    token="$(python3 -c 'import secrets; print(secrets.token_hex(8))')"
+    list_plugin="kdockw_v051_geometry_list_${token}"
+    [[ "$("${qdbus[@]}" org.kde.kwin.Scripting.isScriptLoaded "$list_plugin")" == false ]] \
+        || fail "temporary list script is unexpectedly loaded: $list_plugin"
+    cursor="$(journalctl --boot --lines=0 --show-cursor --no-pager | sed -n 's/^-- cursor: //p')"
+    [[ -n "$cursor" ]] || fail 'could not obtain a journal cursor for candidate listing'
+    sed "s/__LIST_TOKEN__/${token}/g" "$list_template" > "${state_dir}/window-list.js"
+    script_id="$("${qdbus[@]}" org.kde.kwin.Scripting.loadScript "${state_dir}/window-list.js" "$list_plugin")"
+    [[ "$script_id" =~ ^[0-9]+$ ]] || fail "KWin rejected candidate listing (loadScript returned: $script_id)"
+    script_path="/Scripting/Script${script_id}"
+    qdbus6 org.kde.KWin "$script_path" org.kde.kwin.Script.run >/dev/null
+    sleep 0.2
+    "${qdbus[@]}" org.kde.kwin.Scripting.unloadScript "$list_plugin" >/dev/null \
+        || fail "could not unload temporary candidate-list script $list_plugin"
+    output="$(journalctl --boot --after-cursor="$cursor" --no-pager --output=short-monotonic \
+        --grep="KDOCKW_KWIN_CANDIDATE.*token=${token}")"
+    [[ -n "$output" ]] || fail 'KWin emitted no candidate list; inspect journalctl --boot for kwin_scripting errors'
+    printf 'Fully maximized, non-fullscreen windows (copy targetId into start):\n%s\n' "$output"
+}
+
+start_observer() {
+    local requested_id normalized_id generated_script monitor_pid baseline_lines script_id script_path
+    [[ $# == 1 ]] || fail 'usage: list | start WINDOW_UUID | mark LABEL | stop'
+    requested_id="$1"
+    [[ "$requested_id" =~ ^\{?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}?$ ]] \
+        || fail 'WINDOW_UUID must be a KWin internalId UUID, optionally surrounded by braces; run list first'
+    normalized_id="${requested_id//\{/}"
+    normalized_id="${normalized_id//\}/}"
+    normalized_id="${normalized_id,,}"
+    [[ -f "$observer_template" ]] || fail "observer script is missing: $observer_template"
+    [[ ! -s "$state_file" ]] || fail "observer state exists; run stop first or inspect $state_file"
+    check_kwin_version
+    [[ "$("${qdbus[@]}" org.kde.kwin.Scripting.isScriptLoaded "$plugin")" == false ]] \
+        || fail "$plugin is already loaded; inspect the running observer"
+    mkdir -p "$(dirname -- "$log_file")" "$state_dir"
+    touch "$log_file"
+    printf '# observer-session-start wall-clock=%s boot-monotonic-ns=%s target-id=%s\n' \
+        "$(date --iso-8601=seconds)" "$(python3 -c 'import time; print(time.monotonic_ns())')" "$normalized_id" >> "$log_file"
+    journalctl --boot --follow --lines=0 --no-pager --output=short-monotonic \
+        --grep='\[KDOCKW_KWIN_GEOMETRY\]' >> "$log_file" 2>&1 &
+    monitor_pid=$!
+    baseline_lines="$(wc -l < "$log_file")"
+    generated_script="${state_dir}/observer.js"
+    sed "s/__TARGET_WINDOW_ID__/${normalized_id}/g" "$observer_template" > "$generated_script"
+    printf '%s\n%s\n%s\n%s\n' "$monitor_pid" "$plugin" "$baseline_lines" "$normalized_id" > "$state_file"
+    sleep 0.2
+    if ! kill -0 "$monitor_pid" 2>/dev/null; then
+        : > "$state_file"
+        fail 'journal monitor did not start; check journal permissions and log file'
+    fi
+    script_id="$("${qdbus[@]}" org.kde.kwin.Scripting.loadScript "$generated_script" "$plugin")"
+    if [[ ! "$script_id" =~ ^[0-9]+$ ]]; then
+        kill "$monitor_pid" 2>/dev/null || true
+        : > "$state_file"
+        fail "KWin rejected the observer (loadScript returned: $script_id)"
+    fi
+    script_path="/Scripting/Script${script_id}"
+    qdbus6 org.kde.KWin "$script_path" org.kde.kwin.Script.run >/dev/null || true
+
+    local selection_seen=false
+    for _ in {1..30}; do
+        if tail -n "+$((baseline_lines + 1))" "$log_file" \
+                | grep -Fq '[KDOCKW_KWIN_GEOMETRY] reason=target-selected'; then
+            selection_seen=true
+            break
+        fi
+        if tail -n "+$((baseline_lines + 1))" "$log_file" \
+                | grep -Fq '[KDOCKW_KWIN_GEOMETRY] reason=target-not-'; then
+            break
+        fi
+        sleep 0.1
+    done
+    if [[ "$selection_seen" != true ]]; then
+        "${qdbus[@]}" org.kde.kwin.Scripting.unloadScript "$plugin" >/dev/null || true
+        kill "$monitor_pid" 2>/dev/null || true
+        wait "$monitor_pid" 2>/dev/null || true
+        : > "$state_file"
+        fail "target ${normalized_id} is missing or not fully maximized; run 'list' and select a maximized window"
+    fi
+    printf 'Observing maximized window %s (focus-independent); log: %s\n' "$normalized_id" "$log_file"
+    printf 'Mark lock/unlock moments with: %s mark before-lock / after-unlock\n' "$0"
+}
+
+case "${1:-}" in
+    list)
+        shift
+        run_list "$@"
+        ;;
+    start)
+        shift
+        start_observer "$@"
+        ;;
+    mark)
+        [[ $# == 2 ]] || fail 'usage: list | start WINDOW_UUID | mark LABEL | stop'
+        [[ -s "$state_file" ]] || fail 'observer is not active'
+        [[ "$2" =~ ^[A-Za-z0-9_.-]+$ ]] || fail 'marker must contain only letters, digits, dot, underscore, or dash'
+        python3 - "$2" "$log_file" <<'PY'
+import sys
+import time
+
+label, path = sys.argv[1:]
+with open(path, "a", encoding="utf-8") as stream:
+    stream.write(f"[{time.monotonic():.6f}] [KDOCKW_KWIN_GEOMETRY] reason=operator-marker label={label}\n")
+PY
+        ;;
+    stop)
+        [[ $# == 1 ]] || fail 'usage: list | start WINDOW_UUID | mark LABEL | stop'
+        [[ -s "$state_file" ]] || fail 'observer is not active'
+        mapfile -t state < "$state_file"
+        [[ ${#state[@]} == 4 && "${state[0]}" =~ ^[1-9][0-9]*$ \
+            && "${state[1]}" == "$plugin" && "${state[2]}" =~ ^[0-9]+$ \
+            && "${state[3]}" =~ ^[0-9a-f-]{36}$ ]] \
+            || fail "observer state is malformed; inspect $state_file"
+        monitor_pid="${state[0]}"
+        [[ "$(readlink -f "/proc/${monitor_pid}/exe" 2>/dev/null || true)" == "$(command -v journalctl | xargs readlink -f)" ]] \
+            || fail 'journal monitor identity does not match the recorded process; leaving it untouched'
+        "${qdbus[@]}" org.kde.kwin.Scripting.unloadScript "$plugin" >/dev/null \
+            || fail 'KWin could not unload the observer; journal monitor remains available'
+        kill "$monitor_pid" 2>/dev/null || true
+        wait "$monitor_pid" 2>/dev/null || true
+        : > "$state_file"
+        printf 'Stopped the observer for %s. Trace retained at %s\n' "${state[3]}" "$log_file"
+        ;;
+    *) fail 'usage: list | start WINDOW_UUID | mark LABEL | stop' ;;
+esac

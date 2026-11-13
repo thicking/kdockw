@@ -714,6 +714,7 @@ Item {
         function onRunningIndicatorPositionChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
         function onFloatingChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
         function onFloatingMarginChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
+        function onWindowGapChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
         function onContentPaddingLeftChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
         function onContentPaddingRightChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }
         function onContentPaddingTopChanged() { Qt.callLater(root.refreshVisiblePreviewAnchor) }

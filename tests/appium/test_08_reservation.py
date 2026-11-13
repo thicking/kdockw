@@ -355,6 +355,7 @@ def test_vis009_live_icon_size_and_floating_update_maximized_consumer(kdockw: KD
 
 FLOATING_SWITCH = f"{SETTINGS}//check_box[@name='Floating']"
 FLOATING_MARGIN_SLIDER = f"{SETTINGS}//slider[@name='Floating margin']"
+WINDOW_GAP_SLIDER = f"{SETTINGS}//slider[@name='Gap to maximized windows']"
 
 
 def _floating_margin_cases():
@@ -441,6 +442,61 @@ def test_vis009_live_floating_margin_update_maximized_consumer(kdockw: KDockW, a
     restarted = _geometry(kdockw, win, edge, True, "margin-13-restarted")
     assert _reserved_depth(restarted, edge) == _reserved_depth(wider, edge), (wider, restarted)
     assert restarted["window"] == default["window"], "consumer window must survive dock restart unchanged"
+
+
+@pytest.mark.parametrize(
+    "edge",
+    [
+        pytest.param(
+            edge,
+            marks=pytest.mark.kdockwrc(
+                {
+                    "PinnedLaunchers": [],
+                    "VisibilityMode": config.ALWAYS_VISIBLE,
+                    "ReserveScreenSpace": True,
+                    "WindowGap": 0,
+                    "Edge": edge,
+                    "Floating": True,
+                }
+            ),
+            id=name,
+        )
+        for name, edge in EDGES
+    ],
+)
+def test_vis010_live_window_gap_updates_maximized_consumer(kdockw: KDockW, apps: TestWindows, edge: int) -> None:
+    """The independent window gap adjusts KWin's work area on each dock edge."""
+    win = apps.open("Alpha", width=400, height=300)
+    kdockw.wait_for_item("Alpha")
+    _park()
+    maximize(win)
+    baseline = _geometry(kdockw, win, edge, True, "window-gap-0")
+    _behavior(kdockw, edge=edge)
+    open_page(kdockw, "Layout & Position")
+    slider = focus_slider(kdockw, WINDOW_GAP_SLIDER, 0, 20)
+    assert slider_value(slider) == 0, "fresh configurations retain the old zero-gap geometry"
+    assert has_state(slider, "enabled")
+    inp.key("right")
+    inp.key("right")
+    inp.key("right")
+    inp.key("right")
+    inp.key("right")
+    wait_until(lambda: slider_value(kdockw.wait_for(WINDOW_GAP_SLIDER)) == 5, message="window gap set to 5 px")
+    wait_until(lambda: config_value(kdockw, "WindowGap") == "5", message="window gap autosaved")
+    _park()
+    gap = _geometry(kdockw, win, edge, True, "window-gap-5")
+    assert _reserved_depth(gap, edge) - _reserved_depth(baseline, edge) == 5, (baseline, gap)
+    assert gap["window"] == baseline["window"]
+    pid = kdockw.pid
+    close_settings(kdockw)
+    _park()
+    kdockw.restart()
+    assert kdockw.pid != pid
+    kdockw.wait_for_item("Alpha")
+    _park()
+    restored = _geometry(kdockw, win, edge, True, "window-gap-5-restarted")
+    assert _reserved_depth(restored, edge) == _reserved_depth(gap, edge), (gap, restored)
+    assert restored["window"] == baseline["window"]
 
 
 @pytest.mark.parametrize(

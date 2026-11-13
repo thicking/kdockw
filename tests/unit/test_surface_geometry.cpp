@@ -56,6 +56,15 @@ TEST_CASE("Surface geometry calculations", "[geometry]")
         REQUIRE(kdockw::panelBarHeight(64, 8, 0) == 80); // larger icon
     }
 
+    SECTION("Window gap extends only the requested exclusive zone")
+    {
+        for (const int gap : {0, 5, 10, 20}) {
+            REQUIRE(kdockw::exclusiveZone(59, gap, true) == 59 + gap);
+        }
+        REQUIRE(kdockw::exclusiveZone(59, 20, false) == 0);
+        REQUIRE(kdockw::exclusiveZone(-4, 5, true) == 5);
+    }
+
     SECTION("Independent cross-axis padding is summed without changing zoom reserve")
     {
         REQUIRE(kdockw::panelBarHeight(48, 3, 17, 8) == 76);

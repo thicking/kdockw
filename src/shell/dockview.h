@@ -4,6 +4,7 @@
 #pragma once
 
 #include "platform/dockplatform.h"
+#include "unlockrecoverypolicy.h"
 #include "style/backgroundstyle.h"
 
 #include <QPointer>
@@ -149,6 +150,8 @@ private:
 
     void handleScreenChanged(QScreen *newScreen);
     void handleScreenGeometryChanged();
+    [[nodiscard]] UnlockRecoveryState unlockRecoveryState() const;
+    void traceLayerGeometry(const QString &phase);
 
 private Q_SLOTS:
     void handleScreenLockChanged(bool active);
@@ -165,8 +168,11 @@ private:
     IconDiagnostics *m_iconDiagnostics = nullptr;
     int m_iconCacheVersion = 0;
     int m_tooltipReserve = 0;
+    bool m_geometryTraceEnabled = false;
+    QString m_geometryTraceAfterFrame;
     DockPlatform::Edge m_edge = DockPlatform::Edge::Bottom;
     QMetaObject::Connection m_screenGeometryConnection;
+    UnlockRecoveryPolicy m_unlockRecoveryPolicy;
 
     /// Minimum tooltip reserve before the font-, shadow- and zoom-derived value.
     static constexpr int s_tooltipReserve = 36;

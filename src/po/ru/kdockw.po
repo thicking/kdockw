@@ -3,7 +3,7 @@
 # This file is distributed under the same license as the KDockW package.
 msgid ""
 msgstr ""
-"Project-Id-Version: KDockW 0.5.0\n"
+"Project-Id-Version: KDockW 0.5.1-dev\n"
 "Report-Msgid-Bugs-To: https://github.com/thicking/kdockw/issues\n"
 "Last-Translator: KDockW contributors\n"
 "PO-Revision-Date: 2026-11-10 15:22+0500\n"
@@ -217,6 +217,12 @@ msgstr "Плавающий док"
 #: src/qml/SettingsDialog.qml:56 src/qml/settings/LayoutPage.qml:237
 msgid "Floating margin"
 msgstr "Отступ от края"
+
+msgid "Gap to maximized windows"
+msgstr "Зазор до развёрнутых окон"
+
+msgid "Reserve space between the dock and maximized windows"
+msgstr "Резервировать пространство между доком и развёрнутыми окнами"
 
 #: src/qml/SettingsDialog.qml:56
 msgid "Margin"

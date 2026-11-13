@@ -4,6 +4,7 @@
 - settings-window: Sidebar of 8 pages plus About (Icons, Layout & Position, Panel Style, Shadow, Animations & Badges, Behavior, Monitors & Desktops, Window Preview, About KDockW, About KDE), settings search, one window per open
 - settings-icons: Icon size, spacing, scale, icon opacity (active, inactive/launcher, minimized), zoom factor, zoom style cards, zoom animation preset cards and custom zoom-in/zoom-out timing, with a live desktop preview (real wallpaper, miniature dock with real theme icons) and measurement guides
 - settings-layout: Screen edge picker on the live desktop preview, floating, floating margin, corner radius
+- settings-window-gap: Independent 0–20 px gap between the dock and maximized windows; updates the real KWin work area live and persists
 - settings-visual-pickers: Card pickers (ChoiceCard) and screen edge radios that work by mouse, keyboard, and AT-SPI
 - settings-click-actions: Independent single and grouped left-click choices
 - settings-click-persistence: Six policy pairs apply live, save, and restore
@@ -28,6 +29,11 @@
 - src/qml/settings/ColorSwatchButton.qml
 - src/qml/settings/IconsPage.qml
 - src/qml/settings/LayoutPage.qml
+- src/config/kdockw.kcfg
+- src/shell/dockview.cpp
+- src/shell/dockshell.cpp
+- src/platform/waylanddockplatform.cpp
+- src/utils/surfacegeometry.h
 - src/qml/settings/PanelStylePage.qml
 - src/qml/settings/ShadowPage.qml
 - src/qml/settings/AnimationsPage.qml
@@ -703,3 +709,41 @@ shrink with Floating off, the retained value, live application, and the
 restored reserved strip after restart.
 `tests/unit/test_surface_geometry.cpp` covers the panel-bar and surface
 heights for non-default margins. Steps 3, 6, and 8 remain manual checks.
+
+---
+
+## TC SET-021: Window gap adjusts the maximized work area live and persists
+
+**Precondition:** Fresh configuration, `WindowGap` unset, Always visible,
+screen-space reservation enabled, floating dock. A real fixture window is
+maximized by KWin. Run once on each screen edge.
+
+**Steps:**
+1. Open Settings → Layout & Position. Verify “Gap to maximized windows” is
+   an enabled slider at 0 px.
+2. Increase it to 5 px. Verify `WindowGap=5` is saved and the same maximized
+   window's `frameGeometry` changes with KWin `MaximizeArea` by exactly 5 px
+   at the dock edge. The dock surface size and floating margin remain unchanged.
+3. Repeat at 10 and 20 px, then return to 0. Verify no overlap at each value.
+4. Repeat on top, left, and right edges. The reserved gap must lie below,
+   right of, and left of the dock respectively.
+5. Restart only the isolated candidate and verify the selected value and work
+   area persist. Change the value before a lock/unlock cycle and confirm the
+   unlock recovery path recognizes the changed reservation parameters.
+6. With Auto Hide and Dodge Windows, verify the gap adds no permanent work
+   area reservation. Return to Always visible and verify the configured gap
+   is applied again.
+
+**Expected:** A zero value preserves the previous geometry. Values from 0 to
+20 logical pixels update live and persist. The new gap is added once to the
+existing panel-bar reservation; floating margin remains part of the existing
+visible dock extent. Fullscreen policy and foreign window state are unchanged.
+
+**Verification:** AT-SPI slider value, `kdockwrc`, KWin `MaximizeArea` and
+the same window's `frameGeometry`, dock surface bounds, and unlock trace.
+**Automated (Tier 2):**
+`tests/appium/test_08_reservation.py::test_vis010_live_window_gap_updates_maximized_consumer`
+covers 0 → 5 px, persistence, same-window identity, live application, and all
+four edges. Unit coverage checks the 0/5/10/20 px zone calculation and that
+disabled reservation remains zero. Lock/unlock, fullscreen, autohide/dodge,
+and multi-output scaling remain part of manual Plasma acceptance.

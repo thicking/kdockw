@@ -62,7 +62,8 @@ Kirigami.AbstractApplicationWindow {
             text: i18n("Layout & Position"),
             iconName: "preferences-desktop-display",
             group: "",
-            keywords: [i18n("Screen edge"), i18n("Floating"), i18n("Floating margin"), i18n("Margin"), i18n("Gap"),
+            keywords: [i18n("Screen edge"), i18n("Floating"), i18n("Floating margin"), i18n("Gap to maximized windows"),
+                i18n("Window gap"), i18n("Margin"), i18n("Gap"),
                 i18n("Corner radius")]
         },
         {

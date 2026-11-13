@@ -248,6 +248,20 @@ SettingsPage {
         FormCard.FormDelegateSeparator {}
 
         SliderDelegate {
+            id: windowGapSlider
+            text: i18n("Gap to maximized windows")
+            description: i18n("Reserve space between the dock and maximized windows")
+            from: 0
+            to: 20
+            stepSize: 1
+            value: DockSettings.windowGap
+            valueText: i18nc("@label pixels", "%1 px", value)
+            onMoved: (value) => DockSettings.windowGap = Math.round(value)
+        }
+
+        FormCard.FormDelegateSeparator {}
+
+        SliderDelegate {
             id: radiusSlider
             text: i18n("Corner radius")
             from: 0

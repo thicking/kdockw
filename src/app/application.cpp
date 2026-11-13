@@ -154,6 +154,7 @@ void Application::connectSettingsAutoSave(KDockWSettings *settings, QObject *con
     connect(settings, &KDockWSettings::CornerRadiusChanged, context, saveSettings);
     connect(settings, &KDockWSettings::FloatingChanged, context, saveSettings);
     connect(settings, &KDockWSettings::FloatingMarginChanged, context, saveSettings);
+    connect(settings, &KDockWSettings::WindowGapChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BackgroundOpacityChanged, context, saveSettings);
     connect(settings, &KDockWSettings::BackgroundStyleChanged, context, saveSettings);
     connect(settings, &KDockWSettings::TintColorChanged, context, saveSettings);

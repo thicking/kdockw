@@ -279,6 +279,7 @@ TEST_CASE("First-run settings match the validated KDockW appearance", "[settings
     CHECK(settings.cornerRadius() == 17);
     CHECK(settings.floating());
     CHECK(settings.floatingMargin() == 3);
+    CHECK(settings.windowGap() == 0);
     CHECK(settings.visibilityMode() == 0);
     CHECK(settings.dodgeActiveOnly());
     CHECK(settings.reserveScreenSpace());

@@ -248,6 +248,7 @@ class DockSettings : public QObject {
 | `CornerRadius` | int | 17 | Panel corner radius |
 | `Floating` | bool | true | Floating panel mode |
 | `FloatingMargin` | int | 3 | Gap between the dock and the screen edge or adjacent panel (1–32 px) |
+| `WindowGap` | int | 0 | Additional Layer Shell reservation between the dock and maximized windows (0–20 px) |
 | `VisibilityMode` | int | 0 | Dock visibility behavior |
 | `Edge` | int | 1 | Screen edge (0=Top, 1=Bottom, 2=Left, 3=Right) |
 | `ShowDelay` | int | 200 | Show delay in ms |

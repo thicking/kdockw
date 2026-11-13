@@ -130,6 +130,13 @@ void DockShell::connectSettingsSignals()
     // Floating margin is global-only; it resizes the gap exactly like toggling floating.
     connect(s, &KDockWSettings::FloatingMarginChanged, m_view.get(), updateFloatingPadding);
 
+    // The window gap changes only the reserved work area, not the dock surface.
+    connect(s, &KDockWSettings::WindowGapChanged, this, [this]() {
+        m_view->updateSize();
+        m_view->update();
+        m_previewController->updateEdge();
+    });
+
     // Content padding changes the panel bar, exclusive zone, and the preview
     // popup's edge offset. The row position itself follows DockSettings in QML.
     const auto updateContentPadding = [this]() {

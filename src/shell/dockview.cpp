@@ -15,6 +15,7 @@
 #include <QDBusConnection>
 #include <QLoggingCategory>
 #include <QPainterPath>
+#include <LayerShellQt/Window>
 
 #include <taskmanager/tasksmodel.h>
 #include <KIconLoader>
@@ -23,6 +24,8 @@
 #include <QQmlEngine>
 #include <QScreen>
 #include <QtQml>
+
+#include <utility>
 
 Q_LOGGING_CATEGORY(lcDockView, "kdockw.shell.dockview")
 
@@ -46,6 +49,9 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
                           DockPlatform::Edge edge,
                           DockPlatform::VisibilityMode visibilityMode)
 {
+#ifdef KDOCKW_DIAGNOSTIC_BUILD
+    m_geometryTraceEnabled = qEnvironmentVariable("KDOCKW_GEOMETRY_TRACE") == QLatin1String("1");
+#endif
     // Capture the screen MultiDockManager assigned before setupWindow():
     // LayerShellQt < 6.6 creates the platform window in Window::get(), and
     // QtWayland then re-derives screen() from the still-empty geometry.
@@ -129,6 +135,29 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
     connect(this, &QWindow::screenChanged, this, &DockView::handleScreenChanged);
     if (m_dockScreen) {
         m_screenGeometryConnection = connect(m_dockScreen, &QScreen::geometryChanged, this, &DockView::handleScreenGeometryChanged);
+        if (m_geometryTraceEnabled) {
+            connect(m_dockScreen, &QScreen::availableGeometryChanged, this, [this] {
+                traceLayerGeometry(QStringLiteral("available-geometry-changed"));
+            });
+        }
+    }
+    if (m_geometryTraceEnabled) {
+        if (LayerShellQt::Window *layerWindow = LayerShellQt::Window::get(this)) {
+            connect(layerWindow, &LayerShellQt::Window::exclusionZoneChanged, this, [this] {
+                traceLayerGeometry(QStringLiteral("exclusive-zone-changed"));
+            });
+        }
+        connect(this, &QQuickWindow::frameSwapped, this, [this] {
+            if (m_geometryTraceAfterFrame.isEmpty()) {
+                return;
+            }
+            const QString phase = m_geometryTraceAfterFrame;
+            m_geometryTraceAfterFrame.clear();
+            traceLayerGeometry(QStringLiteral("frame-swapped-after-%1").arg(phase));
+        });
+        connect(this, &QWindow::visibleChanged, this, [this](bool visible) {
+            traceLayerGeometry(visible ? QStringLiteral("visible") : QStringLiteral("hidden"));
+        });
     }
 
     // React to screen lock/unlock (QScreen object stays the same, so screenChanged doesn't fire)
@@ -140,6 +169,10 @@ void DockView::initialize(TaskManager::TasksModel *tasksModel,
                                           SLOT(handleScreenLockChanged(bool)));
 
     show();
+    if (m_geometryTraceEnabled) {
+        traceLayerGeometry(QStringLiteral("initial-show"));
+        m_geometryTraceAfterFrame = QStringLiteral("initial-show");
+    }
     m_iconDiagnostics->logEnvironment(QStringLiteral("dock-shown"));
 }
 
@@ -319,7 +352,12 @@ void DockView::updateSize()
     }
 
     // Reserve the panel bar only when screen-space reservation is enabled.
-    m_platform->setExclusiveZone(m_settings->reserveScreenSpace() ? panelBarHeight() : 0);
+    m_platform->setExclusiveZone(kdockw::exclusiveZone(panelBarHeight(), m_settings->windowGap(), m_settings->reserveScreenSpace()));
+
+    if (m_geometryTraceEnabled) {
+        traceLayerGeometry(QStringLiteral("size-and-zone-requested"));
+        m_geometryTraceAfterFrame = QStringLiteral("size-and-zone-requested");
+    }
 
     if (m_visibilityController) {
         m_visibilityController->setZoomOverflowHeight(zoomOverflowHeight());
@@ -411,7 +449,26 @@ void DockView::handleScreenGeometryChanged()
 
 void DockView::handleScreenLockChanged(bool active)
 {
+    if (m_geometryTraceEnabled) {
+        traceLayerGeometry(active ? QStringLiteral("screensaver-active") : QStringLiteral("before-unlock-recovery"));
+    }
     if (active) {
+        m_unlockRecoveryPolicy.remember(unlockRecoveryState());
+        return;
+    }
+
+    const auto decision = m_unlockRecoveryPolicy.consume(unlockRecoveryState());
+    if (decision != UnlockRecoveryPolicy::Decision::Changed) {
+        qCDebug(lcDockView) << "Screen unlocked — keeping current dock surface"
+                            << (decision == UnlockRecoveryPolicy::Decision::Unchanged ? "(unchanged)" : "(no lock snapshot)");
+        applyBackgroundStyle();
+        if (m_geometryTraceEnabled) {
+            traceLayerGeometry(QStringLiteral("after-unlock-surface-kept"));
+            m_geometryTraceAfterFrame = QStringLiteral("unlock-surface-kept");
+        }
+        if (m_visibilityController) {
+            m_visibilityController->requestEvaluate();
+        }
         return;
     }
 
@@ -423,9 +480,83 @@ void DockView::handleScreenLockChanged(bool active)
     updateSize();
     applyBackgroundStyle();
     show();
+    if (m_geometryTraceEnabled) {
+        traceLayerGeometry(QStringLiteral("after-unlock-show"));
+        m_geometryTraceAfterFrame = QStringLiteral("unlock-recovery");
+    }
     if (m_visibilityController) {
         m_visibilityController->requestEvaluate();
     }
+}
+
+UnlockRecoveryState DockView::unlockRecoveryState() const
+{
+    const bool reserveScreenSpace = m_settings->reserveScreenSpace();
+    return {
+        .screenIdentity = reinterpret_cast<quintptr>(dockScreen()),
+        .screenGeometry = dockScreen() ? dockScreen()->geometry() : QRect{},
+        .windowSize = size(),
+        .layerSize = isVertical() ? QSize(width(), 0) : QSize(0, height()),
+        .edge = static_cast<int>(m_edge),
+        .platformEdge = static_cast<int>(m_platform->edge()),
+        .requestedExclusiveZone = kdockw::exclusiveZone(panelBarHeight(), m_settings->windowGap(), reserveScreenSpace),
+        .windowGap = m_settings->windowGap(),
+        .reserveScreenSpace = reserveScreenSpace,
+        .margin = m_platform->margin(),
+        .visibilityMode = m_visibilityController ? m_visibilityController->mode() : -1,
+    };
+}
+
+void DockView::traceLayerGeometry(const QString &phase)
+{
+    if (!m_geometryTraceEnabled) {
+        return;
+    }
+
+    QScreen *screen = dockScreen();
+    LayerShellQt::Window *layerWindow = LayerShellQt::Window::get(this);
+    const QRect screenRect = screen ? screen->geometry() : QRect{};
+    const QRect availableRect = screen ? screen->availableGeometry() : QRect{};
+    QRect derivedSurfaceRect;
+    switch (m_edge) {
+    case DockPlatform::Edge::Top:
+        derivedSurfaceRect = QRect(screenRect.x(), screenRect.y(), width(), height());
+        break;
+    case DockPlatform::Edge::Bottom:
+        derivedSurfaceRect = QRect(screenRect.x(), screenRect.bottom() - height() + 1, width(), height());
+        break;
+    case DockPlatform::Edge::Left:
+        derivedSurfaceRect = QRect(screenRect.x(), screenRect.y(), width(), height());
+        break;
+    case DockPlatform::Edge::Right:
+        derivedSurfaceRect = QRect(screenRect.right() - width() + 1, screenRect.y(), width(), height());
+        break;
+    }
+
+    QString layerScreenName = QStringLiteral("<unavailable>");
+#ifndef KDOCKW_COMPAT_NO_LAYERSHELL_SCREEN
+    if (layerWindow && layerWindow->screen()) {
+        layerScreenName = layerWindow->screen()->name();
+    }
+#endif
+
+    qCInfo(lcDockView).noquote() << "[KDOCKW_GEOMETRY_TRACE]"
+                                 << "phase=" << phase
+                                 << "screen=" << (screen ? screen->name() : QStringLiteral("<null>"))
+                                 << "layerScreen=" << layerScreenName
+                                 << "screenGeometry=" << screenRect
+                                 << "availableGeometry=" << availableRect
+                                 << "derivedSurfaceGeometry=" << derivedSurfaceRect
+                                 << "qtGeometry=" << geometry()
+                                 << "qtFrameGeometry=" << frameGeometry()
+                                 << "size=" << size()
+                                 << "zoneRequested=" << kdockw::exclusiveZone(panelBarHeight(), m_settings->windowGap(), m_settings->reserveScreenSpace())
+                                 << "zoneLayerShell=" << (layerWindow ? layerWindow->exclusionZone() : -999)
+                                 << "anchors=" << (layerWindow ? static_cast<int>(layerWindow->anchors()) : -1)
+                                 << "edge=" << static_cast<int>(m_edge)
+                                 << "reserve=" << m_settings->reserveScreenSpace()
+                                 << "visible=" << isVisible()
+                                 << "exposed=" << isExposed();
 }
 
 void DockView::applyBackgroundStyle()

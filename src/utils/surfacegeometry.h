@@ -82,4 +82,10 @@ inline int panelBarHeight(int iconSize, int crossPaddingLeading, int crossPaddin
     return panelBarHeight(iconSize, crossPaddingLeading, crossPaddingTrailing, 0, floatingPadding);
 }
 
+/** Layer Shell reservation includes the visible dock and its gap to windows. */
+inline int exclusiveZone(int panelBarHeight, int windowGap, bool reserveScreenSpace)
+{
+    return reserveScreenSpace ? std::max(0, panelBarHeight) + std::max(0, windowGap) : 0;
+}
+
 } // namespace kdockw

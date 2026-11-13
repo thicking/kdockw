@@ -9,6 +9,7 @@ add_executable(kdockw_unit_tests
     test_zoom_calculator.cpp
     test_spring_zoom_controller.cpp
     test_surface_geometry.cpp
+    test_unlock_recovery_policy.cpp
     test_input_region.cpp
     test_output_order.cpp
     test_background_opacity.cpp

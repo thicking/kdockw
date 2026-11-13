@@ -12,6 +12,7 @@
 #include "models/dockmodel.h"
 #include "utils/inputregion.h"
 #include "utils/layershellpolicy.h"
+#include "utils/surfacegeometry.h"
 
 #include <LayerShellQt/Window>
 
@@ -1114,7 +1115,7 @@ void PreviewController::applyEdgeLayout()
         const int dockExclusiveZone = !visibility
                 || visibility->mode() != static_cast<int>(DockPlatform::VisibilityMode::AlwaysVisible)
             ? -1
-            : (m_settings->reserveScreenSpace() ? m_dockView->panelBarHeight() : 0);
+            : kdockw::exclusiveZone(m_dockView->panelBarHeight(), m_settings->windowGap(), m_settings->reserveScreenSpace());
         const int dockReservation = dockExclusiveZone > 0
             ? dockExclusiveZone + m_dockView->platform()->margin()
             : 0;

@@ -243,13 +243,20 @@
       <max>32</max>
     </entry>
 
+    <entry name="WindowGap" type="Int">
+      <label>Gap between the dock and maximized windows (px)</label>
+      <default>0</default>
+      <min>0</min>
+      <max>20</max>
+    </entry>
+
     <entry name="VisibilityMode" type="Int">
       <label>Dock visibility mode (0=Always, 1=AutoHide, 2=Dodge)</label>
       <default>0</default>
     </entry>
 
     <entry name="ReserveScreenSpace" type="Bool">
-      <label>Reserve screen space for the dock</label>
+      <label>Reserve screen space for the dock and window gap</label>
       <default>true</default>
     </entry>
 
