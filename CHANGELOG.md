@@ -8,6 +8,16 @@ carried forward from the Krema-based development period.
 
 ## [Unreleased]
 
+### Added
+
+- Added a live, persistent 0–20 px gap between the dock and maximized windows, reserved through Layer Shell.
+
+### Fixed
+
+- Avoided recreating an unchanged dock surface when unlocking the screen, preserving its existing Layer Shell reservation.
+- Refreshed pinned task names when TaskManager replaces launcher rows with running windows, preserving the correct app identity and visible order on Qt 6.11.
+- Added Fedora 45 / Qt 6.11.2 to the v0.5.1 candidate package and Distro E2E matrix after its full E2E run passed.
+
 ## [0.5.0] - 2026-11-12
 
 ### Added

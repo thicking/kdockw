@@ -5,11 +5,17 @@
 GitHub Releases is KDockW's only publication channel. Each release contains
 the source archive, SHA-256 manifest, and packages built and tested by the
 required Distro E2E matrix. Target IDs are listed in
-`tests/distro/release-targets.txt`; the v0.5.0 matrix is Debian 13 and Ubuntu
-26.04 LTS. Fedora 45 remains an experimental manual target and is not a
-confirmed platform or release asset until Qt 6.11 compatibility and its full
-E2E gate pass. Older compatibility targets remain available for explicit
-manual runs but are not release gates or release assets.
+`tests/distro/release-targets.txt`; the published v0.5.0 matrix was Debian 13
+and Ubuntu 26.04 LTS. Fedora 45 passed the full Qt 6.11.2 Distro E2E for the
+v0.5.1 candidate and is now a required candidate target. Older compatibility
+targets remain available for explicit manual runs but are not release gates
+or release assets.
+
+For the current v0.5.1 candidate, Debian 13 passed 206/227 (21 skipped) and
+Fedora 45 passed 214/227 (13 skipped). Ubuntu 26.04 had one Preview fast-pointer
+timing failure in the full run; an isolated retry passed, but the original full
+run remains failed. The candidate matrix is not green and must not be released
+until the failure is resolved or its instability is addressed with evidence.
 Arch Linux is not a supported package target. Its packaging recipe and related
 build/test support were removed; historical signed tags and release assets are
 unchanged.

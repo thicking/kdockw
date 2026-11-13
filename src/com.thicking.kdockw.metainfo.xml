@@ -73,6 +73,12 @@
     <color type="primary" scheme_preference="dark">#8CE7F5</color>
   </branding>
   <releases>
+    <release version="0.5.1-dev" date="2026-11-12" type="development">
+      <description>
+        <p>Development build for Wayland unlock-geometry diagnostics and Fedora 45 / Qt 6.11 compatibility work.</p>
+        <p xml:lang="ru">Диагностическая сборка для анализа геометрии Wayland после разблокировки и совместимости Fedora 45 / Qt 6.11.</p>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-11-12">
       <description>
         <p>Adds persistent Folder Stacks, a shared order for pinned apps and folders, and file and launcher drag-and-drop. Task identity and popup interaction reliability were improved.</p>

@@ -1,3 +1,10 @@
+kdockw (0.5.1~dev-1) unstable; urgency=medium
+
+  * Reconcile TaskManager row replacements for Fedora Qt 6.11.
+  * Add diagnostic instrumentation for Plasma unlock geometry.
+
+ -- thicking <thicking@gmail.com>  Thu, 12 Nov 2026 00:00:00 +0500
+
 kdockw (0.5.0-1) unstable; urgency=medium
 
   * Add persistent Folder Stacks and unified ordering with pinned applications.

@@ -1,9 +1,9 @@
 # Inactive external package adapters
 
 GitHub Releases is the only publication channel for KDockW. The required
-release matrix is recorded in `tests/distro/release-targets.txt`. Fedora 45 is
-experimental/unconfirmed for v0.5.0 due to unresolved Qt 6.11 compatibility
-and is excluded from release assets. See the
+release matrix is recorded in `tests/distro/release-targets.txt`. Fedora 45
+was excluded from the v0.5.0 release assets; it passed full Qt 6.11.2 Distro
+E2E for the v0.5.1 candidate and is now included in its release matrix. See the
 [Distribution Support Policy](distribution-support-policy.md) and
 `tests/distro/release-targets.txt` for current representatives.
 

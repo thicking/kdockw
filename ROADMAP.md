@@ -255,25 +255,53 @@ Folder Stacks and Advanced Drag & Drop were accepted on KDE Plasma 6.6.6 / Wayla
 
 Production Release CTest passed 176/176; Diagnostic Release CTest passed 177/177. Release tooling passed 154 tests with 1 optional LFS test skipped. Full required Distro E2E passed on Debian 13 and Ubuntu 26.04 for all configured scenarios on exact commit `ebb0527aaa26f7c7f3886d88c0b03811bf099719` ([run 43194552508](https://github.com/thicking/kdockw/actions/runs/43194552508)). The signed tag `kdockw-v0.5.0` and [public GitHub Release](https://github.com/thicking/kdockw/releases/tag/kdockw-v0.5.0) were verified with source archive, both DEB packages, and `SHA256SUMS`.
 
-Fedora 45 remains experimental/unconfirmed: Qt 6.11.2 Distro E2E had 26 failures in the diagnostic rerun and was not part of the v0.5.0 release matrix. The maximized-window overlap after Plasma lock/unlock is tracked separately for v0.5.1 and is not included in this release. Stable v0.4.3 was not replaced automatically.
+Fedora 45 was experimental for v0.5.0. The v0.5.1 candidate fixed the stale TaskManager display role on structural row replacement, passed the full Fedora 45 / Qt 6.11.2 Distro E2E (214 passed, 13 skipped, 0 failed), and added Fedora to the candidate release matrix. The published v0.5.0 matrix remains historical. The maximized-window overlap after Plasma lock/unlock is tracked separately for v0.5.1 and is not included in v0.5.0. Stable v0.4.3 was not replaced automatically.
 
 - [x] **13.1 Folder Stacks:** add pinned folder stacks with a Grid view, file opening and drag-and-drop, animation, and usable handling of long lists.
 - [x] **13.2 Advanced Drag & Drop:** improve drag-and-drop to new and running applications, including Dolphin; handle cancellation and unsupported data safely.
 
-## v0.5.1 — Maximized Window Geometry After Unlock (planned)
+## v0.5.1 — Wayland Geometry & Fedora Compatibility (in progress)
 
-Owner-approved follow-up: investigate and fix maximized windows overlapping the
-dock after locking and unlocking Plasma/Wayland. This correction is outside
-v0.5.0; root cause and exact monitor/edge conditions are not yet established.
+- [ ] **92e4ea553c084196 Maximized Window Geometry After Unlock:** capture real
+  Wayland evidence for lock/unlock changes to the LayerShell exclusive zone,
+  surface commit, and KWin available geometry; preserve the Layer Shell surface
+  when unlock parameters are unchanged. The owner confirmed the real Plasma
+  6.6.6 / Wayland maximized-browser scenario after unlock: frameGeometry and
+  MaximizeArea both measured 1920×989 with no 59 px overlap. Broader recovery
+  modes and release gates remain to be verified.
+- [ ] **f87e3fa5d8554eb7 Dock-to-Window Gap:** add an independent persistent
+  0–20 px window gap through the Layer Shell exclusive zone, with live updates,
+  all four dock edges, no permanent reservation in Auto Hide/Dodge, and geometry
+  regression coverage. Default is 0 px.
+- [x] **6b3b5084bd3c479f Fedora 45 / Qt 6.11 Compatibility:** fixed the
+  stale TaskManager display role on structural replacement; Debian 13,
+  Ubuntu 26.04, and Fedora 45 packages built, and the full Fedora 45 suite
+  passed on Qt 6.11.2 (214 passed, 13 skipped, 0 failed). Fedora 45 is included
+  in the v0.5.1 candidate matrix.
 
-## Fedora 45 Qt 6.11 compatibility (technical debt)
+The first Ubuntu 26.04 full run had one preview fast-pointer timing failure;
+the isolated retry passed. Inspection showed the 190 ms assertion combined
+AT-SPI geometry lookup with input dispatch. The test now records lookup time
+separately, keeps the 190 ms limit on actual input dispatch, verifies the
+KWin-reported cursor position, and checks that the popup stays open. The
+instrumented isolated retry and the complete rerun passed.
 
-Fedora 45 is not confirmed for v0.5.0 and is excluded from required release
-packages. Re-enable it only after targeted Qt/KF compatibility work and a green
-full Distro E2E run on an approved candidate.
+Candidate verification: Production Release CTest **180/180**, Diagnostic
+Release CTest **181/181**; Debian 13 **210 passed / 21 skipped / 0 failed**;
+Ubuntu 26.04 **218 / 13 / 0**; Fedora 45 / Qt 6.11.2 **218 / 13 / 0**. The
+original failed Ubuntu full-run result remains preserved as historical evidence.
+The owner accepted the reported maximized-browser unlock case; a candidate
+lock/unlock check and manual Plasma checks for fullscreen, Auto Hide, Dodge,
+all edges, scaling, and TaskManager/previews remain open. v0.5.1 stays in
+progress pending that live acceptance; no release or tag has been created.
 
 ## v0.6.0 — Visual Effects & KWin Integration (planned)
 
+- [ ] **Context Menu UX Cleanup:** group KDockW settings/about/quit actions in a
+  `KDockW` submenu; rename the selected application's `Quit` action to
+  `Close application` without terminating the dock; preserve remaining system
+  and application actions for pinned apps, unpinned tasks, and window groups.
+  Add regression tests and manual Wayland verification.
 - [ ] Research supported KWin/Wayland interfaces for window animations and
   evaluate Scale/Genie and dock-icon association. Document Plasma compatibility
   and public/private API boundaries; build no prototype without a separate
@@ -281,6 +309,16 @@ full Distro E2E run on an approved candidate.
 - [ ] Improve glass materials, highlights, lighting, and shadows for light and
   dark wallpapers; measure GPU/frame cost on Intel, AMD, and NVIDIA hardware and
   provide controls for effects.
+
+## v0.7.0 — Built-in Dock Widgets & Application Launcher (planned)
+
+- [ ] **Built-in Dock Widget Model:** define the internal architecture for
+  built-in widgets, including dock slots, separators, and spacers; a public
+  plugin API is out of scope.
+- [ ] **Application Launcher Widget:** provide three switchable menu styles:
+  compact macOS Launchpad app/folder grid; Windows Start with pinned apps,
+  search, and full list; and KDE hierarchical Launchpad preserving the
+  KService/XDG Menu hierarchy.
 
 ## Technical debt — Classic Zoom Performance Profile
 
@@ -292,14 +330,8 @@ full Distro E2E run on an approved candidate.
 
 ## P3 — Unversioned future exploration and accepted work
 
-### Built-in Dock Widgets (planned; no release assignment)
+### Backlog — no release assignment
 
-- [ ] Define a small built-in widget model with left, center, and right slots,
-  separators, and spacers. Keep it internal; a public plugin API is out of scope.
-- [ ] **Application Launcher Widget:** provide compact macOS-style Launchpad,
-  Windows-style Start, and KDE-menu-based hierarchical Launchpad views. All
-  styles share search, keyboard control, localization, and Wayland-aware
-  positioning; use the real KService/XDG Menu hierarchy for KDE categories.
 - [ ] **Media Player Controls Widget:** use MPRIS2 over D-Bus, with player
   selection, track and artist metadata, artwork, transport controls, and
   seeking only when supported by the active player.
@@ -308,9 +340,9 @@ full Distro E2E run on an approved candidate.
   navigation. Investigate KDE JobViewServer/KIO for actual progress; show an
   indeterminate or neutral state when no progress is available.
 
-The shared built-in widget model is a prerequisite for the Launcher, Media
-Player Controls, and Downloads Stack. This planning does not assign a release
-version or date.
+Media Player Controls and Downloads Stack remain unversioned backlog items.
+The v0.7.0 widget model is a prerequisite for both. This planning assigns no
+release date.
 
 - **Badge Appearance (implemented and owner accepted):** default badge colors
   are `#FF3B30` and `#FFFFFF`; independent saved colors, reset, preview, and

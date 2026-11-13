@@ -13,24 +13,25 @@ and `SHA256SUMS`.
 
 GitHub Releases is the only publication channel. Starting with KDockW v0.3.2,
 the package-build and Distro E2E gates use the owner-approved representatives
-listed in `tests/distro/release-targets.txt`. For v0.5.0, Fedora 45 is
-experimental because Qt 6.11.2 compatibility is unconfirmed. Its package may
-be built for manual investigation, but Fedora is not a confirmed v0.5.0
-platform or a release asset. Reconsider it after targeted compatibility work
-and a green full Distro E2E run.
+listed in `tests/distro/release-targets.txt`. Fedora 45 was experimental and
+excluded from the published v0.5.0 assets. For the v0.5.1 candidate, Fedora 45
+Qt 6.11.2 package build and full Distro E2E passed (214 passed, 13 skipped,
+0 failed), so it has been added to the candidate matrix. The platform remains
+candidate-verified until the remaining release gates and owner acceptance pass.
+The complete candidate matrix is not yet green: Ubuntu 26.04 had one Preview
+fast-pointer timing failure in its full run, although an isolated retry passed.
 
 | Family | Required representative | Selection rule |
 | --- | --- | --- |
 | Debian | Current Debian stable | Update when Debian stable changes. |
 | Ubuntu | Current Ubuntu LTS | Follow LTS releases only; skip interim YY.10 releases. |
-| Fedora | Current stable Fedora | Add to a release matrix only after owner approval and a green full E2E run; Fedora 45 is experimental for v0.5.0. |
+| Fedora | Current stable Fedora | Add to a release matrix only after owner approval and a green full E2E run; Fedora 45 passed this gate for the v0.5.1 candidate. |
 
 The versioned list is `tests/distro/release-targets.txt`; the selected package
-metadata and pinned base image live in `tests/distro/targets.tsv`. The v0.5.0
-release representatives are Debian 13 and Ubuntu 26.04 LTS. Fedora 45 remains
-a manual compatibility target in `targets.tsv`, but is excluded from release
-assets until its compatibility is confirmed. Do not add separate mandatory
-packages for older point or distribution releases.
+metadata and pinned base image live in `tests/distro/targets.tsv`. The published
+v0.5.0 release representatives were Debian 13 and Ubuntu 26.04 LTS. Fedora 45
+is included in the v0.5.1 candidate matrix after its full compatibility run.
+Do not add separate mandatory packages for older point or distribution releases.
 
 `targets.tsv` may retain additional legacy compatibility rows and packaging
 recipes for explicit manual investigation. Those rows are not selected by
@@ -46,8 +47,8 @@ assets. Keeping a manual row does not make it a required release target.
   projects, credentials, keys, or publication steps for them. Optional adapters
   may remain in the repository but must not enter the release gate.
 - Arch Linux is unsupported. Its package recipe and CI/build/test paths were
-  removed by owner decision. The v0.5.0 release targets are Debian 13 and
-  Ubuntu 26.04 LTS; Fedora 45 is experimental and manually selectable.
+  removed by owner decision. The published v0.5.0 release targets were Debian
+  13 and Ubuntu 26.04 LTS; the v0.5.1 candidate matrix also includes Fedora 45.
 - An upstream EOL event alone does not delete a packaging recipe or manual
   compatibility target. It also does not add that target to future release
   packages. Required representatives are governed by the current stable/LTS

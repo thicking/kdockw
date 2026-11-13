@@ -380,6 +380,7 @@ Tier 3 runs the Tier 2 Appium scenarios against installed distro packages.
 | VIS-009 | `test_08_reservation.py::test_vis009_reservation_off_maximized_window_uses_full_output`, `test_vis009_already_maximized_window_reflows_on_live_reservation_toggle`, `test_vis009_live_icon_size_and_floating_update_maximized_consumer`, `test_vis009_visibility_policy_ignores_and_retains_reservation_preference`, `test_vis009_fresh_config_default_reserves_screen_space_for_maximized_consumer` (four edges, both saved preferences for mode changes; fresh default also verifies the AT-SPI description `Maximized windows avoid the dock`, checked/showing states, and no stored reservation key); `test_vis009_reservation_off_and_on_persist_and_reflow_existing_window_after_restart` (bottom) | Real KWin maximized state/frame/workarea/output bounds, window identity, and edge-aware dock geometry | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
 | SET-016 | `test_09_task_zones.py::test_tzone001_live_toggle_orders_visible_tasks_and_persists` (four edges, live on/off, ON/OFF restarts), `test_tzone007_fresh_default_separation_is_on` | AT-SPI switch/ordered items/separator, real app windows, `kdockwrc` | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
 | SET-020 | `test_08_reservation.py::test_vis009_live_floating_margin_update_maximized_consumer` (four edges: fresh 3 px default, Page Up to 13 px with autosave, reserved strip grows by exactly 10 px, slider disabled and full margin removed with Floating off, margin retained, restart restores the 13 px strip) | AT-SPI slider value/enabled state, `kdockwrc` `FloatingMargin`, real KWin maximized frame/workarea/output bounds, process identity | pending: not yet run |
+| SET-021 | `test_08_reservation.py::test_vis010_live_window_gap_updates_maximized_consumer` (four edges: fresh 0 px default, live 5 px change, autosave, same maximized consumer, restart restores work area) | AT-SPI slider value, `kdockwrc` `WindowGap`, real KWin maximized frame/workarea/output bounds | pending: not yet run |
 | CTX-007 | `test_09_task_zones.py::test_tzone003_grouped_instances_keep_one_pinned_slot_and_close_differently`, `test_tzone004_pin_and_unpin_use_real_context_menu_and_preserve_membership`; TZONE-002 for empty-section divider state | Real fixture windows/context menu input, ordered AT-SPI app names, separator state, saved pinned membership | native Tier 2 coverage; no DRM; installed Tier 3 unverified |
 | DND-006 | `test_09_task_zones.py::test_tzone005_on_reorders_inside_both_zones_and_clamps_cross_boundary`, `test_tzone006_off_allows_real_cross_zone_reorder_without_auto_pin` (both cross-boundary directions with separation on/off) | Real drags, ordered AT-SPI app names, saved pinned membership | native Tier 2 coverage; visual drop-indicator/drag ghost/paint unverified; installed Tier 3 unverified |
 | KBD-010 | `tests/appium/test_10_task_zone_input.py::test_kbd010_task_navigation_survives_native_launch_and_close` (four edges) | Real keys, AT-SPI item focus, native launch/close, KWin activation | native Tier 2 coverage; F12 is a delivery probe, not launch proof; painted-divider quality and KWin RPC unverified |
@@ -905,9 +906,12 @@ AT-SPI popup and its already mapped KWin surface. It then polls `showing`,
 `visible`, and current popup extents every 5 ms without serializing the whole
 webdriver tree. As soon as those extents fit inside the surface, it enters
 the popup centre and sends one short in-popup motion without waiting for
-painted pixels. Three fresh opens must each finish entry within 190 ms of
-the first observed visibility, within the recorded visibility-to-first-frame
-race window, and stay visible for another 500 ms. This does not claim
+painted pixels. The helper records the time spent waiting for AT-SPI geometry
+separately from the real input dispatch; a synchronous `Component.get_extents`
+query can vary with the test session and is not pointer latency. Three fresh
+opens must each dispatch the pointer path within 190 ms, KWin must report the
+cursor inside the current popup rect, and the popup must stay visible for
+another 500 ms. The 190 ms bound is unchanged. This does not claim
 stationary-pointer recovery or that every timing race is eliminated.
 
 ## Investigations
