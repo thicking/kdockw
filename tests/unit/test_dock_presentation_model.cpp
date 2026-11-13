@@ -5,7 +5,10 @@
 
 #include <taskmanager/abstracttasksmodel.h>
 
+#include <QFileInfo>
 #include <QStandardItemModel>
+#include <QSignalSpy>
+#include <QSignalBlocker>
 #include <QSet>
 #include <QTest>
 
@@ -290,4 +293,156 @@ TEST_CASE("Dock presentation keeps live TaskManager rows mapped during repeated 
         CHECK(model.data(model.index(3, 0), Qt::DisplayRole).toString() == QStringLiteral("Running C"));
         CHECK(model.data(model.index(4, 0), Qt::DisplayRole).toString() == QStringLiteral("Running D"));
     }
+}
+
+TEST_CASE("Dock presentation keeps a pinned launcher identity through the running-window transition",
+          "[dock-presentation][taskmanager-regression]")
+{
+    const QUrl launcherUrl(QStringLiteral("applications:org.example.Writer"));
+    QStandardItemModel tasks;
+    auto launcher = std::make_unique<QStandardItem>(QStringLiteral("Writer"));
+    launcher->setData(launcherUrl, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon);
+    launcher->setData(QStringLiteral("org.example.writer"), TaskManager::AbstractTasksModel::AppId);
+    launcher->setData(true, TaskManager::AbstractTasksModel::IsLauncher);
+    launcher->setData(false, TaskManager::AbstractTasksModel::IsWindow);
+    launcher->setData(QVariantList{}, TaskManager::AbstractTasksModel::WinIdList);
+    tasks.appendRow(launcher.release());
+
+    kdockw::DockEntriesModel entries;
+    const auto pinnedEntry = kdockw::DockEntry::task(launcherUrl);
+    entries.setEntries({pinnedEntry});
+
+    kdockw::DockPresentationModel model(&tasks, &entries);
+    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 1, 2000);
+    CHECK(model.entryIdForDockIndex(0) == pinnedEntry.id);
+    CHECK(model.taskIndexForDockIndex(0) == 0);
+    CHECK(model.data(model.index(0, 0), Qt::DisplayRole).toString() == QStringLiteral("Writer"));
+    CHECK(model.isPinnedDockIndex(0));
+
+    // TaskManager promotes the launcher's row to a running task. The visual
+    // row must keep the saved pin identity while all dynamic presentation
+    // roles continue to come from that same, current TaskManager row.
+    auto *item = tasks.item(0);
+    REQUIRE(item != nullptr);
+    {
+        // KF 6.31 can update DisplayRole while only announcing the window
+        // transition roles. Model this role-list omission explicitly.
+        const QSignalBlocker blocker(&tasks);
+        item->setData(QStringLiteral("Writer — report.txt"), Qt::DisplayRole);
+        item->setData(QVariantList{QStringLiteral("window-42")}, TaskManager::AbstractTasksModel::WinIdList);
+        item->setData(false, TaskManager::AbstractTasksModel::IsLauncher);
+        item->setData(true, TaskManager::AbstractTasksModel::IsWindow);
+        item->setData(true, TaskManager::AbstractTasksModel::IsActive);
+        item->setData(QStringLiteral("org.example.writer"), TaskManager::AbstractTasksModel::AppId);
+    }
+    QSignalSpy changed(&model, &QAbstractItemModel::dataChanged);
+    tasks.dataChanged(tasks.index(0, 0), tasks.index(0, 0),
+                      {TaskManager::AbstractTasksModel::IsLauncher, TaskManager::AbstractTasksModel::IsWindow,
+                       TaskManager::AbstractTasksModel::WinIdList, TaskManager::AbstractTasksModel::IsActive});
+
+    CHECK(model.rowCount() == 1);
+    CHECK(model.entryIdForDockIndex(0) == pinnedEntry.id);
+    CHECK(model.taskIndexForDockIndex(0) == 0);
+    CHECK(model.data(model.index(0, 0), Qt::DisplayRole).toString() == QStringLiteral("Writer — report.txt"));
+    CHECK(model.data(model.index(0, 0), TaskManager::AbstractTasksModel::WinIdList).toList()
+          == QVariantList{QStringLiteral("window-42")});
+    CHECK(model.data(model.index(0, 0), TaskManager::AbstractTasksModel::IsWindow).toBool());
+    CHECK(model.data(model.index(0, 0), TaskManager::AbstractTasksModel::IsActive).toBool());
+    CHECK(model.isPinnedDockIndex(0));
+    REQUIRE(changed.count() >= 1);
+    CHECK(changed.last().at(2).value<QList<int>>().contains(Qt::DisplayRole));
+
+    tasks.removeRow(0);
+    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 1, 2000);
+    CHECK(model.entryIdForDockIndex(0) == pinnedEntry.id);
+    CHECK(model.taskIndexForDockIndex(0) == -1);
+    CHECK(model.data(model.index(0, 0), Qt::DisplayRole).toString()
+          == QFileInfo(pinnedEntry.url.path()).completeBaseName());
+    CHECK(model.isPinnedDockIndex(0));
+}
+
+TEST_CASE("Dock presentation keeps the grouped application title when its active child changes",
+          "[dock-presentation][taskmanager-regression][qt611]")
+{
+    const QUrl launcherUrl(QStringLiteral("applications:org.example.Browser"));
+    QStandardItemModel tasks;
+    auto group = std::make_unique<QStandardItem>(QStringLiteral("Browser"));
+    group->setData(launcherUrl, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon);
+    group->setData(QStringLiteral("org.example.browser"), TaskManager::AbstractTasksModel::AppId);
+    group->setData(true, TaskManager::AbstractTasksModel::IsGroupParent);
+    group->setData(QStringList{QStringLiteral("window-1"), QStringLiteral("window-2")},
+                   TaskManager::AbstractTasksModel::WinIdList);
+
+    auto firstWindow = std::make_unique<QStandardItem>(QStringLiteral("Browser - Docs"));
+    firstWindow->setData(false, TaskManager::AbstractTasksModel::IsActive);
+    auto secondWindow = std::make_unique<QStandardItem>(QStringLiteral("Browser - Mail"));
+    secondWindow->setData(true, TaskManager::AbstractTasksModel::IsActive);
+    group->appendRow(firstWindow.release());
+    group->appendRow(secondWindow.release());
+    tasks.appendRow(group.release());
+
+    kdockw::DockEntriesModel entries;
+    const auto pinned = kdockw::DockEntry::task(launcherUrl);
+    entries.setEntries({pinned});
+    kdockw::DockPresentationModel model(&tasks, &entries);
+    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 1, 2000);
+
+    const QModelIndex dockIndex = model.index(0, 0);
+    QSignalSpy changed(&model, &QAbstractItemModel::dataChanged);
+    CHECK(model.entryIdForDockIndex(0) == pinned.id);
+    CHECK(model.taskIndexForDockIndex(0) == 0);
+    CHECK(model.data(dockIndex, Qt::DisplayRole).toString() == QStringLiteral("Browser"));
+
+    auto *rootItem = tasks.item(0);
+    rootItem->child(1)->setData(false, TaskManager::AbstractTasksModel::IsActive);
+    rootItem->child(0)->setData(true, TaskManager::AbstractTasksModel::IsActive);
+    rootItem->child(0)->setText(QStringLiteral("Browser - Calendar"));
+    CHECK(model.rowCount() == 1);
+    CHECK(model.entryIdForDockIndex(0) == pinned.id);
+    CHECK(model.data(dockIndex, Qt::DisplayRole).toString() == QStringLiteral("Browser"));
+    CHECK(changed.count() == 0);
+}
+
+TEST_CASE("Dock presentation refreshes a pinned row when TaskManager replaces it structurally",
+          "[dock-presentation][taskmanager-regression][rows]")
+{
+    const QUrl launcherUrl(QStringLiteral("applications:org.example.Editor"));
+    QStandardItemModel tasks;
+    auto launcher = std::make_unique<QStandardItem>(QStringLiteral("Editor"));
+    launcher->setData(launcherUrl, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon);
+    launcher->setData(QStringLiteral("org.example.editor"), TaskManager::AbstractTasksModel::AppId);
+    launcher->setData(true, TaskManager::AbstractTasksModel::IsLauncher);
+    launcher->setData(false, TaskManager::AbstractTasksModel::IsWindow);
+    tasks.appendRow(launcher.release());
+
+    kdockw::DockEntriesModel entries;
+    const auto pinnedEntry = kdockw::DockEntry::task(launcherUrl);
+    const auto folderEntry = kdockw::DockEntry::folderStack(QUrl::fromLocalFile(QStringLiteral("/tmp/notes")));
+    entries.setEntries({pinnedEntry, folderEntry});
+
+    kdockw::DockPresentationModel model(&tasks, &entries);
+    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 2, 2000);
+    const QString stableId = model.entryIdForDockIndex(0);
+    CHECK(stableId == pinnedEntry.id);
+    CHECK(model.entryIdForDockIndex(1) == folderEntry.id);
+    CHECK(model.data(model.index(0, 0), Qt::DisplayRole).toString() == QStringLiteral("Editor"));
+
+    // Some TaskManager implementations remove and insert the root row as a
+    // launcher becomes a window, without emitting dataChanged for the
+    // surviving pinned presentation row. Keep its stable dock identity and
+    // notify the delegate so it reads the replacement TaskManager row.
+    tasks.removeRow(0);
+    auto running = std::make_unique<QStandardItem>(QStringLiteral("Editor — Draft"));
+    running->setData(launcherUrl, TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon);
+    running->setData(QStringLiteral("org.example.editor"), TaskManager::AbstractTasksModel::AppId);
+    running->setData(false, TaskManager::AbstractTasksModel::IsLauncher);
+    running->setData(true, TaskManager::AbstractTasksModel::IsWindow);
+    tasks.insertRow(0, running.release());
+
+    CHECK(model.rowCount() == 2);
+    CHECK(model.entryIdForDockIndex(0) == stableId);
+    CHECK(model.entryIdForDockIndex(1) == folderEntry.id);
+    CHECK(model.taskIndexForDockIndex(0) == 0);
+    CHECK(model.isPinnedDockIndex(0));
+    CHECK(model.data(model.index(0, 0), Qt::DisplayRole).toString() == QStringLiteral("Editor — Draft"));
 }

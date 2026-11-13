@@ -3,6 +3,7 @@
 
 #include "config/applicationconfig.h"
 #include "kdockw.h"
+#include "models/icondiag.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -78,6 +79,7 @@ TEST_CASE("Diagnostic settings use one file without changing the Plasma environm
     CHECK(QFileInfo::exists(configPath));
 
     ScopedEnvironmentVariable taskDiagnostics("KDOCKW_TASK_DIAGNOSTICS", QByteArrayLiteral("1"));
+    kdockw::IconDiagnostics::prepareProcessEnvironment();
     CHECK(kdockw::diagnosticTaskLoggingEnabled());
     kdockw::clearDiagnosticLaunchEnvironment();
     CHECK_FALSE(qEnvironmentVariableIsSet("KDOCKW_DIAGNOSTIC_CONFIG"));

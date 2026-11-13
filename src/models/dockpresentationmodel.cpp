@@ -32,8 +32,16 @@ DockPresentationModel::DockPresentationModel(QAbstractItemModel *tasksModel, Doc
     // changed. Reconcile immediately so delegates never read an old taskIndex
     // against a new row order (the queued version briefly showed other apps'
     // names and icons until the event loop reached the rebuild).
-    connect(m_tasksModel, &QAbstractItemModel::rowsInserted, this, [this] { rebuild(); });
-    connect(m_tasksModel, &QAbstractItemModel::rowsRemoved, this, [this] { rebuild(); });
+    connect(m_tasksModel, &QAbstractItemModel::rowsInserted, this,
+            [this](const QModelIndex &parent, int first, int last) {
+                rebuild();
+                forwardTaskRowsChanged(parent, first, last);
+            });
+    connect(m_tasksModel, &QAbstractItemModel::rowsRemoved, this,
+            [this](const QModelIndex &parent, int first, int last) {
+                rebuild();
+                forwardTaskRowsChanged(parent, first, last);
+            });
     connect(m_tasksModel, &QAbstractItemModel::rowsMoved, this, [this] { rebuild(); });
     connect(m_tasksModel, &QAbstractItemModel::modelReset, this, [this] { rebuild(); });
     connect(m_tasksModel, &QAbstractItemModel::layoutChanged, this, [this] { rebuild(); });
@@ -85,6 +93,7 @@ QVariant DockPresentationModel::data(const QModelIndex &index, int role) const
         }
         return {};
     }
+
     return m_tasksModel->data(m_tasksModel->index(row.taskIndex, 0), role);
 }
 
@@ -421,12 +430,51 @@ void DockPresentationModel::rebuild()
     }
 }
 
-void DockPresentationModel::forwardTaskDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles)
+void DockPresentationModel::forwardTaskRowsChanged(const QModelIndex &parent, int first, int last)
 {
-    if (!topLeft.isValid() || topLeft.parent().isValid() || bottomRight.parent().isValid()) {
+    // TaskManager can replace the launcher/window data at the same root row
+    // through rowsRemoved/rowsInserted without a corresponding dataChanged.
+    // The presentation Row then keeps the same stable ID and task index, so
+    // rebuild() quite correctly sees no structural difference. Notify only
+    // the affected presentation rows after reconciliation to refresh their
+    // live TaskManager roles and QML bindings.
+    if (parent.isValid()) {
+        const int dockRow = rowForTaskIndex(parent.row());
+        if (dockRow >= 0) {
+            Q_EMIT dataChanged(index(dockRow, 0), index(dockRow, 0));
+        }
         return;
     }
+
+    const int rowCount = m_tasksModel->rowCount();
+    if (rowCount <= 0) {
+        return;
+    }
+    const int firstAffected = std::clamp(first, 0, rowCount - 1);
+    const int lastAffected = std::clamp(std::max(first, last), firstAffected, rowCount - 1);
+    for (int taskRow = firstAffected; taskRow <= lastAffected; ++taskRow) {
+        const int dockRow = rowForTaskIndex(taskRow);
+        if (dockRow >= 0) {
+            Q_EMIT dataChanged(index(dockRow, 0), index(dockRow, 0));
+        }
+    }
+}
+
+void DockPresentationModel::forwardTaskDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles)
+{
+    if (!topLeft.isValid() || !bottomRight.isValid() || topLeft.parent() != bottomRight.parent()) {
+        return;
+    }
+
+    if (topLeft.parent().isValid()) {
+        return;
+    }
+
     const int launcherRole = TaskManager::AbstractTasksModel::LauncherUrlWithoutIcon;
+    const int appNameRole = TaskManager::AbstractTasksModel::AppName;
+    const bool presentationMayChange = roles.isEmpty() || roles.contains(Qt::DisplayRole) || roles.contains(appNameRole)
+        || roles.contains(TaskManager::AbstractTasksModel::IsLauncher) || roles.contains(TaskManager::AbstractTasksModel::IsWindow)
+        || roles.contains(TaskManager::AbstractTasksModel::IsGroupParent) || roles.contains(TaskManager::AbstractTasksModel::WinIdList);
     if (roles.isEmpty() || roles.contains(launcherRole) || roles.contains(TaskManager::AbstractTasksModel::AppId)
         || roles.contains(TaskManager::AbstractTasksModel::WinIdList)
         || roles.contains(TaskManager::AbstractTasksModel::IsLauncher)
@@ -434,10 +482,30 @@ void DockPresentationModel::forwardTaskDataChanged(const QModelIndex &topLeft, c
         || roles.contains(TaskManager::AbstractTasksModel::IsGroupParent)) {
         scheduleRebuild();
     }
+    QList<int> forwardedRoles = roles;
+    if (presentationMayChange && !forwardedRoles.contains(Qt::DisplayRole)) {
+        // Qt/KF 6.31 can change a row from launcher to window and update its
+        // DisplayRole while omitting DisplayRole from the roles list. QML then
+        // keeps the old accessible name even though data() returns the new
+        // value. Explicitly notify delegates when task identity/window roles
+        // can change the visible name.
+        forwardedRoles.append(Qt::DisplayRole);
+    }
     for (int taskIndex = topLeft.row(); taskIndex <= bottomRight.row(); ++taskIndex) {
         const int dockIndex = rowForTaskIndex(taskIndex);
+        if (m_diagnosticsEnabled && presentationMayChange) {
+            qCInfo(lcDockPresentation).noquote()
+                << "[KDOCKW_TASK_DATA_TRACE]"
+                << "taskRow=" << taskIndex
+                << "dockRow=" << dockIndex
+                << "incomingRoles=" << roles
+                << "forwardedRoles=" << forwardedRoles
+                << "display=" << (taskIndex < m_tasksModel->rowCount()
+                                      ? m_tasksModel->data(m_tasksModel->index(taskIndex, 0), Qt::DisplayRole).toString()
+                                      : QStringLiteral("<invalid>"));
+        }
         if (dockIndex >= 0) {
-            Q_EMIT dataChanged(index(dockIndex, 0), index(dockIndex, 0), roles);
+            Q_EMIT dataChanged(index(dockIndex, 0), index(dockIndex, 0), forwardedRoles);
         }
     }
 }

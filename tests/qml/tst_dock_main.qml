@@ -371,6 +371,30 @@ Item {
             tryVerify(() => items(dock).length === 0)
         }
 
+        function test_launcherDelegateTracksDisplayRoleAfterWindowPromotion() {
+            DockModel.tasksModel.addTask({
+                display: "Browser",
+                AppId: "org.example.browser",
+                IsLauncher: true,
+                IsWindow: false,
+                ChildCount: 0,
+            })
+            let dock = makeDock(1)
+            let item = items(dock)[0]
+            compare(item.displayName, "Browser")
+
+            // Fedora 45 / Qt 6.11 changes a pinned row's DisplayRole during
+            // launcher-to-window promotion. Its delegate must refresh the
+            // accessible and tooltip name on a role-only update.
+            DockModel.tasksModel.setTaskData(0, "display", "Browser — Inbox")
+            tryCompare(item, "displayName", "Browser — Inbox")
+            DockModel.tasksModel.setTaskData(0, "IsLauncher", false)
+            DockModel.tasksModel.setTaskData(0, "IsWindow", true)
+            DockModel.tasksModel.setTaskData(0, "IsLauncher", true)
+            compare(items(dock)[0], item)
+            compare(item.displayName, "Browser — Inbox")
+        }
+
         function test_folderStackDelegateOpensGridPopup() {
             const entry = {
                 entryType: "folderStack",

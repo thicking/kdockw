@@ -610,3 +610,36 @@ Stack types.
 launcher, output, show-desktop, tooltip, hit-test, delegate-geometry and
 preview-setting tests then loaded the same Folder Stack type as production.
 Keep these harness registries aligned when a new C++ QML type is added.
+
+## 30. Forward structural TaskManager transitions to stable dock rows (2026-11)
+
+**Symptom:** On Fedora 45 with Qt 6.11.2 / KF 6.31, a pinned app could keep
+its place while its launcher became a running window, but AT-SPI and QML kept
+the old application name. Some later updates appeared to repair the row.
+
+**Cause:** TaskManager replaced the source root row through
+`rowsRemoved`/`rowsInserted`. `DockPresentationModel` reconciled the mapping,
+but the pinned presentation `entryId` and `taskIndex` remained unchanged, so
+there was no presentation-level data notification to make the delegate reread
+the new row's dynamic roles. Binding only the whole `model` map in QML was not
+enough to reliably refresh the changing `DisplayRole` on this Qt version.
+
+**Fix:** Rebuild synchronously after structural source-model changes, then
+forward `dataChanged` to only affected mapped presentation rows. Expose the
+changing `DisplayRole` as an explicit delegate role. Preserve the grouped
+parent's application label; deriving it from an active child's window title
+changes established behavior and caused grouped-preview regressions.
+
+**Evidence and limits:** Seven focused unit tests, the dock QML test, and 29
+Fedora 45 AT-SPI E2E regressions passed after the fix. An earlier intermediate
+implementation that substituted the active child title failed 9 of those 29
+and was removed. Full Fedora Distro E2E and Qt 6.8/6.10 validation remain open.
+
+## 31. Distinguish requested LayerShell zone from compositor geometry (2026-11)
+
+The v0.5.1 diagnostic trace records the dock's requested zone, LayerShellQt
+wrapper value, and `QScreen::availableGeometry()` separately around visibility,
+screen geometry, and lock/unlock recovery. The wrapper getter is not proof that
+KWin has applied the new exclusive zone. A root cause for maximized-window
+overlap after unlock must remain unclaimed until a real Plasma/Wayland trace
+correlates the surface commit with compositor available geometry.

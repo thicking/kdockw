@@ -20,9 +20,13 @@ Item {
     // Properties set by the Repeater delegate
     required property int index
     required property var model
+    // Bind the changing DisplayRole directly as a delegate role. Qt 6.11's
+    // Repeater may keep a model-map snapshot across a launcher-to-window role
+    // transition even when the source model emits dataChanged(display).
+    required property string display
 
     // Display name for tooltip (readable by parent)
-    readonly property string displayName: model.display || ""
+    readonly property string displayName: display || ""
     readonly property bool isFolderStack: model.entryType === "folderStack"
     readonly property int taskIndex: model.taskIndex !== undefined ? model.taskIndex : index
     readonly property string dockEntryId: model.entryId || ""

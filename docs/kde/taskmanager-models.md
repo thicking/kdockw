@@ -133,6 +133,14 @@ ordinal are the fallback. Diagnostic `[KDOCKW_DOCK_ROW]` records include the
 display and icon name alongside Desktop ID, launcher URL, stable ID, task
 index, and window/group flags.
 
+On Fedora 45 / Qt 6.11.2, a launcher-to-window transition can also replace a
+TaskManager root row structurally without changing the pinned presentation
+row's stable `entryId` or `taskIndex`. After reconciling `rowsInserted` and
+`rowsRemoved`, forward `dataChanged` only to the affected mapped dock rows so
+QML rereads roles from the current TaskManager row. The QML delegate binds
+`DisplayRole` as an explicit role property; do not substitute a grouped
+application's label with an arbitrary active child title.
+
 External drops accept local directories as Folder Stacks, files on task icons
 as URLs for that application, `.desktop` launchers, and Plasma task launcher
 URLs. Other MIME data is rejected. Folder Stacks are browse-only: file drops

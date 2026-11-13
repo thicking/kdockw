@@ -4,6 +4,7 @@
 #include "icondiag.h"
 
 #include <QDebug>
+#include <QCoreApplication>
 #include <QIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -204,6 +205,9 @@ IconDiagnostics::IconDiagnostics(QObject *parent)
 void IconDiagnostics::prepareProcessEnvironment() {
   if (!s_processSwitches) {
     s_processSwitches = readDiagnosticSwitches();
+  }
+  if (QCoreApplication::instance()) {
+    QCoreApplication::instance()->setProperty("kdockw.taskDiagnosticsEnabled", s_processSwitches->taskDiagnostics);
   }
   clearDiagnosticSwitchEnvironment();
 }

@@ -5,6 +5,7 @@
 
 #include <KSharedConfig>
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
 #include <QUrl>
@@ -27,8 +28,10 @@ inline QString diagnosticConfigPath()
 inline bool diagnosticTaskLoggingEnabled()
 {
 #ifdef KDOCKW_DIAGNOSTIC_BUILD
-    static const bool enabled = qEnvironmentVariableIntValue("KDOCKW_TASK_DIAGNOSTICS") == 1;
-    return enabled;
+    if (const auto *app = QCoreApplication::instance()) {
+        return app->property("kdockw.taskDiagnosticsEnabled").toBool();
+    }
+    return qEnvironmentVariableIntValue("KDOCKW_TASK_DIAGNOSTICS") == 1;
 #else
     return false;
 #endif

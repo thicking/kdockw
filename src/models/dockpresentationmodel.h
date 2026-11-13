@@ -74,6 +74,7 @@ private:
     void scheduleRebuild();
     void rebuild();
     void forwardTaskDataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QList<int> &roles);
+    void forwardTaskRowsChanged(const QModelIndex &parent, int first, int last);
 
     QAbstractItemModel *m_tasksModel = nullptr;
     DockEntriesModel *m_entriesModel = nullptr;

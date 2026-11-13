@@ -1,6 +1,7 @@
 # Required package and Distro E2E targets for GitHub Releases from v0.3.2.
-# Required v0.5.0 package and Distro E2E targets. Fedora 45 remains available
-# for manual compatibility checks, but is experimental and not release-verified
-# with Qt 6.11; see docs/releasing/distribution-support-policy.md.
+# Required package and Distro E2E targets for the v0.5.1 candidate. Fedora 45
+# was added after the full Qt 6.11.2 E2E run passed; release publication still
+# requires the complete candidate gates and owner acceptance.
 debian-13
 ubuntu-26.04
+fedora-45

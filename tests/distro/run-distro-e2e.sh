@@ -27,6 +27,7 @@
 #
 # Environment:
 #   KDOCKW_DISTRO_REBUILD_PACKAGE=1   rebuild the package even if cached
+#   KDOCKW_DISTRO_PACKAGE_CACHE      package output root (default .cache/packages)
 #   KDOCKW_DISTRO_SKIP_IMAGE_BUILD=1  reuse an existing kdockw-e2e-distro:<target>
 #                                    (steps 1 and 3 are skipped)
 #   KDOCKW_CCACHE_DIR, CCACHE_MAXSIZE, KDOCKW_CI_REGISTRY
@@ -217,7 +218,8 @@ await_prep() {
 
 [[ "$skip_image" == 1 ]] || start_prep
 
-pkg_dir="$here/.cache/packages/$target"
+package_cache_root="${KDOCKW_DISTRO_PACKAGE_CACHE:-$here/.cache/packages}"
+pkg_dir="$package_cache_root/$target"
 shopt -s nullglob
 pkgs=("$pkg_dir"/*.rpm "$pkg_dir"/*.deb)
 shopt -u nullglob
@@ -226,7 +228,7 @@ if [[ "${KDOCKW_DISTRO_REBUILD_PACKAGE:-0}" == 1 || ${#pkgs[@]} -eq 0 ]]; then
     rm -rf "$pkg_dir"
     KDOCKW_DOCKER_PLATFORM="${KDOCKW_E2E_PLATFORM:-}" \
         KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS="${KDOCKW_DIAGNOSTIC_DEBUG_SYMBOLS:-0}" \
-        "$here/build-package.sh" "$target" "$here/.cache/packages"
+        "$here/build-package.sh" "$target" "$package_cache_root"
     echo "[distro] package: $(($(now) - t0))s"
 fi
 
