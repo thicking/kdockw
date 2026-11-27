@@ -48,6 +48,17 @@ QtObject {
         function launch(serviceId) { return false }
         function launchAction(serviceId, actionName) { return false }
     }
+    // Mock of TrashState: tests set `empty` and read recorded calls.
+    readonly property QtObject trashState: QtObject {
+        property bool empty: true
+        property var calls: []
+        function _record(name, args) { calls = calls.concat([{ name: name, args: Array.from(args) }]) }
+        function callsTo(name) { return calls.filter(c => c.name === name) }
+        function open() { _record("open", arguments) }
+        function moveToTrash(urls) { _record("moveToTrash", arguments) }
+        function emptyTrash() { _record("emptyTrash", arguments) }
+        function reset() { empty = true; calls = [] }
+    }
     readonly property QtObject applicationLauncherState: QtObject {
         property string style: "launchpad"
         property var pinnedApplicationIds: []
@@ -158,6 +169,18 @@ QtObject {
             for (let row = 0; row < count; ++row)
                 if (get(row).widgetKind === "applicationLauncher") return true
             return false
+        }
+        readonly property bool hasTrash: {
+            for (let row = 0; row < count; ++row)
+                if (get(row).widgetKind === "trash") return true
+            return false
+        }
+        function appendTrash(slot) {
+            if (hasTrash) return ""
+            const id = "widget:trash:mock-" + (++_nextWidgetId)
+            append({ entryId: id, entryType: "builtInWidget", widgetKind: "trash",
+                     placementSlot: slot || "end", widgetSize: 0, widgetVisible: true })
+            return id
         }
         function entryIdAt(row) { return row >= 0 && row < count ? get(row).entryId : "" }
         function entryTypeAt(row) { return row >= 0 && row < count ? get(row).entryType : "" }
@@ -277,6 +300,7 @@ QtObject {
     function reset() {
         tasksModel.reset()
         entries.clear()
+        trashState.reset()
         currentDesktop = 1
         virtualDesktopMode = 0
         pinnedTaskCount = 0

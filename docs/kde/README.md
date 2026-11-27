@@ -24,6 +24,7 @@ Verified API documentation from actual KDE headers (`/usr/include/`).
 |----------|-------------|
 | [drag-and-drop.md](drag-and-drop.md) | TasksModel DnD — MimeType/MimeData roles, move/syncLaunchers, launcher management, URL comparison |
 | [folder-stacks.md](folder-stacks.md) | KIO directory model and default-app URL opening for Folder Stacks |
+| [trash.md](trash.md) | KIO trash state (trashrc), DeleteOrTrashJob trash/empty with confirmation, opening trash:/ |
 
 ### Context Menu
 

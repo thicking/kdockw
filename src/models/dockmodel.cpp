@@ -10,6 +10,7 @@
 #include "config/applicationconfig.h"
 #include "shell/outputordermonitor.h"
 #include "taskiconprovider.h"
+#include "trashstate.h"
 
 #include <taskmanager/abstracttasksmodel.h>
 #include <taskmanager/tasksmodel.h>
@@ -104,6 +105,7 @@ DockModel::DockModel(QObject *parent, KDockWSettings *settings)
     , m_dockEntriesModel(std::make_unique<DockEntriesModel>(this))
     , m_applicationCatalog(std::make_unique<ApplicationCatalog>(this))
     , m_applicationLauncherState(std::make_unique<ApplicationLauncherState>(settings, this))
+    , m_trashState(std::make_unique<TrashState>(this))
     , m_mediaPlayerController(std::make_unique<MediaPlayerController>(this))
     , m_tasksModel(std::make_unique<TaskManager::TasksModel>(this))
     , m_virtualDesktopInfo(std::make_shared<TaskManager::VirtualDesktopInfo>(this))
@@ -421,6 +423,11 @@ ApplicationCatalog *DockModel::applicationCatalog() const
 ApplicationLauncherState *DockModel::applicationLauncherState() const
 {
     return m_applicationLauncherState.get();
+}
+
+TrashState *DockModel::trashState() const
+{
+    return m_trashState.get();
 }
 
 MediaPlayerController *DockModel::mediaPlayerController() const

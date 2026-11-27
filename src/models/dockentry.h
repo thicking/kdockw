@@ -41,6 +41,7 @@ struct DockEntry {
     [[nodiscard]] static DockEntry spacer(DockWidgetSlot slot, int size);
     [[nodiscard]] static DockEntry applicationLauncher(DockWidgetSlot slot);
     [[nodiscard]] static DockEntry mediaPlayer(DockWidgetSlot slot);
+    [[nodiscard]] static DockEntry trash(DockWidgetSlot slot);
     [[nodiscard]] bool isValid() const;
     bool operator==(const DockEntry &) const = default;
 };

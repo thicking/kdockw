@@ -334,10 +334,12 @@ QVariantList DockPresentationModel::zoomLayoutSpecs(int iconSize) const
         const bool widget = row.entryType == QLatin1String("builtInWidget");
         const bool launcher = widget && row.widgetKind == QLatin1String("applicationLauncher");
         const bool media = widget && row.widgetKind == QLatin1String("mediaPlayer");
+        const bool trash = widget && row.widgetKind == QLatin1String("trash");
         const double size = media && m_mediaPlayerDisplayMode == 2 ? m_mediaPlayerExpandedWidth
             : media && m_mediaPlayerDisplayMode == 1 ? std::max(96, iconSize)
             : widget && row.widgetSize > 0 ? std::max(4, row.widgetSize) : std::max(1, iconSize);
-        specs.append(QVariantMap{{QStringLiteral("size"), size}, {QStringLiteral("canMagnify"), !widget || launcher || (media && m_mediaPlayerDisplayMode == 0)}});
+        specs.append(QVariantMap{{QStringLiteral("size"), size},
+                                 {QStringLiteral("canMagnify"), !widget || launcher || trash || (media && m_mediaPlayerDisplayMode == 0)}});
     }
     return specs;
 }

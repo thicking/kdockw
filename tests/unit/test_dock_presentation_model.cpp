@@ -255,13 +255,14 @@ TEST_CASE("Application Launcher and compact media participate in dock magnificat
     const auto spacer = kdockw::DockEntry::spacer(kdockw::DockWidgetSlot::Center, 32);
     const auto launcher = kdockw::DockEntry::applicationLauncher(kdockw::DockWidgetSlot::End);
     const auto media = kdockw::DockEntry::mediaPlayer(kdockw::DockWidgetSlot::End);
-    entries.setEntries({separator, spacer, launcher, media});
+    const auto trash = kdockw::DockEntry::trash(kdockw::DockWidgetSlot::End);
+    entries.setEntries({separator, spacer, launcher, media, trash});
 
     kdockw::DockPresentationModel model(&tasks, &entries);
     model.setMediaPlayerAvailable(true);
-    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 4, 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(model.rowCount(), 5, 2000);
     const QVariantList specs = model.zoomLayoutSpecs(48);
-    REQUIRE(specs.size() == 4);
+    REQUIRE(specs.size() == 5);
     for (int row = 0; row < model.rowCount(); ++row) {
         const auto kind = model.data(model.index(row, 0), kdockw::DockPresentationModel::WidgetKindRole).toString();
         const auto spec = specs.at(row).toMap();
@@ -269,8 +270,7 @@ TEST_CASE("Application Launcher and compact media participate in dock magnificat
             : kind == QLatin1String("mediaPlayer") ? 48.0 : 48.0;
         CHECK(spec.value(QStringLiteral("size")).toDouble() == expectedSize);
         CHECK(spec.value(QStringLiteral("canMagnify")).toBool()
-              == (kind == QLatin1String("applicationLauncher")
-                  || kind == QLatin1String("mediaPlayer")));
+              == (kind == QLatin1String("applicationLauncher") || kind == QLatin1String("mediaPlayer") || kind == QLatin1String("trash")));
     }
     model.setMediaPlayerDisplayMode(1);
     CHECK_FALSE(model.zoomLayoutSpecs(48).at(3).toMap().value(QStringLiteral("canMagnify")).toBool());

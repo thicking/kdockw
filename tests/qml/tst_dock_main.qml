@@ -4618,6 +4618,107 @@ Item {
             compare(dock.computeDragTargetIndex(outsideDock.x, outsideDock.y), -1)
         }
 
+        function addTrashWidget() {
+            return DockModel.tasksModel.addTask({
+                display: "Trash",
+                entryType: "builtInWidget",
+                widgetKind: "trash",
+                entryId: "widget:trash:fixture",
+                taskIndex: -1,
+                isPinned: true,
+            })
+        }
+
+        function test_trashWidgetIconFollowsTrashState() {
+            addTrashWidget()
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            verify(item.isTrash)
+            compare(item.displayName, "Trash")
+            const icon = T.findFirst(item, o => o.objectName === "dockItemIconImage")
+            verify(icon && icon.visible, "the Trash widget draws a theme icon like an application")
+            verify(icon.source.toString().startsWith("image://icon/user-trash?"), icon.source)
+            DockModel.trashState.empty = false
+            tryVerify(() => icon.source.toString().startsWith("image://icon/user-trash-full?"),
+                      2000, "a non-empty trash shows the full trash icon")
+            DockModel.trashState.empty = true
+            tryVerify(() => icon.source.toString().startsWith("image://icon/user-trash?"))
+        }
+
+        function test_trashWidgetClickOpensTrashAndRightClickShowsTrashMenu() {
+            addTrashWidget()
+            const dock = makeDock(1)
+            const c = hoverItem(items(dock)[0])
+            mouseClick(stage, c.x, c.y, Qt.LeftButton)
+            tryCompare(DockModel.trashState.callsTo("open"), "length", 1)
+            mouseClick(stage, c.x, c.y, Qt.RightButton)
+            compare(DockContextMenu.callsTo("showForTrash").length, 1)
+            compare(DockContextMenu.callsTo("showForDock").length, 0,
+                    "the Trash widget has its own menu instead of the plain dock menu")
+        }
+
+        function test_externalDropOnTrashMovesFilesToTrash() {
+            addTrashWidget()
+            const dock = makeDock(1)
+            const item = items(dock)[0]
+            compare(dock.computeExternalDropIndex(dock._primaryRestSlotStart(item) + item.width / 2), 0,
+                    "the Trash widget is a file drop target")
+            const area = T.findFirst(dock, o => o.objectName === "externalDropArea")
+            const fileDrop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp/note.txt"), Qt.resolvedUrl("file:///tmp")],
+                formats: [],
+                accepted: false,
+            }
+            area.dropTargetIndex = 0
+            area.processDrop(fileDrop)
+            verify(fileDrop.accepted)
+            compare(DockModel.trashState.callsTo("moveToTrash").length, 1)
+            compare(DockModel.trashState.callsTo("moveToTrash")[0].args[0].length, 2)
+            compare(DockActions.callsTo("addFolderStack").length, 0, "a folder dropped on the Trash is not pinned")
+
+            const desktopDrop = {
+                hasUrls: true,
+                urls: [Qt.resolvedUrl("file:///tmp/app.desktop")],
+                formats: [],
+                accepted: false,
+            }
+            area.dropTargetIndex = 0
+            area.processDrop(desktopDrop)
+            verify(desktopDrop.accepted)
+            compare(DockModel.trashState.callsTo("moveToTrash").length, 2)
+            compare(DockActions.callsTo("addLauncher").length, 0, "a .desktop file dropped on the Trash is not pinned")
+
+            const taskDrag = {
+                hasUrls: false,
+                urls: [],
+                formats: ["text/x-orgkdeplasmataskmanager_taskurl"],
+                getDataAsString: function() { return "applications:org.kde.kate.desktop\n" },
+                accepted: true,
+            }
+            area.dropTargetIndex = 0
+            area.processDrop(taskDrag)
+            verify(!taskDrag.accepted, "a Plasma task drag carries no files to trash")
+            compare(DockModel.trashState.callsTo("moveToTrash").length, 2)
+            compare(DockActions.callsTo("addLauncher").length, 0)
+        }
+
+        function test_widgetManagerAddsOneTrashWidget() {
+            const dock = makeDock(0)
+            const manager = dock.builtInWidgetManager
+            manager.open()
+            tryVerify(() => manager.opened)
+            const addTrash = findChild(manager, "addTrashWidgetButton")
+            verify(addTrash && addTrash.enabled)
+            compare(addTrash.text, "Add Trash")
+            addTrash.clicked()
+            compare(DockModel.dockEntriesModel.count, 1)
+            tryVerify(() => !addTrash.enabled)
+            compare(addTrash.text, "Trash already added")
+            compare(DockModel.dockEntriesModel.appendTrash("end"), "")
+            manager.close()
+        }
+
         function test_launcherUrlFromPlasmaTaskMime() {
             addTasks(["A"])
             let dock = makeDock(1)

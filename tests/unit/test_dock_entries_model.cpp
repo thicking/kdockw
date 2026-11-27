@@ -8,6 +8,27 @@
 #include <QStandardItemModel>
 #include <QTest>
 
+TEST_CASE("Dock entries model adds a single Trash widget", "[dock-entries][dock-widgets][trash]")
+{
+    kdockw::DockEntriesModel entries;
+    CHECK_FALSE(entries.hasTrash());
+    CHECK(entries.appendTrash(QStringLiteral("middle")).isEmpty()); // unknown slot
+    const QString id = entries.appendTrash();
+    REQUIRE_FALSE(id.isEmpty());
+    CHECK(entries.hasTrash());
+    CHECK(entries.appendTrash(QStringLiteral("start")).isEmpty());
+    REQUIRE(entries.entries().size() == 1);
+    CHECK(entries.entries().first().slot == kdockw::DockWidgetSlot::End);
+
+    QStandardItemModel tasks;
+    kdockw::DockPresentationModel presentation(&tasks, &entries);
+    QTRY_COMPARE(presentation.rowCount(), 1);
+    CHECK(presentation.data(presentation.index(0, 0), kdockw::DockPresentationModel::WidgetKindRole).toString() == QStringLiteral("trash"));
+
+    CHECK(entries.removeBuiltInWidget(id));
+    CHECK_FALSE(entries.hasTrash());
+}
+
 TEST_CASE("Dock entries model exposes typed roles and retains mixed order", "[dock-entries]")
 {
     kdockw::DockEntriesModel model;

@@ -2257,3 +2257,54 @@ msgstr "%1 — звук выключен"
 #: src/qml/MediaPlayerWidget.qml
 msgid "The system audio output is muted."
 msgstr "Системный звуковой выход выключен."
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@title:menu"
+msgid "Trash"
+msgstr "Корзина"
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@action:inmenu"
+msgid "Open"
+msgstr "Открыть"
+
+#: src/models/dockcontextmenu.cpp
+msgctxt "@action:inmenu"
+msgid "Empty Trash"
+msgstr "Очистить корзину"
+
+#: src/models/trashstate.cpp
+msgid "Trash Emptied"
+msgstr "Корзина очищена"
+
+#: src/models/trashstate.cpp
+msgid "The Trash was emptied."
+msgstr "Корзина была очищена."
+
+#: src/qml/DockItem.qml src/qml/main.qml
+msgid "Trash"
+msgstr "Корзина"
+
+#: src/qml/DockItem.qml
+msgid "Trash is empty"
+msgstr "Корзина пуста"
+
+#: src/qml/DockItem.qml
+msgid "Trash contains items"
+msgstr "В корзине есть файлы"
+
+#: src/qml/main.qml
+msgid "Add Trash"
+msgstr "Добавить корзину"
+
+#: src/qml/main.qml
+msgid "Trash already added"
+msgstr "Корзина уже добавлена"
+
+#: src/qml/main.qml
+msgid "The dock already has a Trash widget."
+msgstr "В доке уже есть виджет «Корзина»."
+
+#: src/qml/main.qml
+msgid "Add a Trash widget that shows when the trash is full and takes dropped files."
+msgstr "Добавить виджет «Корзина», который показывает, есть ли в корзине файлы, и принимает перетаскиваемые файлы."

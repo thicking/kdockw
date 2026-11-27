@@ -32,11 +32,14 @@ Item {
         ? (model.widgetKind === "spacer" ? i18n("Dock spacer")
             : model.widgetKind === "applicationLauncher" ? i18n("Application Launcher")
             : model.widgetKind === "mediaPlayer" ? i18n("Media Player")
+            : model.widgetKind === "trash" ? i18n("Trash")
             : i18n("Separator")) : display || ""
     readonly property bool isFolderStack: model.entryType === "folderStack"
     readonly property bool isBuiltInWidget: model.entryType === "builtInWidget"
     readonly property bool isApplicationLauncher: isBuiltInWidget && model.widgetKind === "applicationLauncher"
     readonly property bool isMediaPlayer: isBuiltInWidget && model.widgetKind === "mediaPlayer"
+    readonly property bool isTrash: isBuiltInWidget && model.widgetKind === "trash"
+    readonly property string trashIconName: DockModel.trashState.empty ? "user-trash" : "user-trash-full"
     readonly property bool usesDefaultLauncherIcon: isApplicationLauncher && !(model.iconIsCustom ?? false)
     readonly property string defaultLauncherIconName: {
         switch (DockModel.applicationLauncherState.style) {
@@ -50,6 +53,7 @@ Item {
     readonly property var mediaPlayerWidget: mediaPlayerWidgetLoader.item
     readonly property string iconName: isFolderStack ? (model.iconName || "folder")
         : isApplicationLauncher ? (usesDefaultLauncherIcon ? defaultLauncherIconName : (model.iconName || defaultLauncherIconName))
+        : isTrash ? trashIconName
         : isBuiltInWidget ? "" : DockModel.iconName(taskIndex)
     readonly property color launcherIconSurface: DockView.backgroundColor.a > 0
         ? BadgeTextColor.composite(DockView.backgroundColor, Kirigami.Theme.backgroundColor)
@@ -84,6 +88,7 @@ Item {
         let parts = []
         if (isFolderStack) return i18n("Folder stack")
         if (isApplicationLauncher) return i18n("Open application launcher")
+        if (isTrash) return DockModel.trashState.empty ? i18n("Trash is empty") : i18n("Trash contains items")
         if (isBuiltInWidget) return model.widgetKind === "spacer" ? i18n("Dock spacer") : i18n("Dock separator")
         if (DockModel.isPinned(taskIndex)) parts.push(i18n("Pinned"))
         if (model.IsActive) parts.push(i18n("Active"))
@@ -100,14 +105,15 @@ Item {
     // Keyboard focus state (set by main.qml during keyboard navigation)
     property bool isKeyboardFocused: false
 
-    Accessible.role: isBuiltInWidget && !isApplicationLauncher ? Accessible.Separator : Accessible.Button
+    Accessible.role: isBuiltInWidget && !isApplicationLauncher && !isTrash ? Accessible.Separator : Accessible.Button
     Accessible.name: displayName
     Accessible.description: accessibleDescription
-    Accessible.focusable: !isBuiltInWidget || isApplicationLauncher
+    Accessible.focusable: !isBuiltInWidget || isApplicationLauncher || isTrash
     Accessible.focused: isKeyboardFocused
     Accessible.onPressAction: {
         if (isFolderStack) openFolderStack()
         else if (isApplicationLauncher) applicationLauncherRequested()
+        else if (isTrash) DockModel.trashState.open()
         else if (!isBuiltInWidget) DockActions.activate(taskIndex)
     }
     signal applicationLauncherRequested()
@@ -888,13 +894,16 @@ Item {
         // Anchors set via states below (iconAnchorStates)
         width: iconSize
         height: iconSize
-        visible: !dockItem.isFolderStack && (!dockItem.isBuiltInWidget || dockItem.isApplicationLauncher)
+        visible: !dockItem.isFolderStack
+            && (!dockItem.isBuiltInWidget || dockItem.isApplicationLauncher || dockItem.isTrash)
             && !dockItem.usesDefaultLauncherIcon
         source: {
             if (dockItem.isFolderStack) return ""
             if (dockItem.isApplicationLauncher)
                 return "image://icon/" + encodeURIComponent(dockItem.iconName || dockItem.defaultLauncherIconName)
                     + "?v=" + DockView.iconCacheVersion
+            if (dockItem.isTrash)
+                return "image://icon/" + dockItem.trashIconName + "?v=" + DockView.iconCacheVersion
             if (dockItem.isBuiltInWidget) return ""
             // IMPORTANT: Read model.display to create a reactive dependency on
             // model data. After model reordering (move), the Repeater may update

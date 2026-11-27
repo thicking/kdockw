@@ -10,6 +10,7 @@
 #include "dockentriesmodel.h"
 #include "dockpresentationmodel.h"
 #include "mediaplayercontroller.h"
+#include "trashstate.h"
 
 #include <taskmanager/activityinfo.h>
 #include <taskmanager/tasksmodel.h>
@@ -45,6 +46,7 @@ class DockModel : public QObject
     Q_PROPERTY(DockPresentationModel *dockPresentationModel READ dockPresentationModel CONSTANT)
     Q_PROPERTY(ApplicationCatalog *applicationCatalog READ applicationCatalog CONSTANT)
     Q_PROPERTY(ApplicationLauncherState *applicationLauncherState READ applicationLauncherState CONSTANT)
+    Q_PROPERTY(TrashState *trashState READ trashState CONSTANT)
     Q_PROPERTY(MediaPlayerController *mediaPlayerController READ mediaPlayerController CONSTANT)
     Q_PROPERTY(int pinnedDockEntryCount READ pinnedDockEntryCount NOTIFY pinnedDockEntryCountChanged)
     Q_PROPERTY(bool taskDiagnosticsEnabled READ taskDiagnosticsEnabled CONSTANT)
@@ -63,6 +65,7 @@ public:
     [[nodiscard]] DockPresentationModel *dockPresentationModel() const;
     [[nodiscard]] ApplicationCatalog *applicationCatalog() const;
     [[nodiscard]] ApplicationLauncherState *applicationLauncherState() const;
+    [[nodiscard]] TrashState *trashState() const;
     [[nodiscard]] MediaPlayerController *mediaPlayerController() const;
     void setMediaPlayerEnabled(bool enabled);
     [[nodiscard]] int pinnedDockEntryCount() const;
@@ -179,6 +182,7 @@ private:
     std::unique_ptr<DockEntriesModel> m_dockEntriesModel;
     std::unique_ptr<ApplicationCatalog> m_applicationCatalog;
     std::unique_ptr<ApplicationLauncherState> m_applicationLauncherState;
+    std::unique_ptr<TrashState> m_trashState;
     std::unique_ptr<MediaPlayerController> m_mediaPlayerController;
     bool m_mediaPlayerEnabled = true;
     std::unique_ptr<TaskManager::TasksModel> m_tasksModel;

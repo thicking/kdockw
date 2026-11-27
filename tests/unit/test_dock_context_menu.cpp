@@ -49,6 +49,26 @@ kdockw::ContextMenuData baseData()
 
 } // namespace
 
+TEST_CASE("context menu shows disabled application actions as disabled", "[contextmenu][trash]")
+{
+    auto data = baseData();
+    int emptyCalls = 0;
+    kdockw::ContextMenuAction emptyTrash{QStringLiteral("Empty Trash"), {}, false, [&emptyCalls]() {
+                                             ++emptyCalls;
+                                         }};
+    emptyTrash.enabled = false;
+    data.applicationActions = {{QStringLiteral("Open"), {}, false, []() { }}, emptyTrash};
+    QObject context;
+    QMenu *menu = kdockw::createContextMenu(data, &context);
+    QAction *open = actionWithText(menu, QStringLiteral("Open"));
+    QAction *empty = actionWithText(menu, QStringLiteral("Empty Trash"));
+    REQUIRE(open != nullptr);
+    REQUIRE(empty != nullptr);
+    CHECK(open->isEnabled());
+    CHECK_FALSE(empty->isEnabled());
+    delete menu;
+}
+
 TEST_CASE("context menu preserves desktop action order and routes dock commands separately", "[contextmenu]")
 {
     int appActionCalls = 0;

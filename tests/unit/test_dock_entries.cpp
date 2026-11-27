@@ -68,6 +68,27 @@ TEST_CASE("Typed dock entries round-trip in order with explicit types", "[dock-e
     CHECK(decoded.entries.at(1).id != decoded.entries.at(2).id);
 }
 
+TEST_CASE("Built-in Trash widget persists its kind and slot and rejects malformed descriptors", "[dock-entries][dock-widgets][trash]")
+{
+    const auto trash = kdockw::DockEntry::trash(kdockw::DockWidgetSlot::End);
+    REQUIRE(trash.isValid());
+    CHECK(trash.id.startsWith(QStringLiteral("widget:trash:")));
+    const auto decoded = kdockw::DockEntriesCodec::decode(kdockw::DockEntriesCodec::encode({trash}));
+    REQUIRE(decoded.validDocument);
+    REQUIRE(decoded.entries.size() == 1);
+    CHECK(decoded.entries.first() == trash);
+
+    auto withIcon = trash;
+    withIcon.iconName = QStringLiteral("user-trash");
+    CHECK_FALSE(withIcon.isValid()); // the icon follows the trash state, it is not stored
+    auto sized = trash;
+    sized.widgetSize = 24;
+    CHECK_FALSE(sized.isValid());
+    auto wrongId = trash;
+    wrongId.id = QStringLiteral("widget:separator:%1").arg(trash.id.mid(QStringLiteral("widget:trash:").size()));
+    CHECK_FALSE(wrongId.isValid());
+}
+
 TEST_CASE("Built-in separator descriptors persist stable identity and placement slot", "[dock-entries][dock-widgets]")
 {
     const auto start = kdockw::DockEntry::separator(kdockw::DockWidgetSlot::Start);

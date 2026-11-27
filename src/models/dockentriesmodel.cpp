@@ -37,6 +37,13 @@ bool DockEntriesModel::hasMediaPlayer() const
     });
 }
 
+bool DockEntriesModel::hasTrash() const
+{
+    return std::any_of(m_entries.cbegin(), m_entries.cend(), [](const DockEntry &entry) {
+        return entry.type == DockEntryType::BuiltInWidget && entry.widgetKind == QLatin1String("trash");
+    });
+}
+
 int DockEntriesModel::rowCount(const QModelIndex &parent) const
 {
     return parent.isValid() ? 0 : m_entries.size();
@@ -227,6 +234,27 @@ QString DockEntriesModel::appendMediaPlayer(const QString &slotName)
     else if (slotName == QLatin1String("center")) slot = DockWidgetSlot::Center;
     else if (slotName != QLatin1String("end")) return {};
     const DockEntry entry = DockEntry::mediaPlayer(slot);
+    const int row = m_entries.size();
+    beginInsertRows({}, row, row);
+    m_entries.insert(row, entry);
+    endInsertRows();
+    Q_EMIT countChanged();
+    Q_EMIT entriesChanged();
+    return entry.id;
+}
+
+QString DockEntriesModel::appendTrash(const QString &slotName)
+{
+    if (hasTrash())
+        return {};
+    DockWidgetSlot slot = DockWidgetSlot::End;
+    if (slotName == QLatin1String("start"))
+        slot = DockWidgetSlot::Start;
+    else if (slotName == QLatin1String("center"))
+        slot = DockWidgetSlot::Center;
+    else if (slotName != QLatin1String("end"))
+        return {};
+    const DockEntry entry = DockEntry::trash(slot);
     const int row = m_entries.size();
     beginInsertRows({}, row, row);
     m_entries.insert(row, entry);

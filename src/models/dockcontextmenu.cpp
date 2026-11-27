@@ -7,6 +7,7 @@
 #include "dockactions.h"
 #include "dockmodel.h"
 #include "notificationtracker.h"
+#include "trashstate.h"
 
 #include <taskmanager/abstracttasksmodel.h>
 #include <taskmanager/tasksmodel.h>
@@ -40,6 +41,7 @@ QMenu *createContextMenu(const ContextMenuData &data, QObject *context)
             continue;
         }
         QAction *action = menu->addAction(item.icon, item.text);
+        action->setEnabled(item.enabled);
         if (item.trigger) {
             QObject::connect(action, &QAction::triggered, context, item.trigger);
         }
@@ -230,6 +232,35 @@ void DockContextMenu::showForDock()
     data.settings = [this]() { Q_EMIT settingsRequested(); };
     data.about = [this]() { Q_EMIT aboutRequested(); };
     data.quit = []() { qApp->quit(); };
+    showMenu(createContextMenu(data, this));
+}
+
+void DockContextMenu::showForTrash()
+{
+    TrashState *trash = m_model->trashState();
+    ContextMenuData data;
+    data.title = i18nc("@title:menu", "Trash");
+    data.applicationActions.append({i18nc("@action:inmenu", "Open"), QIcon::fromTheme(QStringLiteral("document-open-folder")), false, [trash]() {
+                                        trash->open();
+                                    }});
+    ContextMenuAction emptyTrash{i18nc("@action:inmenu", "Empty Trash"), QIcon::fromTheme(QStringLiteral("trash-empty")), false, [trash]() {
+                                     trash->emptyTrash();
+                                 }};
+    emptyTrash.enabled = !trash->isEmpty();
+    data.applicationActions.append(emptyTrash);
+    data.manageWidgetsText = i18nc("@action:inmenu", "Manage Widgets...");
+    data.manageWidgets = [this]() {
+        Q_EMIT manageWidgetsRequested();
+    };
+    data.settings = [this]() {
+        Q_EMIT settingsRequested();
+    };
+    data.about = [this]() {
+        Q_EMIT aboutRequested();
+    };
+    data.quit = []() {
+        qApp->quit();
+    };
     showMenu(createContextMenu(data, this));
 }
 

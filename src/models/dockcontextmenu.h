@@ -25,6 +25,7 @@ struct ContextMenuAction
     QIcon icon;
     bool separator = false;
     std::function<void()> trigger;
+    bool enabled = true;
 };
 
 struct ContextMenuWindowAction
@@ -78,6 +79,8 @@ public:
     /// Show the native context menu for the task at @p index.
     Q_INVOKABLE void showForTask(int index);
     Q_INVOKABLE void showForDock();
+    /// Show the Trash widget menu: Open, Empty Trash, then the dock commands.
+    Q_INVOKABLE void showForTrash();
 
     [[nodiscard]] bool isOpen() const;
 

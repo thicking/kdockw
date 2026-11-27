@@ -112,6 +112,15 @@ DockEntry DockEntry::mediaPlayer(DockWidgetSlot slot)
     return entry;
 }
 
+DockEntry DockEntry::trash(DockWidgetSlot slot)
+{
+    const QString id = QStringLiteral("widget:trash:%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces));
+    DockEntry entry{id, DockEntryType::BuiltInWidget};
+    entry.widgetKind = QStringLiteral("trash");
+    entry.slot = slot;
+    return entry;
+}
+
 bool DockEntry::isValid() const
 {
     if (id.isEmpty()) {
@@ -127,16 +136,14 @@ bool DockEntry::isValid() const
             && (iconUrl.isEmpty() || (iconUrl.isValid() && iconUrl.isLocalFile()));
     case DockEntryType::BuiltInWidget:
         return !url.isValid() && url.isEmpty() && iconUrl.isEmpty()
-            && ((widgetKind == QLatin1String("separator") && id.startsWith(QLatin1String("widget:separator:"))
-                && iconName.isEmpty() && widgetSize >= 0 && widgetSize <= 512)
-                || (widgetKind == QLatin1String("spacer") && id.startsWith(QLatin1String("widget:spacer:"))
-                    && iconName.isEmpty() && widgetSize >= 4 && widgetSize <= 512)
-                || (widgetKind == QLatin1String("applicationLauncher")
-                    && id.startsWith(QLatin1String("widget:application-launcher:")) && !iconName.isEmpty()
+            && ((widgetKind == QLatin1String("separator") && id.startsWith(QLatin1String("widget:separator:")) && iconName.isEmpty() && widgetSize >= 0
+                 && widgetSize <= 512)
+                || (widgetKind == QLatin1String("spacer") && id.startsWith(QLatin1String("widget:spacer:")) && iconName.isEmpty() && widgetSize >= 4
+                    && widgetSize <= 512)
+                || (widgetKind == QLatin1String("applicationLauncher") && id.startsWith(QLatin1String("widget:application-launcher:")) && !iconName.isEmpty()
                     && widgetSize == 0)
-                || (widgetKind == QLatin1String("mediaPlayer")
-                    && id.startsWith(QLatin1String("widget:media-player:"))
-                    && iconName.isEmpty() && widgetSize == 0));
+                || (widgetKind == QLatin1String("mediaPlayer") && id.startsWith(QLatin1String("widget:media-player:")) && iconName.isEmpty() && widgetSize == 0)
+                || (widgetKind == QLatin1String("trash") && id.startsWith(QLatin1String("widget:trash:")) && iconName.isEmpty() && widgetSize == 0));
     }
     return false;
 }

@@ -76,6 +76,24 @@ spacer is therefore not enabled: allocating remaining screen space would
 change dock width/height and exclusive-zone geometry. Add it only with a
 separately tested layout allocation contract.
 
+## Trash widget
+
+- One Trash widget per dock (`widgetKind` `trash`, ID prefix `widget:trash:`).
+  It stores no icon and no size; it is icon-sized and magnifies like an
+  application icon.
+- `TrashState` (owned by `DockModel`, exposed as `DockModel.trashState`)
+  follows KIO's `trashrc` `[Status] Empty` key with `KDirWatch`, so the icon
+  switches between `user-trash` and `user-trash-full` without listing
+  `trash:/`. See [docs/kde/trash.md](../kde/trash.md).
+- Left-click and Enter open `trash:/` in the file manager. Right-click shows
+  its own native menu (Open, Empty Trash, then the KDockW submenu); Empty Trash
+  is disabled while the trash is empty and uses KDE's standard confirmation.
+- It is the only built-in widget that is a file-drop target. Files, folders,
+  and `.desktop` files dropped on it move to the trash through
+  `KIO::DeleteOrTrashJob`, which records the move for Undo; they are never
+  pinned as launchers or Folder Stacks. Plasma task drags carry no files and
+  are rejected.
+
 ## Application Launcher backend contract
 
 The Application Launcher reuses the widget descriptor and presentation path.

@@ -869,6 +869,8 @@ Item {
                 const item = dockRepeater.itemAt(hoveredIndex)
                 if (item && item.isApplicationLauncher)
                     appLauncherPopup.openFor(item)
+                else if (item && item.isTrash)
+                    DockModel.trashState.open()
                 else if (item && item.isFolderStack)
                     item.openFolderStack()
                 else if (item)
@@ -1124,7 +1126,8 @@ Item {
         for (let i = 0; i < dockRepeater.count; i++) {
             let item = dockRepeater.itemAt(i)
             if (!item) continue
-            if (item.isBuiltInWidget) continue
+            // The Trash widget is the only built-in widget that takes file drops.
+            if (item.isBuiltInWidget && !item.isTrash) continue
             let itemLeft = _primaryRestSlotStart(item)
             let itemRight = itemLeft + item.width
             if (primaryPosition >= itemLeft && primaryPosition <= itemRight) return i
@@ -2103,6 +2106,10 @@ Item {
             if (root._dragWasActive) return
             if (mouse.button === Qt.RightButton) {
                 const item = root.hoveredIndex >= 0 ? dockRepeater.itemAt(root.hoveredIndex) : null
+                if (item && item.isTrash) {
+                    DockContextMenu.showForTrash()
+                    return
+                }
                 if (!item || item.isBuiltInWidget) {
                     DockContextMenu.showForDock()
                     return
@@ -2121,6 +2128,10 @@ Item {
                 }
                 if (item && item.isMediaPlayer) {
                     item.openMediaPlayerPopup()
+                    return
+                }
+                if (item && item.isTrash) {
+                    DockModel.trashState.open()
                     return
                 }
                 const taskIndex = root.taskIndexAtDockIndex(root.hoveredIndex)
@@ -2808,7 +2819,7 @@ Item {
                         ? taskZoneGap : 0
                     restOffsetAnimationEnabled: dockPanel.animationsReady
                         && !dockPanel.mouseInside
-                    zoomScale: isBuiltInWidget && !isApplicationLauncher
+                    zoomScale: isBuiltInWidget && !isApplicationLauncher && !isTrash
                             && !(isMediaPlayer && DockSettings.mediaPlayerDisplayMode === 0)
                         ? 1.0 : (dockPanel.zoomLayout.scales?.[index] ?? 1.0)
                     zoomOffset: dockPanel.zoomLayout.offsets?.[index] ?? 0.0
@@ -2920,6 +2931,21 @@ Item {
                 const isLauncher = DockModel.isDesktopFile(firstUrl)
                 const isLocalFolder = DockModel.isLocalDirectory(firstUrl)
                 const targetItem = dropTargetIndex >= 0 ? dockRepeater.itemAt(dropTargetIndex) : null
+
+                // Files, folders and .desktop files dropped on the Trash go to the
+                // trash; they are never pinned. Plasma task drags carry no files.
+                if (targetItem && targetItem.isTrash) {
+                    const isTaskDrag = drop.formats.indexOf("text/x-orgkdeplasmataskmanager_taskurl") >= 0
+                    if (!drop.hasUrls || isTaskDrag) {
+                        drop.accepted = false
+                        dropTargetIndex = -1
+                        return
+                    }
+                    DockModel.trashState.moveToTrash(drop.urls)
+                    drop.accepted = true
+                    dropTargetIndex = -1
+                    return
+                }
 
                 if (isLauncher) {
                     DockActions.addLauncher(firstUrl)
@@ -3562,6 +3588,7 @@ Item {
         readonly property bool showsEmptyState: DockModel.dockEntriesModel.count === 0
         readonly property bool hasApplicationLauncher: DockModel.dockEntriesModel.hasApplicationLauncher
         readonly property bool hasMediaPlayer: DockModel.dockEntriesModel.hasMediaPlayer
+        readonly property bool hasTrash: DockModel.dockEntriesModel.hasTrash
         readonly property real screenWidth: DockView.screenGeometry.width > 0
             ? DockView.screenGeometry.width : root.width
         readonly property real screenHeight: DockView.screenGeometry.height > 0
@@ -3634,6 +3661,16 @@ Item {
                             : i18n("Add an application menu to the dock.")
                         onClicked: DockModel.dockEntriesModel.appendApplicationLauncher("center")
                     }
+                    QQC2.Button {
+                        objectName: "addTrashWidgetButton"
+                        text: widgetManager.hasTrash ? i18n("Trash already added") : i18n("Add Trash")
+                        icon.name: "user-trash"
+                        enabled: !widgetManager.hasTrash
+                        Accessible.description: widgetManager.hasTrash
+                            ? i18n("The dock already has a Trash widget.")
+                            : i18n("Add a Trash widget that shows when the trash is full and takes dropped files.")
+                        onClicked: DockModel.dockEntriesModel.appendTrash("end")
+                    }
                 }
 
                 QQC2.Label {
@@ -3705,7 +3742,8 @@ Item {
                                     Layout.fillWidth: true
                                     text: widgetKind === "spacer" ? i18n("Spacer")
                                         : widgetKind === "applicationLauncher" ? i18n("Application Launcher")
-                                        : widgetKind === "mediaPlayer" ? i18n("Media Player") : i18n("Separator")
+                                        : widgetKind === "mediaPlayer" ? i18n("Media Player")
+                                        : widgetKind === "trash" ? i18n("Trash") : i18n("Separator")
                                     font.weight: Font.DemiBold
                                     elide: Text.ElideRight
                                 }
@@ -3735,7 +3773,8 @@ Item {
                                     text: i18n("Remove")
                                     Accessible.name: i18n("Remove %1", widgetKind === "spacer"
                                         ? i18n("Spacer") : widgetKind === "applicationLauncher"
-                                        ? i18n("Application Launcher") : i18n("Separator"))
+                                        ? i18n("Application Launcher") : widgetKind === "trash"
+                                        ? i18n("Trash") : i18n("Separator"))
                                     onClicked: DockModel.dockEntriesModel.removeBuiltInWidget(entryId)
                                 }
                                 }
@@ -3763,7 +3802,7 @@ Item {
                                     }
                                     ColumnLayout {
                                         visible: widgetKind !== "applicationLauncher"
-                                        && widgetKind !== "mediaPlayer"
+                                        && widgetKind !== "mediaPlayer" && widgetKind !== "trash"
                                         Layout.fillWidth: true
                                         spacing: Kirigami.Units.smallSpacing / 2
                                         QQC2.Label { text: i18n("Size") }

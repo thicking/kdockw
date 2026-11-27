@@ -63,6 +63,8 @@ add_library(kdockw_lib STATIC
     models/applicationcatalog.cpp
     models/applicationlauncherstate.h
     models/applicationlauncherstate.cpp
+    models/trashstate.h
+    models/trashstate.cpp
     models/mediaplayercontroller.h
     models/mediaplayercontroller.cpp
     models/systemvolumebackend.h
